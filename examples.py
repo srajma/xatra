@@ -9,9 +9,9 @@ import chronologies
 
 # raw data visualization
 # rdviz.rdviz(feature_list = raw_data.indiaish + raw_data.indiaish_rivers, path_out = 'examples/rdviz_indiaish.html')
-# rdviz.rdviz(feature_list = raw_data.afghanish + raw_data.afghanish_rivers, path_out = 'examples/rdviz_afghanish.html')
 # rdviz.rdviz(feature_list = raw_data.silkrd + raw_data.silkrd_rivers, path_out = 'examples/rdviz_silkrd.html')
 # rdviz(feature_list = raw_data.world + raw_data.world_rivers, path_out = 'examples/rdviz_world.html')
+# ^ i recommend you don't run this last one as the file it generates is close to Github's 75 MB limit
 
 # main historical visualizations : standard tracts 
 magic.visualize_map(

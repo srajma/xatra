@@ -9,7 +9,6 @@
   - [ ] standard mainstream chronology, at least for some period
   - [ ] early south-east asian colonies
 - [ ] add Suvarnabhumi and Tibet-adjacent lands to matchers.py
-- [ ] rename as kshatra
 - [ ] fix basic things (docs, comments, dependencies, pylint/formatting) and publish as a package and a website
 
 ### low-priority
