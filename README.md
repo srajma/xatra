@@ -72,7 +72,7 @@ silkrd_rivers = varuna_iranic_greater.load(data_folder)
 - In summary, the code is quite small:
   - [`xatra.raw_data`](xatra/raw_data.py) contains the Raw GeoJSONs for areas of interest to us (`indiaish`, `silkrd`, `world`) and the class and method for loading them (`DataCollection.load()`). It also contains `DataCollection.download()`, which is only to be used when preparing the package.
   - [`xatra.maps.FlagMap`](xatra/maps/FlagMap.py) contains the `xatra.maps.Flag` and `xatra.maps.Map` classes
-  - [`xatra.maps](xatra/maps/) is otherwise a directory of useful and interesting example Maps
+  - [`xatra.maps`](xatra/maps/) is otherwise a directory of useful and interesting example Maps
   - [`xatra.maps.matchers`](xatra/maps/matchers/matchers.py) is a collection of `matcher` functions you can use in building your own Maps.
 
 ## TODO
