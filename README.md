@@ -86,6 +86,7 @@ silkrd_rivers = varuna_iranic_greater.load(data_folder)
 - [ ] add Suvarnabhumi and Tibet-adjacent lands to matchers.py
 - [ ] fix basic things (docs, pylint/formatting) and publish as a package and a website
 - [ ] make rdviz a method of raw_data
+- [ ] move matchers to main directory 
 
 ### low-priority
 - [ ] legend_options parameter in visualize_map: a dict with keys
