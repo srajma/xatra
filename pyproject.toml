@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "xatra"
+version = "0.1.0"
+description = "Xatra (pronounced kshatra), a tool for making historical maps -- the data I have is currently focused on India, but I welcome expansions to the library."
+authors = ["srajma <srimahalingam@protonmail.com>"]
+license = "Apache 2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+folium = "^0.16.0"
+geopandas = "^0.14.3"
+matplotlib = "^3.8.3"
+requests = "^2.31.0"
+overpy = "^0.7"
+importlib = "^1.0.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
