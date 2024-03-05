@@ -1,4 +1,8 @@
-from .Map import *
+"""A map of _Nations_ (not states) of India and the Silk Road region
+in the ancient period. Can be regarded as a first-order approximation,
+roughly valid in the period between 800 BC and 800 AD."""
+
+from .FlagMap import *
 from .matchers import *
 from xatra import raw_data
 

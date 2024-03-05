@@ -1,0 +1,1 @@
+from xatra.maps.FlagMap import Map, Flag
