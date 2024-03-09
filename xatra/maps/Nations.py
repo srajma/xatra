@@ -9,7 +9,14 @@ from xatra.data import Loka, Varuna
 
 class NATIONS(Map):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        options = {
+            "custom_html": (
+                "Nations, not states, of the Indian imperial core in antiquity."
+                "Roughly valid in the period 800 BC to 1200, think of it as a"
+                "first-order approximation or a reference guide.")
+        }
+        options.update(kwargs)
+        super().__init__(**options)
 
     @property
     def flags(self):
