@@ -83,7 +83,6 @@ Key ideas:
   - [`xatra.matchers`](xatra/matchers/matchers.py) is a collection of `matcher` functions you can use in building your own Maps.
 
 ## TODO
-### high-priority
 - [ ] slider-based layer control for magic.py, or automatic video maker idk
 - [ ] Make example maps and visualizations:
   - [x] "nations" -- classical nations of antiquity
@@ -94,8 +93,6 @@ Key ideas:
 - [x] add Suvarnabhumi and Tibet-adjacent lands to matchers.py
 - [x] make everything verbose
 - [x] Loading all the stuff is really inefficient, fix that
-
-### low-priority
 - [ ] make legend options do something
 - [ ] make flag name appear at center of geometry, bold upon highlighting any feature
 - [ ] handling for cities
