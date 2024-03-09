@@ -19,7 +19,7 @@ nations.INDOSPHERE(verbose=True).plot(path_out="examples/nations/INDOSPHERE.html
 The outputs are in 
 * [examples/nations/INDIC.html](examples/nations/INDIC.html)
 * [examples/nations/SILKRD.html](examples/nations/SILKRD.html)
-* [examples/nations/INDOSPHERE.html](examples/nations/WORLD.html).
+* [examples/nations/INDOSPHERE.html](examples/nations/INDOSPHERE.html).
 
 Note: view this documentation,
  - through the project website: [srajma.github.io/xatra](https://srajma.github.io/xatra/) to see the visualizations properly
