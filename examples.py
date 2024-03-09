@@ -1,4 +1,4 @@
-# from xatra.data import Loka, Varuna, Combined
+from xatra.data import Loka, Varuna, Combined
 import xatra.maps.nations as nations
 
 # raw data download
@@ -9,7 +9,10 @@ import xatra.maps.nations as nations
 
 # raw data visualization
 # Combined.INDIAN_SUBCONTINENT.plot(path_out = 'examples/rdviz/INDIAN_SUBCONTINENT.html')
-# Combined.SILKRD.plot(path_out = 'examples/rdviz/SILKRD.html')
+Combined.SILKRD.plot(path_out="examples/rdviz/SILKRD.html")
+Loka.SEA.plot(
+    path_out="examples/rdviz/SEA.html"
+)  # TODO: maybe add Brahmaputra & Iravati (Burma)
 # Combined.WORLD.plot(
 #     path_out="examples/rdviz/WORLD.html"
 # )  # too big to share on Github, so excluded with .gitignore, you can generate it yourself
