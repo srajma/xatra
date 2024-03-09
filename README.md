@@ -58,6 +58,10 @@ Key ideas:
           super().__init__(**kwargs)
 
       @property
+      def flags(self):
+        return flags_sample
+
+      @property
       def geojson(self):
           return Loka.INDIC.load(verbose=self.verbose)
 
