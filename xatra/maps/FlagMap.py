@@ -55,7 +55,7 @@ class Map(ABC):
             with matching flags appended to each feature.
         color_map (Dict[str, str]): Dict specifying the colour for each flag name.
         options (Dict[str, any]): Dict with keys "color_segments", "location", "zoom_start" : 5,
-            "color_legend" : True, "custom_html" : "", "names_on_map" : True
+            "color_legend" : False, "custom_html" : "", "names_on_map" : True
 
     Methods:
         plot: Plot with Folium.
@@ -103,7 +103,7 @@ class Map(ABC):
             "location": calculated_location,
             "zoom_start": 5,
             # "std_start" : None,
-            "color_legend": True,
+            "color_legend": False,
             "custom_html": "",
             "names_on_map": True,
         }
@@ -299,15 +299,21 @@ class Map(ABC):
     def _calc_legend_html(self):
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Calculating legend HTML")
+        object_height = "400px" if self.options["color_legend"] else "150px"
+        
         legend_html = (
-            '<div style="position: fixed; bottom: 50px; top: 50px; left: 50px; width: 300px; height: 400px; padding: 10px; background-color: white; border:2px solid grey; z-index:9999; font-size:14px; overflow-y: scroll;">'
+            '<div style="position: fixed; bottom: 50px; top: 50px; left: 50px; '
+            f'width: 300px; height: {object_height}; padding: 10px; background-color: white; '
+            'border:2px solid grey; z-index:9999; font-size:14px; overflow-y: scroll;">'
             + self.options["custom_html"]
-            + "<br><br>"
         )
-        for flag, color in self.color_map.items():
-            legend_html += '&nbsp; <i style="background:{}; width: 15px; height: 15px; float: left; margin-right: 5px;"></i>{}<br>'.format(
-                color, flag
-            )
+        if self.options["color_legend"]:
+            legend_html += '<br><br>'
+            for flag, color in self.color_map.items():
+                legend_html += (
+                    f'&nbsp; <i style="background:{color}; width: 15px; height: 15px; '
+                    f'float: left; margin-right: 5px;"></i>{flag}<br>'
+                )
         legend_html += "</div>"
         return legend_html
     
@@ -423,8 +429,7 @@ class Map(ABC):
         # layer control
         folium.LayerControl().add_to(m)
 
-        if self.options["color_legend"]:
-            m.get_root().html.add_child(folium.Element(self._legend_html))
+        m.get_root().html.add_child(folium.Element(self._legend_html))
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Saving to {path_out}")
         if path_out:
@@ -515,8 +520,7 @@ class Map(ABC):
         # layer control
         folium.LayerControl().add_to(m)
 
-        if self.options["color_legend"]:
-            m.get_root().html.add_child(folium.Element(self._legend_html))
+        m.get_root().html.add_child(folium.Element(self._legend_html))
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Saving to {path_out}")
         if path_out:

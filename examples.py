@@ -1,35 +1,51 @@
+# %%
+
 from xatra.data import Loka, Varuna, Combined
 import xatra.maps.nations as nations
 
-# raw data download
-# Loka.WORLD.download("examples/rd/", overwrite = True)
-# Varuna.WORLD.download("examples/rd/")
-# ^ no real point to running this unless you're a developer working on the package itself
-# ^ in which case you would run it to "xatra/data/"
+# %% nations of the Indian imperial core in antiquity
 
-# raw data visualization
-# Combined.INDIAN_SUBCONTINENT.plot(path_out = 'examples/rdviz/INDIAN_SUBCONTINENT.html')
-# Combined.SILKRD.plot(path_out="examples/rdviz/SILKRD.html")
-# Loka.SEA.plot(
-#     path_out="examples/rdviz/SEA.html"
-# )  # TODO: maybe add Brahmaputra & Iravati (Burma)
-# Combined.WORLD.plot(
-#     path_out="examples/rdviz/WORLD.html"
-# )  # too big to share on Github, so excluded with .gitignore, you can generate it yourself
-
-indic = nations.INDIC(verbose=True)
-silkrd = nations.SILKRD(verbose=True)
-sea = nations.SEA(verbose=True)
-indosphere = nations.INDOSPHERE(verbose=True)
-
-# main historical visualizations : standard nations
+indic = nations.INDIC(verbose=True)  # this takes a while to load
 indic.plot(path_out="examples/nations/INDIC.html")
-silkrd.plot(path_out="examples/nations/SILKRD.html")
-sea.plot(path_out="examples/nations/SEA.html")
-indosphere.plot(path_out="examples/nations/INDOSPHERE.html")
+indic.plot_flags_as_layers(
+    path_out="examples/nations/INDIC_matchers.html"
+)  # plots graphical aids for select matchers (use the layer toggle to view each matcher)
 
-# graphical aids for select matchers (use the layer toggle to view each matcher)
-indic.plot_flags_as_layers(path_out="examples/nations/INDIC_matchers.html")
+# %% nations of the silk road
+
+silkrd = nations.SILKRD(verbose=True)
+silkrd.plot(path_out="examples/nations/SILKRD.html")
 silkrd.plot_flags_as_layers(path_out="examples/nations/SILKRD_matchers.html")
+
+# %% nations of southeast asia
+
+sea = nations.SEA(verbose=True)
+sea.plot(path_out="examples/nations/SEA.html")
 sea.plot_flags_as_layers(path_out="examples/nations/SEA_matchers.html")
+
+# %% akhand bharat
+
+indosphere = nations.INDOSPHERE(verbose=True)
+indosphere.plot(path_out="examples/nations/INDOSPHERE.html")
 indosphere.plot_flags_as_layers(path_out="examples/nations/INDOSPHERE_matchers.html")
+
+# %% raw data visualization
+
+Combined.INDIAN_SUBCONTINENT.plot(path_out="examples/rdviz/INDIAN_SUBCONTINENT.html")
+Combined.SILKRD.plot(path_out="examples/rdviz/SILKRD.html")
+Loka.SEA.plot(
+    path_out="examples/rdviz/SEA.html"
+)  # TODO: maybe add Brahmaputra & Iravati (Burma)
+Combined.WORLD.plot(
+    path_out="examples/rdviz/WORLD.html"
+)  # too big to share on Github, so excluded with .gitignore, you can generate it yourself
+
+# %%
+
+# raw data download
+# Loka.WORLD.download("examples/rd/", overwrite = False)
+# Varuna.WORLD.download("examples/rd/")
+# ^ basically only run this if you're a developer contributing to
+# ^ the the package, or if you want to use the project for some
+# ^ other region of the world not included in the package by default
+# ^ the data included in the package is in "xatra/data"
