@@ -122,3 +122,10 @@ def is_river(feature):
         bool: True if it is a river, False otherwise.
     """
     return feature["properties"].get("river_name") is not None
+
+class NameSetter(type):
+    def __call__(cls, *args, **kwargs):
+        obj = super().__call__(*args, **kwargs)
+        obj.__name__ = obj.__class__.__name__
+        return obj
+

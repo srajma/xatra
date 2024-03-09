@@ -57,7 +57,7 @@ class DataItem:
             self.filename = f"{type}_{self.river_type}_{id}_{self.common_name}.json"
 
 
-class DataCollection:
+class DataCollection():
     """List of DataItems.
 
     Attributes:
@@ -65,6 +65,7 @@ class DataCollection:
         filter (Callable[[Dict], bool]): Generally anything from xatra.matchers,
             decides which districts are loaded by self.load(). Defaults to
             lambda x: True
+        name (str): Name of the DataCollection. Defaults to None.
 
     """
 
@@ -222,7 +223,7 @@ class DataCollection:
 
         return all_data
 
-    def load(self):
+    def load(self, verbose=False):
         """Load DataItem items from item.filename.
 
         Returns:
@@ -231,9 +232,13 @@ class DataCollection:
         """
         all_data = []
         for item in self.items:
+            if verbose:
+                print(f"DataCollection: Loading {item.filename}")
             with path(data_dir, item.filename) as file_path:
                 with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                    if verbose:
+                        print(f"DataCollection: Filtering {item.filename}")
                     data_filtered = [x for x in data if self.filter(x)]
                     all_data.extend(data_filtered)
         # to save in standard GeoJSON format
@@ -263,7 +268,7 @@ class DataCollection:
         colors = list(mcolors.CSS4_COLORS.values())
         return colors[hash(gid1) % len(colors)]
 
-    def plot(self, path_out=None):
+    def plot(self, path_out=None, verbose=False):
         """Plot Raw Data
 
         Args:
@@ -271,8 +276,10 @@ class DataCollection:
                 from xatra.matchers; Defaults to lambda x: True.
 
         """
-        feature_list = self.load()
+        feature_list = self.load(verbose=verbose)
 
+        if verbose:
+            print(f"DataCollection: Calculating center")
         gdf = gpd.GeoDataFrame.from_features(feature_list)
         center = [gdf.geometry.centroid.y.mean(), gdf.geometry.centroid.x.mean()]
         m = folium.Map(location=center, zoom_start=5)
@@ -282,6 +289,8 @@ class DataCollection:
 
         for feature in feature_list:
             if is_river(feature):
+                if verbose:
+                    print(f"DataCollection: Adding river {feature['properties']['river_name']} ({feature['properties']['id']})")
                 folium.GeoJson(
                     feature,
                     style_function=lambda x: {
@@ -292,6 +301,8 @@ class DataCollection:
                     tooltip=folium.GeoJsonTooltip(fields=["river_name", "id"]),
                 ).add_to(rivers)
             else:
+                if verbose:
+                    print(f"DataCollection: Adding feature {NAME_max(feature)['NAME_n']}")
                 folium.GeoJson(
                     feature,
                     style_function=lambda x: {
@@ -311,9 +322,17 @@ class DataCollection:
 
         # Add a layer control to toggle rivers
         folium.LayerControl().add_to(m)
-
+        
+        if verbose:
+            print(f"DataCollection: Saving to {path_out}")
+        
         # Save to HTML
         m.save(path_out)
+        
+        if verbose:
+            print(f"DataCollection: Done")
+        
+        return m
 
 
 class Loka:
@@ -365,13 +384,15 @@ class Loka:
     """East Asia, modern political boundaries. TODO: include Japan and Korea"""
 
     SEA_MAINLAND = DataCollection(
+        DataItem(type="feature", id="IND", level=2), # Andaman and Nicobar, North-East India
         DataItem(type="feature", id="MMR", level=2),
         DataItem(type="feature", id="THA", level=2),
         DataItem(type="feature", id="LAO", level=2),
         DataItem(type="feature", id="KHM", level=2),
         DataItem(type="feature", id="VNM", level=2),
+        filter = SEA_MAINLAND
     )
-    """Mainland Southeast Asia, modern political boundaries."""
+    """Mainland Southeast Asia. Excludes North Vietnam and Kachin (in Burma)"""
 
     SEA_MARITIME = DataCollection(
         DataItem(type="feature", id="MYS", level=2),
@@ -379,9 +400,13 @@ class Loka:
         DataItem(type="feature", id="BRN", level=2),
         DataItem(type="feature", id="TLS", level=2),
         DataItem(type="feature", id="SGP", level=1),
+        filter = SEA_MARITIME
     )
-    """Maritime Southeast Asia, modern political boundaries."""
+    """Maritime Southeast Asia."""
 
+    SEA = DataCollection(SEA_MAINLAND, SEA_MARITIME, filter = SEA)
+    """Southeast Asia. Excludes North Vietnam and Kachin (in Burma)."""
+    
     LEVANT = DataCollection(
         DataItem(type="feature", id="IRQ", level=2),
         DataItem(type="feature", id="SYR", level=2),
@@ -423,6 +448,16 @@ class Loka:
     )
     """East Africa, modern political boundaries."""
 
+    INDOSPHERE = DataCollection(
+        INDIAN_SUBCONTINENT,
+        IRANIAN_SUBCONTINENT,
+        AFGHANISTAN,
+        CHINESE_SUBCONTINENT,
+        SEA,
+        filter = INDOSPHERE
+    )
+    """Akhand Bharat"""
+    
     WORLD = DataCollection(
         AFRICA_EAST,
         GULF,

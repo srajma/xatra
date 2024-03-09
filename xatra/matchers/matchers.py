@@ -2,6 +2,7 @@
 Library of Matchers for flags
 """
 
+
 # useful function tool
 def _curry(func):
     def curried(*args):
@@ -38,6 +39,11 @@ def match_field(field, value, feature):
         return gid == value or gid.startswith(value + "_")
 
 
+@_curry
+def name_starts_with(level, value, feature):
+    return feature.get("properties", {}).get("NAME_" + str(level), "").startswith(value)
+
+
 # more intuitive match (matches any level = i field)
 # e.g. match_level(0, "Tajikistan", feature)
 @_curry
@@ -69,7 +75,19 @@ minus = lambda big, small: inter(big, compl(small))
 """custom, recurring, world regions"""
 
 # sorting the himalayas
-HP_NOHIM = union(
+CHINESE_CLAIMS_UK = union(country("Z05"), province("Z09.35"))
+CHINESE_CLAIMS_HP = union(province("Z09.13"), country("Z04"))
+CHINESE_CLAIMS_LADAKH = union(country("Z03"), country("Z08"))  # Aksai Chin
+CHINESE_CLAIMS_GILGIT = country("Z02")
+CHINESE_CLAIMS_AP = country("Z07")
+CHINESE_CLAIMS = union(
+    CHINESE_CLAIMS_UK,
+    CHINESE_CLAIMS_HP,
+    CHINESE_CLAIMS_AP,
+    CHINESE_CLAIMS_LADAKH,
+    CHINESE_CLAIMS_GILGIT,
+)
+TERAI_HP = union(
     district("IND.13.4"),
     district("IND.13.3"),
     district("IND.13.12"),
@@ -77,11 +95,16 @@ HP_NOHIM = union(
     district("IND.13.11"),
     district("IND.13.10"),
 )
-UK_NOHIM = union(district("35.17"), district("35.12"), district("35.7"))
-NPL_FW_NOHIM = union(taluk("NPL.3.1.4"), taluk("NPL.3.2.5"))
-NPL_MW_NOHIM = union(taluk("NPL.4.1.1"), taluk("NPL.4.1.2"))
-NPL_W_NOHIM = union(taluk("NPL.5.3.3"), taluk("NPL.5.3.6"), taluk("NPL.5.3.4"))  # sakya
-NPL_C_NOHIM = union(  # janakpur
+TERAI_UK = union(
+    district("IND.35.5"),
+    district("IND.35.12"),
+    district("IND.35.7"),
+    district("IND.35.8"),
+)
+TERAI_NPL_FW = union(taluk("NPL.3.1.4"), taluk("NPL.3.2.5"))
+TERAI_NPL_MW = union(taluk("NPL.4.1.1"), taluk("NPL.4.1.2"))
+TERAI_NPL_W = union(taluk("NPL.5.3.3"), taluk("NPL.5.3.6"), taluk("NPL.5.3.4"))  # sakya
+TERAI_NPL_C = union(  # janakpur
     taluk("NPL.1.3.4"),
     taluk("NPL.1.3.1"),
     taluk("NPL.1.3.5"),
@@ -89,18 +112,24 @@ NPL_C_NOHIM = union(  # janakpur
     taluk("NPL.1.2.3"),
     taluk("NPL.1.2.1"),
 )
-NPL_E_NOHIM = union(
+TERAI_NPL_E = union(
     taluk("NPL.2.3.4"),
     taluk("NPL.2.3.3"),
     taluk("NPL.2.1.3"),
     taluk("NPL.2.1.5"),
     taluk("NPL.2.2.2"),
 )
-NPL_NOHIM = union(NPL_FW_NOHIM, NPL_MW_NOHIM, NPL_W_NOHIM, NPL_C_NOHIM, NPL_E_NOHIM)
-HP_HIM = minus(province("HimachalPradesh"), HP_NOHIM)
-UK_HIM = minus(province("Uttarakhand"), UK_NOHIM)
-NPL_HIM = minus(country("Nepal"), NPL_NOHIM)
-LADAKH = union(district("Leh(Ladakh)"), district("Kargil"))
+TERAI_NPL = union(TERAI_NPL_FW, TERAI_NPL_MW, TERAI_NPL_W, TERAI_NPL_C, TERAI_NPL_E)
+TERAI = union(TERAI_HP, TERAI_UK, TERAI_NPL)
+HP_HIM = minus(union(province("HimachalPradesh"), CHINESE_CLAIMS_HP), TERAI_HP)
+UK_HIM = minus(union(province("Uttarakhand"), CHINESE_CLAIMS_UK), TERAI_UK)
+NPL_HIM = minus(country("Nepal"), TERAI_NPL)
+LADAKH = union(
+    district("Leh(Ladakh)"),
+    district("Kargil"),
+    country("Z03"),  # Aksai Chin main part
+    country("Z08"),  # Aksai Chin Southern bit
+)
 KASHMIR_MISC = union(  # Jammu & Kashmir excluding the Kashmir valley proper
     district("Z01.14.10"),
     district("Z01.14.5"),
@@ -122,6 +151,15 @@ BENGAL_HIM = union(
     district("Alipurduar"),
     district("KochBihar"),
 )
+ASSAM_HIM = union(
+    district("IND.4.4"),
+    district("IND.4.10"),
+    district("IND.4.13"),
+    district("IND.4.18"),
+    district("IND.4.17"),
+    district("IND.4.22"),
+)
+LAUHITYA = minus(province("Assam"), ASSAM_HIM)
 NEI_HIM = union(  # NE India excluding Assam
     province("ArunachalPradesh"),
     province("Meghalaya"),
@@ -129,17 +167,9 @@ NEI_HIM = union(  # NE India excluding Assam
     province("Manipur"),
     province("Mizoram"),
     province("Tripura"),
+    ASSAM_HIM,
 )
 INNER_KAMBOJA = province("PAK.3")  # Federally Administered Tribal Areas
-CHINESE_CLAIMS = union(
-    country("Z02"),
-    country("Z03"),
-    country("Z04"),
-    country("Z05"),
-    country("Z07"),
-    country("Z08"),
-    country("Z09"),
-)
 HIMALAYAN = union(
     HP_HIM,
     UK_HIM,
@@ -153,6 +183,162 @@ HIMALAYAN = union(
     KHYBER_HIM,
     CHINESE_CLAIMS,
 )
+
+# tibeto-burman region
+
+TIBET_CN_TIB = province("CHN.29")  # chinese occupied tibet
+TIBET_CN_QIN = province("CHN.21")  # chinese occupied tibet
+TIBET_CN_SIC = union(
+    district("CHN.26.5"), district("CHN.26.16")
+)  # chinese occupied tibet
+TIBET_CN = union(TIBET_CN_TIB, TIBET_CN_QIN, TIBET_CN_SIC)
+TIBET_BHU = country("Bhutan")  # bhutanese occupied tibet
+TIBET_NEP = union(
+    taluk("NPL.4.2.1"),
+    taluk("NPL.4.2.2"),
+    taluk("NPL.4.2.5"),
+    district("NPL.5.1"),
+    district("NPL.5.2"),
+    district("NPL.1.1"),
+    taluk("NPL.1.2.2"),
+    taluk("NPL.1.2.4"),
+    taluk("NPL.1.2.6"),
+    taluk("NPL.2.3.5"),
+    taluk("NPL.2.3.1"),
+    taluk("NPL.2.3.2"),
+    taluk("NPL.2.1.1"),
+    taluk("NPL.2.1.4"),
+    taluk("NPL.2.1.2"),
+    taluk("NPL.2.1.6"),
+    taluk("NPL.2.2.4"),
+    taluk("NPL.2.2.3"),
+    taluk("NPL.2.2.1"),
+)  # nepali-occupied tibet
+TIBET_AP = CHINESE_CLAIMS_AP  # chinese-occupied tibet :(
+TIBET_LAD = LADAKH  # tibet in its rightful home
+TIBET_SIK = province("Sikkim")  # tibet in its rightful home
+TIBET = union(TIBET_CN, TIBET_BHU, TIBET_NEP, TIBET_LAD, TIBET_AP, TIBET_SIK)
+
+TIBET_BURMA_INTERM = minus(
+    union(NEI_HIM, province("MMR.3")), TIBET
+)  # intermediary region from Tibet to Burma
+YUNNAN_BURMA_INTERM = province("MMR.4")  # kachin state
+KAREN = union(province("MMR.5"), province("MMR.6"))  # karenic parts of myanmar
+SIAM_BURMA_INTERM = province("MMR.13")  # shan state
+
+BURMA_UPPER = union(
+    province("MMR.12"), province("MMR.7"), province("MMR.8"), province("MMR.10")
+)
+BURMA_LOWER_RIVER = union(
+    province("MMR.2"),
+    province("MMR.1"),
+    province("MMR.15"),
+)
+BURMA_LOWER_RAKHINE = province("MMR.11")
+BURMA_LOWER_THAICOAST = union(province("MMR.9"), province("MMR.14"))
+BURMA_LOWER = union(BURMA_LOWER_RIVER, BURMA_LOWER_RAKHINE, BURMA_LOWER_THAICOAST)
+BURMA = union(BURMA_UPPER, BURMA_LOWER)
+
+# southeast asia
+SIAM_THA = country("Thailand")
+SIAM = union(SIAM_THA)
+LAOS = country("Laos")
+KHMER = country("Cambodia")
+CHAM = union(
+    province("VNM.41"),
+    province("VNM.29"),
+    province("VNM.46"),
+    province("VNM.50"),
+    province("VNM.54"),
+    province("VNM.19"),
+    province("VNM.47"),
+    province("VNM.48"),
+    province("VNM.34"),
+    province("VNM.8"),
+    province("VNM.21"),
+    province("VNM.45"),
+    province("VNM.32"),
+    province("VNM.15"),
+    province("VNM.43"),
+    province("VNM.37"),
+    province("VNM.16"),
+    province("VNM.11"),
+    province("VNM.7"),
+    province("VNM.17"),
+    province("VNM.10"),
+    province("VNM.25"),
+    province("VNM.9"),
+    province("VNM.53"),
+    province("VNM.23"),
+    province("VNM.39"),
+    province("VNM.58"),
+    province("VNM.6"),
+    province("VNM.59"),
+    province("VNM.61"),
+    province("VNM.18"),
+    province("VNM.51"),
+    province("VNM.24"),
+    province("VNM.2"),
+    province("VNM.33"),
+    province("VNM.12"),
+    province("VNM.1"),
+    province("VNM.13"),
+    province("VNM.33"),
+)
+NORTH_VIETNAM = minus(country("Vietnam"), CHAM)
+BORNEO_MYS = union(
+    province("MYS.13"), province("MYS.14"), province("MYS.5")
+)  # sabah serawak
+BORNEO_BRU = country("Brunei")
+BORNEO_MYS_GREATER = union(BORNEO_MYS, BORNEO_BRU)
+BORNEO_IDN = union(
+    province("IDN.35"),
+    province("IDN.34"),
+    province("IDN.12"),
+    province("IDN.13"),
+    province("IDN.14"),
+)  # kalimantan
+BORNEO = union(BORNEO_MYS_GREATER, BORNEO_IDN)
+
+MALAY_PENINSULA_MYS = minus(country("Malaysia"), BORNEO_MYS)
+MALAY_PENINSULA_SG = country("SGP")
+MALAY_PENINSULA = union(MALAY_PENINSULA_MYS, MALAY_PENINSULA_SG)
+JAVA = union(
+    name_starts_with(1, "Jawa"),
+    province("IDN.4"),
+    name_starts_with(1, "Jakarta"),
+    name_starts_with(1, "Yogyakarta"),
+)
+LESSER_SUNDA_IDN = union(
+    province("IDN.2"),  # bali
+    name_starts_with(1, "NusaTeng"),  # nusa tenggara
+)  # just east of java
+LESSER_SUNDA_TLS = country("TLS")
+LESSER_SUNDA = union(LESSER_SUNDA_IDN, LESSER_SUNDA_TLS)
+
+MALUKU_SOUTH = province("IDN.19")
+MALUKU_NORTH = province("IDN.18")
+MALUKU = union(MALUKU_SOUTH, MALUKU_NORTH)  # just east of lesser sunda
+
+SULAWESI = union(
+    name_starts_with(1, "Sulawesi"),
+    province("IDN.6"),
+    province("IDN.29"),
+)  # just east of borneo
+
+KEPULAUAN = province("IDN.16")  # bits of indonesia between indonesia and malaysia
+BANGKA = province("IDN.3")  # bits of indonesia between borneo and sumatra
+SUMATRA = union(
+    name_starts_with(1, "Sumatera"),
+    province("IDN.1"),
+    province("IDN.24"),
+    province("IDN.8"),
+    province("IDN.17"),
+    province("IDN.5"),
+)
+ANDAMAN_NICOBAR = province("IND.1")
+
+PAPUA_IDN = union(province("IDN.22"), province("IDN.23"))
 
 # gangetic
 UP_CEDI = union(  # Protruding bits of UP belonging to Cedi region
@@ -178,8 +364,8 @@ KURU_PROPER = union(
     district("Hapur"),
     district("Bulandshahr"),
     district("GautamBuddhaNagar"),
-    district("IND.35.7"),
-)  # Haridwar (spelled Hardwar in data); in Uttarakhand not UP
+    district("IND.35.7"),  # Haridwar (spelled Hardwar in data); in Uttarakhand not UP
+)
 KURU_KSETRA = union(
     district("Yamunanagar"),
     district("Kurukshetra"),
@@ -250,8 +436,8 @@ KOSALA = union(
     district("Sultanpur"),
     district("Ghazipur"),
 )
-SAKYA = NPL_W_NOHIM
-JANAKPUR = NPL_C_NOHIM
+SAKYA = TERAI_NPL_W
+JANAKPUR = TERAI_NPL_C
 MALLA = union(
     district("Maharajganj"),
     district("Kushinagar"),
@@ -260,14 +446,14 @@ MALLA = union(
     district("Siwan"),
     district("Saran"),
 )
-VIDEHA = union(
+VIDEHA_IN = union(
     district("PashchimChamparan"),
     district("PurbaChamparan"),
     district("Sheohar"),
     district("Sitamarhi"),
     district("Madhubani"),
-    JANAKPUR,
 )
+VIDEHA = union(VIDEHA_IN, JANAKPUR)
 LICCHAVI = union(
     district("Muzaffarpur"),
     district("Vaishali"),
@@ -558,7 +744,6 @@ VANGA_EB = union(
 SAMATATA = minus(country("Bangladesh"), union(VANGA_EB, PUNDRA_EB, GAUDA_EB))
 VANGA = union(VANGA_WB, VANGA_EB)
 PUNDRA = union(PUNDRA_WB, PUNDRA_EB)
-LAUHITYA = province("Assam")
 CHATTISGARH_N = union(
     district("IND.7.19"),
     district("IND.7.7"),
@@ -884,9 +1069,6 @@ TARIM = union(
 DZUNGARIA = minus(province("CHN.28"), TARIM)
 MONGOLIA = union(country("Mongolia"), province("CHN.19"))
 
-# southeast asia
-# TODO: I'm tired.
-
 # big regions
 SUBCONTINENT = union(
     country("India"),
@@ -908,8 +1090,25 @@ CENTRAL_ASIA = union(
 )
 SUBCONTINENT_PROPER = minus(SUBCONTINENT, union(CENTRAL_ASIA, INNER_KAMBOJA, HIMALAYAN))
 CENTRAL_ASIA_GREATER = union(CENTRAL_ASIA, INNER_KAMBOJA)
-INDOSPHERE = union(SUBCONTINENT, CENTRAL_ASIA, TARIM)  # TODO: add southeast asia, tibet
-ALL_INDIA = minus(SUBCONTINENT_PROPER, SIMHALA)
+SEA_MARITIME = union(
+    SUMATRA,
+    JAVA,
+    BORNEO,
+    SULAWESI,
+    LESSER_SUNDA,
+    MALUKU,
+    PAPUA_IDN,
+    MALAY_PENINSULA,
+    KEPULAUAN,
+    BANGKA,
+    ANDAMAN_NICOBAR,
+)
+SEA_MAINLAND = union(
+    SIAM, BURMA, LAOS, KHMER, CHAM, SIAM_BURMA_INTERM, KAREN, TIBET_BURMA_INTERM
+)
+SEA = union(SEA_MARITIME, SEA_MAINLAND)
+INDOSPHERE = union(SUBCONTINENT, CENTRAL_ASIA, TARIM, TIBET, SEA, HIMALAYAN)
+JAMBUDVIPA = minus(SUBCONTINENT_PROPER, SIMHALA)
 NORTH_INDIA = minus(
     union(GANGETIC, BRAHMAVARTA, BENGAL, AUDICYA, RJ, MP, GUJARAT, UP_KALAKAVANA),
     PULINDA,
