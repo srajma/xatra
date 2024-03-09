@@ -97,6 +97,6 @@ Key ideas:
 - [x] add Suvarnabhumi and Tibet-adjacent lands to matchers.py
 - [x] make everything verbose
 - [x] Loading all the stuff is really inefficient, fix that
-- [ ] make legend options do something
-- [ ] make flag name appear at center of geometry, bold upon highlighting any feature
+- [x] make legend options do something
+- [x] make flag name appear at center of geometry, bold upon highlighting any feature
 - [ ] handling for cities

@@ -38,8 +38,9 @@ class Flag:
         self.period = period
         self.ref = ref
 
+
 class Map(ABC):
-    """Abstract class for Maps: subclass this with custom methods .flag(), .geojson(), and 
+    """Abstract class for Maps: subclass this with custom methods .flag(), .geojson(), and
     optionally .geojson_rivers, .custom_colors to define a Map.
 
     Attributes:
@@ -54,17 +55,17 @@ class Map(ABC):
             with matching flags appended to each feature.
         color_map (Dict[str, str]): Dict specifying the colour for each flag name.
         options (Dict[str, any]): Dict with keys "color_segments", "location", "zoom_start" : 5,
-            "color_legend" : True, "custom_html" : "", "size" : 1.0, "names_on_map" : True
-        
+            "color_legend" : True, "custom_html" : "", "names_on_map" : True
+
     Methods:
         plot: Plot with Folium.
         plot_flags_as_layers: Plot each flag as a separate layer, ignoring year/period.
-    
+
     """
-    
+
     def __init__(self, **kwargs):
         """Initialize map with options.
-        
+
         Args:
             **kwargs: Recognized kwargs follow.
 
@@ -80,23 +81,22 @@ class Map(ABC):
                 be ignored. Should not be specified with location or zoom; will overrule both of them.
             color_legend (bool): to include a legend of colours? Defaults to True.
             custom_html (str): Custom HTML to be dded to the top of the legend, e.g. a title. Defaults to "".
-            size (float): scale of legend. Defaults to 1.0.
             names_on_map (bool): show flag labels on the map? (tooltips will show on hover regardless). Defaults
                 to True.
 
-        """ 
+        """
         self.verbose = kwargs.get("verbose", False)
-        
+
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Calculating options")
-        
+
         # calculated location from geojson
         gdf = gpd.GeoDataFrame.from_features(self.geojson)
         calculated_location = [
             gdf.geometry.centroid.y.mean(),
             gdf.geometry.centroid.x.mean(),
         ]
-        
+
         # default options
         self.options = {
             "color_segments": 8,
@@ -105,11 +105,10 @@ class Map(ABC):
             # "std_start" : None,
             "color_legend": True,
             "custom_html": "",
-            "size": 1.0,
             "names_on_map": True,
         }
         self.options.update(kwargs)  # update with supplied arguments
-        
+
         # recognized std_starts
         std_start_recog = {
             "india": {"location": [20.5937, 78.9629], "zoom_start": 5},
@@ -125,7 +124,7 @@ class Map(ABC):
 
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Calculating cache properties")
-        
+
         # cache properties
         # self.flags = self.flags()
         # self.geojson = self.geojson()
@@ -134,27 +133,28 @@ class Map(ABC):
         self.geojson_by_year = self._geojson_by_year()
         self._unique_flag_names = self._unique_flag_names()
         self.color_map = self._color_map()
-    
+        self._legend_html = self._calc_legend_html()
+
     @property
     @abstractmethod
     def flags(self):
         pass
-    
+
     @property
     @abstractmethod
     def geojson(self):
         pass
-    
+
     @property
     @abstractmethod
     def geojson_rivers(self):
         return []
-    
+
     @property
     @abstractmethod
     def custom_colors(self):
         return {}
-    
+
     def _breakpoints(self):
         """Breakpoints at which the map needs to be computed, basically all
         the endpoints of each flag's period in self.flags. NOTE: self.breakpoints == []
@@ -182,11 +182,15 @@ class Map(ABC):
 
         """
         if self.verbose:
-            print(f"Map {self.__class__.__name__}: Calculating geojson with flags for year {year}")
+            print(
+                f"Map {self.__class__.__name__}: Calculating geojson with flags for year {year}"
+            )
         result = []
         for feature in self.geojson:
             if self.verbose:
-                print(f"Map {self.__class__.__name__}: Adding flags to feature {NAME_max(feature)['NAME_n']}")
+                print(
+                    f"Map {self.__class__.__name__}: Adding flags to feature {NAME_max(feature)['NAME_n']}"
+                )
             feature_copies = []
             matching_flags = [
                 flag.name
@@ -219,7 +223,9 @@ class Map(ABC):
 
         """
         if self.verbose:
-            print(f"Map {self.__class__.__name__}: Stacking _geojson_with_flags for breakpoint years")
+            print(
+                f"Map {self.__class__.__name__}: Stacking _geojson_with_flags for breakpoint years"
+            )
         if self.breakpoints:
             return {year: self._geojson_with_flags(year) for year in self.breakpoints}
         else:
@@ -243,7 +249,9 @@ class Map(ABC):
         # ^ this would work, but we want them to be in the original order in self.flags,
         # so we can assign a contrasting colour map to it
         if self.verbose:
-            print(f"Map {self.__class__.__name__}: Doing a weird thing to maintain original order of flags")
+            print(
+                f"Map {self.__class__.__name__}: Doing a weird thing to maintain original order of flags"
+            )
         flag_names = [
             flag.name for flag in self.flags if flag.name in flag_names_from_fby
         ]
@@ -285,9 +293,58 @@ class Map(ABC):
                 color_mapping[flag_name] = self.custom_colors[flag_name]
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Calculated color map")
-        
+
         return color_mapping
 
+    def _calc_legend_html(self):
+        if self.verbose:
+            print(f"Map {self.__class__.__name__}: Calculating legend HTML")
+        legend_html = (
+            '<div style="position: fixed; bottom: 50px; top: 50px; left: 50px; width: 300px; height: 400px; padding: 10px; background-color: white; border:2px solid grey; z-index:9999; font-size:14px; overflow-y: scroll;">'
+            + self.options["custom_html"]
+            + "<br><br>"
+        )
+        for flag, color in self.color_map.items():
+            legend_html += '&nbsp; <i style="background:{}; width: 15px; height: 15px; float: left; margin-right: 5px;"></i>{}<br>'.format(
+                color, flag
+            )
+        legend_html += "</div>"
+        return legend_html
+    
+    def _flag_features(self, flag_name, year):
+        if self.verbose:
+            print(f"Map {self.__class__.__name__}: Getting features for flag {flag_name} for year {year}")
+        if year is None:
+            year = "static"
+        return [
+            feature
+            for feature in self.geojson_by_year[year]
+            if feature["properties"]["flag"] == flag_name
+        ]
+    
+    # method for producing Folium object with flag name for drawing on map
+    def _draw_flag_name(self, flag_name, year):
+        if self.verbose:
+            print(f"Map {self.__class__.__name__}: Adding flag name {flag_name} to map")
+        flag_features = self._flag_features(flag_name, year)
+        if flag_features:
+            flag_gdf = gpd.GeoDataFrame.from_features(flag_features)
+            flag_center = [
+                flag_gdf.geometry.centroid.y.mean(),
+                flag_gdf.geometry.centroid.x.mean(),
+            ]
+            text_color = matplotlib.colors.rgb2hex(matplotlib.colors.to_rgba(self.color_map[flag_name], alpha = 0.5))
+            return folium.Marker(
+                    location=flag_center,
+                    icon=folium.DivIcon(
+                        icon_size=(150, 36),
+                        icon_anchor=(75, 18),
+                        html = f'<div style="font-size: 10pt; color: {text_color}; font-weight: bold; filter: brightness(0.5); text-align: center;">{flag_name}</div>',
+                    ),
+                )
+        else:
+            return None
+    
     def plot(self, path_out=None):
         """Plot with Folium.
 
@@ -297,7 +354,7 @@ class Map(ABC):
         Returns:
             Folium.Map: Folium Map Object
         """
-        
+
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Plotting")
 
@@ -310,9 +367,19 @@ class Map(ABC):
             if self.verbose:
                 print(f"Map {self.__class__.__name__}: Adding layer for year {year}")
             layer = folium.FeatureGroup(name=str(year))
+
+            # draw flag names on map
+            if self.options["names_on_map"]:
+                for flag in self._unique_flag_names:
+                    flag_marker = self._draw_flag_name(flag, year)
+                    if flag_marker:
+                        layer.add_child(flag_marker)
+
             for feature in features:
                 if self.verbose:
-                    print(f"Map {self.__class__.__name__}: Adding feature {feature['properties']['NAME_max']}")
+                    print(
+                        f"Map {self.__class__.__name__}: Adding feature {feature['properties']['NAME_max']}"
+                    )
                 layer.add_child(
                     folium.GeoJson(
                         data=feature,
@@ -337,7 +404,9 @@ class Map(ABC):
             rivers = folium.FeatureGroup(name="Rivers", show=True)
             for river in self.geojson_rivers:
                 if self.verbose:
-                    print(f"Map {self.__class__.__name__}: Adding river {river['properties']['river_name']}")
+                    print(
+                        f"Map {self.__class__.__name__}: Adding river {river['properties']['river_name']}"
+                    )
                 rivers.add_child(
                     folium.GeoJson(
                         data=river,
@@ -355,19 +424,7 @@ class Map(ABC):
         folium.LayerControl().add_to(m)
 
         if self.options["color_legend"]:
-            legend_html = (
-                '<div style="position: fixed; bottom: 50px; left: 50px; width: 150px; height: {}px; background-color: white; border:2px solid grey; z-index:9999; font-size:14px;">'
-                "&nbsp; <b>Legend</b> <br>".format(
-                    25 + len(self._unique_flag_names) * 20
-                )
-            )
-            for flag, color in self.color_map.items():
-                legend_html += '&nbsp; <i style="background:{}; width: 15px; height: 15px; float: left; margin-right: 5px;"></i>{}<br>'.format(
-                    color, flag
-                )
-            legend_html += "</div>"
-            m.get_root().html.add_child(folium.Element(legend_html))
-
+            m.get_root().html.add_child(folium.Element(self._legend_html))
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Saving to {path_out}")
         if path_out:
@@ -396,14 +453,18 @@ class Map(ABC):
         for flag in self.flags:
             if flag.name in self._unique_flag_names:  # relevant flags only
                 if self.verbose:
-                    print(f"Map {self.__class__.__name__}: Adding layer for flag {flag.name}")
+                    print(
+                        f"Map {self.__class__.__name__}: Adding layer for flag {flag.name}"
+                    )
                 layer = folium.FeatureGroup(
                     name=flag.name, show=flag.name in show_by_default
                 )
                 for feature in features_list:
                     if feature["properties"]["flag"] == flag.name:
                         if self.verbose:
-                            print(f"Map {self.__class__.__name__}: Adding feature {feature['properties']['NAME_max']}")
+                            print(
+                                f"Map {self.__class__.__name__}: Adding feature {feature['properties']['NAME_max']}"
+                            )
                         layer.add_child(
                             folium.GeoJson(
                                 data=feature,
@@ -422,6 +483,12 @@ class Map(ABC):
                                 ),
                             )
                         )
+                # add flag name on map
+                if self.options["names_on_map"]:
+                    flag_marker = self._draw_flag_name(flag.name, None)
+                    if flag_marker:
+                        layer.add_child(flag_marker)
+                
                 m.add_child(layer)
 
         # add rivers
@@ -429,7 +496,9 @@ class Map(ABC):
             rivers = folium.FeatureGroup(name="Rivers", show=True)
             for river in self.geojson_rivers:
                 if self.verbose:
-                    print(f"Map {self.__class__.__name__}: Adding river {river['properties']['river_name']}")
+                    print(
+                        f"Map {self.__class__.__name__}: Adding river {river['properties']['river_name']}"
+                    )
                 rivers.add_child(
                     folium.GeoJson(
                         data=river,
@@ -447,19 +516,7 @@ class Map(ABC):
         folium.LayerControl().add_to(m)
 
         if self.options["color_legend"]:
-            legend_html = (
-                '<div style="position: fixed; bottom: 50px; left: 50px; width: 150px; height: {}px; background-color: white; border:2px solid grey; z-index:9999; font-size:14px;">'
-                "&nbsp; <b>Legend</b> <br>".format(
-                    25 + len(self._unique_flag_names) * 20
-                )
-            )
-            for flag, color in self.color_map.items():
-                legend_html += '&nbsp; <i style="background:{}; width: 15px; height: 15px; float: left; margin-right: 5px;"></i>{}<br>'.format(
-                    color, flag
-                )
-            legend_html += "</div>"
-            m.get_root().html.add_child(folium.Element(legend_html))
-
+            m.get_root().html.add_child(folium.Element(self._legend_html))
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Saving to {path_out}")
         if path_out:
