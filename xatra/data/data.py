@@ -5,6 +5,7 @@ import requests
 import overpy
 import folium
 import matplotlib.colors as mcolors
+import pandas as pd
 import geopandas as gpd
 from xatra.data import *
 from xatra.utilities import *
@@ -67,6 +68,11 @@ class DataCollection():
             lambda x: True
         name (str): Name of the DataCollection. Defaults to None.
 
+    Methods:
+        download(path_out=None, overwrite=True): Downloads all items in the DataCollection.
+        load(verbose=False): Load DataItem items from item.filename.
+        plot(path_out=None, verbose=False): Plot Raw Data.
+    
     """
 
     def __init__(self, *args, filter=lambda x: True):
@@ -225,6 +231,9 @@ class DataCollection():
 
     def load(self, verbose=False):
         """Load DataItem items from item.filename.
+        
+        Args:
+            verbose (bool, optional): Print progress. Defaults to False.
 
         Returns:
             List[Dict]: List of GeoJSON Dicts
@@ -241,14 +250,14 @@ class DataCollection():
                         print(f"DataCollection: Filtering {item.filename}")
                     data_filtered = [x for x in data if self.filter(x)]
                     all_data.extend(data_filtered)
+        # convert to geopandas dataframe, simplify, and back to json
         # to save in standard GeoJSON format
         # all_data = {
         #     "type": "FeatureCollection",
         #     "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
         #     "features" : all_data }
-        else:
-            return all_data
-
+        return all_data
+    
     # Function to filter tooltip fields based on specific criteria
     def _filter_tooltip_fields(self, properties):
         return [

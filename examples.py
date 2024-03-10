@@ -1,6 +1,5 @@
 # %%
 
-from xatra.data import Loka, Varuna, Combined
 import xatra.maps.nations as nations
 
 # %% nations of the Indian imperial core in antiquity
@@ -29,7 +28,15 @@ indosphere = nations.INDOSPHERE(verbose=True)
 indosphere.plot(path_out="examples/nations/INDOSPHERE.html")
 indosphere.plot_flags_as_layers(path_out="examples/nations/INDOSPHERE_matchers.html")
 
+# %% example dynamic map
+from xatra.maps.example_dynamic_map import MyDynamic
+
+dynamic = MyDynamic(verbose=True)
+dynamic.plot(path_out="examples/dynamic.html")
+
 # %% raw data visualization
+
+from xatra.data import Loka, Varuna, Combined
 
 Combined.INDIAN_SUBCONTINENT.plot(path_out="examples/rdviz/INDIAN_SUBCONTINENT.html")
 Combined.SILKRD.plot(path_out="examples/rdviz/SILKRD.html")
@@ -40,9 +47,9 @@ Combined.WORLD.plot(
     path_out="examples/rdviz/WORLD.html"
 )  # too big to share on Github, so excluded with .gitignore, you can generate it yourself
 
-# %%
+# %% raw data download
 
-# raw data download
+# from xatra.data import Loka, Varuna, Combined
 # Loka.WORLD.download("examples/rd/", overwrite = False)
 # Varuna.WORLD.download("examples/rd/")
 # ^ basically only run this if you're a developer contributing to

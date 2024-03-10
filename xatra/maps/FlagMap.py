@@ -3,8 +3,7 @@ import matplotlib
 import geopandas as gpd
 from folium.plugins import TimestampedGeoJson
 from abc import ABC, abstractmethod
-from xatra.utilities import NAME_max, NameSetter
-from xatra.data import DataCollection
+from xatra.utilities import NAME_max
 
 
 class Flag:
@@ -133,7 +132,7 @@ class Map(ABC):
         self.geojson_by_year = self._geojson_by_year()
         self._unique_flag_names = self._unique_flag_names()
         self.color_map = self._color_map()
-        self._legend_html = self._calc_legend_html()
+        self._legend_html = self._legend_html()
 
     @property
     @abstractmethod
@@ -146,12 +145,10 @@ class Map(ABC):
         pass
 
     @property
-    @abstractmethod
     def geojson_rivers(self):
         return []
 
     @property
-    @abstractmethod
     def custom_colors(self):
         return {}
 
@@ -198,7 +195,7 @@ class Map(ABC):
                 if flag.matcher(feature)
                 and (
                     year == None
-                    or flag.period is not None
+                    or flag.period is None
                     or (flag.period[0] <= year < flag.period[1])
                 )
             ]
@@ -296,19 +293,19 @@ class Map(ABC):
 
         return color_mapping
 
-    def _calc_legend_html(self):
+    def _legend_html(self):
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Calculating legend HTML")
         object_height = "400px" if self.options["color_legend"] else "150px"
-        
+
         legend_html = (
             '<div style="position: fixed; bottom: 50px; top: 50px; left: 50px; '
-            f'width: 300px; height: {object_height}; padding: 10px; background-color: white; '
+            f"width: 300px; height: {object_height}; padding: 10px; background-color: white; "
             'border:2px solid grey; z-index:9999; font-size:14px; overflow-y: scroll;">'
             + self.options["custom_html"]
         )
         if self.options["color_legend"]:
-            legend_html += '<br><br>'
+            legend_html += "<br><br>"
             for flag, color in self.color_map.items():
                 legend_html += (
                     f'&nbsp; <i style="background:{color}; width: 15px; height: 15px; '
@@ -316,10 +313,12 @@ class Map(ABC):
                 )
         legend_html += "</div>"
         return legend_html
-    
+
     def _flag_features(self, flag_name, year):
         if self.verbose:
-            print(f"Map {self.__class__.__name__}: Getting features for flag {flag_name} for year {year}")
+            print(
+                f"Map {self.__class__.__name__}: Getting features for flag {flag_name} for year {year}"
+            )
         if year is None:
             year = "static"
         return [
@@ -327,7 +326,7 @@ class Map(ABC):
             for feature in self.geojson_by_year[year]
             if feature["properties"]["flag"] == flag_name
         ]
-    
+
     # method for producing Folium object with flag name for drawing on map
     def _draw_flag_name(self, flag_name, year):
         if self.verbose:
@@ -339,26 +338,75 @@ class Map(ABC):
                 flag_gdf.geometry.centroid.y.mean(),
                 flag_gdf.geometry.centroid.x.mean(),
             ]
-            text_color = matplotlib.colors.rgb2hex(matplotlib.colors.to_rgba(self.color_map[flag_name], alpha = 0.5))
+            text_color = matplotlib.colors.rgb2hex(
+                matplotlib.colors.to_rgba(self.color_map[flag_name], alpha=0.5)
+            )
             return folium.Marker(
-                    location=flag_center,
-                    icon=folium.DivIcon(
-                        icon_size=(150, 36),
-                        icon_anchor=(75, 18),
-                        html = f'<div style="font-size: 10pt; color: {text_color}; font-weight: bold; filter: brightness(0.5); text-align: center;">{flag_name}</div>',
-                    ),
+                location=flag_center,
+                icon=folium.DivIcon(
+                    icon_size=(150, 36),
+                    icon_anchor=(75, 18),
+                    html=f'<div style="font-size: 10pt; color: {text_color}; font-weight: bold; filter: brightness(0.5); text-align: center;">{flag_name}</div>',
+                ),
+            )
+        else:
+            return None
+
+    def _draw_rivers(self):
+        """Draw rivers on map.
+
+        Returns:
+            folium.FeatureGroup: FeatureGroup with rivers.
+
+        """
+        rivers = folium.FeatureGroup(name="Rivers", show=True)
+        if self.geojson_rivers:
+            for river in self.geojson_rivers:
+                if self.verbose:
+                    print(
+                        f"Map {self.__class__.__name__}: Adding river {river['properties']['river_name']}"
+                    )
+                rivers.add_child(
+                    folium.GeoJson(
+                        data=river,
+                        style_function=lambda x: {
+                            "color": "blue",
+                            "weight": 2,
+                            "fillOpacity": 0,
+                        },
+                        tooltip=folium.GeoJsonTooltip(fields=["river_name", "id"]),
+                    )
                 )
+            return rivers
         else:
             return None
     
-    def plot(self, path_out=None):
+    def _draw_feature(self, feature):
+        return folium.GeoJson(
+            data=feature,
+            name="Flags",
+            style_function=lambda feature: {
+                "fillColor": self.color_map.get(
+                    feature["properties"]["flag"], "#808080"
+                ),
+                "color": "black",
+                "weight": 0,
+                "fillOpacity": 0.5,  # for visual overlap transparency
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=["NAME_max", "flags"], aliases=["NAME", "Flag"]
+            ),
+        )
+
+    def plot(self, path_out=None, return_map=False):
         """Plot with Folium.
 
         Args:
             path_out (str, optional): To save the produced HTML somewhere. Defaults to None.
+            return_map (bool, optional): Return the map object? Defaults to False.
 
         Returns:
-            Folium.Map: Folium Map Object
+            Folium.Map | None: Folium Map Object if return_map is True, else None
         """
 
         if self.verbose:
@@ -367,6 +415,8 @@ class Map(ABC):
         m = folium.Map(
             location=self.options["location"], zoom_start=self.options["zoom_start"]
         )
+
+        year_layers = []
 
         # add layer for each breakpoint year
         for year, features in self.geojson_by_year.items():
@@ -386,49 +436,22 @@ class Map(ABC):
                     print(
                         f"Map {self.__class__.__name__}: Adding feature {feature['properties']['NAME_max']}"
                     )
-                layer.add_child(
-                    folium.GeoJson(
-                        data=feature,
-                        name="Flags",
-                        style_function=lambda feature: {
-                            "fillColor": self.color_map.get(
-                                feature["properties"]["flag"], "#808080"
-                            ),
-                            "color": "black",
-                            "weight": 0,
-                            "fillOpacity": 0.5,  # for visual overlap transparency
-                        },
-                        tooltip=folium.GeoJsonTooltip(
-                            fields=["NAME_max", "flags"], aliases=["NAME", "Flag"]
-                        ),
-                    )
-                )
+                layer.add_child(self._draw_feature(feature))
             m.add_child(layer)
+            year_layers.append(layer)
 
         # add rivers
-        if self.geojson_rivers:
-            rivers = folium.FeatureGroup(name="Rivers", show=True)
-            for river in self.geojson_rivers:
-                if self.verbose:
-                    print(
-                        f"Map {self.__class__.__name__}: Adding river {river['properties']['river_name']}"
-                    )
-                rivers.add_child(
-                    folium.GeoJson(
-                        data=river,
-                        style_function=lambda x: {
-                            "color": "blue",
-                            "weight": 2,
-                            "fillOpacity": 0,
-                        },
-                        tooltip=folium.GeoJsonTooltip(fields=["river_name", "id"]),
-                    )
-                )
+        rivers = self._draw_rivers()
+        if rivers:
             m.add_child(rivers)
 
         # layer control
         folium.LayerControl().add_to(m)
-
+        if self.breakpoints:
+            folium.plugins.GroupedLayerControl(
+                groups={"years": year_layers}, autoZIndex=False
+            ).add_to(m)
+        
         m.get_root().html.add_child(folium.Element(self._legend_html))
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Saving to {path_out}")
@@ -436,15 +459,21 @@ class Map(ABC):
             m.save(path_out)
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Done")
+        if return_map:
+            return m
 
-        return m
-
-    def plot_flags_as_layers(self, show_by_default=None, path_out=None):
-        """Plot each flag as a separate layer, ignoring year/period.
+    def plot_flags_as_layers(
+        self, show_by_default=None, path_out=None, return_map=False
+    ):
+        """Plot each flag as a separate layer, ignoring year/period. Only really useful for static maps.
 
         Args:
             show_by_default (List[str] | None, optional): List of flag names to show by default. If None, all flags. Defaults to None.
             path_out (str, optional): To save the produced HTML somewhere. Defaults to None.
+            return_map (bool, optional): Return the map object? Defaults to False.
+
+        Returns:
+            Folium.Map | None: Folium Map Object if return_map is True, else None
         """
         features_list = self._geojson_with_flags(year=None)
         if show_by_default is None:
@@ -470,51 +499,18 @@ class Map(ABC):
                             print(
                                 f"Map {self.__class__.__name__}: Adding feature {feature['properties']['NAME_max']}"
                             )
-                        layer.add_child(
-                            folium.GeoJson(
-                                data=feature,
-                                name="Flags",
-                                style_function=lambda feature: {
-                                    "fillColor": self.color_map.get(
-                                        feature["properties"]["flag"], "#808080"
-                                    ),
-                                    "color": "black",
-                                    "weight": 0,
-                                    "fillOpacity": 0.5,  # for visual overlap transparency
-                                },
-                                tooltip=folium.GeoJsonTooltip(
-                                    fields=["NAME_max", "flags"],
-                                    aliases=["NAME", "Flag"],
-                                ),
-                            )
-                        )
+                        layer.add_child(self._draw_feature(feature))
                 # add flag name on map
                 if self.options["names_on_map"]:
                     flag_marker = self._draw_flag_name(flag.name, None)
                     if flag_marker:
                         layer.add_child(flag_marker)
-                
+
                 m.add_child(layer)
 
         # add rivers
-        if self.geojson_rivers:
-            rivers = folium.FeatureGroup(name="Rivers", show=True)
-            for river in self.geojson_rivers:
-                if self.verbose:
-                    print(
-                        f"Map {self.__class__.__name__}: Adding river {river['properties']['river_name']}"
-                    )
-                rivers.add_child(
-                    folium.GeoJson(
-                        data=river,
-                        style_function=lambda x: {
-                            "color": "blue",
-                            "weight": 2,
-                            "fillOpacity": 0,
-                        },
-                        tooltip=folium.GeoJsonTooltip(fields=["river_name", "id"]),
-                    )
-                )
+        rivers = self._draw_rivers()
+        if rivers:
             m.add_child(rivers)
 
         # layer control
@@ -527,5 +523,5 @@ class Map(ABC):
             m.save(path_out)
         if self.verbose:
             print(f"Map {self.__class__.__name__}: Done")
-
-        return m
+        if return_map:
+            return m

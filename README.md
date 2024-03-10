@@ -87,16 +87,29 @@ Key ideas:
   - [`xatra.matchers`](xatra/matchers/matchers.py) is a collection of `matcher` functions you can use in building your own Maps.
 
 ## TODO
-- [ ] slider-based layer control for magic.py, or automatic video maker idk
+
+If you're interested in contributing to this open-source project, please do so! I'm an amateur at coding, and this is just a side-project of mine, and I'm quite busy with real work to do everything I wish I could. 
+
+Ideally if you'd like to contribute, create an issue and assign it to yourself, then start a pull request. I _will_ review and approve pull requests daily. Here's a to-do list of priorities you could work on:
+
+- [ ] Slider-based control for dynamic maps -- right now each year is just a layer which you can toggle by pressing the "down" key in the toggle. See the [technial debt](#technical-debt) section below for details.
 - [ ] Make example maps and visualizations:
   - [x] "nations" -- classical nations of antiquity
   - [ ] north-west circa 322 BC (panini, alexandrian records, puranic etc.)
-  - [ ] standard mainstream chronology, at least for some period
-  - [ ] early south-east asian colonies
+  - [ ] standard mainstream chronology, at least for some period (probably depends on better implementation for dynamic maps)
+  - [ ] early south-east asian colonies (probably depends on handling for cities)
   - [ ] continents of the world, names of india
 - [x] add Suvarnabhumi and Tibet-adjacent lands to matchers.py
 - [x] make everything verbose
 - [x] Loading all the stuff is really inefficient, fix that
 - [x] make legend options do something
-- [x] make flag name appear at center of geometry, bold upon highlighting any feature
-- [ ] handling for cities
+- [x] make flag name appear at center of geometry
+- [ ] handling for making cities appear on map (`data.Pura`)
+
+### technical debt
+There's already some inefficiency in the code as it stands, which should be fixed.
+- [ ] **(high priority)** Handling for dynamic (year-wise) maps is _terribly_ inefficient: you create a new layer with GeoJSON data for each "breakpoint year" (year at which a territorial change occurs) -- whereas the GeoJSON really remains the same in all the years, and only the styling and other properties should change. Even a tiny sample map I made [examples/dynamic.html](examples/dynamic.html) as an example is 14MB. I don't think this can be fixed with Folium at all -- maybe we need an alternate `matplotlib` implementation for dynamic maps, or work with Leaflet.js directly, idk.
+- [ ] **(mid priority)** All the data handling should probably be done with GeoPandas instead of manipulating `dict`s directly. In particular this would allow us to use `gpd.simplify()` to reduce file sizes.
+- [ ] **(low priority)** Maybe the matcher functions should be a class, with a method that works on dicts and a method that works on geopandas rows. IDK tbh. 
+
+[examples/dynamic.html]

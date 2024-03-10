@@ -2,6 +2,7 @@
 in the ancient period. Can be regarded as a first-order approximation,
 roughly valid in the period between 800 BC and 800 AD."""
 
+from abc import abstractmethod
 from xatra.maps.FlagMap import Flag, Map
 from xatra.matchers import *
 from xatra.data import Loka, Varuna
@@ -11,9 +12,10 @@ class NATIONS(Map):
     def __init__(self, **kwargs):
         options = {
             "custom_html": (
-                "Nations, not states, of the Indian imperial core in antiquity."
-                "Roughly valid in the period 800 BC to 1200, think of it as a"
-                "first-order approximation or a reference guide.")
+                f"Nations, not states, of the {self._desc} in antiquity. "
+                "Roughly valid in the period 800 BC to 1200, think of it as a "
+                "first-order approximation or a reference guide. "
+            )
         }
         options.update(kwargs)
         super().__init__(**options)
@@ -157,6 +159,11 @@ class NATIONS(Map):
             if flag.name.startswith("YYY_") or flag.name.startswith("ZZZ_")
         }
 
+    @property
+    @abstractmethod
+    def _desc(self):
+        pass
+
 
 class INDIC(NATIONS):
     def __init__(self, **kwargs):
@@ -171,6 +178,10 @@ class INDIC(NATIONS):
     @property
     def geojson_rivers(self):
         return Varuna.INDIAN_SUBCONTINENT.load(verbose=self.verbose)
+
+    @property
+    def _desc(self):
+        return "Indian imperial core"
 
 
 class SILKRD(NATIONS):
@@ -187,6 +198,10 @@ class SILKRD(NATIONS):
     def geojson_rivers(self):
         return Varuna.SILKRD.load()
 
+    @property
+    def _desc(self):
+        return "Silk Road nations"
+
 
 class SEA(NATIONS):
     def __init__(self, **kwargs):
@@ -197,8 +212,8 @@ class SEA(NATIONS):
         return Loka.SEA.load()
 
     @property
-    def geojson_rivers(self):
-        return super().geojson_rivers
+    def _desc(self):
+        return "Suvarnabhumi region"
 
 
 class INDOSPHERE(NATIONS):
@@ -214,3 +229,7 @@ class INDOSPHERE(NATIONS):
     @property
     def geojson_rivers(self):
         return Varuna.WORLD.load()
+    
+    @property
+    def _desc(self):
+        return "Greater Indian sphere"
