@@ -111,5 +111,6 @@ There's already some inefficiency in the code as it stands, which should be fixe
 - [ ] **(high priority)** Handling for dynamic (year-wise) maps is _terribly_ inefficient: you create a new layer with GeoJSON data for each "breakpoint year" (year at which a territorial change occurs) -- whereas the GeoJSON really remains the same in all the years, and only the styling and other properties should change. Even a tiny sample map I made [examples/dynamic.html](examples/dynamic.html) as an example is 14MB. I don't think this can be fixed with Folium at all -- maybe we need an alternate `matplotlib` implementation for dynamic maps, or work with Leaflet.js directly, idk.
 - [ ] **(mid priority)** All the data handling should probably be done with GeoPandas instead of manipulating `dict`s directly. In particular this would allow us to use `gpd.simplify()` to reduce file sizes.
 - [ ] **(low priority)** Maybe the matcher functions should be a class, with a method that works on dicts and a method that works on geopandas rows. IDK tbh. 
+ - [ ] **(low priority)** interface for plotting should probably look like `INDOSPHERE = Map(); INDOSPHERE.add_flags(...), INDOSPHERE.add_geojson(...)` etc. instead of the end user having to define a class.
 
 [examples/dynamic.html]
