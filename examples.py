@@ -129,7 +129,7 @@ nations.INDIC.plot(
     path_out="examples/polls/8.html",
     base_map="OpenStreetMap",
     opacity=0.5,
-    font_size="6.5pt",
+    font_size="7.5pt",
     font_family="Papyrus",
     verbose=True,
 )
