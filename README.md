@@ -105,7 +105,7 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] make flag name appear at center of geometry
 - [ ] handling for making cities appear on map (`data.Pura`)
 - [ ] rename trigarta (needs recompile)
-- [ ] fix tooltips on plot_flags_as_layers
+- [x] fix tooltips on plot_flags_as_layers
 
 ### technical debt
 There's already some inefficiency in the code as it stands, which should be fixed.
