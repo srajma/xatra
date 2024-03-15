@@ -114,14 +114,14 @@ There's already some inefficiency in the code as it stands, which should be fixe
 - [x] **(low priority)** Maybe the matcher functions should be a class, with a method that works on dicts and a method that works on geopandas rows. IDK tbh. 
  - [x] **(low priority)** interface for plotting should probably look like `INDOSPHERE = Map(); INDOSPHERE.add_flags(...), INDOSPHERE.add_geojson(...)` etc. instead of the end user having to define a class.
 
- ### polls
+### polls
 
- Live versions of the designs being polled:
+Live versions of the designs being polled:
 
- * [control](examples/polls/1.html)
- * [different basemap](examples/polls/2.html)
- * [opaque](examples/polls/3.html)
- * [smaller font size](examples/polls/4.html)
- * [font family: system theme (i.e. Segoe for MS, Roboto for Android etc.)](examples/polls/6.html)
- * [font family: Gabriola](examples/polls/7.html)
- * [font family: Papyrus](examples/polls/8.html)
+* [control](examples/polls/1.html)
+* [different basemap](examples/polls/2.html)
+* [opaque](examples/polls/3.html)
+* [smaller font size](examples/polls/4.html)
+* [font family: system theme (i.e. Segoe for MS, Roboto for Android etc.)](examples/polls/6.html)
+* [font family: Gabriola](examples/polls/7.html)
+* [font family: Papyrus](examples/polls/8.html)
