@@ -10,20 +10,19 @@ For a quick start, see [examples.py](examples.py) e.g.
 ```python
 import xatra.maps.nations as nations
 
-nations.INDIC.plot(
-    path_out="examples/nations/INDIC.html", base_map="CartoDB Positron", verbose=True
-)
-nations.SILKRD.plot(
-    path_out="examples/nations/SILKRD.html", base_map="CartoDB Positron", verbose=True
-)
-nations.SEA.plot(
-    path_out="examples/nations/SEA.html", base_map="CartoDB Positron", verbose=True
-)
-nations.INDOSPHERE.plot(
-    path_out="examples/nations/INDOSPHERE.html",
-    base_map="CartoDB Positron",
-    verbose=True,
-)
+# any custom options may be set either while initializing or in plot()
+
+nations.INDIC.plot(path_out="examples/nations/INDIC.html") 
+# output: [examples/nations/INDIC.html](examples/nations/INDIC.html)
+
+nations.SILKRD.plot(path_out="examples/nations/SILKRD.html") 
+# output: [examples/nations/SILKRD.html](examples/nations/SILKRD.html)
+
+nations.SEA.plot(path_out="examples/nations/SEA.html") 
+# output: [examples/nations/SEA.html](examples/nations/SEA.html)
+
+nations.INDOSPHERE.plot(path_out="examples/nations/INDOSPHERE.html") 
+# output:[examples/nations/INDOSPHERE.html](examples/nations/INDOSPHERE.html)
 ```
 
 The outputs are in 
