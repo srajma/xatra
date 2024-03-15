@@ -118,10 +118,10 @@ There's already some inefficiency in the code as it stands, which should be fixe
 
 Live versions of the designs being polled:
 
-* [control](examples/polls/1.html)
-* [different basemap](examples/polls/2.html)
-* [opaque](examples/polls/3.html)
-* [smaller font size](examples/polls/4.html)
-* [font family: system theme (i.e. Segoe for MS, Roboto for Android etc.)](examples/polls/6.html)
-* [font family: Gabriola](examples/polls/7.html)
-* [font family: Papyrus](examples/polls/8.html)
+* [Control](examples/polls/0_control.html)
+* [Poll 1: different basemap](examples/polls/1_basemap.html)
+* [Poll 2: opaque](examples/polls/2_opacity.html)
+* [Poll 3: smaller font size](examples/polls/3_fontsize.html)
+* [Poll 4: font family: system theme (i.e. Segoe for MS, Roboto for Android etc.)](examples/polls/4_font_system.html)
+* [Poll 5: font family: Gabriola](examples/polls/5_font_gabriola.html)
+* [Poll 6: font family: Papyrus](examples/polls/6_font_papyrus.html)

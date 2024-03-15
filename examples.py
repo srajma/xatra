@@ -61,9 +61,9 @@ ExampleDynamic.plot(path_out="examples/dynamic.html")
 
 #%% for polling
 
-# 1: control
+# 0: control
 nations.INDIC.plot(
-    path_out="examples/polls/1.html",
+    path_out="examples/polls/0_control.html",
     base_map="OpenStreetMap",
     opacity=0.5,
     font_size="10pt",
@@ -71,9 +71,9 @@ nations.INDIC.plot(
     verbose=True,
 )
 
-# 2: CartoDB positron (with increased opacity because of the thick labels in the background)
+# 1: CartoDB positron (with increased opacity because of the thick labels in the background)
 nations.INDIC.plot(
-    path_out="examples/polls/2.html",
+    path_out="examples/polls/1_basemap.html",
     base_map="CartoDB Positron",
     opacity=0.75,
     font_size="10pt",
@@ -81,10 +81,10 @@ nations.INDIC.plot(
     verbose=True,
 )
 
-# 3: full opacity 
+# 2: full opacity 
 
 nations.INDIC.plot(
-    path_out="examples/polls/3.html",
+    path_out="examples/polls/2_opacity.html",
     base_map="OpenStreetMap",
     opacity=1.0,
     font_size="10pt",
@@ -92,10 +92,10 @@ nations.INDIC.plot(
     verbose=True,
 )
 
-# 4: smaller font size
+# 3: smaller font size
 
 nations.INDIC.plot(
-    path_out="examples/polls/4.html",
+    path_out="examples/polls/3_fontsize.html",
     base_map="OpenStreetMap",
     opacity=0.5,
     font_size="7.5pt",
@@ -104,9 +104,9 @@ nations.INDIC.plot(
 )
 
 
-# 6: font family: system theme
+# 4: font family: system theme
 nations.INDIC.plot(
-    path_out="examples/polls/6.html",
+    path_out="examples/polls/4_font_system.html",
     base_map="OpenStreetMap",
     opacity=0.5,
     font_size="10pt",
@@ -114,9 +114,9 @@ nations.INDIC.plot(
     verbose=True,
 )
 
-# 7: font family: "Gabriola", with larger font size because Gabriola is tiny
+# 5: font family: "Gabriola", with larger font size because Gabriola is tiny
 nations.INDIC.plot(
-    path_out="examples/polls/7.html",
+    path_out="examples/polls/5_font_gabriola.html",
     base_map="OpenStreetMap",
     opacity=0.5,
     font_size="12pt",
@@ -124,12 +124,14 @@ nations.INDIC.plot(
     verbose=True,
 )
 
-# 8: font family: "Papyrus", and smaller font size because Papyrus is huge
+# 6: font family: "Papyrus", and smaller font size because Papyrus is huge
 nations.INDIC.plot(
-    path_out="examples/polls/8.html",
+    path_out="examples/polls/6_font_papyrus.html",
     base_map="OpenStreetMap",
     opacity=0.5,
     font_size="7.5pt",
     font_family="Papyrus",
     verbose=True,
 )
+
+# %%
