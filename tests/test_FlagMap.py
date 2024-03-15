@@ -1,6 +1,6 @@
 #%%
 from xatra.maps.FlagMap import Flag, FlagMap
-from xatra.data import Loka, Varuna, DataCollection
+from xatra.data import Loka, Varuna
 from xatra.matchers import *
 
 flags = [

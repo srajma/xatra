@@ -1,2 +1,2 @@
-from .matchers import *
 from .Matcher import *
+from .matcherlib import *

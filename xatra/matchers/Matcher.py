@@ -528,7 +528,6 @@ CHAM = (
     | province("VNM.25")
     | province("VNM.9")
     | province("VNM.53")
-    | province("VNM.23")
     | province("VNM.39")
     | province("VNM.58")
     | province("VNM.6")

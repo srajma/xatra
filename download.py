@@ -1,4 +1,4 @@
-from xatra.data import Loka, Varuna, Combined, DataItem, DataCollection
+from xatra.data import Loka, Varuna, DataItem, DataCollection
 Loka.WORLD.download("xatra/data/", overwrite = True)
 Varuna.WORLD.download("xatra/data/", overwrite = True)
 # ^ basically only run this if you're a developer contributing to
