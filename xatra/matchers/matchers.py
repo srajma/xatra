@@ -1,8 +1,3 @@
-"""
-Library of Matchers for flags
-"""
-
-
 # useful function tool
 def _curry(func):
     def curried(*args):
@@ -1088,7 +1083,9 @@ CENTRAL_ASIA = union(
     country("Uzbekistan"),
     country("Turkmenistan"),
 )
-SUBCONTINENT_PROPER = minus(SUBCONTINENT, union(CENTRAL_ASIA, INNER_KAMBOJA, HIMALAYAN, ANDAMAN_NICOBAR))
+SUBCONTINENT_PROPER = minus(
+    SUBCONTINENT, union(CENTRAL_ASIA, INNER_KAMBOJA, HIMALAYAN, ANDAMAN_NICOBAR)
+)
 CENTRAL_ASIA_GREATER = union(CENTRAL_ASIA, INNER_KAMBOJA)
 SEA_MARITIME = union(
     SUMATRA,

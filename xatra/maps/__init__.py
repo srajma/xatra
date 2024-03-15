@@ -1,1 +1,1 @@
-from .FlagMap import Flag, Map
+from .FlagMap import Flag, FlagMap

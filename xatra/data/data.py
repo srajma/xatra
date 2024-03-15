@@ -30,6 +30,10 @@ class DataItem:
         filename (str): for feature or break, {type}_{id}_{level}.json;
             for river, f"{type}_{river_type}_{id}_{common_name}.json"
 
+    Methods:
+        download(path_out=None, overwrite=True): Downloads the data item and saves it into path_out.
+        load(format="gpd", verbose=False): Load the data item from path(data_dir, self.filename).
+
     """
 
     def __init__(self, type, id, **kwargs):
@@ -57,61 +61,21 @@ class DataItem:
             self.common_name = kwargs["common_name"]
             self.filename = f"{type}_{self.river_type}_{id}_{self.common_name}.json"
 
-
-class DataCollection():
-    """List of DataItems.
-
-    Attributes:
-        items (List[DataItem]): A list of DataItems
-        filter (Callable[[Dict], bool]): Generally anything from xatra.matchers,
-            decides which districts are loaded by self.load(). Defaults to
-            lambda x: True
-        name (str): Name of the DataCollection. Defaults to None.
-
-    Methods:
-        download(path_out=None, overwrite=True): Downloads all items in the DataCollection.
-        load(verbose=False): Load DataItem items from item.filename.
-        plot(path_out=None, verbose=False): Plot Raw Data.
-    
-    """
-
-    def __init__(self, *args, filter=lambda x: True):
-        """Constructs a DataCollection from either a list of DataItems
-        or as a union of other DataCollections. In particular we can define a new
-        DataCollection y from a given one x changing the filter, as
-        y = DataCollection(x, filter = ...).
-
-        Args:
-            *items: A list of DataItems or DataCollections
-            filter (Callable[[Dict], bool], optional): Generally anything from
-                xatra.matchers. Defaults to lambda x: True
-
-        """
-        self.items = []
-        for arg in args:
-            if isinstance(arg, DataCollection):
-                self.items.extend(arg.items)
-            elif isinstance(arg, DataItem):
-                self.items.append(arg)
-        self.filter = filter
-
-    def _download_gadm(self, item):
-        """Downloads a GADM file.
-
-        Args:
-            item (DataItem): a DataItem file that is of type "feature"
+    def _download_gadm(self):
+        """Downloads a GADM file. Should only be used for DataItems of type "feature".
 
         Returns:
-            Dict: GeoJSON dict
+            Dict: GeoJSON Feature Collection
 
         """
-        url = f"https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_{item.id}_{item.level}.json"
+        url = f"https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_{self.id}_{self.level}.json"
         response = requests.get(url)
         if response.status_code == 200:
-            return response.json()["features"]
+            feature_collection = response.json()
+            return feature_collection
         return None
 
-    def _convert_to_geojson(self, result, name="NA"):
+    def _osm_to_geojson(self, result, name="NA"):
         """Convert OSM data to regular feature collection
 
         Args:
@@ -119,7 +83,7 @@ class DataCollection():
             name (str, optional): common name for river.
 
         Returns:
-            dict: GeoJSON dict
+            dict: GeoJSON Feature Collection
 
         """
         features = []
@@ -135,18 +99,19 @@ class DataCollection():
             features.append(feature)
 
         # to save in standard GeoJSON format
-        # geojson = {
-        #     "type": "FeatureCollection",
-        #     "features": features
-        # }
+        feature_collection = {"type": "FeatureCollection", "features": features}
 
-        return json.dumps(features, indent=4)
+        return feature_collection
 
     def _download_overpass(self, item):
-        """Download data from Overpass API.
+        """Download data from Overpass API and passes it through _osm_to_geojson.
+        Only for DataItems of type "river".
 
         Args:
             item (DataItem): DataItem to download
+
+        Returns:
+            Dict: GeoJSON Feature Collection
         """
         api = overpy.Overpass()
 
@@ -158,190 +123,293 @@ class DataCollection():
         out skel qt;
         """
 
-        result = api.query(query)
-        return self._convert_to_geojson(result, item.common_name)
+        osm_result = api.query(query)
+        feature_collection = self._osm_to_geojson(osm_result, item.common_name)
+        return feature_collection
+
+    def _download_break(self):
+        """Download the data item.
+
+        Returns:
+            Dict: GeoJSON dict
+
+        """
+        item_country = DataItem(
+            type="feature", id=self.id.split(".")[0], level=self.level
+        )
+        item_filter = Matcher.gid(self.id)
+        feature_collection = item_country._download_gadm()
+        feature_collection = item_filter.filter(feature_collection)
+        return feature_collection
+
+    def download(self, path_out=None, overwrite=True):
+        """Download the data item and save it into path_out.
+
+        Args:
+            overwrite (bool): overwrite?
+            path_out (str|None): directory to download the data into
+
+        """
+        if self.type == "feature":
+            feature_collection = self._download_gadm()
+        if self.type == "river":
+            feature_collection = self._download_overpass(self)
+        if self.type == "break":
+            feature_collection = self._download_break()
+
+        filepath = os.path.join(path_out, self.filename)
+        if overwrite == True or not os.path.exists(filepath):
+            print(f"Downloading to {filepath}")
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(feature_collection, f, indent=4)
+
+    def load(self, format="gpd", tolerance=None, verbose=False):
+        """Load the data item from path(data_dir, self.filename).
+
+        Args:
+            format (str, optional): "gpd" for geopandas dataframe, "featurecollection" for raw GeoJSON,
+                "features" for just the ["features"] part of the raw GeoJSON. Defaults to "gpd".
+            tolerance (float, optional): Simplify geometry. Defaults to None.
+            verbose (bool, optional): Print progress. Defaults to False.
+
+        Returns:
+            GeoDataFrame|Dict|List[Dict]: Data.
+
+        """
+        if verbose:
+            print(f"DataItem: Loading {self.filename} as {format}")
+        with path(data_dir, self.filename) as filepath:
+            gdf = gpd.read_file(filepath)
+            # add NAME_max and GID_max properties to each feature
+            gdf["NAME_max"] = gdf.apply(NAME_max, axis=1)
+            gdf["GID_max"] = gdf.apply(GID_max, axis=1)
+            if tolerance is not None:
+                if verbose:
+                    print(f"DataItem: Simplifying geometry with tolerance {tolerance}")
+                gdf.geometry = gdf.geometry.simplify(tolerance, preserve_topology=True)
+                if format == "gpd":
+                    return gdf
+                else:
+                    print(f"DataItem: Converting simplified GDF into {format}")
+                    if format == "features":
+                        return features_from(gdf, to_list=True)
+                    elif format == "featurecollection":
+                        return featurecollection_from(gdf)
+                    else:
+                        raise ValueError(
+                            "format must be 'gpd', 'featurecollection' or 'features'"
+                        )
+            elif format == "gpd":
+                return gdf
+            elif format == "featurecollection":
+                if verbose:
+                    print(f"DataItem: Converting GDF into featurecollection")
+                return featurecollection_from(gdf)
+            elif format == "features":
+                if verbose:
+                    print(f"DataItem: Converting GDF into features")
+                return features_from(gdf, to_list=True)
+            else:
+                raise ValueError(
+                    "format must be 'gpd', 'featurecollection' or 'features"
+                )
+
+    def __repr__(self):
+        return f"DataItem at {self.filename}"
+
+    def __add__(self, other):
+        return DataCollection(self, other)
+
+
+class DataCollection:
+    """Set of DataItems.
+
+    Attributes:
+        items (Set[DataItem]): Set of DataItems.
+        filter (Matcher): Generally anything from xatra.matchers,
+            decides which districts are loaded by self.load(). Defaults to Matcher.__true__()
+
+    Methods:
+        download(path_out=None, overwrite=True): Downloads all items in the DataCollection.
+        load(verbose=False): Load DataItem items from item.filename.
+
+    """
+
+    def __init__(self, *args, filter=None):
+        """Constructs a DataCollection from either a set of DataItems
+        or as a union of other DataCollections. In particular we can define a new
+        DataCollection y from a given one x changing the filter, as
+        y = DataCollection(x, filter = ...).
+
+        Args:
+            *items: DataItems or DataCollections
+            filter (Matcher), optional): Generally anything from
+                xatra.matchers. Defaults to Matcher.__true__()
+
+        """
+        self.items = set()
+        for arg in args:
+            if isinstance(arg, DataCollection):
+                self.items.update(arg.items)
+            elif isinstance(arg, DataItem):
+                self.items.add(arg)
+        if filter is None:
+            self.filter = Matcher.__true__()
+        else:
+            self.filter = filter
 
     def download(self, path_out=None, overwrite=True):
         """Downloads all items in the DataCollection. NOTE: this downloads
-        everything regardless of self.filter, because we want to be able to
-        define a new DataCollection from a given one changing the filter, as
-        y = DataCollection(x, filter = ...).
+        everything regardless of breaks and self.filter, because we want to
+        be able to define a new DataCollection from a given one changing the
+        filter, as y = DataCollection(x, filter = ...).
 
         Args:
             path_out (str|None): path to download the data into, ending with "/"
             overwrite (bool): overwrite?
 
-        Returns:
-            List[Dict]: list of GeoJSON dicts, equivalent to the file that
-                would have been saved
-
         """
-        features = [item for item in self.items if item.type == "feature"]
-        breaks = [item for item in self.items if item.type == "break"]
-        rivers = [item for item in self.items if item.type == "river"]
-        should_overwrite = lambda item: path_out is not None and (
-            overwrite == True or not os.path.exists(path_out + item.filename)
-        )
+        for item in self.items:
+            item.download(path_out, overwrite)
 
-        all_data = []
-        for item in features:
-            data = self._download_gadm(item)
-            data = [
-                x
-                for x in data
-                if not any(
-                    [
-                        x["properties"].get("GID_" + str(get_lev(b.id)), "") == b.id
-                        for b in breaks
-                    ]
-                )
-            ]
-            all_data.extend(data)
-
-            if should_overwrite(item):
-                print(f"Downloading to {path_out + item.filename}")
-                with open(path_out + item.filename, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=4)
-
-        for item in breaks:
-            item_country = DataItem(
-                type="feature", id=item.id.split(".")[0], level=item.level
-            )
-            data = self._download_gadm(item_country)
-            data = [
-                x
-                for x in data
-                if x["properties"].get("GID_" + str(get_lev(item.id)), "") == item.id
-            ]
-            all_data.extend(data)
-
-            if should_overwrite(item):
-                print(f"Downloading to {path_out + item.filename}")
-                with open(path_out + item.filename, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=4)
-
-        for item in rivers:
-            if should_overwrite(item):
-                print(f"Downloading to {path_out + item.filename}")
-                geojson_data = self._download_overpass(item)
-                with open(path_out + item.filename, "w") as file:
-                    file.write(geojson_data)
-
-        return all_data
-
-    def load(self, verbose=False):
+    def load(self, format="gpd", tolerance=None, verbose=False):
         """Load DataItem items from item.filename.
-        
+
         Args:
+            format (str, optional): "gpd" for geopandas dataframe, "featurecollection" for raw GeoJSON,
+                "features" for just the ["features"] part of the raw GeoJSON. Defaults to "gpd".
+            tolerance (float, optional): Simplify geometry. Defaults to None.
             verbose (bool, optional): Print progress. Defaults to False.
 
         Returns:
-            List[Dict]: List of GeoJSON Dicts
+            GeoDataFrame|Dict|List[Dict]: Data.
 
         """
-        all_data = []
+        if verbose:
+            print(f"DataCollection: Loading {len(self.items)} items")
+        # filter defined by break: drop all features matching gid(item.id)
+        break_filter = ~Matcher.__any__(
+            [Matcher.gid(item.id) for item in self.items if item.type == "break"]
+        )
+        if format == "gpd":
+            data = gpd.GeoDataFrame()
+        elif format == "featurecollection":
+            data = {"type": "FeatureCollection", "features": []}
+        elif format == "features":
+            data = []
+        else:
+            raise ValueError("format must be 'gpd', 'featurecollection' or 'features'")
         for item in self.items:
             if verbose:
                 print(f"DataCollection: Loading {item.filename}")
-            with path(data_dir, item.filename) as file_path:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if verbose:
-                        print(f"DataCollection: Filtering {item.filename}")
-                    data_filtered = [x for x in data if self.filter(x)]
-                    all_data.extend(data_filtered)
-        # convert to geopandas dataframe, simplify, and back to json
-        # to save in standard GeoJSON format
-        # all_data = {
-        #     "type": "FeatureCollection",
-        #     "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-        #     "features" : all_data }
-        return all_data
-    
-    # Function to filter tooltip fields based on specific criteria
-    def _filter_tooltip_fields(self, properties):
-        return [
-            key
-            for key in properties.keys()
-            if properties[key]
-            and (
-                key == "COUNTRY"
-                or key.startswith("NAME_")
-                or key.startswith("VARNAME_")
-                or key.startswith("GID_")
-            )
-        ]
-
-    # Function to generate a color based on GID_1
-    def _color_producer(self, gid1):
-        colors = list(mcolors.CSS4_COLORS.values())
-        return colors[hash(gid1) % len(colors)]
-
-    def plot(self, path_out=None, verbose=False):
-        """Plot Raw Data
-
-        Args:
-            filter (Callable[[Dict], bool], optional): Generally can be anything
-                from xatra.matchers; Defaults to lambda x: True.
-
-        """
-        feature_list = self.load(verbose=verbose)
-
-        if verbose:
-            print(f"DataCollection: Calculating center")
-        gdf = gpd.GeoDataFrame.from_features(feature_list)
-        center = [gdf.geometry.centroid.y.mean(), gdf.geometry.centroid.x.mean()]
-        m = folium.Map(location=center, zoom_start=5)
-
-        rivers = folium.FeatureGroup(name="Rivers", show=True)
-        districts = folium.FeatureGroup(name="Districts")
-
-        for feature in feature_list:
-            if is_river(feature):
-                if verbose:
-                    print(f"DataCollection: Adding river {feature['properties']['river_name']} ({feature['properties']['id']})")
-                folium.GeoJson(
-                    feature,
-                    style_function=lambda x: {
-                        "color": "blue",
-                        "weight": 3,
-                        "fillOpacity": 0.7,
-                    },
-                    tooltip=folium.GeoJsonTooltip(fields=["river_name", "id"]),
-                ).add_to(rivers)
+            item_data = item.load(format=format, tolerance=tolerance, verbose=verbose)
+            item_data = self.filter.filter(item_data)
+            if item.type == "feature":
+                item_data = break_filter.filter(item_data)
+            if format == "gpd":
+                data = pd.concat([data, item_data], ignore_index=True)
+            elif format == "featurecollection":
+                data["features"].extend(item_data["features"])
             else:
-                if verbose:
-                    print(f"DataCollection: Adding feature {NAME_max(feature)['NAME_n']}")
-                folium.GeoJson(
-                    feature,
-                    style_function=lambda x: {
-                        "fillColor": self._color_producer(x["properties"]["GID_1"]),
-                        "color": "black",
-                        "weight": 0.5,
-                        "fillOpacity": 0.7,
-                    },
-                    tooltip=folium.GeoJsonTooltip(
-                        fields=self._filter_tooltip_fields(feature["properties"])
-                    ),
-                ).add_to(districts)
+                data.extend(item_data)
+        return data
 
-        # Add the feature groups to the map
-        districts.add_to(m)
-        rivers.add_to(m)
+    def __add__(self, other):
+        return DataCollection(self, other)
 
-        # Add a layer control to toggle rivers
-        folium.LayerControl().add_to(m)
-        
-        if verbose:
-            print(f"DataCollection: Saving to {path_out}")
-        
-        # Save to HTML
-        m.save(path_out)
-        
-        if verbose:
-            print(f"DataCollection: Done")
-        
-        return m
+    def __repr__(self):
+        return "DataCollection with items:\n  {}".format(
+            "\n  ".join([x.__repr__() for x in self.items])
+        )
+
+    # # Function to filter tooltip fields based on specific criteria
+    # def _filter_tooltip_fields(self, properties):
+    #     return [
+    #         key
+    #         for key in properties.keys()
+    #         if properties[key]
+    #         and (
+    #             key == "COUNTRY"
+    #             or key.startswith("NAME_")
+    #             or key.startswith("VARNAME_")
+    #             or key.startswith("GID_")
+    #         )
+    #     ]
+
+    # # Function to generate a color based on GID_1
+    # def _color_producer(self, gid1):
+    #     colors = list(mcolors.CSS4_COLORS.values())
+    #     return colors[hash(gid1) % len(colors)]
+
+    # def plot(self, path_out=None, verbose=False):
+    #     """Plot Raw Data
+
+    #     Args:
+    #         filter (Callable[[Dict], bool], optional): Generally can be anything
+    #             from xatra.matchers; Defaults to lambda x: True.
+
+    #     """
+    #     feature_list = self.load(verbose=verbose)
+
+    #     if verbose:
+    #         print(f"DataCollection: Calculating center")
+    #     gdf = gpd.GeoDataFrame.from_features(feature_list)
+    #     center = [gdf.geometry.centroid.y.mean(), gdf.geometry.centroid.x.mean()]
+    #     m = folium.Map(location=center, zoom_start=5)
+
+    #     rivers = folium.FeatureGroup(name="Rivers", show=True)
+    #     districts = folium.FeatureGroup(name="Districts")
+
+    #     for feature in feature_list:
+    #         if is_river(feature):
+    #             if verbose:
+    #                 print(
+    #                     f"DataCollection: Adding river {feature['properties']['river_name']} ({feature['properties']['id']})"
+    #                 )
+    #             folium.GeoJson(
+    #                 feature,
+    #                 style_function=lambda x: {
+    #                     "color": "blue",
+    #                     "weight": 3,
+    #                     "fillOpacity": 0.7,
+    #                 },
+    #                 tooltip=folium.GeoJsonTooltip(fields=["river_name", "id"]),
+    #             ).add_to(rivers)
+    #         else:
+    #             if verbose:
+    #                 print(
+    #                     f"DataCollection: Adding feature {NAME_max(feature)}"
+    #                 )
+    #             folium.GeoJson(
+    #                 feature,
+    #                 style_function=lambda x: {
+    #                     "fillColor": self._color_producer(x["properties"]["GID_1"]),
+    #                     "color": "black",
+    #                     "weight": 0.5,
+    #                     "fillOpacity": 0.7,
+    #                 },
+    #                 tooltip=folium.GeoJsonTooltip(
+    #                     fields=self._filter_tooltip_fields(feature["properties"])
+    #                 ),
+    #             ).add_to(districts)
+
+    #     # Add the feature groups to the map
+    #     districts.add_to(m)
+    #     rivers.add_to(m)
+
+    #     # Add a layer control to toggle rivers
+    #     folium.LayerControl().add_to(m)
+
+    #     if verbose:
+    #         print(f"DataCollection: Saving to {path_out}")
+
+    #     # Save to HTML
+    #     m.save(path_out)
+
+    #     if verbose:
+    #         print(f"DataCollection: Done")
+
+    #     return m
 
 
 class Loka:
@@ -393,13 +461,15 @@ class Loka:
     """East Asia, modern political boundaries. TODO: include Japan and Korea"""
 
     SEA_MAINLAND = DataCollection(
-        DataItem(type="feature", id="IND", level=2), # Andaman and Nicobar, North-East India
+        DataItem(
+            type="feature", id="IND", level=2
+        ),  # Andaman and Nicobar, North-East India
         DataItem(type="feature", id="MMR", level=2),
         DataItem(type="feature", id="THA", level=2),
         DataItem(type="feature", id="LAO", level=2),
         DataItem(type="feature", id="KHM", level=2),
         DataItem(type="feature", id="VNM", level=2),
-        filter = SEA_MAINLAND
+        filter=SEA_MAINLAND,
     )
     """Mainland Southeast Asia. Excludes North Vietnam and Kachin (in Burma)"""
 
@@ -409,13 +479,13 @@ class Loka:
         DataItem(type="feature", id="BRN", level=2),
         DataItem(type="feature", id="TLS", level=2),
         DataItem(type="feature", id="SGP", level=1),
-        filter = SEA_MARITIME
+        filter=SEA_MARITIME,
     )
     """Maritime Southeast Asia."""
 
-    SEA = DataCollection(SEA_MAINLAND, SEA_MARITIME, filter = SEA)
+    SEA = DataCollection(SEA_MAINLAND, SEA_MARITIME, filter=SEA)
     """Southeast Asia. Excludes North Vietnam and Kachin (in Burma)."""
-    
+
     LEVANT = DataCollection(
         DataItem(type="feature", id="IRQ", level=2),
         DataItem(type="feature", id="SYR", level=2),
@@ -463,10 +533,10 @@ class Loka:
         AFGHANISTAN,
         CHINESE_SUBCONTINENT,
         SEA,
-        filter = INDOSPHERE
+        filter=INDOSPHERE,
     )
     """Akhand Bharat"""
-    
+
     WORLD = DataCollection(
         AFRICA_EAST,
         GULF,
@@ -482,18 +552,18 @@ class Loka:
     """Everything we've got."""
 
     INDIC = DataCollection(INDIAN_SUBCONTINENT, filter=SUBCONTINENT_PROPER)
-    """Core areas of India in antiquity. TODO: figure out valley regions in UK etc."""
+    """Core areas of India in antiquity."""
 
     SILKRD = DataCollection(
         IRANIAN_SUBCONTINENT,
         AFGHANISTAN,
         CHINESE_SUBCONTINENT,  # for xinjiang
         INDIAN_SUBCONTINENT,  # for Balochistan, maybe Inner Kamboja
-        filter=union(CENTRAL_ASIA_GREATER, TARIM),
+        filter=CENTRAL_ASIA_GREATER | TARIM,
     )
     """Iranic regions, Afghanistan, Tarim baisin and NW Frontier territories of Pakistan."""
 
-    NEXUS = DataCollection(SILKRD, filter=union(CENTRAL_ASIA_GREATER, TARIM, AUDICYA))
+    NEXUS = DataCollection(SILKRD, filter=CENTRAL_ASIA_GREATER | TARIM | AUDICYA)
     """Iranic regions, Afghanistan, Tarim basin and Audichya region of the Indian subcontinent"""
 
 

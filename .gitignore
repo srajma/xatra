@@ -1,6 +1,3 @@
-# Large file in examples/rdviz/WORLD.html
-examples/rdviz/WORLD.html
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
