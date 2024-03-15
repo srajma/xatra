@@ -13,16 +13,9 @@ import xatra.maps.nations as nations
 # any custom options may be set either while initializing or in plot()
 
 nations.INDIC.plot(path_out="examples/nations/INDIC.html") 
-# output: [examples/nations/INDIC.html](examples/nations/INDIC.html)
-
-nations.SILKRD.plot(path_out="examples/nations/SILKRD.html") 
-# output: [examples/nations/SILKRD.html](examples/nations/SILKRD.html)
-
+nations.SILKRD.plot(path_out="examples/nations/SILKRD.html")
 nations.SEA.plot(path_out="examples/nations/SEA.html") 
-# output: [examples/nations/SEA.html](examples/nations/SEA.html)
-
-nations.INDOSPHERE.plot(path_out="examples/nations/INDOSPHERE.html") 
-# output:[examples/nations/INDOSPHERE.html](examples/nations/INDOSPHERE.html)
+nations.INDOSPHERE.plot(path_out="examples/nations/INDOSPHERE.html")
 ```
 
 The outputs are in 
