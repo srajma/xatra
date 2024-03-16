@@ -28,25 +28,28 @@ nations.INDOSPHERE.plot_flags_as_layers(
     path_out="examples/matchers/INDOSPHERE.html",
     verbose=True,
 )
-# %% raw data visualization
+# %% raw data visualization: india
 nations.INDIAN_SUBCONTINENT.plot_raw(
     path_out="examples/rdviz/INDIAN_SUBCONTINENT.html",
-    base_maps={"CartoDB Positron": True},
+    custom_html="Raw data visualization: Indian subcontinent",
     verbose=True,
 )
+# %% raw data visualization: silk road
 nations.SILKRD.plot_raw(
     path_out="examples/rdviz/SILKRD.html",
-    base_maps={"CartoDB Positron": True},
+    custom_html="Raw data visualization: Silk Road",
     verbose=True,
 )
+# %% raw data visualization: southeast asia
 nations.SEA.plot_raw(
     path_out="examples/rdviz/SEA.html",
-    base_maps={"CartoDB Positron": True},
+    custom_html="Raw data visualization: Southeast Asia",
     verbose=True,
 )
+# %% raw data visualization: world as we know it
 nations.WORLD.plot_raw(
     path_out="examples/rdviz/WORLD.html",
-    base_maps={"CartoDB Positron": True},
+    custom_html="Raw data visualization: World",
     verbose=True,
 )
 # %% for polling

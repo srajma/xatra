@@ -35,12 +35,11 @@ TERAI_HP = (
     | district("IND.13.11")
     | district("IND.13.10")
 )
-TERAI_UK = (
-    district("IND.35.5")
-    | district("IND.35.12")
-    | district("IND.35.7")
-    | district("IND.35.8")
-)
+TERAI_UK_W = district("IND.35.5")
+TERAI_UK_ROORKEE = district("IND.35.7")
+TERAI_UK_E = district("IND.35.8") | district("IND.35.12")
+TERAI_UK = (TERAI_UK_W | TERAI_UK_ROORKEE | TERAI_UK_E)
+
 TERAI_NPL_FW = taluk("NPL.3.1.4") | taluk("NPL.3.2.5")
 TERAI_NPL_MW = taluk("NPL.4.1.1") | taluk("NPL.4.1.2")
 TERAI_NPL_W = taluk("NPL.5.3.3") | taluk("NPL.5.3.6") | taluk("NPL.5.3.4")  # sakya
@@ -51,6 +50,7 @@ TERAI_NPL_C = (
     | taluk("NPL.1.2.5")
     | taluk("NPL.1.2.3")
     | taluk("NPL.1.2.1")
+    | taluk("NPL.1.3.2")
 )
 TERAI_NPL_E = (
     taluk("NPL.2.3.4")
@@ -370,8 +370,8 @@ KOSALA = (
     | district("Sultanpur")
     | district("Ghazipur")
 )
-SAKYA = TERAI_NPL_W
-JANAKPUR = TERAI_NPL_C
+SAKYA = TERAI_NPL_W # | taluk("NPL.1.3.2")
+JANAKPUR = TERAI_NPL_C # - taluk("NPL.1.3.2")
 MALLA = (
     district("Maharajganj")
     | district("Kushinagar")
@@ -570,6 +570,7 @@ TRIGARTA_HP = (
     district("IND.13.3")
 )
 TRIGARTA = TRIGARTA_PJ | TRIGARTA_HP
+KUNINDA = (TERAI_UK_W | TERAI_HP) - TRIGARTA_HP
 PUADH = (
     district("IND.28.18") |
     district("IND.28.5") |
