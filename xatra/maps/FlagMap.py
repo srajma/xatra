@@ -1,4 +1,5 @@
 import folium
+import folium.plugins
 import matplotlib as mpl
 import geopandas as gpd
 from abc import ABC, abstractmethod
@@ -37,8 +38,6 @@ class Flag:
         self.period = period
         self.ref = ref
 
-
-# refactor Map
 class FlagMap:
     """A Map is defined by a list of Flags, some DataCollections, and optionally some custom colors.
 
@@ -63,14 +62,31 @@ class FlagMap:
             "custom_html" (str): Custom HTML to be added to the top of the legend, e.g. a title. Defaults to "".
             "names_on_map" (bool)): show flag labels on the map? (tooltips will show on hover regardless). Defaults
                 to True.
-            "opacity" (float): Opacity of the flags. Defaults to 0.5.
+            "opacity" (float): Opacity of the flags. Defaults to 0.7.
             text_outline_width (str): Width of the text outline. Defaults to None. Set either this
                 or text_outline_color to None to disable text outline. Generally should be like 0.1px.
             text_outline_color (str): Color of the text outline. Defaults to '#FFFFFF'. Set either
                 text_outline_width or this to None to disable text outline.
             "font_size" (str): Font size of the flag labels. Defaults to "10pt".
-            "base_map" (str): Base map to use. Defaults to "OpenStreetMap". Other options include "CartoDB Positron",
-                “CartoDB Voyager”, “NASAGIBS Blue Marble” and None.
+            "base_maps" (Dict[str, bool]): Base maps to show. Those with value True will be shown by default,
+                others will be options in the Layer Control. Defaults to
+                {
+                    "OpenStreetMap" : True,
+                    "Esri.WorldImagery" : False,
+                    "OpenTopoMap" : False,
+                    "Esri.WorldPhysical" : False,
+                }
+                Stuff that
+                you can include in the keys (can also be {} to have no base map):
+                    "OpenStreetMap" (general all-rounder)
+                    "CartoDB.Positron" (like OSM but light and minimalistic)
+                    "CartoDB.PositronNoLabels" (like OSM but light and minimalistic)
+                    "USGS.USImageryTopo" (physical map: satellite view)
+                    "Esri.WorldImagery" (physical map: satellite view)
+                    "OpenTopoMap" (physical map: topographic)
+                    "Esri.WorldPhysical" (physical map: general)
+                    "Esri.OceanBasemap" (physical map: rivers network)
+                    See http://leaflet-extras.github.io/leaflet-providers/preview/ for a full list.
             "tolerance" (float): Tolerance for simplifying geometries. Defaults to 0.01.
             "verbose" (bool): Print progress? Defaults to True.
 
@@ -108,16 +124,34 @@ class FlagMap:
             custom_html (str): Custom HTML to be added to the top of the legend, e.g. a title. Defaults to "".
             names_on_map (bool): show flag labels on the map? (tooltips will show on hover regardless). Defaults
                 to True.
-            opacity (float): Opacity of the flags. Defaults to 0.5.
+            opacity (float): Opacity of the flags. Defaults to 0.7.
             text_outline_width (str): Width of the text outline. Defaults to None. Set either this
                 or text_outline_color to None to disable text outline. Generally should be like 0.1px.
             text_outline_color (str): Color of the text outline. Defaults to '#FFFFFF'. Set either
                 text_outline_width or this to None to disable text outline.
             font_size (str): Font size of the flag labels. Defaults to "10pt".
-            font_family (str): Font family of the flag labels. Defaults to '"Helvetica Neue", Arial, Helvetica, sans-serif'.
+            font_family (str): Font family of the flag labels. Defaults to system theme font, i.e.
+                "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif".
             tolerance (float): Tolerance for simplifying geometries. Defaults to 0.01.
-            base_map (str): Base map to use. Defaults to "OpenStreetMap". Other options include "CartoDB Positron",
-                “CartoDB Voyager”, “NASAGIBS Blue Marble” and None.
+            "base_maps" (Dict[str, bool]): Base maps to show. Those with value True will be shown by default,
+                others will be options in the Layer Control. Defaults to
+                {
+                    "OpenStreetMap" : True,
+                    "Esri.WorldImagery" : False,
+                    "OpenTopoMap" : False,
+                    "Esri.WorldPhysical" : False,
+                }
+                Stuff that
+                you can include in the keys (can also be {} to have no base map):
+                    "OpenStreetMap" (general all-rounder)
+                    "CartoDB.Positron" (like OSM but light and minimalistic)
+                    "CartoDB.PositronNoLabels" (like OSM but light and minimalistic)
+                    "USGS.USImageryTopo" (physical map: satellite view)
+                    "Esri.WorldImagery" (physical map: satellite view)
+                    "OpenTopoMap" (physical map: topographic)
+                    "Esri.WorldPhysical" (physical map: general)
+                    "Esri.OceanBasemap" (physical map: rivers network)
+                    See http://leaflet-extras.github.io/leaflet-providers/preview/ for a full list.
             verbose (bool): Print progress? Defaults to True.
 
         """
@@ -134,12 +168,20 @@ class FlagMap:
             "color_legend": False,
             "custom_html": "",
             "names_on_map": True,
-            "opacity": 0.5,
+            "opacity": 0.7,
             "text_outline_width": None,
             "text_outline_color": "#FFFFFF",
             "font_size": "10pt",
-            "font_family": "'Helvetica Neue', Arial, Helvetica, sans-serif",
-            "base_map": "OpenStreetMap",
+            "font_family": (
+                "-apple-system, BlinkMacSystemFont, 'Segoe UI', "
+                "Roboto, 'Helvetica Neue', Arial, sans-serif"
+            ),
+            "base_maps": {
+                "OpenStreetMap": True,
+                "Esri.WorldImagery": False,
+                "OpenTopoMap": False,
+                "Esri.WorldPhysical": False,
+            },
             "tolerance": 0.01,
             "verbose": True,
         }
@@ -302,9 +344,10 @@ class FlagMap:
         """For a list of matching flags, return the average of the colours specified by
         self.color_map for each."""
         colors = [self.color_map[flag_name] for flag_name in flag_names]
+        color = average_hex_color(colors)
         return {
-            "fillColor": average_hex_color(colors),
-            "color": "black",
+            "fillColor": color,
+            "color": color,
             "weight": 0,
             "fillOpacity": self.opacity,
         }
@@ -383,7 +426,7 @@ class FlagMap:
             folium.FeatureGroup: Layer with loka.
 
         """
-        loka = folium.FeatureGroup(name=str(year), show=True)
+        loka = folium.FeatureGroup(name="Loka_" + str(year), show=True)
         loka.add_child(
             folium.GeoJson(
                 data=self.loka_flagged_yearwise,
@@ -438,30 +481,45 @@ class FlagMap:
         self._calc()
         m = folium.Map(
             location=self.location,
-            tiles=self.base_map,
+            tiles=None,
             zoom_start=self.zoom_start,
             control_scale=True,
         )
+        tile_layers = []
+        for base_map, show in self.base_maps.items():
+            layer = folium.TileLayer(base_map, overlay=True, show=show)
+            tile_layers.append(layer)
+            m.add_child(layer)
         year_layers = []
         for year in self.breakpoints:
             if self.verbose:
                 print(f"Map: Adding layer for year {year}")
             layer = self._draw_loka(year)
-            m.add_child(layer)
             if self.names_on_map:
                 for flag in self.unique_flag_names:
                     flag_marker = self._draw_flag_label(flag, year)
                     if flag_marker:
                         layer.add_child(flag_marker)
             year_layers.append(layer)
+            m.add_child(layer)
         if self.varuna is not None:
             m.add_child(self._draw_varuna())
         m.get_root().html.add_child(self._draw_legend())
         m.add_child(folium.LayerControl())
+        if len(self.base_maps) > 1:
+            m.add_child(
+                folium.plugins.GroupedLayerControl(
+                    groups={"Base maps": tile_layers},
+                    autoZIndex=False,
+                    exclusive_groups=False,
+                )
+            )
         if len(self.breakpoints) > 1:
             m.add_child(
                 folium.plugins.GroupedLayerControl(
-                    groups={"years": year_layers}, autoZIndex=False
+                    groups={"years": year_layers},
+                    autoZIndex=False,
+                    exclusive_groups=True,
                 )
             )
         if self.verbose:
@@ -492,10 +550,15 @@ class FlagMap:
         self._calc()
         m = folium.Map(
             location=self.location,
-            tiles=self.base_map,
+            tiles=None,
             zoom_start=self.zoom_start,
             control_scale=True,
         )
+        tile_layers = []
+        for base_map, show in self.base_maps.items():
+            layer = folium.TileLayer(base_map, overlay=True, show=show)
+            tile_layers.append(layer)
+            m.add_child(layer)
         for flag in self.unique_flag_names:
             if self.verbose:
                 print(f"Map: Adding layer for flag {flag}")
@@ -522,6 +585,14 @@ class FlagMap:
             m.add_child(layer)
         if self.varuna is not None:
             m.add_child(self._draw_varuna())
+        if len(self.base_maps) > 1:
+            m.add_child(
+                folium.plugins.GroupedLayerControl(
+                    groups={"Base maps": tile_layers},
+                    autoZIndex=False,
+                    exclusive_groups=False,
+                )
+            )
         m.add_child(folium.LayerControl())
         m.get_root().html.add_child(self._draw_legend())
         if path_out:
@@ -569,10 +640,12 @@ class FlagMap:
             setattr(self, k, v)
         m = folium.Map(
             location=self.location,
-            tiles=self.base_map,
+            tiles=None,
             zoom_start=self.zoom_start,
             control_scale=True,
         )
+        for base_map in self.base_maps:
+            m.add_child(folium.TileLayer(base_map, overlay=True))
         loka = folium.FeatureGroup(name="Loka")
         for feature in features_from(self.loka):
             if self.verbose:

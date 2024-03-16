@@ -3,10 +3,9 @@ from importlib.resources import path
 import json
 import requests
 import overpy
-import folium
-import matplotlib.colors as mcolors
 import pandas as pd
 import geopandas as gpd
+import topojson as tp
 from xatra.data import *
 from xatra.utilities import *
 from xatra.matchers import *
@@ -185,8 +184,11 @@ class DataItem:
             gdf["GID_max"] = gdf.apply(GID_max, axis=1)
             if tolerance is not None:
                 if verbose:
-                    print(f"DataItem: Simplifying geometry with tolerance {tolerance}")
-                gdf.geometry = gdf.geometry.simplify(tolerance, preserve_topology=True)
+                    print(f"DataItem: Simplifying geometry with TopoJSON with tolerance {tolerance}")
+                # gdf.geometry = gdf.geometry.simplify(tolerance, preserve_topology=True)
+                # ^ we need a topology-aware thing to avoid gaps and overlaps
+                topo = tp.Topology(gdf, prequantize=False)
+                gdf = topo.toposimplify(tolerance).to_gdf()
                 if format == "gpd":
                     return gdf
                 else:

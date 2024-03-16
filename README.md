@@ -31,10 +31,10 @@ Note: view this documentation,
 ## Documentation
 
 Key ideas:
-- Any historical visualization you'll make is an instance of `xatra.FlagMap`, which is fundamentally specified by a list of `xatra.Flag`s (plus some GeoJSON data) 
+- **`xatra.FlagMap`**: Any historical visualization you'll make is an instance of `xatra.FlagMap`, which is fundamentally specified by a list of `xatra.Flag`s (plus some GeoJSON data) 
   - It may be _static_, e.g. "map of ancient Indian Mahājanapadas", "map of India according to Pāṇini"
   - or _dynamic_, e.g. "map of India from 1300 BC to 500 BC, every year" or "traditional Puranic chronology"
-- A `xatra.maps.Flag` is a declaration that a particular polity (`Flag.name`) ruled over some particular set of features (`Flag.matcher`), optionally for some particular specific period of history (`Flag.period`). 
+- **`xatra.Flag`**: A `xatra.Flag` is a declaration that a particular polity (`Flag.name`) ruled over some particular set of features (`Flag.matcher`), optionally for some particular specific period of history (`Flag.period`). 
   - `name : str` -- the name of the historical polity.
   - `period : (num, num)` (only for dynamic maps) -- period for which the flag is valid, e.g. `(-322, 500)` = "322 BC to 500 AD" -- inclusive of starting year but exclusive of ending year. 
   - `matcher : xatra.Matcher` -- a `xatra.Matcher` object is basically a function that returns True or False for a given GeoJSON feature (dict or GeoPandas Row), i.e. the characteristic function for the set of features claimed by the flag.
@@ -65,17 +65,65 @@ SampleMap = FlagMap(
 sample.plot(path_out="examples/sample.html")
 ```
 
-- A basically comprehensive list of `matcher`s is given in [`xatra.matchers`](xatra/matchers/matcherlib.py). Useful functions:
+- **`xatra.Matcher`**: A basically comprehensive list of `matcher`s is given in [`xatra.matchers`](xatra/matchers/matcherlib.py). Useful functions:
   - `country("India")`, `province("Maharashtra")`, `district("Nanded")`, `taluk("Hadgaon")` etc. However you should usually use GADM Unique IDs to avoid name clashes -- use [examples/rdviz/INDIAN_SUBCONTINENT.html](examples/rdviz/INDIAN_SUBCONTINENT.html), [examples/rdviz/SILKRD.html](examples/rdviz/SILKRD.html), [examples/rdviz/SEA.html](examples/rdviz/SEA.html) to easily find GIDs. Also note that for some countries like Pakistan and Nepal, "districts" are actually level-3 divisions and thus accessed by `taluk()`. 
   - set operations: `|`, `&`, `-`. Important to note that `-` takes precedence over the other operators in Python, so use brackets when needed.
   - Matchers for custom region names like `COLA`, `KOSALA`, `RS_DOAB`, `GY_DOAB`, `BACTRIA`. These are quite comprehensive, you probably won't have to define your own. See [examples/nations/INDIC_matchers.html](examples/nations/INDIC_matchers.html), [examples/nations/SILKRD_matchers.html](examples/nations/SILKRD_matchers.html), [examples/nations/SEA_matchers.html](examples/nations/SEA_matchers.html), [examples/nations/INDOSPHERE_matchers.html](examples/nations/INDOSPHERE_matchers.html) for a visual overview of what I have.
-- The raw GeoJSON data we plot our flag lists on is stored in the `xatra/data/` directory and accessed through the `xatra.DataCollection` class and its `load()` method in [`xatra.data`](xatra/data/data.py). Useful DataCollections are in [`xatra.data.Loka`](xatra/data/varuna.py) and [`xatra.data.Varuna`](xatra/data/Varuna.py). See [examples/rdviz/INDIAN_SUBCONTINENT.html](examples/rdviz/INDIAN_SUBCONTINENT.html), [examples/rdviz/SILKRD.html](examples/rdviz/SILKRD.html), [examples/rdviz/SEA.html](examples/rdviz/SEA.html), [examples/rdviz/WORLD.html](examples/rdviz/WORLD.html) to visualize the GeoJSON data. The only thing worth noting about `DataCollection`s is that they can contain "breaks" `DataItem(type="break", id="IND.20.20_1", level=3)`, which specify which features in the rawdata should be broken into even finer administrative detail -- e.g. in the data right now, Nanded district in Maharashtra is broken into its taluks (because the ancient tracts of Asmaka and Mulaka contained different taluks of the district), and the districts of Xinjiang province are broken into their taluks (because the districts are too big and coarse, and contained multiple ancient Tarim city-states).
+- **`xatra.DataCollection`**: The raw GeoJSON data we plot our flag lists on is stored in the `xatra/data/` directory and accessed through the `xatra.DataCollection` class and its `load()` method in [`xatra.data`](xatra/data/data.py). Useful DataCollections are in [`xatra.data.Loka`](xatra/data/varuna.py) and [`xatra.data.Varuna`](xatra/data/Varuna.py). See [examples/rdviz/INDIAN_SUBCONTINENT.html](examples/rdviz/INDIAN_SUBCONTINENT.html), [examples/rdviz/SILKRD.html](examples/rdviz/SILKRD.html), [examples/rdviz/SEA.html](examples/rdviz/SEA.html), [examples/rdviz/WORLD.html](examples/rdviz/WORLD.html) to visualize the GeoJSON data. The only thing worth noting about `DataCollection`s is that they can contain "breaks" `DataItem(type="break", id="IND.20.20_1", level=3)`, which specify which features in the rawdata should be broken into even finer administrative detail -- e.g. in the data right now, Nanded district in Maharashtra is broken into its taluks (because the ancient tracts of Asmaka and Mulaka contained different taluks of the district), and the districts of Xinjiang province are broken into their taluks (because the districts are too big and coarse, and contained multiple ancient Tarim city-states).
 
 - In summary, the code is quite small:
   - [`xatra.data`](xatra/data/data.py) contains the Raw GeoJSONs for areas of interest to us and the class and method for loading them (`DataCollection.load()`). It also contains `DataCollection.download()`, which is used when preparing the package.
   - [`xatra.maps.FlagMap`](xatra/maps/FlagMap.py) contains the `xatra.Flag` and `xatra.FlagMap` classes
   - [`xatra.maps`](xatra/maps/) is otherwise a directory of useful and interesting example Maps. This is where I would like PRs, more than anywhere else.
   - [`xatra.matchers.Matcher`](xatra/matchers/Matcher.py) is the `xatra.Matcher` class, and [`xatra.matchers.matcherlib`](xatra/matchers/matcherlib.py) is a collection of `matcher` functions you can use in building your own Maps.
+
+## Appendix: optional arguments
+
+Optional arguments can be specified either while initiazing a `xatra.FlagMap` object or to `plot()` (which overrides the optional arguments set during initialization).
+
+```python
+"""
+custom_colors (Dict[str, str]): custom colours for flags to override any calculated ones.
+color_segments (int): Flags within this distance of each other in self.flags will be assigned
+    contrasting colours (unless forced otherwise in self.custom_colors). Defaults to 8.
+location (List[float]): Initial position of Folium map. Defaults to calculated from loka.
+    E.g. India: [20.5937, 78.9629]. Brahmavarta: [29.9691899, 76.7260054]. Meru: [39, 71.9610313].
+zoom_start (int): Initial zoom of Folium map. Defaults to 5.
+color_legend (bool): to include a legend of colours? Defaults to False.
+custom_html (str): Custom HTML to be added to the top of the legend, e.g. a title. Defaults to "".
+names_on_map (bool): show flag labels on the map? (tooltips will show on hover regardless). Defaults
+    to True.
+opacity (float): Opacity of the flags. Defaults to 0.7.
+text_outline_width (str): Width of the text outline. Defaults to None. Set either this
+    or text_outline_color to None to disable text outline. Generally should be like 0.1px.
+text_outline_color (str): Color of the text outline. Defaults to '#FFFFFF'. Set either
+    text_outline_width or this to None to disable text outline.
+font_size (str): Font size of the flag labels. Defaults to "10pt".
+font_family (str): Font family of the flag labels. Defaults to system theme font, i.e.
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif".
+tolerance (float): Tolerance for simplifying geometries. Defaults to 0.01.
+"base_maps" (Dict[str, bool]): Base maps to show. Those with value True will be shown by default,
+    others will be options in the Layer Control. Defaults to
+    {
+        "OpenStreetMap" : True,
+        "Esri.WorldImagery" : False,
+        "OpenTopoMap" : False,
+        "Esri.WorldPhysical" : False,
+    }
+    Stuff that
+    you can include in the keys (can also be {} to have no base map):
+        "OpenStreetMap" (general all-rounder)
+        "CartoDB.Positron" (like OSM but light and minimalistic)
+        "CartoDB.PositronNoLabels" (like OSM but light and minimalistic)
+        "USGS.USImageryTopo" (physical map: satellite view)
+        "Esri.WorldImagery" (physical map: satellite view)
+        "OpenTopoMap" (physical map: topographic)
+        "Esri.WorldPhysical" (physical map: general)
+        "Esri.OceanBasemap" (physical map: rivers network)
+        See http://leaflet-extras.github.io/leaflet-providers/preview/ for a full list.
+verbose (bool): Print progress? Defaults to True.
+"""
+```
 
 ## TODO
 
@@ -96,7 +144,8 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] make legend options do something
 - [x] make flag name appear at center of geometry
 - [ ] handling for making cities appear on map (`data.Pura`)
-- [ ] rename trigarta (needs recompile)
+- [x] rename trigarta
+- [x] add tibet to SEA
 - [x] fix tooltips on plot_flags_as_layers
 
 ### technical debt

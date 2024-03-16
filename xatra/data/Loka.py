@@ -69,7 +69,20 @@ SEA_MARITIME = DataCollection(
 )
 """Maritime Southeast Asia."""
 
-SEA = DataCollection(SEA_MAINLAND, SEA_MARITIME, filter=SEA)
+TIBET = DataCollection(
+    DataItem(type="feature", id="CHN", level=2),
+    DataItem(type="feature", id="IND", level=2),
+    DataItem(type="feature", id="BTN", level=2),
+    DataItem(type="feature", id="NPL", level=3),
+    filter=TIBET,
+)
+
+SEA = DataCollection(
+    SEA_MAINLAND,
+    SEA_MARITIME,
+    TIBET,
+    filter=SEA_GREATER,
+)
 """Southeast Asia. Excludes North Vietnam and Kachin (in Burma)."""
 
 LEVANT = DataCollection(

@@ -31,17 +31,23 @@ nations.INDOSPHERE.plot_flags_as_layers(
 # %% raw data visualization
 nations.INDIAN_SUBCONTINENT.plot_raw(
     path_out="examples/rdviz/INDIAN_SUBCONTINENT.html",
-    base_map="CartoDB Positron",
+    base_maps={"CartoDB Positron": True},
     verbose=True,
 )
 nations.SILKRD.plot_raw(
-    path_out="examples/rdviz/SILKRD.html", base_map="CartoDB Positron", verbose=True
+    path_out="examples/rdviz/SILKRD.html",
+    base_maps={"CartoDB Positron": True},
+    verbose=True,
 )
 nations.SEA.plot_raw(
-    path_out="examples/rdviz/SEA.html", base_map="CartoDB Positron", verbose=True
+    path_out="examples/rdviz/SEA.html",
+    base_maps={"CartoDB Positron": True},
+    verbose=True,
 )
 nations.WORLD.plot_raw(
-    path_out="examples/rdviz/WORLD.html", base_map="CartoDB Positron", verbose=True
+    path_out="examples/rdviz/WORLD.html",
+    base_maps={"CartoDB Positron": True},
+    verbose=True,
 )
 # %% for polling
 

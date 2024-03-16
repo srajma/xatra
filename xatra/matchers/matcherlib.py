@@ -304,6 +304,20 @@ KURU_JANGALA = (
     | district("Palwal")
     | district("Mewat")
 )
+KURU_KSETRA_GREATER_HARYANA = (
+    KURU_KSETRA |
+    district("IND.12.15") |
+    district("IND.12.1")
+)
+JANGALA_HARYANA = (
+    KURU_JANGALA |
+    district("IND.12.17") |
+    district("IND.12.12") |
+    district("IND.12.2") |
+    district("IND.12.6") |
+    district("IND.12.4") |
+    district("IND.12.19") 
+)
 KURU = KURU_PROPER | KURU_JANGALA | KURU_KSETRA
 PANCALA_S = (
     district("Aligarh")
@@ -541,8 +555,38 @@ DOAB_RS_C = (
 DOAB_RS_S = district("Multan")
 DOAB_RS = DOAB_RS_N | DOAB_RS_C | DOAB_RS_S
 BAHAWALPUR = district("Bahawalpur")
-TRIGARTA_PROPER = (province("IND.28") | district("Chandigarh")) - DOAB_RS_N
-TRIGARTA = province("IND.28") | district("Chandigarh") | DOAB_RS_C
+# TRIGARTA_PROPER = (province("IND.28") | district("Chandigarh")) - DOAB_RS_N
+# TRIGARTA = province("IND.28") | district("Chandigarh") | DOAB_RS_C
+TRIGARTA_PJ = (
+    district("IND.28.9")
+    | district("IND.28.10")
+    | district("IND.28.11")
+    | district("IND.28.21")
+)
+TRIGARTA_HP = (
+    district("IND.13.4") |
+    district("IND.13.12") |
+    district("IND.13.1") |
+    district("IND.13.3")
+)
+TRIGARTA = TRIGARTA_PJ | TRIGARTA_HP
+PUADH = (
+    district("IND.28.18") |
+    district("IND.28.5") |
+    district("IND.28.19") |
+    district("IND.28.17") |
+    district("Chandigarh")  
+)
+JANGALA_PJ = province("IND.28") - (TRIGARTA_PJ | PUADH)
+JANGALA_RJ = (
+    district("Bikaner") |
+    district("IND.29.11") |
+    district("IND.29.16") |
+    district("IND.29.15")
+)
+KURU_KSETRA_GREATER = KURU_KSETRA_GREATER_HARYANA | PUADH
+JANGALA = JANGALA_HARYANA | JANGALA_PJ | JANGALA_RJ
+
 SINDH_N = taluk("PAK.8.3.1") | taluk("8.3.2") | taluk("PAK.8.3.4")
 SINDH_SW = (
     taluk("PAK.8.2.5")
@@ -1001,6 +1045,7 @@ SEA_MAINLAND = (
     SIAM | BURMA | LAOS | KHMER | CHAM | SIAM_BURMA_INTERM | KAREN | TIBET_BURMA_INTERM
 )
 SEA = SEA_MARITIME | SEA_MAINLAND
+SEA_GREATER = SEA | TIBET | NEI_HIM
 INDOSPHERE = SUBCONTINENT | CENTRAL_ASIA | TARIM | TIBET | SEA | HIMALAYAN
 JAMBUDVIPA = SUBCONTINENT_PROPER - SIMHALA
 NORTH_INDIA = (
