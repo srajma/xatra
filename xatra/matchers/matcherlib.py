@@ -38,8 +38,7 @@ TERAI_HP = (
 TERAI_UK_W = district("IND.35.5")
 TERAI_UK_ROORKEE = district("IND.35.7")
 TERAI_UK_E = district("IND.35.8") | district("IND.35.12")
-TERAI_UK = (TERAI_UK_W | TERAI_UK_ROORKEE | TERAI_UK_E)
-
+TERAI_UK = TERAI_UK_W | TERAI_UK_ROORKEE | TERAI_UK_E
 TERAI_NPL_FW = taluk("NPL.3.1.4") | taluk("NPL.3.2.5")
 TERAI_NPL_MW = taluk("NPL.4.1.1") | taluk("NPL.4.1.2")
 TERAI_NPL_W = taluk("NPL.5.3.3") | taluk("NPL.5.3.6") | taluk("NPL.5.3.4")  # sakya
@@ -60,12 +59,19 @@ TERAI_NPL_E = (
     | taluk("NPL.2.2.2")
 )
 TERAI_NPL = TERAI_NPL_FW | TERAI_NPL_MW | TERAI_NPL_W | TERAI_NPL_C | TERAI_NPL_E
-TERAI = TERAI_HP | TERAI_UK | TERAI_NPL
+TERAI_BENGAL = (
+    district("Darjiling")
+    | district("Jalpaiguri")
+    | district("Alipurduar")
+    | district("KochBihar")
+)
+BENGAL_HIM = Matcher.__false__()
+TERAI = TERAI_HP | TERAI_UK | TERAI_NPL | TERAI_BENGAL
 HP_HIM = (province("HimachalPradesh") | CHINESE_CLAIMS_HP) - TERAI_HP
 UK_HIM = (province("Uttarakhand") | CHINESE_CLAIMS_UK) - TERAI_UK
 NPL_HIM = country("Nepal") - TERAI_NPL
 LADAKH = (
-    district("Leh(Ladakh)") | district("Kargil") | country("Z03") | country("Z08")
+    district("Z01.14.13") | district("Kargil") | country("Z03") | country("Z08")
 )  # Aksai Chin main part | Aksai Chin Southern bit
 KASHMIR_MISC = (
     district("Z01.14.10")
@@ -82,12 +88,6 @@ KASHMIR_TBC = province("Z06.1")  # POK
 KASHMIR = KASHMIR_PROPER | KASHMIR_MISC | KASHMIR_TBC
 DARADA = province("Gilgit-Baltistan")
 KHYBER_HIM = district("Malakand") | district("Hazara")
-BENGAL_HIM = (
-    district("Darjiling")
-    | district("Jalpaiguri")
-    | district("Alipurduar")
-    | district("KochBihar")
-)
 ASSAM_HIM = (
     district("IND.4.4")
     | district("IND.4.10")
@@ -304,19 +304,15 @@ KURU_JANGALA = (
     | district("Palwal")
     | district("Mewat")
 )
-KURU_KSETRA_GREATER_HARYANA = (
-    KURU_KSETRA |
-    district("IND.12.15") |
-    district("IND.12.1")
-)
+KURU_KSETRA_GREATER_HARYANA = KURU_KSETRA | district("IND.12.15") | district("IND.12.1")
 JANGALA_HARYANA = (
-    KURU_JANGALA |
-    district("IND.12.17") |
-    district("IND.12.12") |
-    district("IND.12.2") |
-    district("IND.12.6") |
-    district("IND.12.4") |
-    district("IND.12.19") 
+    KURU_JANGALA
+    | district("IND.12.17")
+    | district("IND.12.12")
+    | district("IND.12.2")
+    | district("IND.12.6")
+    | district("IND.12.4")
+    | district("IND.12.19")
 )
 KURU = KURU_PROPER | KURU_JANGALA | KURU_KSETRA
 PANCALA_S = (
@@ -370,8 +366,8 @@ KOSALA = (
     | district("Sultanpur")
     | district("Ghazipur")
 )
-SAKYA = TERAI_NPL_W # | taluk("NPL.1.3.2")
-JANAKPUR = TERAI_NPL_C # - taluk("NPL.1.3.2")
+SAKYA = TERAI_NPL_W  # | taluk("NPL.1.3.2")
+JANAKPUR = TERAI_NPL_C  # - taluk("NPL.1.3.2")
 MALLA = (
     district("Maharajganj")
     | district("Kushinagar")
@@ -564,26 +560,26 @@ TRIGARTA_PJ = (
     | district("IND.28.21")
 )
 TRIGARTA_HP = (
-    district("IND.13.4") |
-    district("IND.13.12") |
-    district("IND.13.1") |
-    district("IND.13.3")
+    district("IND.13.4")
+    | district("IND.13.12")
+    | district("IND.13.1")
+    | district("IND.13.3")
 )
 TRIGARTA = TRIGARTA_PJ | TRIGARTA_HP
 KUNINDA = (TERAI_UK_W | TERAI_HP) - TRIGARTA_HP
 PUADH = (
-    district("IND.28.18") |
-    district("IND.28.5") |
-    district("IND.28.19") |
-    district("IND.28.17") |
-    district("Chandigarh")  
+    district("IND.28.18")
+    | district("IND.28.5")
+    | district("IND.28.19")
+    | district("IND.28.17")
+    | district("Chandigarh")
 )
 JANGALA_PJ = province("IND.28") - (TRIGARTA_PJ | PUADH)
 JANGALA_RJ = (
-    district("Bikaner") |
-    district("IND.29.11") |
-    district("IND.29.16") |
-    district("IND.29.15")
+    district("Bikaner")
+    | district("IND.29.11")
+    | district("IND.29.16")
+    | district("IND.29.15")
 )
 KURU_KSETRA_GREATER = KURU_KSETRA_GREATER_HARYANA | PUADH
 JANGALA = JANGALA_HARYANA | JANGALA_PJ | JANGALA_RJ
