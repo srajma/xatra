@@ -146,4 +146,11 @@ def test_loka_filter():
     print(boo)
     assert not boo
 
-test_loka_filter()
+def test_loka_repr():
+    x=DataItem(type="feature", id="IND", level=2)
+    y=DataItem(type="feature", id="IND", level=2)
+    print(x == y)
+    print(x)
+    print(Loka.INDOSPHERE.items)
+
+test_loka_repr()

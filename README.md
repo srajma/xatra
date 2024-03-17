@@ -145,6 +145,7 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] make flag name appear at center of geometry
 - [ ] handling for making cities appear on map (`data.Pura`)
 - [ ] add more stuff to Terai
+- [ ] fix the double display
 - [x] rename trigarta
 - [x] add tibet to SEA
 - [x] fix tooltips on plot_flags_as_layers

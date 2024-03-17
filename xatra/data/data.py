@@ -184,7 +184,9 @@ class DataItem:
             gdf["GID_max"] = gdf.apply(GID_max, axis=1)
             if tolerance is not None:
                 if verbose:
-                    print(f"DataItem: Simplifying geometry with TopoJSON with tolerance {tolerance}")
+                    print(
+                        f"DataItem: Simplifying geometry with TopoJSON with tolerance {tolerance}"
+                    )
                 # gdf.geometry = gdf.geometry.simplify(tolerance, preserve_topology=True)
                 # ^ we need a topology-aware thing to avoid gaps and overlaps
                 topo = tp.Topology(gdf, prequantize=False)
@@ -221,6 +223,12 @@ class DataItem:
 
     def __add__(self, other):
         return DataCollection(self, other)
+
+    def __hash__(self):
+        return hash(self.filename)
+    
+    def __eq__(self, other):
+        return self.filename == other.filename
 
 
 class DataCollection:
