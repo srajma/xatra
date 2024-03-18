@@ -154,6 +154,7 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] Loading all the stuff is really inefficient, fix that
 - [x] make legend options do something
 - [x] make flag name appear at center of geometry
+- [ ] Fix `plot_flags()` (which plots the merged geometry for each flag instead of plotting each district and colouring them to look the same)
 - [ ] handling for making cities appear on map (`data.Pura`)
 - [x] add more stuff to Terai
 - [x] fix the double display
