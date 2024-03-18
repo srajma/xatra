@@ -28,6 +28,8 @@ Note: view this documentation,
  - through the project website: [srajma.github.io/xatra](https://srajma.github.io/xatra/) to see the visualizations properly
  - through Github: [github.com/srajma/xatra](https://github.com/srajma/xatra) to see the code
 
+{:toc}
+
 ## Documentation
 
 Key ideas:
