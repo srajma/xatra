@@ -28,6 +28,13 @@ Note: view this documentation,
  - through the project website: [srajma.github.io/xatra](https://srajma.github.io/xatra/) to see the visualizations properly
  - through Github: [github.com/srajma/xatra](https://github.com/srajma/xatra) to see the code
 
+**Table of contents:**
+- [Documentation](#documentation)
+  - [Appendix: Optional arguments](#appendix-optional-arguments)
+- [TODO](#todo) (if you want to contribute!)
+  - [Technical debt](#technical-debt)
+  - [Polls](#polls)
+
 ## Documentation
 
 Key ideas:
@@ -77,7 +84,7 @@ sample.plot(path_out="examples/sample.html")
   - [`xatra.maps`](xatra/maps/) is otherwise a directory of useful and interesting example Maps. This is where I would like PRs, more than anywhere else.
   - [`xatra.matchers.Matcher`](xatra/matchers/Matcher.py) is the `xatra.Matcher` class, and [`xatra.matchers.matcherlib`](xatra/matchers/matcherlib.py) is a collection of `matcher` functions you can use in building your own Maps.
 
-## Appendix: optional arguments
+### Appendix: optional arguments
 
 Optional arguments can be specified either while initiazing a `xatra.FlagMap` object or to `plot()` (which overrides the optional arguments set during initialization).
 
