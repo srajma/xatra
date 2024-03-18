@@ -1,4 +1,15 @@
 # Xatra
+
+**Table of contents:**
+- [Quick start](#quick-start)
+- [Documentation](#documentation)
+  - [Appendix: Optional arguments](#appendix-optional-arguments)
+- [TODO](#todo) (if you want to contribute!)
+  - [Technical debt](#technical-debt)
+  - [Polls](#polls)
+
+## Quick start
+
 Xatra (pronounced _kṣatra_), a tool for making historical maps -- the data I have is currently focused on India, but I welcome expansions to the library. Installation:
 
 ```console
@@ -27,13 +38,6 @@ The outputs are in
 Note: view this documentation,
  - through the project website: [srajma.github.io/xatra](https://srajma.github.io/xatra/) to see the visualizations properly
  - through Github: [github.com/srajma/xatra](https://github.com/srajma/xatra) to see the code
-
-**Table of contents:**
-- [Documentation](#documentation)
-  - [Appendix: Optional arguments](#appendix-optional-arguments)
-- [TODO](#todo) (if you want to contribute!)
-  - [Technical debt](#technical-debt)
-  - [Polls](#polls)
 
 ## Documentation
 
