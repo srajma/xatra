@@ -1,4 +1,15 @@
 # Xatra
+
+**Table of contents:**
+- [Quick start](#quick-start)
+- [Documentation](#documentation)
+  - [Appendix: Optional arguments](#appendix-optional-arguments)
+- [TODO](#todo) (if you want to contribute!)
+  - [Technical debt](#technical-debt)
+  - [Polls](#polls)
+
+## Quick start
+
 Xatra (pronounced _kṣatra_), a tool for making historical maps -- the data I have is currently focused on India, but I welcome expansions to the library. Installation:
 
 ```console
@@ -77,7 +88,7 @@ sample.plot(path_out="examples/sample.html")
   - [`xatra.maps`](xatra/maps/) is otherwise a directory of useful and interesting example Maps. This is where I would like PRs, more than anywhere else.
   - [`xatra.matchers.Matcher`](xatra/matchers/Matcher.py) is the `xatra.Matcher` class, and [`xatra.matchers.matcherlib`](xatra/matchers/matcherlib.py) is a collection of `matcher` functions you can use in building your own Maps.
 
-## Appendix: optional arguments
+### Appendix: optional arguments
 
 Optional arguments can be specified either while initiazing a `xatra.FlagMap` object or to `plot()` (which overrides the optional arguments set during initialization).
 
@@ -143,6 +154,7 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] Loading all the stuff is really inefficient, fix that
 - [x] make legend options do something
 - [x] make flag name appear at center of geometry
+- [ ] Fix `plot_flags()` (which plots the merged geometry for each flag instead of plotting each district and colouring them to look the same)
 - [ ] handling for making cities appear on map (`data.Pura`)
 - [ ] option to drop features with no flags
 - [x] add more stuff to Terai
