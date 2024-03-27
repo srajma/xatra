@@ -2,7 +2,6 @@ import folium
 import folium.plugins
 import matplotlib as mpl
 import geopandas as gpd
-from abc import ABC, abstractmethod
 from xatra.utilities import *
 from xatra.data import DataCollection
 
@@ -37,6 +36,13 @@ class Flag:
         self.matcher = matcher
         self.period = period
         self.ref = ref
+
+        def __hash__(self):
+            return hash(self.name)
+
+        def __eq__(self, other):
+            return self.name == other.name
+
 
 class FlagMap:
     """A Map is defined by a list of Flags, some DataCollections, and optionally some custom colors.
@@ -92,6 +98,9 @@ class FlagMap:
 
     Methods:
         plot: Plot with Folium.
+        plot_flags: Alternative version of plot that merges the features by flag name and plots those
+            instead of plotting each district. BROKEN.
+        plot_flags_as_layers: Plot each flag as a separate layer, ignoring year/period, with Folium.
         plot_raw: Plot raw data with Folium.
         plot_mpl: Plot with Matplotlib.
         _load: Load loka and varuna, if not loaded already.
@@ -383,10 +392,14 @@ class FlagMap:
         legend_html += "</div>"
         return folium.Element(legend_html)
 
-    def _draw_flag_label(self, flag_name, year="static"):
+    def _draw_flag_label(self, flag_name, year="static", flag_features=None):
+        """Draw flag label. You can either supply flag_features (e.g. if it has already been calculated),
+        or it will be calculated.
+        """
         if self.verbose:
             print(f"Map: Adding flag name {flag_name} to map")
-        flag_features = self._flag_features(flag_name, year)
+        if flag_features is None:
+            flag_features = self._flag_features(flag_name, year)
         if flag_features.empty:
             return None
         flag_center = [
@@ -530,6 +543,92 @@ class FlagMap:
             print(f"Map: Done")
         if return_map:
             return m
+
+    # def plot_flags(self, path_out=None, return_map=False, **kwargs):
+    #    """BROKEN"""
+    #     """Alternative version of plot that merges the features by flag name and plots those
+    #     instead of plotting each district. As before, each year is a separate layer.
+
+    #     Args:
+    #         path_out (str, optional): To save the produced HTML somewhere. Defaults to None.
+    #         return_map (bool, optional): Return the map object? Defaults to False.
+    #         **kwargs: Allow user to update options while plotting.
+
+    #     Returns:
+    #         Folium.Map | None: Folium Map Object if return_map is True, else None
+    #     """
+    #     if self.verbose:
+    #         print(f"Map: Plotting flags")
+    #     self.options.update(kwargs)
+    #     for k, v in self.options.items():  # set options as attributes
+    #         setattr(self, k, v)
+    #     self._calc()
+    #     m = folium.Map(
+    #         location=self.location,
+    #         tiles=None,
+    #         zoom_start=self.zoom_start,
+    #         control_scale=True,
+    #     )
+    #     tile_layers = []
+    #     for base_map, show in self.base_maps.items():
+    #         layer = folium.TileLayer(base_map, overlay=True, show=show)
+    #         tile_layers.append(layer)
+    #         m.add_child(layer)
+    #     for year in self.breakpoints:
+    #         if self.verbose:
+    #             print(f"Map: Adding layer for year {year}")
+    #         layer = folium.FeatureGroup(name=str(year), show=True)
+    #         for flag in self.unique_flag_names:
+    #             if self.verbose:
+    #                 print(f"Map: Adding features for flag {flag} for year {year}")
+    #             flag_features = self._flag_features(flag, year)
+    #             if flag_features.crs is None:
+    #                 flag_features.set_crs(self.loka.crs, inplace=True)
+    #             if not flag_features.empty:
+    #                 # use unary_union to merge the geometies and construct a new GeoDataFrame
+    #                 # with columns "geometry" and "flag_name" and a single row
+    #                 layer.add_child(
+    #                     folium.GeoJson(
+    #                         data=gpd.GeoDataFrame(
+    #                             {
+    #                                 "geometry": [flag_features.geometry.unary_union],
+    #                                 "flag_name": [flag],
+    #                             },
+    #                             crs=self.loka.crs,
+    #                         ),
+    #                         style_function=lambda feature: self._color(
+    #                             [feature["properties"]["flag_name"]]
+    #                         ),
+    #                         tooltip=folium.GeoJsonTooltip(
+    #                             fields=["flag_name"], aliases=["Flag"]
+    #                         ),
+    #                     )
+    #                 )
+    #                 # actually, that doesn't work, because we need to set a CRS to transform geometries:
+    #                 # layer.add_child(folium.GeoJson(data=gpd.GeoDataFrame({"geometry": [flag_features.geometry.unary_union], "flag_name": [flag]}).to_crs(self.loka.crs), style_function=lambda feature: self._color([feature["properties"]["flag_name"]]), tooltip=folium.GeoJsonTooltip(fields=["flag_name"], aliases=["Flag"])))
+    #                 layer.add_child(self._draw_flag_label(flag, year, flag_features))
+    #         m.add_child(layer)
+            
+    #     if self.varuna is not None:
+    #         m.add_child(self._draw_varuna())
+    #     if len(self.base_maps) > 1:
+    #         m.add_child(
+    #             folium.plugins.GroupedLayerControl(
+    #                 groups={"Base maps": tile_layers},
+    #                 autoZIndex=False,
+    #                 exclusive_groups=False,
+    #             )
+    #         )
+    #     m.add_child(folium.LayerControl())
+    #     m.get_root().html.add_child(self._draw_legend())
+    #     if path_out:
+    #         if self.verbose:
+    #             print(f"Map: Saving to {path_out}")
+    #         m.save(path_out)
+    #         if self.verbose:
+    #             print(f"Map: Done")
+    #     if return_map:
+    #         return m
 
     def plot_flags_as_layers(self, path_out=None, return_map=False, **kwargs):
         """Plot each flag as a separate layer, ignoring year/period.

@@ -32,5 +32,6 @@ def test_matchers():
     
     mat = Matcher.taluks("PAK.7.7.1", "PAK.7.5.3_1")
     print(mat(series))
+    mat2 = Matcher.taluks("PAK.7.7.1", "PAK.7.5.3_1")
     
 test_matchers()
