@@ -12,9 +12,21 @@ nations.SEA.plot(path_out="examples/nations/SEA.html", verbose=True)
 # %% akhand bharat
 nations.INDOSPHERE.plot(
     path_out="examples/nations/INDOSPHERE.html",
-    font_size="7.5pt",
+    css={
+        "font_size": "7.5pt",
+    },
     drop_orphans=True,
     verbose=True,
+)
+# %% alternative plot method: india
+nations.INDIC.plot_flags(path_out="examples/nations/INDIC_flags.html", verbose=True)
+# %% alternative plot method: silk road
+nations.SILKRD.plot_flags(path_out="examples/nations/SILKRD_flags.html", verbose=True)
+# %% alternative plot method: southeast asia
+nations.SEA.plot_flags(path_out="examples/nations/SEA_flags.html", verbose=True)
+# %% alternative plot method: indosphere
+nations.INDOSPHERE.plot_flags(
+    path_out="examples/nations/INDOSPHERE_flags.html", verbose=True
 )
 # %% graphical aid for matchers: india
 nations.INDIC.plot_flags_as_layers(
@@ -55,79 +67,4 @@ nations.WORLD.plot_raw(
     custom_html="Raw data visualization: World",
     verbose=True,
 )
-# %% for polling
-
-# 0: control
-nations.INDIC.plot(
-    path_out="examples/polls/0_control.html",
-    base_map="OpenStreetMap",
-    opacity=0.5,
-    font_size="10pt",
-    font_family="'Helvetica Neue', Arial, Helvetica, sans-serif",
-    verbose=True,
-)
-
-# 1: CartoDB positron (with increased opacity because of the thick labels in the background)
-nations.INDIC.plot(
-    path_out="examples/polls/1_basemap.html",
-    base_map="CartoDB Positron",
-    opacity=0.75,
-    font_size="10pt",
-    font_family="'Helvetica Neue', Arial, Helvetica, sans-serif",
-    verbose=True,
-)
-
-# 2: full opacity
-
-nations.INDIC.plot(
-    path_out="examples/polls/2_opacity.html",
-    base_map="OpenStreetMap",
-    opacity=1.0,
-    font_size="10pt",
-    font_family="'Helvetica Neue', Arial, Helvetica, sans-serif",
-    verbose=True,
-)
-
-# 3: smaller font size
-
-nations.INDIC.plot(
-    path_out="examples/polls/3_fontsize.html",
-    base_map="OpenStreetMap",
-    opacity=0.5,
-    font_size="7.5pt",
-    font_family="'Helvetica Neue', Arial, Helvetica, sans-serif",
-    verbose=True,
-)
-
-
-# 4: font family: system theme
-nations.INDIC.plot(
-    path_out="examples/polls/4_font_system.html",
-    base_map="OpenStreetMap",
-    opacity=0.5,
-    font_size="10pt",
-    font_family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-    verbose=True,
-)
-
-# 5: font family: "Gabriola", with larger font size because Gabriola is tiny
-nations.INDIC.plot(
-    path_out="examples/polls/5_font_gabriola.html",
-    base_map="OpenStreetMap",
-    opacity=0.5,
-    font_size="12pt",
-    font_family="Gabriola",
-    verbose=True,
-)
-
-# 6: font family: "Papyrus", and smaller font size because Papyrus is huge
-nations.INDIC.plot(
-    path_out="examples/polls/6_font_papyrus.html",
-    base_map="OpenStreetMap",
-    opacity=0.5,
-    font_size="7.5pt",
-    font_family="Papyrus",
-    verbose=True,
-)
-
 # %%

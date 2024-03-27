@@ -191,6 +191,8 @@ class DataItem:
                 # ^ we need a topology-aware thing to avoid gaps and overlaps
                 topo = tp.Topology(gdf, prequantize=False)
                 gdf = topo.toposimplify(tolerance).to_gdf()
+                if self.type == "feature" or self.type == "break":
+                    gdf['geometry'] = gdf['geometry'].buffer(0) # fix invalid geometries
                 if format == "gpd":
                     return gdf
                 else:

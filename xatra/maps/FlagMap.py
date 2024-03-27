@@ -363,18 +363,28 @@ class FlagMap:
             )
         ]
 
-    def _label(self, flag_name, year="static", flag_features=None):
+    def _flag_gdf(self, flag_name, year="static", flag_features=None):
+        """Get features for flag_name for year, dissolved."""
+        if self.verbose:
+            print(
+                f"Map: Getting dissolved features for flag {flag_name} for year {year}"
+            )
+        if flag_features is None:
+            flag_features = self._flag_features(flag_name, year)
+        return flag_features.dissolve()
+
+    def _label(self, flag_name, year="static", flag_gdf=None):
         """Calculate flag label. You can either supply flag_features (e.g. if it has already been calculated),
         or it will be calculated."""
         if self.verbose:
             print(f"Map: Calculating label for flag {flag_name} for year {year}")
-        if flag_features is None:
-            flag_features = self._flag_features(flag_name, year)
-        if flag_features.empty:
+        if flag_gdf is None:
+            flag_gdf = self._flag_gdf(flag_name, year)
+        if flag_gdf.empty:
             return None
         location = [
-            flag_features.geometry.centroid.y.mean(),
-            flag_features.geometry.centroid.x.mean(),
+            flag_gdf.geometry.centroid.y.values[0],
+            flag_gdf.geometry.centroid.x.values[0],
         ]
         label = {
             "label": flag_name,
@@ -396,7 +406,17 @@ class FlagMap:
             layer = folium.TileLayer(base_map, overlay=True, show=show)
             tile_layers.append(layer)
             m.add_child(layer)
-        return m, tile_layers
+
+        if len(tile_layers) > 0:
+            layer_control = folium.plugins.GroupedLayerControl(
+                groups={"Base maps": tile_layers},
+                autoZIndex=False,
+                exclusive_groups=False,
+            )
+        else:
+            layer_control = None
+
+        return m, layer_control
 
     def _draw_legend(self):
         if self.verbose:
@@ -448,7 +468,7 @@ class FlagMap:
             return self._draw_label(label)
         else:
             return None
-    
+
     def _draw_custom_labels(self):
         """Draw custom labels."""
         custom_layer = folium.FeatureGroup(name="Custom Labels", show=True)
@@ -484,6 +504,8 @@ class FlagMap:
             folium.FeatureGroup: Layer with rivers.
 
         """
+        if self.verbose:
+            print(f"Map: Adding Rivers")
         varuna = folium.FeatureGroup(name="Varuna", show=show)
         varuna.add_child(
             folium.GeoJson(
@@ -514,9 +536,10 @@ class FlagMap:
         self.options.update(kwargs)
         for k, v in self.options.items():  # set options as attributes
             setattr(self, k, v)
-
         self._calc()
-        m, tile_layers = self._draw_base_map()
+
+        m, tiles_control = self._draw_base_map()
+
         year_layers = []
         for year in self.breakpoints:
             if self.verbose:
@@ -529,21 +552,17 @@ class FlagMap:
                         layer.add_child(flag_marker)
             year_layers.append(layer)
             m.add_child(layer)
+
         if self.varuna is not None:
             m.add_child(self._draw_varuna())
+
         if self.custom_labels:
             m.add_child(self._draw_custom_labels())
+
         m.get_root().html.add_child(self._draw_legend())
         m.add_child(folium.LayerControl())
-        if len(self.base_maps) > 1:
-            m.add_child(
-                folium.plugins.GroupedLayerControl(
-                    groups={"Base maps": tile_layers},
-                    autoZIndex=False,
-                    exclusive_groups=False,
-                )
-            )
-            
+        if tiles_control is not None:
+            m.add_child(tiles_control)
         if len(self.breakpoints) > 1:
             m.add_child(
                 folium.plugins.GroupedLayerControl(
@@ -552,100 +571,81 @@ class FlagMap:
                     exclusive_groups=True,
                 )
             )
-        if self.verbose:
-            print(f"Map: Saving to {path_out}")
         if path_out:
+            if self.verbose:
+                print(f"Map: Saving to {path_out}")
             m.save(path_out)
         if self.verbose:
             print(f"Map: Done")
         if return_map:
             return m
 
-    # def plot_flags(self, path_out=None, return_map=False, **kwargs):
-    #    """BROKEN"""
-    #     """Alternative version of plot that merges the features by flag name and plots those
-    #     instead of plotting each district. As before, each year is a separate layer.
+    def plot_flags(self, path_out=None, return_map=False, **kwargs):
+        """Alternative version of plot that merges the features by flag name and plots those
+        instead of plotting each district. As before, each year is a separate layer.
 
-    #     Args:
-    #         path_out (str, optional): To save the produced HTML somewhere. Defaults to None.
-    #         return_map (bool, optional): Return the map object? Defaults to False.
-    #         **kwargs: Allow user to update options while plotting.
+        Args:
+            path_out (str, optional): To save the produced HTML somewhere. Defaults to None.
+            return_map (bool, optional): Return the map object? Defaults to False.
+            **kwargs: Allow user to update options while plotting.
 
-    #     Returns:
-    #         Folium.Map | None: Folium Map Object if return_map is True, else None
-    #     """
-    #     if self.verbose:
-    #         print(f"Map: Plotting flags")
-    #     self.options.update(kwargs)
-    #     for k, v in self.options.items():  # set options as attributes
-    #         setattr(self, k, v)
-    #     self._calc()
-    #     m = folium.Map(
-    #         location=self.location,
-    #         tiles=None,
-    #         zoom_start=self.zoom_start,
-    #         control_scale=True,
-    #     )
-    #     tile_layers = []
-    #     for base_map, show in self.base_maps.items():
-    #         layer = folium.TileLayer(base_map, overlay=True, show=show)
-    #         tile_layers.append(layer)
-    #         m.add_child(layer)
-    #     for year in self.breakpoints:
-    #         if self.verbose:
-    #             print(f"Map: Adding layer for year {year}")
-    #         layer = folium.FeatureGroup(name=str(year), show=True)
-    #         for flag in self.unique_flag_names:
-    #             if self.verbose:
-    #                 print(f"Map: Adding features for flag {flag} for year {year}")
-    #             flag_features = self._flag_features(flag, year)
-    #             if flag_features.crs is None:
-    #                 flag_features.set_crs(self.loka.crs, inplace=True)
-    #             if not flag_features.empty:
-    #                 # use unary_union to merge the geometies and construct a new GeoDataFrame
-    #                 # with columns "geometry" and "flag_name" and a single row
-    #                 layer.add_child(
-    #                     folium.GeoJson(
-    #                         data=gpd.GeoDataFrame(
-    #                             {
-    #                                 "geometry": [flag_features.geometry.unary_union],
-    #                                 "flag_name": [flag],
-    #                             },
-    #                             crs=self.loka.crs,
-    #                         ),
-    #                         style_function=lambda feature: self._color(
-    #                             [feature["properties"]["flag_name"]]
-    #                         ),
-    #                         tooltip=folium.GeoJsonTooltip(
-    #                             fields=["flag_name"], aliases=["Flag"]
-    #                         ),
-    #                     )
-    #                 )
-    #                 # actually, that doesn't work, because we need to set a CRS to transform geometries:
-    #                 # layer.add_child(folium.GeoJson(data=gpd.GeoDataFrame({"geometry": [flag_features.geometry.unary_union], "flag_name": [flag]}).to_crs(self.loka.crs), style_function=lambda feature: self._color([feature["properties"]["flag_name"]]), tooltip=folium.GeoJsonTooltip(fields=["flag_name"], aliases=["Flag"])))
-    #                 layer.add_child(self._draw_flag_label(flag, year, flag_features))
-    #         m.add_child(layer)
+        Returns:
+            Folium.Map | None: Folium Map Object if return_map is True, else None
+        """
+        if self.verbose:
+            print(f"Map: Plotting flags")
+        self.options.update(kwargs)
+        for k, v in self.options.items():
+            setattr(self, k, v)
+        self._calc()
 
-    #     if self.varuna is not None:
-    #         m.add_child(self._draw_varuna())
-    #     if len(self.base_maps) > 1:
-    #         m.add_child(
-    #             folium.plugins.GroupedLayerControl(
-    #                 groups={"Base maps": tile_layers},
-    #                 autoZIndex=False,
-    #                 exclusive_groups=False,
-    #             )
-    #         )
-    #     m.add_child(folium.LayerControl())
-    #     m.get_root().html.add_child(self._draw_legend())
-    #     if path_out:
-    #         if self.verbose:
-    #             print(f"Map: Saving to {path_out}")
-    #         m.save(path_out)
-    #         if self.verbose:
-    #             print(f"Map: Done")
-    #     if return_map:
-    #         return m
+        m, tiles_control = self._draw_base_map()
+        for year in self.breakpoints:
+            if self.verbose:
+                print(f"Map: Adding layer for year {year}")
+            layer = folium.FeatureGroup(name=str(year), show=True)
+            for flag_name in self.unique_flag_names:
+                if self.verbose:
+                    print(f"Map: Adding features for flag {flag_name} for year {year}")
+                flag_gdf = self._flag_gdf(flag_name, year)
+                if not flag_gdf.empty:
+                    print("COLOR IS: ", self.color_map[flag_name])
+                    layer.add_child(
+                        folium.GeoJson(
+                            data=flag_gdf,
+                            style_function=lambda feature, flag_name=flag_name: {
+                                "fillColor": self.color_map[flag_name],
+                                "color": self.color_map[flag_name],
+                                "weight": 0,
+                                "fillOpacity": self.opacity,
+                            },
+                            tooltip=folium.GeoJsonTooltip(
+                                fields=["flags_" + str(year)],
+                                aliases=["Flag"],
+                            ),
+                        ),
+                    )
+                    flag_marker = self._draw_flag_label(flag_name, year, flag_gdf)
+                    if flag_marker:
+                        layer.add_child(flag_marker)
+            m.add_child(layer)
+
+        if self.varuna is not None:
+            m.add_child(self._draw_varuna())
+        if self.custom_labels:
+            m.add_child(self._draw_custom_labels())
+        if tiles_control is not None:
+            m.add_child(tiles_control)
+        m.add_child(folium.LayerControl())
+        m.get_root().html.add_child(self._draw_legend())
+        if path_out:
+            if self.verbose:
+                print(f"Map: Saving to {path_out}")
+            m.save(path_out)
+            if self.verbose:
+                print(f"Map: Done")
+        if return_map:
+            return m
 
     def plot_flags_as_layers(self, path_out=None, return_map=False, **kwargs):
         """Plot each flag as a separate layer, ignoring year/period.
@@ -664,7 +664,7 @@ class FlagMap:
         for k, v in self.options.items():  # set options as attributes
             setattr(self, k, v)
         self._calc()
-        m, tile_layers = self._draw_base_map()
+        m, tiles_control = self._draw_base_map()
         for flag in self.unique_flag_names:
             if self.verbose:
                 print(f"Map: Adding layer for flag {flag}")
@@ -693,14 +693,8 @@ class FlagMap:
             m.add_child(self._draw_varuna())
         if self.custom_labels:
             m.add_child(self._draw_custom_labels())
-        if len(self.base_maps) > 1:
-            m.add_child(
-                folium.plugins.GroupedLayerControl(
-                    groups={"Base maps": tile_layers},
-                    autoZIndex=False,
-                    exclusive_groups=False,
-                )
-            )
+        if tiles_control is not None:
+            m.add_child(tiles_control)
         m.add_child(folium.LayerControl())
         m.get_root().html.add_child(self._draw_legend())
         if path_out:
