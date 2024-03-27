@@ -685,12 +685,14 @@ class FlagMap:
                         ),
                     )
                 )
-                flag_marker = self._draw_flag_label(flag, year)
+                flag_marker = self._draw_flag_label(flag, year, features)
                 if flag_marker:
                     layer.add_child(flag_marker)
             m.add_child(layer)
         if self.varuna is not None:
             m.add_child(self._draw_varuna())
+        if self.custom_labels:
+            m.add_child(self._draw_custom_labels())
         if len(self.base_maps) > 1:
             m.add_child(
                 folium.plugins.GroupedLayerControl(
