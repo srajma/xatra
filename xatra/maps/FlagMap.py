@@ -21,7 +21,7 @@ class Flag:
 
     """
 
-    def __init__(self, name, matcher, period=None, ref=None):
+    def __init__(self, name, matcher=None, period=None, ref=None):
         """Constructs a Flag.
 
         Args:
@@ -38,7 +38,7 @@ class Flag:
         self.ref = ref
 
         def __hash__(self):
-            return hash(self.name)
+            return hash(self.name, self.period)
 
         def __eq__(self, other):
             return self.name == other.name
@@ -58,43 +58,10 @@ class FlagMap:
             for each breakpoint year showing the matching flags within that period.
         unique_flag_names (List[str]): List of unique flag names for generating colour map.
         color_map (Dict[str, str]): Dict specifying the colour for each flag name.
-        options (Dict[str, any]): Dict with keys:
-            "custom_colors" (Dict[str, str]): custom colours for flags to override any calculated ones.
-            "color_segments" (int): Flags within this distance of each other in self.flags will be assigned
-                contrasting colours (unless forced otherwise in self.custom_colors). Defaults to 8.
-            "location" (List[float]): Initial position of Folium map. Defaults to calculated from loka.
-            "zoom_start" (int): Initial zoom of Folium map. Defaults to 5.
-            "color_legend" (bool)): to include a legend of colours? Defaults to True.
-            "custom_html" (str): Custom HTML to be added to the top of the legend, e.g. a title. Defaults to "".
-            "names_on_map" (bool)): show flag labels on the map? (tooltips will show on hover regardless). Defaults
-                to True.
-            "opacity" (float): Opacity of the flags. Defaults to 0.7.
-            text_outline_width (str): Width of the text outline. Defaults to None. Set either this
-                or text_outline_color to None to disable text outline. Generally should be like 0.1px.
-            text_outline_color (str): Color of the text outline. Defaults to '#FFFFFF'. Set either
-                text_outline_width or this to None to disable text outline.
-            "font_size" (str): Font size of the flag labels. Defaults to "10pt".
-            "base_maps" (Dict[str, bool]): Base maps to show. Those with value True will be shown by default,
-                others will be options in the Layer Control. Defaults to
-                {
-                    "OpenStreetMap" : True,
-                    "Esri.WorldImagery" : False,
-                    "OpenTopoMap" : False,
-                    "Esri.WorldPhysical" : False,
-                }
-                Stuff that
-                you can include in the keys (can also be {} to have no base map):
-                    "OpenStreetMap" (general all-rounder)
-                    "CartoDB.Positron" (like OSM but light and minimalistic)
-                    "CartoDB.PositronNoLabels" (like OSM but light and minimalistic)
-                    "USGS.USImageryTopo" (physical map: satellite view)
-                    "Esri.WorldImagery" (physical map: satellite view)
-                    "OpenTopoMap" (physical map: topographic)
-                    "Esri.WorldPhysical" (physical map: general)
-                    "Esri.OceanBasemap" (physical map: rivers network)
-                    See http://leaflet-extras.github.io/leaflet-providers/preview/ for a full list.
-            "tolerance" (float): Tolerance for simplifying geometries. Defaults to 0.01.
-            "verbose" (bool): Print progress? Defaults to True.
+        labels (List[Dict]): List of labels to add to the map, both calculated flag labels and
+            specified custom labels.
+        options (Dict[str, any]): See kwargs of __init__ for details. May be set either via
+            __init__() or plot().
 
     Methods:
         plot: Plot with Folium.
@@ -126,22 +93,37 @@ class FlagMap:
             custom_colors (Dict[str, str]): custom colours for flags to override any calculated ones.
             color_segments (int): Flags within this distance of each other in self.flags will be assigned
                 contrasting colours (unless forced otherwise in self.custom_colors). Defaults to 8.
+            labels_on_map (bool): show flag labels on the map at calculated locations? (tooltips will show
+                on hover regardless). Defaults to True.
+            custom_labels (List[Dict]): custom labels to add to map. E.g.
+                [
+                    {
+                        "label": "Persian Gulf", # set to key.name if not specified
+                        "period": (-1000, -900),
+                        "location": [29.9691899, 76.7260054],
+                        "css" : { # inherits from self.css for attributes not specified
+                            "font-size": "10pt",
+                            "transform" : "rotate(20deg)",
+                            "color" : "#000044",
+                        }
+                    }
+                ]
+            color_legend (bool): to include a legend of colours? Defaults to False.
             location (List[float]): Initial position of Folium map. Defaults to calculated from loka.
                 E.g. India: [20.5937, 78.9629]. Brahmavarta: [29.9691899, 76.7260054]. Meru: [39, 71.9610313].
             zoom_start (int): Initial zoom of Folium map. Defaults to 5.
-            color_legend (bool): to include a legend of colours? Defaults to False.
             custom_html (str): Custom HTML to be added to the top of the legend, e.g. a title. Defaults to "".
-            names_on_map (bool): show flag labels on the map? (tooltips will show on hover regardless). Defaults
-                to True.
-            opacity (float): Opacity of the flags. Defaults to 0.7.
-            text_outline_width (str): Width of the text outline. Defaults to None. Set either this
-                or text_outline_color to None to disable text outline. Generally should be like 0.1px.
-            text_outline_color (str): Color of the text outline. Defaults to '#FFFFFF'. Set either
-                text_outline_width or this to None to disable text outline.
-            font_size (str): Font size of the flag labels. Defaults to "10pt".
-            font_family (str): Font family of the flag labels. Defaults to system theme font, i.e.
-                "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif".
+            opacity (float): Opacity of the map. Defaults to 0.7.
+            css (Dict[str, str]): CSS for labels. Defaults to
+                {
+                    "font-size": "10pt",
+                    "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                    "font-weight": "bold",
+                    filter: "brightness(0.5)" # to make the text contrast with the map
+                    color: None, # will be set to the flag color
+                }
             tolerance (float): Tolerance for simplifying geometries. Defaults to 0.01.
+            drop_orphans (bool): Drop features with no flags? Defaults to False.
             "base_maps" (Dict[str, bool]): Base maps to show. Those with value True will be shown by default,
                 others will be options in the Layer Control. Defaults to
                 {
@@ -172,25 +154,28 @@ class FlagMap:
         self.options = {
             "custom_colors": {},
             "color_segments": 8,
+            "labels_on_map": True,
+            "custom_labels": [],
             "location": None,  # update this later after loading loka
             "zoom_start": 5,
-            "color_legend": False,
             "custom_html": "",
-            "names_on_map": True,
+            "color_legend": False,
             "opacity": 0.7,
-            "text_outline_width": None,
-            "text_outline_color": "#FFFFFF",
-            "font_size": "10pt",
-            "font_family": (
-                "-apple-system, BlinkMacSystemFont, 'Segoe UI', "
-                "Roboto, 'Helvetica Neue', Arial, sans-serif"
-            ),
+            "css": {
+                "font-size": "10pt",
+                "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                "font-weight": "bold",
+                "text-align": "center",
+                "filter": "brightness(0.5)",
+                "color": None,  # will be set to the flag color
+            },
             "base_maps": {
                 "OpenStreetMap": True,
                 "Esri.WorldImagery": False,
                 "OpenTopoMap": False,
                 "Esri.WorldPhysical": False,
             },
+            "drop_orphans": False,
             "tolerance": 0.01,
             "verbose": True,
         }
@@ -262,6 +247,13 @@ class FlagMap:
             return [flag for flag in self.flags if flag.matcher(row)]
 
         loka_flagged["flags"] = loka_flagged.apply(add_flags, axis=1)
+        if self.drop_orphans:
+            if self.verbose:
+                print(f"Map: Dropping orphans")
+            loka_flagged = loka_flagged[
+                loka_flagged["flags"].apply(lambda x: len(x) > 0)
+            ]
+
         self.loka_flagged = loka_flagged
 
     def _calc_loka_flagged_yearwise(self):
@@ -371,6 +363,41 @@ class FlagMap:
             )
         ]
 
+    def _label(self, flag_name, year="static", flag_features=None):
+        """Calculate flag label. You can either supply flag_features (e.g. if it has already been calculated),
+        or it will be calculated."""
+        if self.verbose:
+            print(f"Map: Calculating label for flag {flag_name} for year {year}")
+        if flag_features is None:
+            flag_features = self._flag_features(flag_name, year)
+        if flag_features.empty:
+            return None
+        location = [
+            flag_features.geometry.centroid.y.mean(),
+            flag_features.geometry.centroid.x.mean(),
+        ]
+        label = {
+            "label": flag_name,
+            "location": location,
+            "css": {"color": self.color_map[flag_name]},
+        }
+        return label
+
+    def _draw_base_map(self):
+        """Return base map and base map layers list."""
+        m = folium.Map(
+            location=self.location,
+            tiles=None,
+            zoom_start=self.zoom_start,
+            control_scale=True,
+        )
+        tile_layers = []
+        for base_map, show in self.base_maps.items():
+            layer = folium.TileLayer(base_map, overlay=True, show=show)
+            tile_layers.append(layer)
+            m.add_child(layer)
+        return m, tile_layers
+
     def _draw_legend(self):
         if self.verbose:
             print(f"Map: Calculating legend HTML")
@@ -392,45 +419,42 @@ class FlagMap:
         legend_html += "</div>"
         return folium.Element(legend_html)
 
+    def _draw_label(self, label):
+        """A label is a dictionary with the following keys:
+        - label: the text to display
+        - location: the location to display the label
+        - css: a dictionary of CSS attributes to apply to the label
+        """
+        if self.verbose:
+            print(f"Map: Adding custom label {label['label']} to map")
+        css = self.css.copy()
+        css.update(label.get("css", {}))
+        css_string = "; ".join([f"{k}: {v}" for k, v in css.items()])
+        return folium.Marker(
+            location=label["location"],
+            icon=folium.DivIcon(
+                icon_size=(150, 36),
+                icon_anchor=(75, 18),
+                html=(f'<div style="{css_string}">{label["label"]}</div>'),
+            ),
+        )
+
     def _draw_flag_label(self, flag_name, year="static", flag_features=None):
         """Draw flag label. You can either supply flag_features (e.g. if it has already been calculated),
         or it will be calculated.
         """
-        if self.verbose:
-            print(f"Map: Adding flag name {flag_name} to map")
-        if flag_features is None:
-            flag_features = self._flag_features(flag_name, year)
-        if flag_features.empty:
-            return None
-        flag_center = [
-            flag_features.geometry.centroid.y.mean(),
-            flag_features.geometry.centroid.x.mean(),
-        ]
-        text_color = mpl.colors.rgb2hex(
-            mpl.colors.to_rgba(self.color_map[flag_name], alpha=0.5)
-        )
-        if self.text_outline_width is not None and self.text_outline_color is not None:
-            text_outline = (
-                f"text-shadow: -{self.text_outline_width} -{self.text_outline_width} 0 {self.text_outline_color}, "
-                f"{self.text_outline_width} -{self.text_outline_width} 0 {self.text_outline_color}, "
-                f"-{self.text_outline_width} {self.text_outline_width} 0 {self.text_outline_color},"
-                f"{self.text_outline_width} {self.text_outline_width} 0 {self.text_outline_color}"
-            )
+        label = self._label(flag_name, year, flag_features)
+        if label:
+            return self._draw_label(label)
         else:
-            text_outline = ""
-        return folium.Marker(
-            location=flag_center,
-            icon=folium.DivIcon(
-                icon_size=(150, 36),
-                icon_anchor=(75, 18),
-                html=(
-                    f'<div style="font-size: {self.font_size}; '
-                    f"color: {text_color}; font-family: {self.font_family};"
-                    f"font-weight: bold; filter: brightness(0.5); "
-                    f'text-align: center; {text_outline}">{flag_name}</div>'
-                ),
-            ),
-        )
+            return None
+    
+    def _draw_custom_labels(self):
+        """Draw custom labels."""
+        custom_layer = folium.FeatureGroup(name="Custom Labels", show=True)
+        for label in self.custom_labels:
+            custom_layer.add_child(self._draw_label(label))
+        return custom_layer
 
     def _draw_loka(self, year="static"):
         """Draw loka.
@@ -492,23 +516,13 @@ class FlagMap:
             setattr(self, k, v)
 
         self._calc()
-        m = folium.Map(
-            location=self.location,
-            tiles=None,
-            zoom_start=self.zoom_start,
-            control_scale=True,
-        )
-        tile_layers = []
-        for base_map, show in self.base_maps.items():
-            layer = folium.TileLayer(base_map, overlay=True, show=show)
-            tile_layers.append(layer)
-            m.add_child(layer)
+        m, tile_layers = self._draw_base_map()
         year_layers = []
         for year in self.breakpoints:
             if self.verbose:
                 print(f"Map: Adding layer for year {year}")
             layer = self._draw_loka(year)
-            if self.names_on_map:
+            if self.labels_on_map:
                 for flag in self.unique_flag_names:
                     flag_marker = self._draw_flag_label(flag, year)
                     if flag_marker:
@@ -517,6 +531,8 @@ class FlagMap:
             m.add_child(layer)
         if self.varuna is not None:
             m.add_child(self._draw_varuna())
+        if self.custom_labels:
+            m.add_child(self._draw_custom_labels())
         m.get_root().html.add_child(self._draw_legend())
         m.add_child(folium.LayerControl())
         if len(self.base_maps) > 1:
@@ -527,6 +543,7 @@ class FlagMap:
                     exclusive_groups=False,
                 )
             )
+            
         if len(self.breakpoints) > 1:
             m.add_child(
                 folium.plugins.GroupedLayerControl(
@@ -608,7 +625,7 @@ class FlagMap:
     #                 # layer.add_child(folium.GeoJson(data=gpd.GeoDataFrame({"geometry": [flag_features.geometry.unary_union], "flag_name": [flag]}).to_crs(self.loka.crs), style_function=lambda feature: self._color([feature["properties"]["flag_name"]]), tooltip=folium.GeoJsonTooltip(fields=["flag_name"], aliases=["Flag"])))
     #                 layer.add_child(self._draw_flag_label(flag, year, flag_features))
     #         m.add_child(layer)
-            
+
     #     if self.varuna is not None:
     #         m.add_child(self._draw_varuna())
     #     if len(self.base_maps) > 1:
@@ -647,17 +664,7 @@ class FlagMap:
         for k, v in self.options.items():  # set options as attributes
             setattr(self, k, v)
         self._calc()
-        m = folium.Map(
-            location=self.location,
-            tiles=None,
-            zoom_start=self.zoom_start,
-            control_scale=True,
-        )
-        tile_layers = []
-        for base_map, show in self.base_maps.items():
-            layer = folium.TileLayer(base_map, overlay=True, show=show)
-            tile_layers.append(layer)
-            m.add_child(layer)
+        m, tile_layers = self._draw_base_map()
         for flag in self.unique_flag_names:
             if self.verbose:
                 print(f"Map: Adding layer for flag {flag}")

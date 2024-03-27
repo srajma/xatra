@@ -4,13 +4,16 @@ import xatra.maps.nations as nations
 # %% nations of the Indian imperial core in antiquity
 nations.INDIC.plot(path_out="examples/nations/INDIC.html", verbose=True)
 # %% nations of the silk road
-nations.SILKRD.plot(path_out="examples/nations/SILKRD.html", verbose=True)
+nations.SILKRD.plot(
+    path_out="examples/nations/SILKRD.html", drop_orphans=True, verbose=True
+)
 # %% nations of southeast asia
 nations.SEA.plot(path_out="examples/nations/SEA.html", verbose=True)
 # %% akhand bharat
 nations.INDOSPHERE.plot(
     path_out="examples/nations/INDOSPHERE.html",
     font_size="7.5pt",
+    drop_orphans=True,
     verbose=True,
 )
 # %% graphical aid for matchers: india
