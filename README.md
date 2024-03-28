@@ -108,8 +108,9 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] make legend options do something
 - [x] make flag name appear at center of geometry
 - [x] Fix `plot_flags()` (which plots the merged geometry for each flag instead of plotting each district and colouring them to look the same) -- and use it to calculate flag centroids too
-- [ ] Fix `plot_flags()` to plot every intersection of flags so that more specific tooltips can be displayed.
+- [x] Fix `plot_flags()` to plot every intersection of flags so that more specific tooltips can be displayed.
 - [ ] handling for making cities appear on map (`data.Pura`)
+- [ ] change SEA to use level 1 features instead of level 2
 - [x] option to drop features with no flags
 - [x] custom_labels option
 - [x] add more stuff to Terai

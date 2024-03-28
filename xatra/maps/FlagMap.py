@@ -64,9 +64,11 @@ class FlagMap:
             __init__() or plot().
 
     Methods:
-        plot: Plot with Folium.
-        plot_flags: Alternative version of plot that merges the features by flag name and plots those
-            instead of plotting each district. BROKEN.
+        plot: Plot with Folium. Set optional argument mode to "flags", "flags_as_layers", or "raw"
+            to control between the following modes:
+        plot_features: Plot with Folium by adding flags to each feature and plotting it.
+        plot_flags: Plot with Folium by merging the features by flag name and plots those instead of 
+            plotting each district.
         plot_flags_as_layers: Plot each flag as a separate layer, ignoring year/period, with Folium.
         plot_raw: Plot raw data with Folium.
         plot_mpl: Plot with Matplotlib.
@@ -74,6 +76,7 @@ class FlagMap:
         _calc: Calculate breakpoints, color_map, loka_flagged, loka_flagged_yearwise.
             Only really called by plot.
         _flag_features: Get features for flag_name for year.
+        _flag_gdf: Get features for flag_name for year, dissolved.
         _color: For a list of matching flags, return the average of the colours specified by
             self.color_map for each.
 
@@ -266,13 +269,15 @@ class FlagMap:
             if self.verbose:
                 print(f"Map: Adding column flags_{year}")
             loka_flagged_yearwise["flags_" + str(year)] = loka_flagged_yearwise.apply(
-                lambda x: [
-                    flag.name
-                    for flag in x["flags"]
-                    if flag.period is None
-                    or year == "static"
-                    or (flag.period[0] <= year < flag.period[1])
-                ],
+                lambda x: tuple(
+                    [  # tuple because we will use it as a key later
+                        flag.name
+                        for flag in x["flags"]
+                        if flag.period is None
+                        or year == "static"
+                        or (flag.period[0] <= year < flag.period[1])
+                    ]
+                ),
                 axis=1,
             )
         # this is important for JSON serialization later in plot()
@@ -520,7 +525,7 @@ class FlagMap:
         )
         return varuna
 
-    def plot(self, path_out=None, return_map=False, **kwargs):
+    def plot_features(self, path_out=None, return_map=False, **kwargs):
         """Plot with Folium.
 
         Args:
@@ -604,30 +609,31 @@ class FlagMap:
             if self.verbose:
                 print(f"Map: Adding layer for year {year}")
             layer = folium.FeatureGroup(name=str(year), show=True)
-            for flag_name in self.unique_flag_names:
+            flag_names_plotted = []  # to avoid plotting the same flag twice
+            for flag_tuple in self.loka_flagged_yearwise["flags_" + str(year)].unique():
                 if self.verbose:
-                    print(f"Map: Adding features for flag {flag_name} for year {year}")
-                flag_gdf = self._flag_gdf(flag_name, year)
-                if not flag_gdf.empty:
-                    print("COLOR IS: ", self.color_map[flag_name])
-                    layer.add_child(
-                        folium.GeoJson(
-                            data=flag_gdf,
-                            style_function=lambda feature, flag_name=flag_name: {
-                                "fillColor": self.color_map[flag_name],
-                                "color": self.color_map[flag_name],
-                                "weight": 0,
-                                "fillOpacity": self.opacity,
-                            },
-                            tooltip=folium.GeoJsonTooltip(
-                                fields=["flags_" + str(year)],
-                                aliases=["Flag"],
-                            ),
+                    print(
+                        f"Map: Adding features for flag tuple {flag_tuple} for year {year}"
+                    )
+                features = self.loka_flagged_yearwise[
+                    self.loka_flagged_yearwise["flags_" + str(year)] == flag_tuple
+                ]
+                layer.add_child(
+                    folium.GeoJson(
+                        data=features.dissolve(),
+                        style_function=lambda feature, flag_tuple=flag_tuple: self._color(
+                            flag_tuple
+                        ),
+                        tooltip=folium.GeoJsonTooltip(
+                            fields=["flags_" + str(year)], aliases=["Flag"]
                         ),
                     )
-                    flag_marker = self._draw_flag_label(flag_name, year, flag_gdf)
-                    if flag_marker:
-                        layer.add_child(flag_marker)
+                )
+                for flag_name in flag_tuple:
+                    if flag_name not in flag_names_plotted:
+                        flag_marker = self._draw_flag_label(flag_name, year)
+                        if flag_marker:
+                            layer.add_child(flag_marker)
             m.add_child(layer)
 
         if self.varuna is not None:
@@ -779,3 +785,26 @@ class FlagMap:
                 print(f"Map: Done")
         if return_map:
             return m
+
+    def plot(self, mode="flags", path_out=None, return_map=False, **kwargs):
+        """
+        Plot.
+
+        Args:
+            mode (str, optional): One of "flags", "flags_as_layers", "raw". Defaults to "flags".
+            path_out (str, optional): To save the produced HTML somewhere. Defaults to None.
+            return_map (bool, optional): Return the map object? Defaults to False.
+            **kwargs: Allow user to update options while plotting.
+        """
+        if mode == "flags":
+            return self.plot_flags(path_out=path_out, return_map=return_map, **kwargs)
+        elif mode == "flags_as_layers":
+            return self.plot_flags_as_layers(
+                path_out=path_out, return_map=return_map, **kwargs
+            )
+        elif mode == "raw":
+            return self.plot_raw(path_out=path_out, return_map=return_map, **kwargs)
+        else:
+            return self.plot_features(
+                path_out=path_out, return_map=return_map, **kwargs
+            )

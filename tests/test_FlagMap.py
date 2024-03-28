@@ -23,7 +23,7 @@ def test_FlagMap():
         tolerance = 0.01,
         verbose=True
     )
-    fm.plot(path_out = "tests/examples/test_FlagMap.html")
+    fm.plot_features(path_out = "tests/examples/test_FlagMap.html")
 
 ExampleDynamic = FlagMap(
     flags=[
@@ -41,7 +41,7 @@ ExampleDynamic = FlagMap(
 )
 
 def test_ExampleDynamic():
-    ExampleDynamic.plot(path_out="tests/examples/dynamic.html")
+    ExampleDynamic.plot_features(path_out="tests/examples/dynamic.html")
 
 test_FlagMap()   
 

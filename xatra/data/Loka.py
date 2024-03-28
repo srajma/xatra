@@ -51,6 +51,19 @@ SEA_MAINLAND = DataCollection(
     DataItem(
         type="feature", id="IND", level=2
     ),  # Andaman and Nicobar, North-East India
+    DataItem(type="feature", id="MMR", level=1),
+    DataItem(type="feature", id="THA", level=1),
+    DataItem(type="feature", id="LAO", level=1),
+    DataItem(type="feature", id="KHM", level=1),
+    DataItem(type="feature", id="VNM", level=1),
+    filter=SEA_MAINLAND,
+)
+"""Mainland Southeast Asia, LEVEL 1 FEATURES. Excludes North Vietnam and Kachin (in Burma)"""
+
+SEA_MAINLAND_2 = DataCollection(
+    DataItem(
+        type="feature", id="IND", level=2
+    ),  # Andaman and Nicobar, North-East India
     DataItem(type="feature", id="MMR", level=2),
     DataItem(type="feature", id="THA", level=2),
     DataItem(type="feature", id="LAO", level=2),
@@ -58,9 +71,19 @@ SEA_MAINLAND = DataCollection(
     DataItem(type="feature", id="VNM", level=2),
     filter=SEA_MAINLAND,
 )
-"""Mainland Southeast Asia. Excludes North Vietnam and Kachin (in Burma)"""
+"""Mainland Southeast Asia, LEVEL 2 FEATURES. Excludes North Vietnam and Kachin (in Burma)"""
 
 SEA_MARITIME = DataCollection(
+    DataItem(type="feature", id="MYS", level=1),
+    DataItem(type="feature", id="IDN", level=1),
+    DataItem(type="feature", id="BRN", level=1),
+    DataItem(type="feature", id="TLS", level=1),
+    DataItem(type="feature", id="SGP", level=1),
+    filter=SEA_MARITIME,
+)
+"""Maritime Southeast Asia, LEVEL 1 FEATURES."""
+
+SEA_MARITIME_2 = DataCollection(
     DataItem(type="feature", id="MYS", level=2),
     DataItem(type="feature", id="IDN", level=2),
     DataItem(type="feature", id="BRN", level=2),
@@ -68,7 +91,7 @@ SEA_MARITIME = DataCollection(
     DataItem(type="feature", id="SGP", level=1),
     filter=SEA_MARITIME,
 )
-"""Maritime Southeast Asia."""
+"""Maritime Southeast Asia, LEVEL 2 FEATURES."""
 
 TIBET = DataCollection(
     DataItem(type="feature", id="CHN", level=2),

@@ -149,7 +149,7 @@ TIBET_NEP = (
     | taluk("NPL.2.2.3")
     | taluk("NPL.2.2.1")
 )  # nepali-occupied tibet
-TIBET_AP = CHINESE_CLAIMS_AP  # chinese-occupied indian tibet :(
+TIBET_AP = CHINESE_CLAIMS_AP  # tibet under risk of chinese occupation
 TIBET_LAD = LADAKH  # tibet in its rightful home
 TIBET_SIK = province("Sikkim")  # tibet in its rightful home
 TIBET = TIBET_CN | TIBET_BHU | TIBET_NEP | TIBET_LAD | TIBET_AP | TIBET_SIK
