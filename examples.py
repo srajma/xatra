@@ -9,19 +9,19 @@ nations.INDIC.plot(
 )
 # %% nations of the silk road
 nations.SILKRD.plot(
-    mode="flags",
     path_out="examples/nations/SILKRD.html",
     drop_orphans=True,
     verbose=True,
 )
 # %% nations of southeast asia
-nations.SEA.plot(mode="flags", path_out="examples/nations/SEA.html", verbose=True)
+nations.SEA.plot(path_out="examples/nations/SEA.html", verbose=True)
 # %% akhand bharat
 nations.INDOSPHERE.plot(
-    mode="flags",
     path_out="examples/nations/INDOSPHERE.html",
     css={
-        "font-size": "7.5pt",
+        "flag_label": {
+            "font-size": "7.5pt",
+        }
     },
     drop_orphans=True,
     verbose=True,
@@ -40,7 +40,7 @@ nations.SEA.plot(
 )
 # %% graphical aid for matchers: indosphere
 nations.INDOSPHERE.plot(
-    mode = "flags_as_layers",
+    mode="flags_as_layers",
     path_out="examples/matchers/INDOSPHERE.html",
     verbose=True,
 )

@@ -4,7 +4,7 @@
 
 ## Quick start
 
-Xatra (pronounced _kṣatra_), a tool for making historical maps -- the data I have is currently focused on India, but I welcome expansions to the library. Installation:
+Xatra (pronounced _kṣatra_), a tool for making historical maps -- the data I have is currently focused on India (including Central and Southeast Asia), but I welcome expansions to the library. Installation:
 
 ```console
 pip install xatra
