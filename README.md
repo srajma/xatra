@@ -1,12 +1,6 @@
-# Xatra
-
-**Table of contents:**
 - [Quick start](#quick-start)
 - [Documentation](#documentation)
-  - [Appendix: Optional arguments](#appendix-optional-arguments)
 - [TODO](#todo) (if you want to contribute!)
-  - [Technical debt](#technical-debt)
-  - [Polls](#polls)
 
 ## Quick start
 
@@ -118,15 +112,3 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] rename trigarta
 - [x] add tibet to SEA
 - [x] fix tooltips on plot_flags_as_layers
-
-### polls
-
-Live versions of the designs being polled:
-
-* [Control](examples/polls/0_control.html)
-* [Poll 1: different basemap](examples/polls/1_basemap.html)
-* [Poll 2: opaque](examples/polls/2_opacity.html)
-* [Poll 3: smaller font size](examples/polls/3_fontsize.html)
-* [Poll 4: font family: system theme (i.e. Segoe for MS, Roboto for Android etc.)](examples/polls/4_font_system.html)
-* [Poll 5: font family: Gabriola](examples/polls/5_font_gabriola.html)
-* [Poll 6: font family: Papyrus](examples/polls/6_font_papyrus.html)

@@ -18,7 +18,7 @@ class DataItem:
     """Class that holds a single downloadable data item.
 
     Attributes:
-        type (str): "feature", "break" or "river"
+        type (str): "feature", "break", "river", "city"
         id (str): Depends on type:
             - for feature -- e.g. "IND"
             - for break -- e.g. "IND.20.20_1"
