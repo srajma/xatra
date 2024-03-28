@@ -93,7 +93,8 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
   - [x] "nations" -- classical nations of antiquity
   - [ ] north-west circa 322 BC (panini, alexandrian records, puranic etc.)
   - [ ] standard mainstream chronology, at least for some period (probably depends on better implementation for dynamic maps)
-  - [ ] early south-east asian colonies (probably depends on handling for cities)
+  - [x] early south-east asian colonies 
+    - [ ] Fix design!!
   - [ ] early sea trade routes
   - [ ] continents of the world, names of india
 - [x] add Suvarnabhumi and Tibet-adjacent lands to matchers.py
@@ -103,8 +104,8 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] make flag name appear at center of geometry
 - [x] Fix `plot_flags()` (which plots the merged geometry for each flag instead of plotting each district and colouring them to look the same) -- and use it to calculate flag centroids too
 - [x] Fix `plot_flags()` to plot every intersection of flags so that more specific tooltips can be displayed.
-- [ ] handling for making cities appear on map (`data.Pura`)
-- [ ] change SEA to use level 1 features instead of level 2
+- [x] handling for making cities appear on map (`data.Pura`)
+- [x] change SEA to use level 1 features instead of level 2
 - [x] option to drop features with no flags
 - [x] custom_labels option
 - [x] add more stuff to Terai

@@ -104,10 +104,16 @@ TIBET = DataCollection(
 SEA = DataCollection(
     SEA_MAINLAND,
     SEA_MARITIME,
+    filter=SEA,
+)
+"""Southeast Asia excluding Tibet. Excludes North Vietnam and Kachin (in Burma)."""
+
+SEA_GREATER = DataCollection(
+    SEA,
     TIBET,
     filter=SEA_GREATER,
 )
-"""Southeast Asia. Excludes North Vietnam and Kachin (in Burma)."""
+"""Southeast Asia including Tibet. Excludes North Vietnam and Kachin (in Burma)."""
 
 LEVANT = DataCollection(
     DataItem(type="feature", id="IRQ", level=2),
@@ -155,7 +161,7 @@ INDOSPHERE = DataCollection(
     IRANIAN_SUBCONTINENT,
     AFGHANISTAN,
     CHINESE_SUBCONTINENT,
-    SEA,
+    SEA_GREATER,
     filter=INDOSPHERE,
 )
 """Akhand Bharat"""

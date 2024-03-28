@@ -1,5 +1,6 @@
 # %%
 import xatra.maps.nations as nations
+import xatra.maps.early_suvarnabhumi as colonies
 
 # %% nations of the Indian imperial core in antiquity
 nations.INDIC.plot(
@@ -14,7 +15,7 @@ nations.SILKRD.plot(
     verbose=True,
 )
 # %% nations of southeast asia
-nations.SEA.plot(path_out="examples/nations/SEA.html", verbose=True)
+nations.SEA_GREATER.plot(path_out="examples/nations/SEA_GREATER.html", verbose=True)
 # %% akhand bharat
 nations.INDOSPHERE.plot(
     path_out="examples/nations/INDOSPHERE.html",
@@ -26,6 +27,11 @@ nations.INDOSPHERE.plot(
     drop_orphans=True,
     verbose=True,
 )
+# %% Early Suvarnabhumi
+colonies.EARLY_SUVARNABHUMI.plot(
+    path_out="examples/colonies/EARLY_SUVARNABHUMI.html",
+    verbose=True,
+)
 # %% graphical aid for matchers: india
 nations.INDIC.plot(
     mode="flags_as_layers", path_out="examples/matchers/INDIC.html", verbose=True
@@ -35,7 +41,7 @@ nations.SILKRD.plot(
     mode="flags_as_layers", path_out="examples/matchers/SILKRD.html", verbose=True
 )
 # %% graphical aid for matchers: southeast asia
-nations.SEA.plot(
+nations.SEA_GREATER.plot(
     mode="flags_as_layers", path_out="examples/matchers/SEA.html", verbose=True
 )
 # %% graphical aid for matchers: indosphere
@@ -59,7 +65,7 @@ nations.SILKRD.plot(
     verbose=True,
 )
 # %% raw data visualization: southeast asia
-nations.SEA.plot(
+nations.SEA_GREATER.plot(
     mode="raw",
     path_out="examples/rdviz/SEA.html",
     custom_html="Raw data visualization: Southeast Asia",

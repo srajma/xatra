@@ -48,31 +48,34 @@ class Label:
     
     Attributes:
         type (str): Type of label: "flag_label", "custom_label", "city".
-        label (str): Text of label
+        name (str): Text of label
         period (tuple[int|float, int|float] | None): tuple of start and end years, for dynamic Maps
         location (List[float]): Location of label
         css (Dict[str, str]): CSS for label
         css_bullet (Dict[str, str]): CSS for bullet, only for type "city"
+        ref (str | None): source for claim
     """
     
-    def __init__(self, type, label, location, period=None, css = {}, css_bullet = {}):
+    def __init__(self, type, name, location, period=None, css = {}, css_bullet = {}, ref = None):
         """Constructs a Label.
         
         Args:
             type (str): Type of label: "flag_label", "custom_label", "city".
-            label (str): Text of label
+            name (str): Text of label
             period (tuple[int|float, int|float], optional): tuple of start and end years, for dynamic Maps
             location (List[float]): Location of label
             css (Dict[str, str], optional): CSS for label
             css_bullet (Dict[str, str], optional): CSS for bullet, only for type "city"
+            ref (str, optional): source for claim
         """
         self.type = type
-        self.label = label
+        self.name = name
         self.period = period
         self.location = location
         self.css = css
         if self.type == "city":
             self.css_bullet = css_bullet
+        self.ref = ref
 
     css_default = {
         "flag_label": {
@@ -88,10 +91,10 @@ class Label:
             "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
             "font-weight": "normal",
             "text-align": "center",
-            "color": "#dddddd",
+            "color": "#666666",
         },
         "city": {
-            "font-size": "6pt",
+            "font-size": "10pt",
             "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
             "font-weight": "normal",
             "text-align": "left",
@@ -101,8 +104,8 @@ class Label:
             "content": " ",
             "display": "inline-block",
             "margin-right": "5px",
-            "height": "10px",
-            "width": "10px",
+            "height": "10pt",
+            "width": "10pt",
             "background-color": "#000000",
             "border-radius": "50%",
         },
@@ -165,7 +168,7 @@ class FlagMap:
                 [
                     Label(
                         type="custom_label", # or "flag_label", "city"
-                        label="Persian Gulf",
+                        name="Persian Gulf",
                         period=(-1000, -900), # optional
                         location=[29.9691899, 76.7260054],
                         css={
@@ -408,7 +411,7 @@ class FlagMap:
         Only really called by plot."""
         if not self._calculated:
             if self.verbose:
-                print(f"Map: Got up from being lazy, calculating properies now.")
+                print(f"Map: Got up from being lazy, finally got around to calculating properies.")
             self._load()
             self._calc_breakpoints()
             self._calc_loka_flagged()
@@ -464,7 +467,7 @@ class FlagMap:
         ]
         label = Label(
             type="flag_label",
-            label=flag_name,
+            name=flag_name,
             location=location,
             css={"color": self.color_map[flag_name]},
         )
@@ -523,7 +526,7 @@ class FlagMap:
 
     def _draw_label(self, label):
         if self.verbose:
-            print(f"Map: Adding custom label {label.label} to map")
+            print(f"Map: Adding custom label {label.name} to map")
         css = self.css[label.type].copy()
         css.update(label.css)
         css_string = "; ".join([f"{k}: {v}" for k, v in css.items()])
@@ -537,11 +540,11 @@ class FlagMap:
             return folium.Marker(
                 location=label.location,
                 icon=folium.DivIcon(
-                    icon_size=(150, 36),
+                    #icon_size=(150, 36),
                     html=(
                         f'<div style="{css_string}">'
                         f'<span style="{css_bullet_str}"></span>'
-                        f'{label.label}'
+                        f'{label.name}'
                         "</div>"
                     ),
                 ),
@@ -552,7 +555,7 @@ class FlagMap:
                 icon=folium.DivIcon(
                     icon_size=(150, 36),
                     icon_anchor=(75, 18),
-                    html=(f'<div style="{css_string}">{label.label}</div>'),
+                    html=(f'<div style="{css_string}">{label.name}</div>'),
                 ),
             )
 
@@ -734,11 +737,12 @@ class FlagMap:
                         ),
                     )
                 )
-                for flag_name in flag_tuple:
-                    if flag_name not in flag_names_plotted:
-                        flag_marker = self._draw_flag_label(flag_name, year)
-                        if flag_marker:
-                            layer.add_child(flag_marker)
+                if self.labels_on_map:
+                    for flag_name in flag_tuple:
+                        if flag_name not in flag_names_plotted:
+                            flag_marker = self._draw_flag_label(flag_name, year)
+                            if flag_marker:
+                                layer.add_child(flag_marker)
             custom_labels = self._draw_custom_labels(year)
             if custom_labels:
                 layer.add_child(custom_labels)
@@ -808,9 +812,10 @@ class FlagMap:
                         ),
                     )
                 )
-                flag_marker = self._draw_flag_label(flag, year)
-                if flag_marker:
-                    layer.add_child(flag_marker)
+                if self.labels_on_map:
+                    flag_marker = self._draw_flag_label(flag, year)
+                    if flag_marker:
+                        layer.add_child(flag_marker)
                 custom_labels = self._draw_custom_labels(year)
                 if custom_labels:
                     layer.add_child(custom_labels)
