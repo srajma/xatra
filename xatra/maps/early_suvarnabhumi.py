@@ -43,6 +43,12 @@ general_labels = [
         location=[0.0, 106.9],
         css={"transform": "rotate(-20deg)"},
     ),
+    Label(
+        type="custom_label",
+        name="Suvarṇabhūmi",
+        location=[6.053218, 107.823257],
+        css={"font-size": "18pt"}
+    )
 ]
 for label in general_labels:
     label.css |= css_general
