@@ -43,9 +43,10 @@ class Flag:
         def __eq__(self, other):
             return self.name == other.name
 
+
 class Label:
     """Label class.
-    
+
     Attributes:
         type (str): Type of label: "flag_label", "custom_label", "city".
         name (str): Text of label
@@ -55,10 +56,12 @@ class Label:
         css_bullet (Dict[str, str]): CSS for bullet, only for type "city"
         ref (str | None): source for claim
     """
-    
-    def __init__(self, type, name, location, period=None, css = None, css_bullet = None, ref = None):
+
+    def __init__(
+        self, type, name, location, period=None, css=None, css_bullet=None, ref=None
+    ):
         """Constructs a Label.
-        
+
         Args:
             type (str): Type of label: "flag_label", "custom_label", "city".
             name (str): Text of label
@@ -81,7 +84,7 @@ class Label:
         self.css = {} if css is None else css
         self.css_bullet = {} if css_bullet is None else css_bullet
         self.ref = ref
-    
+
     def __str__(self):
         if self.type == "city":
             return f"{self.name} at {self.location} ({self.type}) with CSS\n {self.css} and bullet CSS\n {self.css_bullet}"
@@ -112,7 +115,7 @@ class Label:
             "color": "#000000",
         },
         "city_bullet": {
-            #"content": "' '", # not needed since we're not using pseudo-elements
+            # "content": "' '", # not needed since we're not using pseudo-elements
             "display": "inline-block",
             "margin-right": "5px",
             "height": "5pt",
@@ -141,7 +144,7 @@ class FlagMap:
             __init__() or plot().
 
     Methods:
-        plot: Plot with Folium. Set optional argument mode to "features", "flags", "flags_as_layers", 
+        plot: Plot with Folium. Set optional argument mode to "features", "flags", "flags_as_layers",
             or "raw" to control between the following modes (default is "flags"):
         plot_features: Plot with Folium by adding flags to each feature and plotting it. You will
             also get the name of the feature you're hovering over in the tooltip, instead of just
@@ -190,7 +193,7 @@ class FlagMap:
                             "color": "#000044",
                         },
                     )
-                ]   
+                ]
                 Can include custom labels with type "custom_label", "city" or even "flag_label".
                 Defaults to [].
             color_legend (bool): to include a legend of colours? Defaults to False.
@@ -202,8 +205,23 @@ class FlagMap:
             css (Dict[str, Dict[str, str]]): CSS for labels. NOTE: Do NOT give conflicting CSS for the same
                 property, as dicts do not have order, and the behaviour would be unpredictable. Also always
                 use individual property names (e.g. "margin-left") instead of shorthands (e.g. "margin"),
-                this is important for a hack we use in _draw_label to align things correctly. 
+                this is important for a hack we use in _draw_label to align things correctly.
                 Defaults to xatra.Label.css_default.
+            css_legend (Dict[str, str]): CSS for legend. Defaults to {
+                "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                "position": "fixed",
+                "bottom": "50px",
+                "top": "50px",
+                "left": "50px",
+                "width": "300px",
+                "height": "150px",
+                "padding": "10px",
+                "background-color": "white",
+                "border": "2px solid grey",
+                "z-index": "9999",
+                "font-size": "10pt",
+                "overflow-y": "scroll",
+            }
             tolerance (float): Tolerance for simplifying geometries. Defaults to 0.01.
             drop_orphans (bool): Drop features with no flags? Defaults to False.
             "base_maps" (tuple(List[str], List[str])): Base maps to show. The first element is the maps shown by default;
@@ -241,9 +259,24 @@ class FlagMap:
             "color_legend": False,
             "opacity": 0.7,
             "css": Label.css_default,
+            "css_legend": {
+                "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                "position": "fixed",
+                "bottom": "50px",
+                "top": "50px",
+                "left": "50px",
+                "width": "300px",
+                "height": "150px",
+                "padding": "10px",
+                "background-color": "white",
+                "border": "2px solid grey",
+                "z-index": "9999",
+                "font-size": "10pt",
+                "overflow-y": "scroll",
+            },
             "base_maps": (
                 ["OpenStreetMap"],
-                ["Esri.WorldImagery", "OpenTopoMap", "Esri.WorldPhysical"]
+                ["Esri.WorldImagery", "OpenTopoMap", "Esri.WorldPhysical"],
             ),
             "drop_orphans": False,
             "tolerance": 0.01,
@@ -428,7 +461,9 @@ class FlagMap:
         Only really called by plot."""
         if not self._calculated:
             if self.verbose:
-                print(f"Map: Got up from being lazy, finally got around to calculating properies.")
+                print(
+                    f"Map: Got up from being lazy, finally got around to calculating properies."
+                )
             self._load()
             self._calc_breakpoints()
             self._calc_loka_flagged()
@@ -523,14 +558,8 @@ class FlagMap:
     def _draw_legend(self):
         if self.verbose:
             print(f"Map: Calculating legend HTML")
-        object_height = "400px" if self.color_legend else "150px"
-
-        legend_html = (
-            '<div style="position: fixed; bottom: 50px; top: 50px; left: 50px; '
-            f"width: 300px; height: {object_height}; padding: 10px; background-color: white; "
-            'border:2px solid grey; z-index:9999; font-size:14px; overflow-y: scroll;">'
-            + self.custom_html
-        )
+        css_string = css_str(self.css_legend)
+        legend_html = f'<div style="{css_string}">' + self.custom_html
         if self.color_legend:
             legend_html += "<br><br>"
             for flag, color in self.color_map.items():
@@ -546,23 +575,21 @@ class FlagMap:
             print(f"Map: Adding custom label {label.name} to map")
         css = self.css[label.type].copy()
         css.update(label.css)
-        css_string = "; ".join([f"{k}: {v}" for k, v in css.items()])
+        css_string = css_str(css)
         if label.type == "city":
             css_bullet = self.css["city_bullet"].copy()
             css_bullet.update(label.css_bullet)
-            css_bullet_str = "; ".join(
-                [f"{k}: {v}" for k, v in css_bullet.items()]
-            )
-            anchor_shift = bullet_pos(css, css_bullet)           
+            css_bullet_str = css_str(css_bullet)
+            anchor_shift = bullet_pos(css, css_bullet)
             return folium.Marker(
                 location=label.location,
                 icon=folium.DivIcon(
                     icon_size=(180, 36),
-                    icon_anchor=(anchor_shift,18),
+                    icon_anchor=(anchor_shift, 18),
                     html=(
                         f'<div style="{css_string}">'
                         f'<span style="{css_bullet_str}"></span>'
-                        f'{label.name}'
+                        f"{label.name}"
                         "</div>"
                     ),
                 ),
@@ -688,7 +715,7 @@ class FlagMap:
             m.add_child(self._draw_varuna())
 
         m.get_root().html.add_child(self._draw_legend())
-        
+
         m.add_child(folium.LayerControl())
         if tiles_control is not None:
             m.add_child(tiles_control)
@@ -729,7 +756,7 @@ class FlagMap:
         self._calc()
 
         m, tiles_control = self._draw_base_map()
-        
+
         year_layers = []
         for year in self.breakpoints:
             if self.verbose:
@@ -771,7 +798,7 @@ class FlagMap:
             m.add_child(self._draw_varuna())
 
         m.get_root().html.add_child(self._draw_legend())
-        
+
         m.add_child(folium.LayerControl())
         if tiles_control is not None:
             m.add_child(tiles_control)

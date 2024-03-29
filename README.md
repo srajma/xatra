@@ -14,13 +14,16 @@ For a quick start, see [examples.py](examples.py) e.g.
 
 ```python
 import xatra.maps.nations as nations
+import xatra.maps.early_suvarnabhumi as colonies
 
-# any custom options may be set either while initializing or in plot()
+# any optional parameters may be set either while initializing a 
+# FlagMap object or in plot()
 
 nations.INDIC.plot(path_out="examples/nations/INDIC.html") 
 nations.SILKRD.plot(path_out="examples/nations/SILKRD.html")
 nations.SEA.plot(path_out="examples/nations/SEA.html") 
 nations.INDOSPHERE.plot(path_out="examples/nations/INDOSPHERE.html")
+colonies.EARLY_SUVARNABHUMI.plot(path_out="examples/colonies/EARLY_SUVARNABHUMI.html")
 ```
 
 The outputs are in 
@@ -28,6 +31,7 @@ The outputs are in
 * [examples/nations/SILKRD.html](examples/nations/SILKRD.html)
 * [examples/nations/SEA.html](examples/nations/SEA.html)
 * [examples/nations/INDOSPHERE.html](examples/nations/INDOSPHERE.html).
+* [examples/colonies/EARLY_SUVARNABHUMI.html](examples/colonies/EARLY_SUVARNABHUMI.html)
 
 Note: view this documentation,
  - through the project website: [srajma.github.io/xatra](https://srajma.github.io/xatra/) to see the visualizations properly
@@ -94,7 +98,7 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
   - [ ] north-west circa 322 BC (panini, alexandrian records, puranic etc.)
   - [ ] standard mainstream chronology, at least for some period (probably depends on better implementation for dynamic maps)
   - [x] early south-east asian colonies 
-    - [ ] Fix design!!
+    - [x] Fix design!!
   - [ ] early sea trade routes
   - [ ] continents of the world, names of india
 - [x] add Suvarnabhumi and Tibet-adjacent lands to matchers.py

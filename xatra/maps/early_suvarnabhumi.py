@@ -6,6 +6,7 @@ from xatra.maps.FlagMap import Label, Flag, FlagMap
 from xatra.maps.nations import flags
 from xatra.matchers import *
 from xatra.data import Loka
+from xatra.utilities import css_str
 
 css_city1 = {"color": "black", "line-height": "1"}
 """Type 1: black squares, for cities mentioned in Indian literature."""
@@ -148,21 +149,39 @@ for label in cities2:
 
 all_labels = general_labels + cities1 + cities2
 
+css_city1_full = css_str(Label.css_default["city"] | css_city1)
+css_bullet1_full = css_str(Label.css_default["city_bullet"] | css_bullet1)
+css_city2_full = css_str(Label.css_default["city"] | css_city2)
+css_bullet2_full = css_str(Label.css_default["city_bullet"] | css_bullet2)
+example_city1_html = (
+    f'<div style="{css_city1_full}">'
+    f'<span style="{css_bullet1_full}"></span>'
+    f"Cities and ports mentioned in Indian literature"
+    f"</div>"
+)
+example_city2_html = (
+    f'<div style="{css_city2_full}">'
+    f'<span style="{css_bullet2_full}"></span>'
+    f"Capitals of Indian(-ized) states known from local or Chinese history"
+    f"</div>"
+)
+
 EARLY_SUVARNABHUMI = FlagMap(
     flags=flags,
     loka=Loka.SEA,
     custom_labels=all_labels,
     custom_html=(
-        "Earliest recorded Indian colonies and states in Southeast Asia, c. 1st and 2nd. "
-        "centuries BC. Black squares are cities mentioned in Indian literature; blue circles"
-        "are Indian(-ized) kingdoms known from local or Chinese history.<br><br>"
+        "Earliest recorded Indian colonies and states in Southeast Asia, c. 1st and 2nd centuries."
+        "<br><br>" + example_city1_html + "<br>" + example_city2_html + "<br>"
         "<b>Sources:</b><br>"
         "RC Majumdar (1979), <i>Ancient Indian colonization in Southeast Asia.</i> p. 20-33.<br>"
         "Moti Chandra (1977), <i>Trade and Trade Routes in Ancient India.</i> p. 132-133, xiv"
     ),
     labels_on_map=False,
+    drop_orphans=True,
     base_maps=(
         ["Esri.WorldPhysical"],
         ["OpenStreetMap", "CartoDB.Positron", "Esri.WorldImagery", "OpenTopoMap"],
     ),
+    css_legend={"height": "275px"},
 )
