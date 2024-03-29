@@ -24,6 +24,7 @@ nations.SILKRD.plot(path_out="examples/nations/SILKRD.html")
 nations.SEA_GREATER.plot(path_out="examples/nations/SEA_GREATER.html") 
 nations.INDOSPHERE.plot(path_out="examples/nations/INDOSPHERE.html")
 colonies.EARLY_SUVARNABHUMI.plot(path_out="examples/colonies/EARLY_SUVARNABHUMI.html")
+colonies.SEA_ROUTES.plot(path_out="examples/colonies/SEA_ROUTES.html")
 ```
 
 The outputs are in 
@@ -32,6 +33,7 @@ The outputs are in
 * [examples/nations/SEA_GREATER.html](examples/nations/SEA_GREATER.html)
 * [examples/nations/INDOSPHERE.html](examples/nations/INDOSPHERE.html).
 * [examples/colonies/EARLY_SUVARNABHUMI.html](examples/colonies/EARLY_SUVARNABHUMI.html)
+* [examples/colonies/SEA_ROUTES.html](examples/colonies/SEA_ROUTES.html)
 
 Note: view this documentation,
  - through the project website: [srajma.github.io/xatra](https://srajma.github.io/xatra/) to see the visualizations properly
