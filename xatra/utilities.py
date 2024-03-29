@@ -30,11 +30,13 @@ def bullet_pos(css : dict, css_bullet : dict = None):
     (HACK, might break with a Folium update)"""
     if css_bullet is None:
         css_bullet = {}
-    bullet_margin = css_bullet.get("margin-left", "0pt")
-    parent_margin = css.get("margin-left", "0pt")
+    bullet_margin_x = css_bullet.get("margin-left", "0pt")
+    parent_margin_x = css.get("margin-left", "0pt")
     bullet_width = css_bullet.get("width", "5pt")
-    anchor_shift = px(bullet_margin) + px(parent_margin) + px(bullet_width)
-    return anchor_shift
+    bullet_height = css_bullet.get("height", "5pt")
+    anchor_shift_x = px(bullet_margin_x) + px(parent_margin_x) + px(bullet_width) / 2
+    anchor_shift_y = px(bullet_height) /2
+    return (anchor_shift_x, anchor_shift_y)
 
 
 def get_lev(gid_code):

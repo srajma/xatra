@@ -580,12 +580,12 @@ class FlagMap:
             css_bullet = self.css["city_bullet"].copy()
             css_bullet.update(label.css_bullet)
             css_bullet_str = css_str(css_bullet)
-            anchor_shift = bullet_pos(css, css_bullet)
+            shift_x, shift_y = bullet_pos(css, css_bullet)
             return folium.Marker(
                 location=label.location,
                 icon=folium.DivIcon(
                     icon_size=(180, 36),
-                    icon_anchor=(anchor_shift, 18),
+                    icon_anchor=(shift_x, 18-shift_y),
                     html=(
                         f'<div style="{css_string}">'
                         f'<span style="{css_bullet_str}"></span>'
