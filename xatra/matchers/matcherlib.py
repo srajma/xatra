@@ -1110,6 +1110,7 @@ MEDITERRANEAN = (
     | country("ISR")
     | country("PSE")
     | country("LBN")
+    | country("SDN")
 ) - (
     province("DZA.18")
     | province("DZA.33")

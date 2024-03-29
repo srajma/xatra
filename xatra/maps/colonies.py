@@ -52,7 +52,7 @@ general_labels_SEA = [
     ),
 ]
 for label in general_labels_SEA:
-    label.css |= css_general
+    label.css = css_general | label.css
     label.ref = "Moti Chandra, Trade and Trade Routes in Ancient India"
 
 ports_SEA = [
@@ -69,8 +69,8 @@ ports_SEA = [
     Label(type="city", name="Samudrapaṭṭaṇa", location=[-0.91, 100.35], ref="p. 141"),
 ]
 for label in ports_SEA:
-    label.css |= css_port
-    label.css_bullet |= css_port_bullet
+    label.css = css_port | label.css
+    label.css_bullet = css_port_bullet | label.css_bullet
     label.ref = f"Moti Chandra, Trade and Trade Routes in Ancient India. {label.ref}"
 
 colonies_SEA = [
@@ -148,8 +148,8 @@ colonies_SEA = [
     ),
 ]
 for label in colonies_SEA:
-    label.css |= css_colony
-    label.css_bullet |= css_colony_bullet
+    label.css = css_colony | label.css
+    label.css_bullet = css_colony_bullet | label.css_bullet
     label.ref = (
         f"RC Majumdar, Ancient Indian Colonization in South-East Asia. {label.ref}"
     )
@@ -193,8 +193,8 @@ ports_OTHER = [
     # ),
 ]
 for label in ports_OTHER:
-    label.css |= css_port
-    label.css_bullet |= css_port_bullet
+    label.css = css_port | label.css
+    label.css_bullet = css_port_bullet | label.css_bullet
     label.ref = f"Moti Chandra, Trade and Trade Routes in Ancient India. {label.ref}"
 
 general_labels_OTHER = [
@@ -279,7 +279,7 @@ general_labels_OTHER = [
         type="custom_label",
         name="Jambudvīpa",
         location=[21.407506, 78.480723],
-        css={"font-size": "24pt", "color": "#000000"},
+        css={"font-size": "24pt", "color": "#333333"},
     ),
     Label(
         type="custom_label",
@@ -295,7 +295,7 @@ general_labels_OTHER = [
     ),
 ]
 for label in general_labels_OTHER:
-    label.css |= css_general
+    label.css = css_general | label.css
     label.ref = f"Moti Chandra, Trade and Trade Routes in Ancient India. {label.ref}"
 
 all_labels_OTHER = general_labels_OTHER + ports_OTHER
