@@ -99,7 +99,7 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
   - [ ] standard mainstream chronology, at least for some period (probably depends on better implementation for dynamic maps)
   - [x] early south-east asian colonies 
     - [x] Fix design!!
-  - [ ] early sea trade routes
+  - [x] early sea trade routes
   - [ ] continents of the world, names of india
 - [x] add Suvarnabhumi and Tibet-adjacent lands to matchers.py
 - [x] make everything verbose
