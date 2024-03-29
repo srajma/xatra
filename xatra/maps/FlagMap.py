@@ -56,7 +56,7 @@ class Label:
         ref (str | None): source for claim
     """
     
-    def __init__(self, type, name, location, period=None, css = {}, css_bullet = {}, ref = None):
+    def __init__(self, type, name, location, period=None, css = None, css_bullet = None, ref = None):
         """Constructs a Label.
         
         Args:
@@ -72,8 +72,8 @@ class Label:
         self.name = name
         self.period = period
         self.location = location
-        self.css = css
-        self.css_bullet = css_bullet
+        self.css = {} if css is None else css
+        self.css_bullet = {} if css_bullet is None else css_bullet
         self.ref = ref
     
     def __str__(self):
