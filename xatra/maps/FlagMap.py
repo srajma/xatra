@@ -73,9 +73,14 @@ class Label:
         self.period = period
         self.location = location
         self.css = css
-        if self.type == "city":
-            self.css_bullet = css_bullet
+        self.css_bullet = css_bullet
         self.ref = ref
+    
+    def __str__(self):
+        if self.type == "city":
+            return f"{self.name} at {self.location} ({self.type}) with CSS\n {self.css} and bullet CSS\n {self.css_bullet}"
+        else:
+            return f"{self.name} at {self.location} ({self.type}) with CSS\n {self.css}"
 
     css_default = {
         "flag_label": {
@@ -101,11 +106,11 @@ class Label:
             "color": "#000000",
         },
         "city_bullet": {
-            "content": " ",
+            "content": "' '",
             "display": "inline-block",
             "margin-right": "5px",
-            "height": "10pt",
-            "width": "10pt",
+            "height": "5pt",
+            "width": "5pt",
             "background-color": "#000000",
             "border-radius": "50%",
         },
@@ -532,10 +537,9 @@ class FlagMap:
         css_string = "; ".join([f"{k}: {v}" for k, v in css.items()])
         if label.type == "city":
             css_bullet = self.css["city_bullet"].copy()
-            if label.css_bullet:
-                css_bullet.update(label.css_bullet)
+            css_bullet.update(label.css_bullet)
             css_bullet_str = "; ".join(
-                [f"{k}: {v}" for k, v in self.css["city_bullet"].items()]
+                [f"{k}: {v}" for k, v in css_bullet.items()]
             )
             return folium.Marker(
                 location=label.location,

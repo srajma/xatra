@@ -39,7 +39,7 @@ general_labels = [
         type="custom_label",
         name="Dvīpāntara",
         location=[0.0, 106.9],
-        css={"transform": "rotate(-20eg)"},
+        css={"transform": "rotate(-20deg)"},
     ),
 ]
 for label in general_labels:
@@ -57,6 +57,7 @@ cities1 = [
     Label(type="city", name="Ailavaddhana", location=[-8.50, 117.21], ref="p. 133"),
     Label(type="city", name="Suvarṇakūṭa", location=[11.46, 103.08], ref="p. 133"),
     Label(type="city", name="Kamalapura", location=[11.07, 103.68], ref="p. xiv"),
+    Label(type="city", name="Samudrapaṭṭaṇa", location=[-0.91, 100.35], ref="p. 141"),
 ]
 for label in cities1:
     label.css |= css_city1
@@ -158,5 +159,5 @@ EARLY_SUVARNABHUMI = FlagMap(
         "RC Majumdar (1979), <i>Ancient Indian colonization in Southeast Asia.</i> p. 20-33.<br>"
         "Moti Chandra (1977), <i>Trade and Trade Routes in Ancient India.</i> p. 132-133, xiv"
     ),
-    labels_on_map = False,
+    labels_on_map=False,
 )

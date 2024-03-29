@@ -124,8 +124,7 @@ flags = [
     Flag(name="KHMER", matcher=KHMER),
     Flag(name="CHAM", matcher=CHAM),
     Flag(name="NORTH_VIETNAM", matcher=NORTH_VIETNAM),
-    Flag(name="BORNEO_MYS_GREATER", matcher=BORNEO_MYS_GREATER),
-    Flag(name="BORNEO_IDN", matcher=BORNEO_IDN),
+    Flag(name="BORNEO", matcher=BORNEO),
     Flag(name="MALAY_PENINSULA", matcher=MALAY_PENINSULA),
     Flag(name="SUMATRA", matcher=SUMATRA),
     Flag(name="JAVA", matcher=JAVA),
@@ -174,9 +173,9 @@ SILKRD = FlagMap(
     custom_html = custom_html.format("Silk Road nations"),
 )
 
-SEA = FlagMap(
+SEA_GREATER = FlagMap(
     flags=flags,
-    loka=Loka.SEA,
+    loka=Loka.SEA_GREATER,
     custom_colors = custom_colors,
     custom_html = custom_html.format("Suvarnabhumi region"),
 )
