@@ -1166,6 +1166,7 @@ INDIAN_OCEAN = (
     SEA |
     GULF |
     AFRICA_EAST_SPOTTY |
-    IRAN |
-    LEVANT
+    IRANIC |
+    LEVANT |
+    MEDITERRANEAN
 )

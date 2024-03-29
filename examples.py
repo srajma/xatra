@@ -77,7 +77,7 @@ nations.SEA_GREATER.plot(
     verbose=True,
 )
 # %% raw data visualization: world as we know it
-nations.WORLD.plot_raw(
+nations.WORLD.plot(
     mode="raw",
     path_out="examples/rdviz/WORLD.html",
     custom_html="Raw data visualization: World",

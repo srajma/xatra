@@ -178,7 +178,7 @@ ports_OTHER = [
     ),
     Label(
         type="city",
-        name="Alassaṇḍa/Yavanapura",
+        name="Alassaṇḍa/<br>Yavanapura",
         location=[31.210757, 29.919430],
         ref="p. 133",
     ),
@@ -236,14 +236,14 @@ general_labels_OTHER = [
         type="custom_label",
         name=colon("Nīlakuṣamāla?", "(Suez gulf)"),
         location=[28.576944, 33.147515],
-        css={"font-size": "0.7em"},
+        css={"font-size": "0.85em", "line-height": "1"},
         ref="p. 61, 63",
     ),
     Label(
         type="custom_label",
         name=colon("Nalamāla?", "(old Suez canal)"),
         location=[31.094234, 32.296720],
-        css={"transform": "rotate(10deg)", "font-size": "0.7em"},
+        css={"transform": "rotate(10deg)", "font-size": "0.85em", "line-height": "1"},
         ref="p. 61, 63",
     ),
     Label(
@@ -260,6 +260,11 @@ general_labels_OTHER = [
     ),
     Label(
         type="custom_label",
+        name="Roma-Viṣaya",
+        location=[43.347301, 11.792144],
+    ),
+    Label(
+        type="custom_label",
         name="Valabhāmukha Sea",
         location=[35.392349, 19.468104],
         ref="p. 61, 63",
@@ -268,6 +273,18 @@ general_labels_OTHER = [
         type="custom_label",
         name="Yavana",
         location=[33.964831, 27.000472],
+        css={"font-size": "18pt"},
+    ),
+    Label(
+        type="custom_label",
+        name="Jambudvīpa",
+        location=[21.407506, 78.480723],
+        css={"font-size": "24pt", "color": "#000000"},
+    ),
+    Label(
+        type="custom_label",
+        name="Cīnā",
+        location=[30.750277, 114.330864],
         css={"font-size": "18pt"},
     ),
     Label(
@@ -283,7 +300,7 @@ for label in general_labels_OTHER:
 
 all_labels_OTHER = general_labels_OTHER + ports_OTHER
 all_labels_ports = ports_SEA + ports_OTHER + general_labels_SEA + general_labels_OTHER
-
+all_labels = all_labels_SEA + all_labels_OTHER
 
 css_port_full = css_str(Label.css_default["city"] | css_port)
 css_port_bullet_full = css_str(Label.css_default["city_bullet"] | css_port_bullet)
@@ -327,15 +344,18 @@ flags_sea_route = [
     Flag(name="GULF", matcher=GULF),
     Flag(name="AFRICA_EAST_SPOTTY", matcher=AFRICA_EAST_SPOTTY),
     Flag(name="LEVANT", matcher=LEVANT),
-    Flag(name="IRAN", matcher=IRAN),
+    Flag(name="IRANIC", matcher=IRANIC),
     Flag(name="SUBCONTINENT_PROPER", matcher=SUBCONTINENT_PROPER),
     Flag(name="SEA", matcher=SEA),
 ]
 
+custom_colors_sea_route = {"SUBCONTINENT_PROPER": "#444444"}  # mainland India
+
 SEA_ROUTES = FlagMap(
     flags=flags_sea_route,
     loka=Loka.INDIAN_OCEAN,
-    custom_labels=all_labels_OTHER,
+    custom_labels=all_labels,
+    custom_colors=custom_colors_sea_route,
     labels_on_map=False,
     drop_orphans=True,
     custom_html=(

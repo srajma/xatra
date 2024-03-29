@@ -261,9 +261,10 @@ NEXUS = DataCollection(SILKRD, filter=CENTRAL_ASIA_GREATER | TARIM | AUDICYA)
 """Iranic regions, Afghanistan, Tarim basin and Audichya region of the Indian subcontinent"""
 
 INDIAN_OCEAN = DataCollection(
-    INDIC,
+    INDIAN_SUBCONTINENT,
     SEA,
-    DataItem(type="feature", id="IRN", level=2),
+    IRANIAN_SUBCONTINENT,
+    AFGHANISTAN,
     LEVANT,
     GULF,
     MEDITERRANEAN,
