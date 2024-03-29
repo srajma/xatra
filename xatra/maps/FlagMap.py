@@ -585,7 +585,7 @@ class FlagMap:
                 location=label.location,
                 icon=folium.DivIcon(
                     icon_size=(180, 36),
-                    icon_anchor=(shift_x, 18-shift_y),
+                    icon_anchor=(shift_x, 18+shift_y),
                     html=(
                         f'<div style="{css_string}">'
                         f'<span style="{css_bullet_str}"></span>'
