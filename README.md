@@ -21,7 +21,7 @@ import xatra.maps.early_suvarnabhumi as colonies
 
 nations.INDIC.plot(path_out="examples/nations/INDIC.html") 
 nations.SILKRD.plot(path_out="examples/nations/SILKRD.html")
-nations.SEA.plot(path_out="examples/nations/SEA.html") 
+nations.SEA_GREATER.plot(path_out="examples/nations/SEA_GREATER.html") 
 nations.INDOSPHERE.plot(path_out="examples/nations/INDOSPHERE.html")
 colonies.EARLY_SUVARNABHUMI.plot(path_out="examples/colonies/EARLY_SUVARNABHUMI.html")
 ```
@@ -29,7 +29,7 @@ colonies.EARLY_SUVARNABHUMI.plot(path_out="examples/colonies/EARLY_SUVARNABHUMI.
 The outputs are in 
 * [examples/nations/INDIC.html](examples/nations/INDIC.html)
 * [examples/nations/SILKRD.html](examples/nations/SILKRD.html)
-* [examples/nations/SEA.html](examples/nations/SEA.html)
+* [examples/nations/SEA_GREATER.html](examples/nations/SEA_GREATER.html)
 * [examples/nations/INDOSPHERE.html](examples/nations/INDOSPHERE.html).
 * [examples/colonies/EARLY_SUVARNABHUMI.html](examples/colonies/EARLY_SUVARNABHUMI.html)
 

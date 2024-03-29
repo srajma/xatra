@@ -55,7 +55,6 @@ nations.INDIAN_SUBCONTINENT.plot(
     mode="raw",
     path_out="examples/rdviz/INDIAN_SUBCONTINENT.html",
     custom_html="Raw data visualization: Indian subcontinent",
-    custom_html = "Raw data visualization: Indian subcontinent",
     verbose=True,
 )
 # %% raw data visualization: silk road

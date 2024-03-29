@@ -1,3 +1,4 @@
+from copy import deepcopy
 import folium
 import folium.plugins
 import matplotlib as mpl
@@ -115,7 +116,6 @@ class Label:
             "color": "#000000",
         },
         "city_bullet": {
-            # "content": "' '", # not needed since we're not using pseudo-elements
             "display": "inline-block",
             "margin-right": "5px",
             "height": "5pt",
@@ -258,7 +258,7 @@ class FlagMap:
             "custom_html": "",
             "color_legend": False,
             "opacity": 0.7,
-            "css": Label.css_default.copy(),
+            "css": deepcopy(Label.css_default),
             "css_legend": {
                 "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                 "position": "fixed",
