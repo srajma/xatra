@@ -258,7 +258,7 @@ class FlagMap:
             "custom_html": "",
             "color_legend": False,
             "opacity": 0.7,
-            "css": Label.css_default,
+            "css": Label.css_default.copy(),
             "css_legend": {
                 "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                 "position": "fixed",
@@ -313,7 +313,7 @@ class FlagMap:
                 and key in source
                 and isinstance(source[key], dict)
             ):
-                source[key] = self._deep_update(source[key], value)
+                source[key] = self._deep_update(value, source[key])
             else:
                 source[key] = value
         return source
