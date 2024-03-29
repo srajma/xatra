@@ -64,8 +64,14 @@ class Label:
             name (str): Text of label
             period (tuple[int|float, int|float], optional): tuple of start and end years, for dynamic Maps
             location (List[float]): Location of label
-            css (Dict[str, str], optional): CSS for label
-            css_bullet (Dict[str, str], optional): CSS for bullet, only for type "city"
+            css (Dict[str, str], optional): CSS for label. NOTE: Do NOT give conflicting CSS for the same
+                property, as dicts do not have order, and the behaviour would be unpredictable. Also always
+                use individual property names (e.g. "margin-left") instead of shorthands (e.g. "margin"),
+                this is important for a hack we use in _draw_label to align things correctly.
+            css_bullet (Dict[str, str], optional): CSS for bullet, only for type "city". NOTE: Do NOT give conflicting CSS for the same
+                property, as dicts do not have order, and the behaviour would be unpredictable. Also always
+                use individual property names (e.g. "margin-left") instead of shorthands (e.g. "margin"),
+                this is important for a hack we use in _draw_label to align things correctly.
             ref (str, optional): source for claim
         """
         self.type = type
@@ -94,19 +100,19 @@ class Label:
         "custom_label": {
             "font-size": "10pt",
             "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-            "font-weight": "normal",
+            "font-weight": "bold",
             "text-align": "center",
             "color": "#666666",
         },
         "city": {
             "font-size": "10pt",
             "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-            "font-weight": "normal",
+            "font-weight": "bold",
             "text-align": "left",
             "color": "#000000",
         },
         "city_bullet": {
-            "content": "' '",
+            #"content": "' '", # not needed since we're not using pseudo-elements
             "display": "inline-block",
             "margin-right": "5px",
             "height": "5pt",
@@ -135,9 +141,11 @@ class FlagMap:
             __init__() or plot().
 
     Methods:
-        plot: Plot with Folium. Set optional argument mode to "flags", "flags_as_layers", or "raw"
-            to control between the following modes:
-        plot_features: Plot with Folium by adding flags to each feature and plotting it.
+        plot: Plot with Folium. Set optional argument mode to "features", "flags", "flags_as_layers", 
+            or "raw" to control between the following modes (default is "flags"):
+        plot_features: Plot with Folium by adding flags to each feature and plotting it. You will
+            also get the name of the feature you're hovering over in the tooltip, instead of just
+            the flag.
         plot_flags: Plot with Folium by merging the features by flag name and plots those instead of
             plotting each district.
         plot_flags_as_layers: Plot each flag as a separate layer, ignoring year/period, with Folium.
@@ -191,11 +199,15 @@ class FlagMap:
             zoom_start (int): Initial zoom of Folium map. Defaults to 5.
             custom_html (str): Custom HTML to be added to the top of the legend, e.g. a title. Defaults to "".
             opacity (float): Opacity of the map. Defaults to 0.7.
-            css (Dict[str, Dict[str, str]]): CSS for labels. Defaults to xatra.Label.css_default
+            css (Dict[str, Dict[str, str]]): CSS for labels. NOTE: Do NOT give conflicting CSS for the same
+                property, as dicts do not have order, and the behaviour would be unpredictable. Also always
+                use individual property names (e.g. "margin-left") instead of shorthands (e.g. "margin"),
+                this is important for a hack we use in _draw_label to align things correctly. 
+                Defaults to xatra.Label.css_default.
             tolerance (float): Tolerance for simplifying geometries. Defaults to 0.01.
             drop_orphans (bool): Drop features with no flags? Defaults to False.
             "base_maps" (tuple(List[str], List[str])): Base maps to show. The first element is the maps shown by default;
-                the rest will be options in the Layer Control. Defaults to
+                the second are the remaining options in the Layer Control. Defaults to
                 "base_maps": (
                     ["OpenStreetMap"],
                     ["Esri.WorldImagery", "OpenTopoMap", "Esri.WorldPhysical"]
@@ -541,10 +553,12 @@ class FlagMap:
             css_bullet_str = "; ".join(
                 [f"{k}: {v}" for k, v in css_bullet.items()]
             )
+            anchor_shift = bullet_pos(css, css_bullet)           
             return folium.Marker(
                 location=label.location,
                 icon=folium.DivIcon(
-                    #icon_size=(150, 36),
+                    icon_size=(180, 36),
+                    icon_anchor=(anchor_shift,18),
                     html=(
                         f'<div style="{css_string}">'
                         f'<span style="{css_bullet_str}"></span>'

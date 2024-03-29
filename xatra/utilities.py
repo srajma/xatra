@@ -6,6 +6,36 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import shape
 
+def css_str(css : dict):
+    """Converts a CSS dictionary to a string.
+
+    Args:
+        css (dict): CSS dictionary.
+
+    Returns:
+        str: CSS string.
+    """
+    return "; ".join([f"{k}: {v}" for k, v in css.items()])
+
+def px(l : str):
+    if "px" in l:
+        return float(l.replace("px", ""))
+    elif "pt" in l:
+        return float(l.replace("pt", "")) * 1.333
+    else:
+        return 0.0
+
+def bullet_pos(css : dict, css_bullet : dict = None):
+    """calculate center of bullet for anchor position
+    (HACK, might break with a Folium update)"""
+    if css_bullet is None:
+        css_bullet = {}
+    bullet_margin = css_bullet.get("margin-left", "0pt")
+    parent_margin = css.get("margin-left", "0pt")
+    bullet_width = css_bullet.get("width", "5pt")
+    anchor_shift = px(bullet_margin) + px(parent_margin) + px(bullet_width)
+    return anchor_shift
+
 
 def get_lev(gid_code):
     """Calculates administrative level from GID code.

@@ -2,15 +2,16 @@
 1st-2nd centuries. 
 """
 
-from xatra.maps.FlagMap import Label, FlagMap
+from xatra.maps.FlagMap import Label, Flag, FlagMap
 from xatra.maps.nations import flags
+from xatra.matchers import *
 from xatra.data import Loka
 
-css_city1 = {"color": "black"}
+css_city1 = {"color": "black", "line-height": "1"}
 """Type 1: black squares, for cities mentioned in Indian literature."""
 css_bullet1 = {"border-radius": "0%", "background-color": "black"}
 """Type 1: black squares, for cities mentioned in Indian literature."""
-css_city2 = {"color": "blue"}
+css_city2 = {"color": "blue", "line-height": "1"}
 """Type 2: blue circles, for capitals of Indian(-ized) states known from local history."""
 css_bullet2 = {"border-radius": "50%", "background-color": "blue"}
 """Type 2: blue circles, for capitals of Indian(-ized) states known from local history."""
@@ -160,4 +161,8 @@ EARLY_SUVARNABHUMI = FlagMap(
         "Moti Chandra (1977), <i>Trade and Trade Routes in Ancient India.</i> p. 132-133, xiv"
     ),
     labels_on_map=False,
+    base_maps=(
+        ["Esri.WorldPhysical"],
+        ["OpenStreetMap", "CartoDB.Positron", "Esri.WorldImagery", "OpenTopoMap"],
+    ),
 )
