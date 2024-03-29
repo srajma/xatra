@@ -1069,3 +1069,103 @@ ZZZ_BAHAWALPUR = BAHAWALPUR
 ZZZ_HADOTI = HADOTI
 ZZZ_GREATER_PUNE = GREATER_PUNE
 ZZZ_BAYALU = BAYALU
+
+# Levant and Iran proper
+LEVANT = (
+    country("LBN")
+    | country("ISR")
+    | country("PSE")
+    | country("SYR")
+    | country("JOR")
+    | country("IRQ")
+)
+IRAN = country("IRN")
+IRANIC = IRAN | CENTRAL_ASIA_GREATER
+IRANIC_GREATER = IRANIC | TARIM
+MEDITERRANEAN = (
+    country("GRC")
+    | country("TUR")
+    | country("CYP")
+    | country("EGY")
+    | country("LBY")
+    | country("TUN")
+    | country("ALB")
+    | country("BIH")
+    | country("HRV")
+    | country("ITA")
+    | country("MLT")  # not downloaded
+    | country("MNE")
+    | country("SVN")
+    | country("ESP")
+    | province("FRA.11")
+    | province("FRA.13")
+    | country("MCO")  # not downloaded
+    | country("PRT")
+    | country("AND")  # not downloaded
+    | country("GIB")  # not downloaded
+    | country("MAR")
+    | country("DZA")
+    | country("LBY")
+    | country("TUN")
+    | country("ISR")
+    | country("PSE")
+    | country("LBN")
+) - (
+    province("DZA.18")
+    | province("DZA.33")
+    | province("DZA.20")
+    | province("DZA.22")
+    | province("DZA.41")
+    | province("DZA.1")
+    | province("DZA.17")
+    | province("DZA.7")
+    | province("DZA.44")
+    | province("LBY.17")
+    | province("LBY.3")
+    | province("LBY.22")
+    | province("LBY.14")
+    | province("LBY.21")
+    | province("LBY.18")
+    | province("LBY.14")
+    | province("LBY.16")
+    | province("LBY.5")
+    | province("LBY.9")
+    | province("LBY.6")
+    | province("EGY.14")
+    | province("EGY.14")
+    | province("SDN.10")
+    | province("SDN.8")
+    | province("SDN.9")
+    | province("SDN.4")
+    | province("SDN.14")
+    | province("SDN.5")
+    | province("SDN.17")
+    | province("SDN.15")
+)
+
+GULF = (
+    country("ARE")
+    | country("BHR")
+    | country("KWT")
+    | country("OMN")
+    | country("QAT")
+    | country("SAU")
+    | country("YEM")
+)
+
+AFRICA_EAST_SPOTTY = (
+    country("SOM")
+    | country("TZA")
+    | country("DJI")
+    | country("ERI")
+    | country("MDG")
+)
+
+INDIAN_OCEAN = (
+    SUBCONTINENT_PROPER |
+    SEA |
+    GULF |
+    AFRICA_EAST_SPOTTY |
+    IRAN |
+    LEVANT
+)

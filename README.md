@@ -14,7 +14,7 @@ For a quick start, see [examples.py](examples.py) e.g.
 
 ```python
 import xatra.maps.nations as nations
-import xatra.maps.early_suvarnabhumi as colonies
+import xatra.maps.colonies as colonies
 
 # any optional parameters may be set either while initializing a 
 # FlagMap object or in plot()

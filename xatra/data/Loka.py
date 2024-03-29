@@ -116,6 +116,16 @@ SEA_GREATER = DataCollection(
 """Southeast Asia including Tibet. Excludes North Vietnam and Kachin (in Burma)."""
 
 LEVANT = DataCollection(
+    DataItem(type="feature", id="IRQ", level=1),
+    DataItem(type="feature", id="SYR", level=1),
+    DataItem(type="feature", id="LBN", level=1),
+    DataItem(type="feature", id="ISR", level=1),
+    DataItem(type="feature", id="PSE", level=1),
+    DataItem(type="feature", id="JOR", level=1),
+)
+"""Levant, modern political boundaries. Excludes Kuwait. LEVEL 1 FEATURES."""
+
+LEVANT_2 = DataCollection(
     DataItem(type="feature", id="IRQ", level=2),
     DataItem(type="feature", id="SYR", level=2),
     DataItem(type="feature", id="LBN", level=2),
@@ -123,9 +133,20 @@ LEVANT = DataCollection(
     DataItem(type="feature", id="PSE", level=2),
     DataItem(type="feature", id="JOR", level=2),
 )
-"""Levant, modern political boundaries. Excludes Kuwait."""
+"""Levant, modern political boundaries. Excludes Kuwait. LEVEL 2 FEATURES."""
 
 GULF = DataCollection(
+    DataItem(type="feature", id="KWT", level=0),
+    DataItem(type="feature", id="BHR", level=0),
+    DataItem(type="feature", id="QAT", level=0),
+    DataItem(type="feature", id="ARE", level=1),
+    DataItem(type="feature", id="OMN", level=1),
+    DataItem(type="feature", id="SAU", level=2),
+    DataItem(type="feature", id="YEM", level=1),
+)
+"""Gulf, modern political boundaries. Includes Kuwait and Yemen. LEVEL 2 FEATURES."""
+
+GULF_2 = DataCollection(
     DataItem(type="feature", id="KWT", level=1),
     DataItem(type="feature", id="BHR", level=1),
     DataItem(type="feature", id="QAT", level=1),
@@ -134,27 +155,71 @@ GULF = DataCollection(
     DataItem(type="feature", id="SAU", level=2),
     DataItem(type="feature", id="YEM", level=2),
 )
-"""Gulf, modern political boundaries. Includes Kuwait and Yemen."""
+"""Gulf, modern political boundaries. Includes Kuwait and Yemen. LEVEL 2 FEATURES."""
 
 MEDITERRANEAN = DataCollection(
+    DataItem(type="feature", id="TUR", level=1),
+    DataItem(type="feature", id="GRC", level=2),
+    DataItem(type="feature", id="ITA", level=2),
+    DataItem(type="feature", id="EGY", level=1),
+    DataItem(type="feature", id="LBY", level=1),
+    DataItem(type="feature", id="TUN", level=1),
+    DataItem(type="feature", id="DZA", level=1),
+    DataItem(type="feature", id="MAR", level=1),
+    DataItem(type="feature", id="ESP", level=1),
+    DataItem(type="feature", id="PRT", level=1),
+    DataItem(type="feature", id="FRA", level=1),
+    DataItem(type="feature", id="MKD", level=0),
+    DataItem(type="feature", id="ALB", level=0),
+    DataItem(type="feature", id="MNE", level=0),
+    DataItem(type="feature", id="BIH", level=0),
+    DataItem(type="feature", id="HRV", level=0),
+    DataItem(type="feature", id="SVN", level=0),
+    DataItem(type="feature", id="CYP", level=0),
+)
+"""Mediterranean, modern political boundaries. LEVEL 1 FEATURES."""
+
+MEDITERRANEAN_2 = DataCollection(
     DataItem(type="feature", id="TUR", level=2),
     DataItem(type="feature", id="GRC", level=2),
     DataItem(type="feature", id="ITA", level=2),
     DataItem(type="feature", id="EGY", level=2),
     DataItem(type="feature", id="LBY", level=1),
     DataItem(type="feature", id="TUN", level=2),
+    DataItem(type="feature", id="DZA", level=2),
+    DataItem(type="feature", id="MAR", level=2),
+    DataItem(type="feature", id="ESP", level=2),
+    DataItem(type="feature", id="PRT", level=2),
+    DataItem(type="feature", id="FRA", level=2),
+    DataItem(type="feature", id="MKD", level=1),
+    DataItem(type="feature", id="ALB", level=1),
+    DataItem(type="feature", id="MNE", level=1),
+    DataItem(type="feature", id="BIH", level=1),
+    DataItem(type="feature", id="HRV", level=1),
+    DataItem(type="feature", id="SVN", level=1),
+    DataItem(type="feature", id="CYP", level=1),
 )
-"""Mediterranean, modern political boundaries. TODO: Include a lot of things."""
+"""Mediterranean, modern political boundaries. LEVEL 2 FEATURES."""
 
 AFRICA_EAST = DataCollection(
+    DataItem(type="feature", id="SOM", level=1),
+    DataItem(type="feature", id="TZA", level=1),
+    DataItem(type="feature", id="SDN", level=1),
+    DataItem(type="feature", id="DJI", level=0),
+    DataItem(type="feature", id="ERI", level=0),
+    DataItem(type="feature", id="MDG", level=1),
+)
+"""East Africa, modern political boundaries. LEVEL 1 FEATURES."""
+
+AFRICA_EAST_2 = DataCollection(
     DataItem(type="feature", id="SOM", level=2),
     DataItem(type="feature", id="TZA", level=2),
     DataItem(type="feature", id="SDN", level=2),
-    DataItem(type="feature", id="DJI", level=2),
-    DataItem(type="feature", id="ERI", level=2),
+    DataItem(type="feature", id="DJI", level=1),
+    DataItem(type="feature", id="ERI", level=1),
     DataItem(type="feature", id="MDG", level=2),
 )
-"""East Africa, modern political boundaries."""
+"""East Africa, modern political boundaries. LEVEL 2 FEATURES."""
 
 INDOSPHERE = DataCollection(
     INDIAN_SUBCONTINENT,
@@ -194,3 +259,14 @@ SILKRD = DataCollection(
 
 NEXUS = DataCollection(SILKRD, filter=CENTRAL_ASIA_GREATER | TARIM | AUDICYA)
 """Iranic regions, Afghanistan, Tarim basin and Audichya region of the Indian subcontinent"""
+
+INDIAN_OCEAN = DataCollection(
+    INDIC,
+    SEA,
+    DataItem(type="feature", id="IRN", level=2),
+    LEVANT,
+    GULF,
+    MEDITERRANEAN,
+    AFRICA_EAST,
+    filter=INDIAN_OCEAN,
+)

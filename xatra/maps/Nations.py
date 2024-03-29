@@ -133,7 +133,6 @@ flags = [
     Flag(name="ZZZ_SULAWESI", matcher=SULAWESI),
     Flag(name="ZZZ_KEPULAUAN", matcher=KEPULAUAN),
     Flag(name="ZZZ_BANGKA", matcher=BANGKA),
-    Flag(name="ZZZ_PAPUA_IDN", matcher=PAPUA_IDN),
     Flag(name="ANDAMAN_NICOBAR", matcher=ANDAMAN_NICOBAR),
 ]
 
@@ -155,6 +154,11 @@ INDIC = FlagMap(
     varuna=Varuna.INDIAN_SUBCONTINENT,
     custom_colors = custom_colors,
     custom_html = custom_html.format("Indian imperial core"),
+    css={
+        "flag_label": {
+            "font-size": "7.5pt",
+        }
+    },
 )
 
 INDIAN_SUBCONTINENT = FlagMap(
@@ -162,7 +166,6 @@ INDIAN_SUBCONTINENT = FlagMap(
     loka=Loka.INDIAN_SUBCONTINENT,
     varuna=Varuna.INDIAN_SUBCONTINENT,
     custom_colors = custom_colors,
-    custom_html = "Raw data of the Indian subcontinent",
 )
 
 SILKRD = FlagMap(
@@ -186,6 +189,11 @@ INDOSPHERE = FlagMap(
     varuna=Varuna.WORLD,
     custom_colors = custom_colors,
     custom_html = custom_html.format("Greater Indian sphere"),
+    css={
+        "flag_label": {
+            "font-size": "7.5pt",
+        }
+    },
 )
 
 WORLD = FlagMap(
@@ -193,5 +201,4 @@ WORLD = FlagMap(
     loka=Loka.WORLD,
     varuna=Varuna.WORLD,
     custom_colors = custom_colors,
-    custom_html = "Raw data for the world as we know it",
 )

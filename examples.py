@@ -1,6 +1,6 @@
 # %%
 import xatra.maps.nations as nations
-import xatra.maps.early_suvarnabhumi as colonies
+import xatra.maps.colonies as colonies
 
 # %% nations of the Indian imperial core in antiquity
 nations.INDIC.plot(
@@ -27,9 +27,14 @@ nations.INDOSPHERE.plot(
     drop_orphans=True,
     verbose=True,
 )
-# %% Early Suvarnabhumi
+# %% Early Indian colonies in Suvarnabhumi
 colonies.EARLY_SUVARNABHUMI.plot(
     path_out="examples/colonies/EARLY_SUVARNABHUMI.html",
+    verbose=True,
+)
+# %% Sea routes of India in antiquity
+colonies.SEA_ROUTES.plot(
+    path_out="examples/colonies/SEA_ROUTES.html",
     verbose=True,
 )
 # %% graphical aid for matchers: india
