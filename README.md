@@ -111,6 +111,8 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] Fix `plot_flags()` (which plots the merged geometry for each flag instead of plotting each district and colouring them to look the same) -- and use it to calculate flag centroids too
 - [x] Fix `plot_flags()` to plot every intersection of flags so that more specific tooltips can be displayed.
 - [x] handling for making cities appear on map (`data.Pura`)
+- [ ] Make `plot_flags` faster by directly calculating `flag_gdf` instead of from `loka_with_features`
+- [ ] Allow custom JSON tooltips to be added at least in `plot_flags` Or descs below via kwargs in `Flag`, `Label`
 - [x] change SEA to use level 1 features instead of level 2
 - [x] option to drop features with no flags
 - [x] custom_labels option
