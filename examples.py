@@ -1,6 +1,7 @@
 # %%
 import xatra.maps.nations as nations
 import xatra.maps.colonies as colonies
+import xatra.maps.hsr as hsr
 
 # %% nations of the Indian imperial core in antiquity
 nations.INDIC.plot(
@@ -82,5 +83,11 @@ nations.WORLD.plot(
     path_out="examples/rdviz/WORLD.html",
     custom_html="Raw data visualization: World",
     verbose=True,
+)
+# %% hsr
+hsr.HSR.plot(
+    mode="raw",
+    path_out="examples/hsr.html",
+    verbose=True
 )
 # %%

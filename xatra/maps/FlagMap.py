@@ -125,6 +125,49 @@ class Label:
         },
     }
 
+class Path:
+    
+    def __init__(self, name, points, **kwargs):
+        """Path object.
+        
+        Args:        
+            name (str): Name of the path, label.
+            points (list[Label]): List of points.
+        
+        Keyword Args:
+            weight (int): Weight of the path. Defaults to 2.
+            color (str): Color of the path. Defaults to "black".
+            opacity (float): Opacity of the path. Defaults to 1.0.
+            dash_array (str): Dash array of the path. Defaults to "".
+        """
+        
+        self.name = name
+        self.points = points
+        self.options = {
+            "weight": 2,
+            "color": "black",
+            "opacity": 1.0,
+            "dash_array": "",
+        }
+        self.options.update(kwargs)
+    
+    def add(self, other, name=None):
+        """Add another path to this path.
+        
+        Args:
+            other (Path): Other path to add.
+            name (str, optional): Name of the new path. Defaults to None.
+        
+        Returns:
+            Path: New path.
+        """
+        if name is None:
+            name = self.name
+        return Path(
+            name=name,
+            points=self.points + other.points[1:],
+            **self.options
+        )
 
 class FlagMap:
     """A Map is defined by a list of Flags, some DataCollections, and optionally some custom colors.
@@ -176,6 +219,7 @@ class FlagMap:
 
         Keyword Arguments:
             custom_colors (Dict[str, str]): custom colours for flags to override any calculated ones.
+            paths (List[Path]): List of paths.
             color_segments (int): Flags within this distance of each other in self.flags will be assigned
                 contrasting colours (unless forced otherwise in self.custom_colors). Defaults to 8.
             labels_on_map (bool): show flag labels on the map at calculated locations? (tooltips will show
@@ -241,6 +285,8 @@ class FlagMap:
                     "Esri.WorldPhysical" (physical map: general)
                     "Esri.OceanBasemap" (physical map: rivers network)
                     See http://leaflet-extras.github.io/leaflet-providers/preview/ for a full list.
+            show_loka (bool): Show loka? Defaults to True.
+            show_varuna (bool): Show varuna? Defaults to False.
             verbose (bool): Print progress? Defaults to True.
 
         """
@@ -280,6 +326,8 @@ class FlagMap:
                 ["OpenStreetMap"],
                 ["Esri.WorldImagery", "OpenTopoMap", "Esri.WorldPhysical"],
             ),
+            "show_loka": True,
+            "show_varuna": True,
             "drop_orphans": False,
             "tolerance": 0.01,
             "verbose": True,
@@ -632,6 +680,35 @@ class FlagMap:
             return custom_layer
         else:
             return None
+    
+    def _draw_paths(self):
+        """Draw paths."""
+        if self.verbose:
+            print(f"Map: Adding paths")
+        
+        if self.paths:
+            paths = folium.FeatureGroup(name="Paths", show=True)
+            for path in self.paths:
+                points = [point.location for point in path.points]
+                folium.PolyLine(
+                    points,
+                    **path.options
+                ).add_to(paths)
+                # add path name as a label
+                # label = Label(
+                #     type="custom_label",
+                #     name=path.name,
+                #     location=points[0],
+                #     css={
+                #         "color": path.options["color"],
+                #         "font-size": "10pt",
+                #         "font-weight": "bold",
+                #     },
+                # )
+                # paths.add_child(self._draw_label(label))
+            return paths
+        else:
+            return None
 
     def _draw_loka(self, year="static"):
         """Draw loka.
@@ -640,7 +717,7 @@ class FlagMap:
             folium.FeatureGroup: Layer with loka.
 
         """
-        loka = folium.FeatureGroup(name="Loka_" + str(year), show=True)
+        loka = folium.FeatureGroup(name="Loka_" + str(year), show=self.show_loka)
         loka.add_child(
             folium.GeoJson(
                 data=self.loka_flagged_yearwise,
@@ -654,7 +731,7 @@ class FlagMap:
         )
         return loka
 
-    def _draw_varuna(self, show=True):
+    def _draw_varuna(self):
         """Draw varuna.
 
         Returns:
@@ -663,7 +740,7 @@ class FlagMap:
         """
         if self.verbose:
             print(f"Map: Adding Rivers")
-        varuna = folium.FeatureGroup(name="Varuna", show=show)
+        varuna = folium.FeatureGroup(name="Varuna", show=self.show_varuna)
         varuna.add_child(
             folium.GeoJson(
                 data=self.varuna,
@@ -708,8 +785,11 @@ class FlagMap:
                     if flag_marker:
                         layer.add_child(flag_marker)
             custom_labels = self._draw_custom_labels(year)
+            paths = self._draw_paths()
             if custom_labels:
                 layer.add_child(custom_labels)
+            if paths:
+                layer.add_child(paths)
             year_layers.append(layer)
             m.add_child(layer)
 
@@ -791,8 +871,11 @@ class FlagMap:
                             if flag_marker:
                                 layer.add_child(flag_marker)
             custom_labels = self._draw_custom_labels(year)
+            paths = self._draw_paths()
             if custom_labels:
                 layer.add_child(custom_labels)
+            if paths:
+                layer.add_child(paths)
             year_layers.append(layer)
             m.add_child(layer)
 
@@ -864,8 +947,11 @@ class FlagMap:
                     if flag_marker:
                         layer.add_child(flag_marker)
                 custom_labels = self._draw_custom_labels(year)
+                paths = self._draw_paths()
                 if custom_labels:
                     layer.add_child(custom_labels)
+                if paths:
+                    layer.add_child(paths)
             m.add_child(layer)
         if self.varuna is not None:
             m.add_child(self._draw_varuna())
@@ -923,7 +1009,7 @@ class FlagMap:
             control_scale=True,
         )
         m, tiles_control = self._draw_base_map()
-        loka = folium.FeatureGroup(name="Loka")
+        loka = folium.FeatureGroup(name="Loka", show=self.show_loka)
         for feature in features_from(self.loka):
             if self.verbose:
                 print(f"Map: Adding feature {feature['properties']['NAME_max']}")
@@ -934,7 +1020,7 @@ class FlagMap:
                         "fillColor": self._color_simple(x["properties"]["GID_1"]),
                         "color": "black",
                         "weight": 0.5,
-                        "fillOpacity": 0.7,
+                        "fillOpacity": self.opacity,
                     },
                     tooltip=folium.GeoJsonTooltip(
                         fields=self._tooltips(feature["properties"])
@@ -944,6 +1030,12 @@ class FlagMap:
         m.add_child(loka)
         if self.varuna is not None:
             m.add_child(self._draw_varuna())
+        custom_labels = self._draw_custom_labels()
+        paths = self._draw_paths()
+        if custom_labels:
+            m.add_child(custom_labels)
+        if paths:
+            m.add_child(paths)
         if tiles_control is not None:
             m.add_child(tiles_control)
         m.add_child(folium.LayerControl())
