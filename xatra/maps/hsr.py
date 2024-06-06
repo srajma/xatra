@@ -183,7 +183,7 @@ MUMBAI_NAGPUR = Path(
         CITIES["Aurangabad"],
         CITIES["Amaravati"],
         CITIES["Nagpur"],
-        CITIES["Gondia"]
+        CITIES["Gondia"],
     ],
 )
 
@@ -291,7 +291,12 @@ BANGALORE_CHENNAI = Path(
 
 TAMIL = Path(
     name="TAMIL LINE",
-    points=[CITIES["Chennai"], CITIES["Tanjore"], CITIES["Madurai"], CITIES["Thiruvananthapuram"]],
+    points=[
+        CITIES["Chennai"],
+        CITIES["Tanjore"],
+        CITIES["Madurai"],
+        CITIES["Thiruvananthapuram"],
+    ],
 )
 
 ### BANGALORE - KERALA LINE ###
@@ -336,6 +341,73 @@ PATHS = [
     # HYDERABAD_NAGPUR,
 ]
 
+tooltips = {
+    "MUMBAI DELHI LINE": "<b>Mumbai-Delhi line.</b>",
+    "DEHATI BACHAO DEHATI PADHAO LINE": (
+        "<p><b>Dehati Bachao Dehati Padhao line:</b></p>"
+        "Pump UP-Bihar bros into Kashmir, Punjab, WB <br>"
+        "to break caste cartels on both sides. Make <br>"
+        "every caste a micro-minority so they only <br>"
+        "have Hindutva to turn to."
+    ),
+    "AKARAVANTI REWARD LINE": (
+        "<p><b>Akaravanti reward line:</b></p>"
+        "Line from Vadodara to Varanasi.<br>"
+        "Rewards MP for its loyalty and <br>"
+        "cosmopolitanizes Purvanchal."
+    ),
+    "MUMBAI NAGPUR LINE": (
+        "<p><b>Mumbai-Nagpur line:</b></p>"
+        "Prevent caste cartels from forming in<br>"
+        "the interior of Maharashtra by <br>"
+        "connecting them to Mumbai. Also<br>"
+        "cosmopolitanize Nagpur by pumping<br>"
+        "in Moolnivasis and MP people."
+    ),
+    "MUMBAI BANGALORE LINE": (
+        "<p><b>Mumbai-Bangalore line:</b></p>"
+        "Reward Karnataka for its loyalty<br>"
+        "and rejuvenate the North Karnataka<br>"
+        "heartland. Connect Tier-2 cities with<br>"
+        "potential, like Hubli-Dharward and<br>Belgaum."
+    ),
+    "EAST COAST REWARD LINE": (
+        "<p><b>East coast reward line:</b></p>"
+        "Reward Odisha and Andhra for their<br>"
+        "loyalty, and connect Kolkata to Chennai<br>"
+        "to cosmopolitanize the whole east coast."
+    ),
+    "WEST COAST REWARD LINE": "<b>Konkan line.</b>",
+    "MUMBAI HYDERABAD LINE": (
+        "<p><b>Mumbai-Hyderabad line:</b></p>"
+        "Cosmopolitanize Marathwada and <br>"
+        "rejuvenate North Karnataka."
+    ),
+    "BANGALORE HYDERABAD LINE": (
+        "<p><b>Bangalore-Hyderabad line:</b></p>"
+        "Connect the two biggest IT hubs in the South."
+    ),
+    "MOOLNIVASI REWARD LINE": (
+        "<p><b>Moolnivasi reward line:</b></p>"
+        "Reward Chhattisgarh and Jharkhand for <br>"
+        "their loyalty, and cosmopolitanize the <br>"
+        "tribal belt."
+    ),
+    "KERALA LINE": "<b>Kerala line.</b>",
+    "BANGALORE CHENNAI LINE": "<b>Bangalore-Chennai line.</b>",
+    "TAMIL LINE": "<b>Tamil line.</b>",
+    "BANGALORE KERALA LINE": (
+        "<p><b>Bangalore-Kerala line:</b></p>"
+        "Let people live in Kerala or Coimbatore<br>"
+        "and work in Bangalore."
+    ),
+    "HYDERABAD NAGPUR LINE": "<b>Hyderabad-Nagpur line.</b>",
+    "BANGALORE MANGALORE LINE": (
+        "<p><b>Bangalore-Mangalore line:</b></p>"
+        "Let people live in Mangalore and work in Bangalore."
+    ),
+}
+
 PATHS_ECON = [
     # All the blue lines
     "MUMBAI DELHI LINE",
@@ -378,24 +450,6 @@ PATHS_OPTIONAL = [
     "HYDERABAD NAGPUR LINE",
 ]
 
-# options = {
-#     "MUMBAI DELHI LINE": {"color": "blue"},
-#     "DEHATI BACHAO DEHATI PADHAO LINE": {"color": "green"},
-#     "AKARAVANTI REWARD LINE": {"color": "red"},
-#     "MUMBAI NAGPUR LINE": {"color": "green"},
-#     "MUMBAI BANGALORE LINE": {"color": "red"},
-#     "MUMBAI HYDERABAD LINE": {"color": "blue", "dash_array": "5, 5", "weight": 1.4},
-#     "BANGALORE HYDERABAD LINE": {"color": "blue", "dash_array": "5, 5", "weight": 1.4},
-#     "MOOLNIVASI REWARD LINE": {"color": "red", "dash_array": "5, 5", "weight": 1.4},
-#     "EAST COAST REWARD LINE": {"color": "red"},
-#     "WEST COAST REWARD LINE": {"color": "blue", "dash_array": "5, 5", "weight": 1.4},
-#     "BANGALORE MANGALORE LINE": {"color": "blue", "dash_array": "5, 5", "weight": 1.4},
-#     "KERALA LINE": {"color": "black", "dash_array": "5, 5", "weight": 1.4},
-#     "BANGALORE CHENNAI LINE": {"color": "black", "dash_array": "5, 5", "weight": 1.4},
-#     "TAMIL LINE": {"color": "black", "dash_array": "5, 5", "weight": 1.4},
-#     "BANGALORE KERALA LINE": {"color": "black", "dash_array": "5, 5", "weight": 1.4},
-#     "HYDERABAD NAGPUR LINE": {"color": "green", "dash_array": "5, 10", "weight": 1.4},
-# }
 
 for path in PATHS:
     # path.options |= options.get(path.name, {})
@@ -408,14 +462,23 @@ for path in PATHS:
     if path.name in PATHS_CARROT:
         path.options |= {"color": "black"}
     if path.name in PATHS_OPTIONAL:
-        path.options |= {"dash_array": "5, 5", "weight": 1.4}
+        path.options |= {"dash_array": "5, 5", "opacity": 0.4} # "weight": 1.4
+    path.options |= {"tooltip": tooltips.get(path.name, None)}
 
 HSR = FlagMap(
     flags=[],
     loka=Loka.INDIAN_SUBCONTINENT,
     varuna=Varuna.INDIAN_SUBCONTINENT,
     paths=PATHS,
-    custom_html="High-speed rail network to BVILD",
+    custom_html=(
+        "<p><b>High-speed rail network to BVILD</b></p>"
+        "<p><span style='color: blue; font-weight: bold'>Blue:</span> Economic lines</p>"
+        "<p><span style='color: green; font-weight: bold'>Green:</span> Cosmopolitanization / Caste-cartel breaking lines</p>"
+        "<p><span style='color: red; font-weight: bold'>Red: </span> Loyalist rewarding lines<br></p>"
+        "<p><span style='color: black; font-weight: bold'>Black: </span>Carrot lines (to be built after winning these places)</p>"
+        "<p>Thick lines are the bare minimum. Dashed lines are still very desirable.</p>"
+        "<p><b>Hover over each line</b> to see its name and purpose.</p>"
+    ),
     opacity=0.3,
     show_loka=False,
     show_varuna=False,
