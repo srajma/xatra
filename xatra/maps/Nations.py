@@ -9,8 +9,8 @@ from xatra.data import Loka, Varuna
 flags = [
     Flag(name="DARADA", matcher=DARADA),
     Flag(name="MARASA", matcher=LADAKH),
-    Flag(name="KASHMIR_PROPER", matcher=KASHMIR_PROPER),
-    Flag(name="DARVA", matcher=KASHMIR_MISC),
+    Flag(name="KASHMIR", matcher=KASHMIR),
+    Flag(name="JAMMU", matcher=JAMMU),
     Flag(name="KASHMIR_TBC", matcher=KASHMIR_TBC),
     Flag(name="INNER_KAMBOJA", matcher=INNER_KAMBOJA),
     Flag(name="VARNU", matcher=PSEUDOSATTAGYDIA),

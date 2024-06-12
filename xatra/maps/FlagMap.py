@@ -296,6 +296,7 @@ class FlagMap:
 
         # default options
         self.options = {
+            "paths": [],
             "custom_colors": {},
             "color_segments": 8,
             "labels_on_map": True,

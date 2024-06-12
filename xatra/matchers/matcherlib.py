@@ -85,7 +85,16 @@ KASHMIR_MISC = (
 )
 KASHMIR_PROPER = province("JammuandKashmir") - (KASHMIR_MISC | LADAKH)
 KASHMIR_TBC = province("Z06.1")  # POK
-KASHMIR = KASHMIR_PROPER | KASHMIR_MISC | KASHMIR_TBC
+# KASHMIR = KASHMIR_PROPER | KASHMIR_MISC | KASHMIR_TBC
+
+# alternate division for Kashmir:
+JAMMU_IND = KASHMIR_MISC | district("Z01.14.16") | district("Z01.14.14") # + poonch and rajouri
+KASHMIR_IND = province("JammuandKashmir") - (JAMMU_IND | LADAKH)
+KASHMIR_POK = taluk("Z06.1.1.6") | taluk("Z06.1.1.5")
+JAMMU_POK = KASHMIR_TBC - KASHMIR_POK
+JAMMU = JAMMU_IND | JAMMU_POK
+KASHMIR = KASHMIR_IND | KASHMIR_POK
+
 DARADA = province("Gilgit-Baltistan")
 KHYBER_HIM = district("Malakand") | district("Hazara")
 ASSAM_HIM = (
