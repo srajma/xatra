@@ -90,9 +90,11 @@ sample.plot(path_out="examples/sample.html")
 
 ## TODO
 
-If you're interested in contributing to this open-source project, please do so! I'm an amateur at coding, and this is just a side-project of mine, and I'm quite busy with real work to do everything I wish I could. 
+[UPDATE: moved to [issues](https://github.com/srajma/xatra/issues)
 
-Ideally if you'd like to contribute, create an issue and assign it to yourself, then start a pull request. I _will_ review and approve pull requests daily. Here's a to-do list of priorities you could work on:
+If you're interested in contributing to this open-source project, please do so! This is just a side-project of mine, and I'm quite busy with real work to do everything I wish I could. 
+
+Ideally if you'd like to contribute, start a pull request and link to it on the relevant issue. I _will_ review and approve pull requests daily. Here's a to-do list of priorities you could work on:
 
 - [ ] Slider-based control for dynamic maps -- right now each year is just a layer which you can toggle by pressing the "down" key in the toggle. // Handling for dynamic (year-wise) maps is _terribly_ inefficient: you create a new layer with GeoJSON data for each "breakpoint year" (year at which a territorial change occurs) -- whereas the GeoJSON really remains the same in all the years, and only the styling and other properties should change. Even a tiny sample map I made [examples/dynamic.html](examples/dynamic.html) as an example is 14MB. I don't think this can be fixed with Folium at all -- maybe we need an alternate `matplotlib` implementation for dynamic maps, or work with Leaflet.js directly, idk.
 - [ ] Make example maps and visualizations:
@@ -113,7 +115,7 @@ Ideally if you'd like to contribute, create an issue and assign it to yourself, 
 - [x] handling for making cities appear on map (`data.Pura`)
 - [ ] Make `plot_flags` faster by directly calculating `flag_gdf` instead of from `loka_with_features`
 - [ ] Allow custom JSON tooltips to be added at least in `plot_flags` Or descs below via kwargs in `Flag`, `Label`
-- [ ] For Matchers that can be vectorized, make them more effective
+- [ ] For Matchers that can be vectorized, make them more effective [probably WONTFIX]
 - [x] change SEA to use level 1 features instead of level 2
 - [x] option to drop features with no flags
 - [x] custom_labels option
