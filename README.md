@@ -90,7 +90,7 @@ sample.plot(path_out="examples/sample.html")
 
 ## TODO
 
-[UPDATE: moved to [issues](https://github.com/srajma/xatra/issues)
+[UPDATE: moved to [issues](https://github.com/srajma/xatra/issues)]
 
 If you're interested in contributing to this open-source project, please do so! This is just a side-project of mine, and I'm quite busy with real work to do everything I wish I could. 
 
