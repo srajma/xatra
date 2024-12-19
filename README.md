@@ -27,6 +27,9 @@ colonies.EARLY_SUVARNABHUMI.plot(path_out="examples/colonies/EARLY_SUVARNABHUMI.
 colonies.SEA_ROUTES.plot(path_out="examples/colonies/SEA_ROUTES.html")
 ```
 
+![](https://srajma.github.io/writing/-attachments/xatra/indosphere_2.png)
+![](https://srajma.github.io/writing/-attachments/xatra/searoutes_2.png)
+
 The outputs are in 
 * [examples/nations/INDIC.html](examples/nations/INDIC.html)
 * [examples/nations/SILKRD.html](examples/nations/SILKRD.html)
