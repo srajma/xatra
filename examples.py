@@ -42,7 +42,7 @@ colonies.SEA_ROUTES.plot(
 # %% Indian spheres of influence
 mandala.MANDALA.plot(
     # mode="flags_as_layers",
-    path_out="examples/colonies/MANDALA.html",
+    path_out="examples/mandala/MANDALA.html",
     drop_orphans=True,
     verbose=True
 )

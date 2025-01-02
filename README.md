@@ -25,7 +25,7 @@ nations.SEA_GREATER.plot(path_out="examples/nations/SEA_GREATER.html")
 nations.INDOSPHERE.plot(path_out="examples/nations/INDOSPHERE.html")
 colonies.EARLY_SUVARNABHUMI.plot(path_out="examples/colonies/EARLY_SUVARNABHUMI.html")
 colonies.SEA_ROUTES.plot(path_out="examples/colonies/SEA_ROUTES.html")
-mandala.MANDALA.plot(path_out="examples/colonies/MANDALA.html")
+mandala.MANDALA.plot(path_out="examples/mandala/MANDALA.html")
 ```
 
 ![](https://srajma.github.io/writing/-attachments/xatra/indosphere_2.png)
@@ -38,7 +38,7 @@ The outputs are in
 * [examples/nations/INDOSPHERE.html](examples/nations/INDOSPHERE.html).
 * [examples/colonies/EARLY_SUVARNABHUMI.html](examples/colonies/EARLY_SUVARNABHUMI.html)
 * [examples/colonies/SEA_ROUTES.html](examples/colonies/SEA_ROUTES.html)
-* [examples/colonies/MANDALA.html](examples/colonies/MANDALA.html)
+* [examples/mandala/MANDALA.html](examples/mandala/MANDALA.html)
 
 Note: view this documentation,
  - through the project website: [srajma.github.io/xatra](https://srajma.github.io/xatra/) to see the visualizations properly
