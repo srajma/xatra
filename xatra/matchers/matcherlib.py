@@ -88,7 +88,9 @@ KASHMIR_TBC = province("Z06.1")  # POK
 # KASHMIR = KASHMIR_PROPER | KASHMIR_MISC | KASHMIR_TBC
 
 # alternate division for Kashmir:
-JAMMU_IND = KASHMIR_MISC | district("Z01.14.16") | district("Z01.14.14") # + poonch and rajouri
+JAMMU_IND = (
+    KASHMIR_MISC | district("Z01.14.16") | district("Z01.14.14")
+)  # + poonch and rajouri
 KASHMIR_IND = province("JammuandKashmir") - (JAMMU_IND | LADAKH)
 KASHMIR_POK = taluk("Z06.1.1.6") | taluk("Z06.1.1.5")
 JAMMU_POK = KASHMIR_TBC - KASHMIR_POK
@@ -270,6 +272,7 @@ SUMATRA = (
 ANDAMAN_NICOBAR = province("IND.1")
 
 PAPUA_IDN = province("IDN.22") | province("IDN.23")
+PHILIPPINES = country("PHL")
 
 # gangetic
 UP_CEDI = (
@@ -1002,6 +1005,7 @@ AGNI = taluk("CHN.28.3.8")
 QIEMO = taluk("CHN.28.3.6")
 KORLA = taluk("CHN.28.3.4")
 TURFAN = district("CHN.28.14")
+XINJIANG = province("CHN.28")
 TARIM = (
     district("CHN.28.1")
     | district("CHN.28.3")
@@ -1009,7 +1013,7 @@ TARIM = (
     | district("CHN.28.10")
     | district("CHN.28.11")
 )
-DZUNGARIA = province("CHN.28") - TARIM
+DZUNGARIA = XINJIANG - TARIM
 MONGOLIA = country("Mongolia") | province("CHN.19")
 
 # big regions
@@ -1046,6 +1050,7 @@ SEA_MARITIME = (
     | KEPULAUAN
     | BANGKA
     | ANDAMAN_NICOBAR
+    | PHILIPPINES
 )
 SEA_MAINLAND = (
     SIAM | BURMA | LAOS | KHMER | CHAM | SIAM_BURMA_INTERM | KAREN | TIBET_BURMA_INTERM
@@ -1091,13 +1096,12 @@ LEVANT = (
 IRAN = country("IRN")
 IRANIC = IRAN | CENTRAL_ASIA_GREATER
 IRANIC_GREATER = IRANIC | TARIM
-MEDITERRANEAN = (
+
+MEDITERRANEAN_EAST = (
     country("GRC")
     | country("TUR")
     | country("CYP")
     | country("EGY")
-    | country("LBY")
-    | country("TUN")
     | country("ALB")
     | country("BIH")
     | country("HRV")
@@ -1105,7 +1109,26 @@ MEDITERRANEAN = (
     | country("MLT")  # not downloaded
     | country("MNE")
     | country("SVN")
-    | country("ESP")
+    | country("ISR")
+    | country("PSE")
+    | country("LBN")
+    | country("SDN")
+) - (
+    province("EGY.14")
+    | province("EGY.14")
+    | province("SDN.10")
+    | province("SDN.8")
+    | province("SDN.9")
+    | province("SDN.4")
+    | province("SDN.14")
+    | province("SDN.5")
+    | province("SDN.17")
+    | province("SDN.15")
+    | province("SDN.16")
+)
+
+MEDITERRANEAN_WEST = (
+    country("ESP")
     | province("FRA.11")
     | province("FRA.13")
     | country("MCO")  # not downloaded
@@ -1116,10 +1139,6 @@ MEDITERRANEAN = (
     | country("DZA")
     | country("LBY")
     | country("TUN")
-    | country("ISR")
-    | country("PSE")
-    | country("LBN")
-    | country("SDN")
 ) - (
     province("DZA.18")
     | province("DZA.33")
@@ -1141,17 +1160,8 @@ MEDITERRANEAN = (
     | province("LBY.5")
     | province("LBY.9")
     | province("LBY.6")
-    | province("EGY.14")
-    | province("EGY.14")
-    | province("SDN.10")
-    | province("SDN.8")
-    | province("SDN.9")
-    | province("SDN.4")
-    | province("SDN.14")
-    | province("SDN.5")
-    | province("SDN.17")
-    | province("SDN.15")
 )
+MEDITERRANEAN = MEDITERRANEAN_EAST | MEDITERRANEAN_WEST
 
 GULF = (
     country("ARE")
@@ -1164,19 +1174,89 @@ GULF = (
 )
 
 AFRICA_EAST_SPOTTY = (
-    country("SOM")
-    | country("TZA")
-    | country("DJI")
-    | country("ERI")
-    | country("MDG")
+    country("SOM") | country("TZA") | country("DJI") | country("ERI") | country("MDG")
 )
 
 INDIAN_OCEAN = (
-    SUBCONTINENT_PROPER |
-    SEA |
-    GULF |
-    AFRICA_EAST_SPOTTY |
-    IRANIC |
-    LEVANT |
-    MEDITERRANEAN
+    SUBCONTINENT_PROPER
+    | SEA
+    | GULF
+    | AFRICA_EAST_SPOTTY
+    | IRANIC
+    | LEVANT
+    | MEDITERRANEAN
+)
+
+MANCHURIA = province("CHN.11") | province("CHN.17") | province("CHN.18")
+MONGOLIA = province("CHN.19") | country("MNG")
+CHINA_PROPER = country("CHN") - (TIBET | XINJIANG | MANCHURIA | MONGOLIA)
+JAPAN = country("JPN")
+KOREA = country("KOR") | country("PRK")
+ARMENIA = country("ARM")
+AZER = country("AZE")
+GEORGIA = country("GEO")
+MITANNI_SYRIA = (
+    province("SYR.9")
+    | province("SYR.14")
+    | province("SYR.8")
+    | province("SYR.11")
+    | province("SYR.10")
+    | province("SYR.2")
+    | province("SYR.3")
+    | province("SYR.7")
+    | province("SYR.1")
+)
+MITANNI_TURKEY = (
+    province("TUR.58")
+    | province("TUR.1")
+    | province("TUR.42")
+    | province("TUR.55")
+    | province("TUR.64")
+    | province("TUR.33")
+    | province("TUR.48")
+    | province("TUR.2")
+    | province("TUR.68")
+    | province("TUR.29")
+    | province("TUR.26")
+    | province("TUR.57")
+    | province("TUR.14")
+    | province("TUR.69")
+    | province("TUR.71")
+)
+MITANNI_IRAQ = (
+    province("IRQ.17")
+    | province("IRQ.8")
+    | province("IRQ.16")
+    | province("IRQ.6")
+    | province("IRQ.12")
+)
+MITANNI = MITANNI_SYRIA | MITANNI_TURKEY | MITANNI_IRAQ
+SOCOTRA = district("YEM.12.20") | district("YEM.12.18")
+KALMYKIA = province("RUS.22")
+BURYATIA = province("RUS.9")
+TUVA = province("RUS.71")
+PRIMORYE = province("RUS.56")
+AMUR = province("RUS.3")
+BUDDHIST_RUSSIA = KALMYKIA | BURYATIA | TUVA | PRIMORYE | AMUR
+
+PRATIHARA_RAIDS = (
+    province("IRN.11")
+    | province("IRN.3")
+    | province("IRN.15")
+    | province("IRQ.2")
+    | country("ARE")
+    | province("OMN.2")
+)  # | province("OMN.3") | province("OMN.11")
+
+WORLD = (
+    INDOSPHERE
+    | INDIAN_OCEAN
+    | BUDDHIST_RUSSIA
+    | CHINA_PROPER
+    | NORTH_VIETNAM
+    | JAPAN
+    | KOREA
+    | MONGOLIA
+    | ARMENIA
+    | SOCOTRA
 )

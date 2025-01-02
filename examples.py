@@ -1,6 +1,7 @@
 # %%
 import xatra.maps.nations as nations
 import xatra.maps.colonies as colonies
+import xatra.maps.mandala as mandala
 import xatra.maps.hsr as hsr
 
 # %% nations of the Indian imperial core in antiquity
@@ -37,6 +38,13 @@ colonies.EARLY_SUVARNABHUMI.plot(
 colonies.SEA_ROUTES.plot(
     path_out="examples/colonies/SEA_ROUTES.html",
     verbose=True,
+)
+# %% Indian spheres of influence
+mandala.MANDALA.plot(
+    # mode="flags_as_layers",
+    path_out="examples/colonies/MANDALA.html",
+    drop_orphans=True,
+    verbose=True
 )
 # %% graphical aid for matchers: india
 nations.INDIC.plot(

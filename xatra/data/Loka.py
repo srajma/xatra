@@ -43,9 +43,13 @@ AFGHANISTAN = DataCollection(DataItem(type="feature", id="AFG", level=2))
 CHINESE_SUBCONTINENT = DataCollection(
     DataItem(type="feature", id="CHN", level=2),
     DataItem(type="feature", id="MNG", level=2),
+    DataItem(type="feature", id="JPN", level=1),
+    DataItem(type="feature", id="KOR", level=1),
+    DataItem(type="feature", id="PRK", level=1),
+    DataItem(type="feature", id="RUS", level=2),
     DataItem(type="break", id="CHN.28_1", level=3),
 )
-"""East Asia, modern political boundaries. TODO: include Japan and Korea"""
+"""East Asia, modern political boundaries."""
 
 SEA_MAINLAND = DataCollection(
     DataItem(
@@ -79,6 +83,7 @@ SEA_MARITIME = DataCollection(
     DataItem(type="feature", id="BRN", level=1),
     DataItem(type="feature", id="TLS", level=1),
     DataItem(type="feature", id="SGP", level=1),
+    DataItem(type="feature", id="PHL", level=1),
     filter=SEA_MARITIME,
 )
 """Maritime Southeast Asia, LEVEL 1 FEATURES."""
@@ -89,6 +94,7 @@ SEA_MARITIME_2 = DataCollection(
     DataItem(type="feature", id="BRN", level=2),
     DataItem(type="feature", id="TLS", level=2),
     DataItem(type="feature", id="SGP", level=1),
+    DataItem(type="feature", id="PHL", level=1),
     filter=SEA_MARITIME,
 )
 """Maritime Southeast Asia, LEVEL 2 FEATURES."""
@@ -142,7 +148,7 @@ GULF = DataCollection(
     DataItem(type="feature", id="ARE", level=1),
     DataItem(type="feature", id="OMN", level=1),
     DataItem(type="feature", id="SAU", level=2),
-    DataItem(type="feature", id="YEM", level=1),
+    DataItem(type="feature", id="YEM", level=2),
 )
 """Gulf, modern political boundaries. Includes Kuwait and Yemen. LEVEL 2 FEATURES."""
 
@@ -221,6 +227,12 @@ AFRICA_EAST_2 = DataCollection(
 )
 """East Africa, modern political boundaries. LEVEL 2 FEATURES."""
 
+CAUCASUS = DataCollection(
+    DataItem(type="feature", id="GEO", level=1),
+    DataItem(type="feature", id="ARM", level=1),
+    DataItem(type="feature", id="AZE", level=1),
+)
+
 INDOSPHERE = DataCollection(
     INDIAN_SUBCONTINENT,
     IRANIAN_SUBCONTINENT,
@@ -242,6 +254,8 @@ WORLD = DataCollection(
     IRANIAN_SUBCONTINENT,
     CHINESE_SUBCONTINENT,
     INDIAN_SUBCONTINENT,
+    CAUCASUS,
+    filter=WORLD,
 )
 """Everything we've got."""
 
