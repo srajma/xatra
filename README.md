@@ -12,11 +12,12 @@ Libraries
 - [ ] copy maps from old xatra
 
 Development
-- [ ] xatra.RawDataMap
+- [ ] xatra.AdminMap
 - [ ] xatra.DataMap
 - [ ] possibly calculate and keep simplified geometries
 - [ ] loading geojson from file instead of storing it in html; i.e. with a server
 
 Interactive platform
 - [ ] DSL
-- [ ] 
+- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
+- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
