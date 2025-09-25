@@ -65,10 +65,10 @@ HTML_TEMPLATE = Template(
       function renderRivers() {
         for (const r of payload.rivers) {
           if (!r.geometry) continue;
-          const layer = addGeoJSON(r.geometry, { style: { className: 'river' } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
-          if (r.css) {
-            layer.setStyle({ className: 'river ' + r.css });
-          }
+          let className = 'river';
+          if (r.class_name) className += ' ' + r.class_name;
+          const layer = addGeoJSON(r.geometry, { style: { className } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
+          if (r.id) layer.getElement().setAttribute('id', r.id);
           layers.rivers.push(layer);
         }
       }
@@ -76,10 +76,10 @@ HTML_TEMPLATE = Template(
       function renderPaths() {
         for (const p of payload.paths) {
           const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
-          const layer = L.polyline(latlngs, { className: 'path' }).addTo(map).bindTooltip(p.label);
-          if (p.css) {
-            layer.setStyle({ className: 'path ' + p.css });
-          }
+          let className = 'path';
+          if (p.class_name) className += ' ' + p.class_name;
+          const layer = L.polyline(latlngs, { className }).addTo(map).bindTooltip(p.label);
+          if (p.id) layer.getElement().setAttribute('id', p.id);
           layers.paths.push(layer);
         }
       }
@@ -93,12 +93,15 @@ HTML_TEMPLATE = Template(
 
       function renderTexts() {
         for (const t of payload.texts) {
+          let className = 'text-label';
+          if (t.class_name) className += ' ' + t.class_name;
           const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { 
             permanent: true, 
             direction: 'center', 
-            className: 'text-label',
+            className: className,
             offset: [0, 0]
           });
+          if (t.id) layer.getElement().setAttribute('id', t.id);
           layers.texts.push(layer);
         }
       }
