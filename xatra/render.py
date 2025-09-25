@@ -365,13 +365,31 @@ HTML_TEMPLATE = Template(
       function setupControls() {
         const controls = document.getElementById('controls');
         if (payload.flags.mode === 'dynamic') {
-          const min = payload.flags.breakpoints[0];
-          const max = payload.flags.breakpoints[payload.flags.breakpoints.length - 1];
-          controls.innerHTML = `<input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" /> <span id="yearLabel">${min}</span>`;
-          const input = document.getElementById('year');
-          const label = document.getElementById('yearLabel');
-          input.addEventListener('input', () => { label.textContent = input.value; renderDynamic(parseInt(input.value)); });
-          renderDynamic(min);
+          // Calculate breakpoints from all object types, not just flags
+          const allPeriods = [];
+          
+          // Add flag periods
+          if (payload.flags.breakpoints) {
+            allPeriods.push(...payload.flags.breakpoints);
+          }
+          
+          // Add periods from other object types
+          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || [])]) {
+            if (obj.period) {
+              allPeriods.push(obj.period[0], obj.period[1]);
+            }
+          }
+          
+          if (allPeriods.length > 0) {
+            const uniquePeriods = [...new Set(allPeriods)].sort((a, b) => a - b);
+            const min = uniquePeriods[0];
+            const max = uniquePeriods[uniquePeriods.length - 1];
+            controls.innerHTML = `<input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" /> <span id="yearLabel">${min}</span>`;
+            const input = document.getElementById('year');
+            const label = document.getElementById('yearLabel');
+            input.addEventListener('input', () => { label.textContent = input.value; renderDynamic(parseInt(input.value)); });
+            renderDynamic(min);
+          }
         }
       }
 
