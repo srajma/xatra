@@ -390,6 +390,9 @@ HTML_TEMPLATE = Template(
             input.addEventListener('input', () => { label.textContent = input.value; renderDynamic(parseInt(input.value)); });
             renderDynamic(min);
           }
+        } else {
+          // Hide controls for static maps
+          controls.style.display = 'none';
         }
       }
 
