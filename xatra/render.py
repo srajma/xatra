@@ -16,12 +16,13 @@ HTML_TEMPLATE = Template(
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
       html, body, #map { height: 100%; margin: 0; padding: 0; }
-      #controls { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.9); padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
-      #fixed { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 8px 12px; border-radius: 8px; max-width: 360px; }
+      #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #fixed { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
       .flag { stroke: #333; stroke-width: 1; fill: rgba(200,0,0,0.3); }
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
+      .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
       {{ css }}
     </style>
   </head>
@@ -43,7 +44,11 @@ HTML_TEMPLATE = Template(
 
       function addGeoJSON(geojson, options, tooltip) {
         const layer = L.geoJSON(geojson, options);
-        if (tooltip) layer.bindTooltip(tooltip);
+        if (tooltip) layer.bindTooltip(tooltip, { 
+          direction: 'top',
+          offset: [0, -10],
+          opacity: 0.9
+        });
         layer.addTo(map);
         return layer;
       }
@@ -60,7 +65,12 @@ HTML_TEMPLATE = Template(
       function renderRivers() {
         for (const r of payload.rivers) {
           if (!r.geometry) continue;
-          const layer = addGeoJSON(r.geometry, { style: { className: 'river' } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
+          const style = { 
+            className: 'river',
+            color: r.color || '#0066cc',
+            weight: r.width || 1
+          };
+          const layer = addGeoJSON(r.geometry, { style }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
           layers.rivers.push(layer);
         }
       }
@@ -68,7 +78,11 @@ HTML_TEMPLATE = Template(
       function renderPaths() {
         for (const p of payload.paths) {
           const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
-          const layer = L.polyline(latlngs, { className: 'path' }).addTo(map).bindTooltip(p.label);
+          const layer = L.polyline(latlngs, { 
+            className: 'path',
+            color: p.color || '#444',
+            weight: p.width || 2
+          }).addTo(map).bindTooltip(p.label);
           layers.paths.push(layer);
         }
       }
@@ -82,7 +96,12 @@ HTML_TEMPLATE = Template(
 
       function renderTexts() {
         for (const t of payload.texts) {
-          const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { permanent: true, direction: 'center', className: 'text ' + (t.css || '')});
+          const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { 
+            permanent: true, 
+            direction: 'center', 
+            className: 'text-label',
+            offset: [0, 0]
+          });
           layers.texts.push(layer);
         }
       }

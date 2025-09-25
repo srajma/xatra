@@ -27,13 +27,16 @@ class RiverEntry:
     label: str
     geometry: Dict[str, Any]
     note: Optional[str] = None
+    color: Optional[str] = None
+    width: Optional[int] = None
 
 
 @dataclass
 class PathEntry:
     label: str
     coords: List[Tuple[float, float]]
-    css: Optional[str] = None
+    color: Optional[str] = None
+    width: Optional[int] = None
 
 
 @dataclass
@@ -73,12 +76,12 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note))
 
-    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None) -> None:
-        self._rivers.append(RiverEntry(label=label, geometry=value, note=note))
+    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, color: Optional[str] = None, width: Optional[int] = None) -> None:
+        self._rivers.append(RiverEntry(label=label, geometry=value, note=note, color=color, width=width))
 
-    def Path(self, label: str, value: List[List[float]], css: Optional[str] = None) -> None:
+    def Path(self, label: str, value: List[List[float]], color: Optional[str] = None, width: Optional[int] = None) -> None:
         coords = [(float(lat), float(lon)) for lat, lon in value]
-        self._paths.append(PathEntry(label=label, coords=coords, css=css))
+        self._paths.append(PathEntry(label=label, coords=coords, color=color, width=width))
 
     def Point(self, label: str, position: List[float]) -> None:
         self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1]))))
@@ -111,12 +114,15 @@ class FlagMap:
             "label": r.label,
             "geometry": r.geometry,
             "note": r.note,
+            "color": r.color,
+            "width": r.width,
         } for r in self._rivers]
 
         paths_serialized = [{
             "label": p.label,
             "coords": p.coords,
-            "css": p.css,
+            "color": p.color,
+            "width": p.width,
         } for p in self._paths]
 
         points_serialized = [{
