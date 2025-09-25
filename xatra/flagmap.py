@@ -112,20 +112,9 @@ class FlagMap:
             name: Display name for the layer (defaults to provider name or derived from URL)
             default: Whether this should be the default layer
         """
-        # Handle provider names from leaflet-providers
-        provider_urls = {
-            "OpenStreetMap": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            "Esri.WorldImagery": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            "OpenTopoMap": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-            "Esri.WorldPhysical": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
-            "CartoDB.Positron": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-            "CartoDB.PositronNoLabels": "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
-            "USGS.USImageryTopo": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
-            "Esri.OceanBasemap": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}",
-        }
         
-        if url_or_provider in provider_urls:
-            url = provider_urls[url_or_provider]
+        if url_or_provider in self.PROVIDER_URLS:
+            url = self.PROVIDER_URLS[url_or_provider]
             display_name = name or url_or_provider
         else:
             url = url_or_provider
@@ -161,10 +150,12 @@ class FlagMap:
 
     def _add_default_base_options(self) -> None:
         """Add default base layer options."""
-        self.BaseOption("OpenStreetMap", default=True)
-        self.BaseOption("Esri.WorldImagery")
-        self.BaseOption("OpenTopoMap")
-        self.BaseOption("Esri.WorldPhysical")
+        # self.BaseOption("OpenStreetMap", default=True)
+        # self.BaseOption("Esri.WorldImagery")
+        # self.BaseOption("OpenTopoMap")
+        # self.BaseOption("Esri.WorldPhysical")
+        # let's not do this, because it makes it impossible to override the default
+        pass
 
     def _export_json(self) -> Dict[str, Any]:
         # Resolve territories to GeoJSON shapes
@@ -228,3 +219,15 @@ class FlagMap:
         with open(out_json, "w", encoding="utf-8") as f:
             json.dump(payload, f)
         export_html(payload, out_html)
+
+    # Handle provider names from leaflet-providers
+    PROVIDER_URLS = {
+        "OpenStreetMap": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "Esri.WorldImagery": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "OpenTopoMap": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        "Esri.WorldPhysical": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
+        "CartoDB.Positron": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        "CartoDB.PositronNoLabels": "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+        "USGS.USImageryTopo": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
+        "Esri.OceanBasemap": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}",
+    }
