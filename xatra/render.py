@@ -45,7 +45,7 @@ HTML_TEMPLATE = Template(
       const map = L.map('map').setView([22, 79], 4);
       
       // Debug mode - set to true to show centroid markers
-      const DEBUG_CENTROIDS = true;
+      const DEBUG_CENTROIDS = false;
       
       // Base layer management
       const baseLayers = {};
