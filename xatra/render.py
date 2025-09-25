@@ -68,7 +68,6 @@ HTML_TEMPLATE = Template(
           let className = 'river';
           if (r.class_name) className += ' ' + r.class_name;
           const layer = addGeoJSON(r.geometry, { style: { className } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
-          if (r.id) layer.getElement().setAttribute('id', r.id);
           layers.rivers.push(layer);
         }
       }
@@ -79,7 +78,6 @@ HTML_TEMPLATE = Template(
           let className = 'path';
           if (p.class_name) className += ' ' + p.class_name;
           const layer = L.polyline(latlngs, { className }).addTo(map).bindTooltip(p.label);
-          if (p.id) layer.getElement().setAttribute('id', p.id);
           layers.paths.push(layer);
         }
       }
@@ -101,7 +99,6 @@ HTML_TEMPLATE = Template(
             className: className,
             offset: [0, 0]
           });
-          if (t.id) layer.getElement().setAttribute('id', t.id);
           layers.texts.push(layer);
         }
       }
