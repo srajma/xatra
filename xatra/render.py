@@ -25,6 +25,7 @@ HTML_TEMPLATE = Template(
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
+      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: rgba(255,255,255,0.8); border: 1px solid #666; border-radius: 3px; padding: 2px 4px; }
       {{ css }}
     </style>
   </head>
@@ -66,13 +67,35 @@ HTML_TEMPLATE = Template(
 
       function addGeoJSON(geojson, options, tooltip) {
         const layer = L.geoJSON(geojson, options);
-        if (tooltip) layer.bindTooltip(tooltip, { 
-          direction: 'top',
-          offset: [0, -10],
-          opacity: 0.9
-        });
+        if (tooltip) {
+          layer.bindTooltip(tooltip, { 
+            direction: 'top',
+            offset: [0, -10],
+            opacity: 0.9,
+            interactive: true,
+            permanent: false,
+            sticky: true
+          });
+        }
         layer.addTo(map);
         return layer;
+      }
+
+      function getCentroid(geometry) {
+        // Simple centroid calculation for GeoJSON geometries
+        if (geometry.type === 'Polygon') {
+          const coords = geometry.coordinates[0]; // Exterior ring
+          let x = 0, y = 0;
+          for (const coord of coords) {
+            x += coord[0];
+            y += coord[1];
+          }
+          return [y / coords.length, x / coords.length]; // [lat, lng]
+        } else if (geometry.type === 'MultiPolygon') {
+          // Use first polygon for simplicity
+          return getCentroid({ type: 'Polygon', coordinates: geometry.coordinates[0] });
+        }
+        return [0, 0]; // Fallback
       }
 
       function renderStatic() {
@@ -81,6 +104,18 @@ HTML_TEMPLATE = Template(
           if (!f.geometry) continue;
           const layer = addGeoJSON(f.geometry, { style: { className: 'flag' } }, `${f.label}${f.note ? ' — ' + f.note : ''}`);
           layers.flags.push(layer);
+          
+          // Add label at centroid
+          const centroid = getCentroid(f.geometry);
+          if (centroid[0] !== 0 || centroid[1] !== 0) {
+            const labelLayer = L.marker(centroid, { opacity: 0.0 }).addTo(map).bindTooltip(f.label, { 
+              permanent: true, 
+              direction: 'center', 
+              className: 'flag-label',
+              offset: [0, 0]
+            });
+            layers.flags.push(labelLayer);
+          }
         }
       }
 
@@ -142,6 +177,18 @@ HTML_TEMPLATE = Template(
           if (!f.geometry) continue;
           const layer = addGeoJSON(f.geometry, { style: { className: 'flag' } }, `${f.label}${f.note ? ' — ' + f.note : ''}`);
           layers.flags.push(layer);
+          
+          // Add label at centroid
+          const centroid = getCentroid(f.geometry);
+          if (centroid[0] !== 0 || centroid[1] !== 0) {
+            const labelLayer = L.marker(centroid, { opacity: 0.0 }).addTo(map).bindTooltip(f.label, { 
+              permanent: true, 
+              direction: 'center', 
+              className: 'flag-label',
+              offset: [0, 0]
+            });
+            layers.flags.push(labelLayer);
+          }
         }
       }
 
