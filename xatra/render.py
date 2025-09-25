@@ -25,8 +25,8 @@ HTML_TEMPLATE = Template(
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
-      .flag-label-container { background: none; border: none; }
-      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; text-align: center; white-space: nowrap; transform: translate(-50%, -50%); }
+      .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
+      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
       {{ css }}
     </style>
   </head>
