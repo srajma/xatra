@@ -25,7 +25,7 @@ HTML_TEMPLATE = Template(
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
-      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: rgba(255,255,255,0.8); border: 1px solid #666; border-radius: 3px; padding: 2px 4px; }
+      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; }
       {{ css }}
     </style>
   </head>
@@ -42,6 +42,9 @@ HTML_TEMPLATE = Template(
     <script>
       const payload = {{ payload | safe }};
       const map = L.map('map').setView([22, 79], 4);
+      
+      // Debug mode - set to true to show centroid markers
+      const DEBUG_CENTROIDS = true;
       
       // Base layer management
       const baseLayers = {};
@@ -168,6 +171,18 @@ HTML_TEMPLATE = Template(
               offset: [0, 0]
             });
             layers.flags.push(labelLayer);
+            
+            // Debug: Add visible marker for centroid
+            if (DEBUG_CENTROIDS) {
+              const debugMarker = L.circleMarker(centroid, {
+                radius: 8,
+                color: 'red',
+                fillColor: 'yellow',
+                fillOpacity: 0.8,
+                weight: 2
+              }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
+              layers.flags.push(debugMarker);
+            }
           }
         }
       }
@@ -241,6 +256,18 @@ HTML_TEMPLATE = Template(
               offset: [0, 0]
             });
             layers.flags.push(labelLayer);
+            
+            // Debug: Add visible marker for centroid
+            if (DEBUG_CENTROIDS) {
+              const debugMarker = L.circleMarker(centroid, {
+                radius: 8,
+                color: 'red',
+                fillColor: 'yellow',
+                fillOpacity: 0.8,
+                weight: 2
+              }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
+              layers.flags.push(debugMarker);
+            }
           }
         }
       }
