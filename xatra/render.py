@@ -55,8 +55,8 @@ HTML_TEMPLATE = Template(
         baseLayers[option.name] = layer;
       }
       
-      // Find default layer
-      const defaultOption = payload.base_options?.find(opt => opt.default) || payload.base_options?.[0];
+      // Find default layer - prioritize the one marked as default=True
+      const defaultOption = payload.base_options?.find(opt => opt.default === true);
       if (defaultOption) {
         currentBaseLayer = baseLayers[defaultOption.name];
         currentBaseLayer.addTo(map);
@@ -155,14 +155,21 @@ HTML_TEMPLATE = Template(
         select.appendChild(noneOption);
         
         // Add base layer options
+        let defaultSelected = false;
         for (const option of payload.base_options || []) {
           const optionElement = document.createElement('option');
           optionElement.value = option.name;
           optionElement.textContent = option.name;
-          if (option.default) {
+          if (option.default === true) {
             optionElement.selected = true;
+            defaultSelected = true;
           }
           select.appendChild(optionElement);
+        }
+        
+        // If no default was set, select "None"
+        if (!defaultSelected) {
+          select.selectedIndex = 0; // Select "None"
         }
         
         // Handle layer changes
