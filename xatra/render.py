@@ -82,18 +82,71 @@ HTML_TEMPLATE = Template(
       }
 
       function getCentroid(geometry) {
-        // Simple centroid calculation for GeoJSON geometries
+        // Proper geometric centroid calculation
         if (geometry.type === 'Polygon') {
           const coords = geometry.coordinates[0]; // Exterior ring
-          let x = 0, y = 0;
-          for (const coord of coords) {
-            x += coord[0];
-            y += coord[1];
+          if (coords.length < 3) return [0, 0];
+          
+          let area = 0;
+          let cx = 0, cy = 0;
+          
+          for (let i = 0; i < coords.length - 1; i++) {
+            const x1 = coords[i][0];
+            const y1 = coords[i][1];
+            const x2 = coords[i + 1][0];
+            const y2 = coords[i + 1][1];
+            
+            const cross = x1 * y2 - x2 * y1;
+            area += cross;
+            cx += (x1 + x2) * cross;
+            cy += (y1 + y2) * cross;
           }
-          return [y / coords.length, x / coords.length]; // [lat, lng]
+          
+          area *= 0.5;
+          if (Math.abs(area) < 1e-10) return [0, 0];
+          
+          cx /= (6 * area);
+          cy /= (6 * area);
+          
+          return [cy, cx]; // [lat, lng]
         } else if (geometry.type === 'MultiPolygon') {
-          // Use first polygon for simplicity
-          return getCentroid({ type: 'Polygon', coordinates: geometry.coordinates[0] });
+          // Calculate weighted centroid for all polygons
+          let totalArea = 0;
+          let weightedX = 0, weightedY = 0;
+          
+          for (const polygon of geometry.coordinates) {
+            const coords = polygon[0]; // Exterior ring
+            if (coords.length < 3) continue;
+            
+            let area = 0;
+            let cx = 0, cy = 0;
+            
+            for (let i = 0; i < coords.length - 1; i++) {
+              const x1 = coords[i][0];
+              const y1 = coords[i][1];
+              const x2 = coords[i + 1][0];
+              const y2 = coords[i + 1][1];
+              
+              const cross = x1 * y2 - x2 * y1;
+              area += cross;
+              cx += (x1 + x2) * cross;
+              cy += (y1 + y2) * cross;
+            }
+            
+            area *= 0.5;
+            if (Math.abs(area) > 1e-10) {
+              cx /= (6 * area);
+              cy /= (6 * area);
+              
+              weightedX += cx * Math.abs(area);
+              weightedY += cy * Math.abs(area);
+              totalArea += Math.abs(area);
+            }
+          }
+          
+          if (totalArea < 1e-10) return [0, 0];
+          
+          return [weightedY / totalArea, weightedX / totalArea]; // [lat, lng]
         }
         return [0, 0]; // Fallback
       }
