@@ -28,6 +28,7 @@ class RiverEntry:
     geometry: Dict[str, Any]
     note: Optional[str] = None
     classes: Optional[str] = None
+    period: Optional[Tuple[int, int]] = None
 
 
 @dataclass
@@ -35,12 +36,14 @@ class PathEntry:
     label: str
     coords: List[Tuple[float, float]]
     classes: Optional[str] = None
+    period: Optional[Tuple[int, int]] = None
 
 
 @dataclass
 class PointEntry:
     label: str
     position: Tuple[float, float]
+    period: Optional[Tuple[int, int]] = None
 
 
 @dataclass
@@ -48,11 +51,13 @@ class TextEntry:
     label: str
     position: Tuple[float, float]
     classes: Optional[str] = None
+    period: Optional[Tuple[int, int]] = None
 
 
 @dataclass
 class TitleBoxEntry:
     html: str
+    period: Optional[Tuple[int, int]] = None
 
 
 @dataclass
@@ -85,21 +90,46 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note))
 
-    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None) -> None:
-        self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes))
+    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes, period=period_tuple))
 
-    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None) -> None:
+    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         coords = [(float(lat), float(lon)) for lat, lon in value]
-        self._paths.append(PathEntry(label=label, coords=coords, classes=classes))
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple))
 
-    def Point(self, label: str, position: List[float]) -> None:
-        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1]))))
+    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None) -> None:
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple))
 
-    def Text(self, label: str, position: List[float], classes: Optional[str] = None) -> None:
-        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), classes=classes))
+    def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), classes=classes, period=period_tuple))
 
-    def TitleBox(self, html: str) -> None:
-        self._title_boxes.append(TitleBoxEntry(html=html))
+    def TitleBox(self, html: str, period: Optional[List[int]] = None) -> None:
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        self._title_boxes.append(TitleBoxEntry(html=html, period=period_tuple))
 
     def CSS(self, css: str) -> None:
         self._css.append(css)
@@ -177,23 +207,27 @@ class FlagMap:
             "geometry": r.geometry,
             "note": r.note,
             "classes": r.classes,
+            "period": list(r.period) if r.period is not None else None,
         } for r in self._rivers]
 
         paths_serialized = [{
             "label": p.label,
             "coords": p.coords,
             "classes": p.classes,
+            "period": list(p.period) if p.period is not None else None,
         } for p in self._paths]
 
         points_serialized = [{
             "label": p.label,
             "position": p.position,
+            "period": list(p.period) if p.period is not None else None,
         } for p in self._points]
 
         texts_serialized = [{
             "label": t.label,
             "position": t.position,
             "classes": t.classes,
+            "period": list(t.period) if t.period is not None else None,
         } for t in self._texts]
 
         base_options_serialized = [{
@@ -202,6 +236,11 @@ class FlagMap:
             "default": b.default,
         } for b in self._base_options]
 
+        title_boxes_serialized = [{
+            "html": ft.html,
+            "period": list(ft.period) if ft.period is not None else None,
+        } for ft in self._title_boxes]
+
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -209,7 +248,7 @@ class FlagMap:
             "paths": paths_serialized,
             "points": points_serialized,
             "texts": texts_serialized,
-            "title_boxes": [ft.html for ft in self._title_boxes],
+            "title_boxes": title_boxes_serialized,
             "base_options": base_options_serialized,
         }
 

@@ -81,3 +81,18 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
         snapshots.append({"year": year, "flags": snapshot_flags})
 
     return {"mode": "dynamic", "breakpoints": breakpoints, "snapshots": snapshots}
+
+
+def filter_by_period(items: List[Dict[str, Any]], year: int) -> List[Dict[str, Any]]:
+    """Filter items by period for a given year."""
+    filtered = []
+    for item in items:
+        period = item.get("period")
+        if period is None:
+            # No period means always visible
+            filtered.append(item)
+        else:
+            start, end = int(period[0]), int(period[1])
+            if year >= start and year < end:
+                filtered.append(item)
+    return filtered

@@ -32,7 +32,7 @@ HTML_TEMPLATE = Template(
   </head>
   <body>
     <div id="map"></div>
-    <div id="title">{% for html in title_boxes %}<div class="title-box">{{ html | safe }}</div>{% endfor %}</div>
+    <div id="title"></div>
     <div id="layer-selector">
       <label for="baseLayer">Base Layer:</label>
       <select id="baseLayer"></select>
@@ -67,7 +67,7 @@ HTML_TEMPLATE = Template(
         currentBaseLayer.addTo(map);
       }
 
-      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [] };
+      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [] };
 
       function addGeoJSON(geojson, options, tooltip) {
         const layer = L.geoJSON(geojson, options);
@@ -83,6 +83,18 @@ HTML_TEMPLATE = Template(
         }
         layer.addTo(map);
         return layer;
+      }
+
+      function filterByPeriod(items, year) {
+        return items.filter(item => {
+          const period = item.period;
+          if (period === null || period === undefined) {
+            return true; // No period means always visible
+          }
+          const start = period[0];
+          const end = period[1];
+          return year >= start && year < end;
+        });
       }
 
       function getCentroid(geometry) {
@@ -190,8 +202,9 @@ HTML_TEMPLATE = Template(
         }
       }
 
-      function renderRivers() {
-        for (const r of payload.rivers) {
+      function renderRivers(year = null) {
+        const rivers = year !== null ? filterByPeriod(payload.rivers, year) : payload.rivers;
+        for (const r of rivers) {
           if (!r.geometry) continue;
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
@@ -200,8 +213,9 @@ HTML_TEMPLATE = Template(
         }
       }
 
-      function renderPaths() {
-        for (const p of payload.paths) {
+      function renderPaths(year = null) {
+        const paths = year !== null ? filterByPeriod(payload.paths, year) : payload.paths;
+        for (const p of paths) {
           const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
           let className = 'path';
           if (p.classes) className += ' ' + p.classes;
@@ -210,15 +224,17 @@ HTML_TEMPLATE = Template(
         }
       }
 
-      function renderPoints() {
-        for (const p of payload.points) {
+      function renderPoints(year = null) {
+        const points = year !== null ? filterByPeriod(payload.points, year) : payload.points;
+        for (const p of points) {
           const layer = L.marker([p.position[0], p.position[1]]).addTo(map).bindTooltip(p.label);
           layers.points.push(layer);
         }
       }
 
-      function renderTexts() {
-        for (const t of payload.texts) {
+      function renderTexts(year = null) {
+        const texts = year !== null ? filterByPeriod(payload.texts, year) : payload.texts;
+        for (const t of texts) {
           let className = 'text-label';
           if (t.classes) className += ' ' + t.classes;
           const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { 
@@ -231,13 +247,32 @@ HTML_TEMPLATE = Template(
         }
       }
 
+      function renderTitleBoxes(year = null) {
+        const titleBoxes = year !== null ? filterByPeriod(payload.title_boxes, year) : payload.title_boxes;
+        const titleDiv = document.getElementById('title');
+        titleDiv.innerHTML = titleBoxes.map(tb => `<div class="title-box">${tb.html}</div>`).join('');
+      }
+
       function clearFlagLayers() {
         for (const l of layers.flags) { map.removeLayer(l); }
         layers.flags = [];
       }
 
+      function clearAllLayers() {
+        for (const l of layers.flags) { map.removeLayer(l); }
+        for (const l of layers.rivers) { map.removeLayer(l); }
+        for (const l of layers.paths) { map.removeLayer(l); }
+        for (const l of layers.points) { map.removeLayer(l); }
+        for (const l of layers.texts) { map.removeLayer(l); }
+        layers.flags = [];
+        layers.rivers = [];
+        layers.paths = [];
+        layers.points = [];
+        layers.texts = [];
+      }
+
       function renderDynamic(year) {
-        clearFlagLayers();
+        clearAllLayers();
         const snapshots = payload.flags.snapshots;
         // find closest snapshot at or before year
         let current = snapshots[0];
@@ -275,6 +310,13 @@ HTML_TEMPLATE = Template(
             }
           }
         }
+        
+        // Render other object types with period filtering
+        renderRivers(year);
+        renderPaths(year);
+        renderPoints(year);
+        renderTexts(year);
+        renderTitleBoxes(year);
       }
 
       function setupLayerSelector() {
@@ -335,11 +377,12 @@ HTML_TEMPLATE = Template(
 
       if (payload.flags.mode === 'static') {
         renderStatic();
+        renderRivers();
+        renderPaths();
+        renderPoints();
+        renderTexts();
+        renderTitleBoxes();
       }
-      renderRivers();
-      renderPaths();
-      renderPoints();
-      renderTexts();
       setupLayerSelector();
       setupControls();
     </script>
@@ -350,6 +393,6 @@ HTML_TEMPLATE = Template(
 
 
 def export_html(payload: Dict[str, Any], out_html: str) -> None:
-    html = HTML_TEMPLATE.render(payload=json.dumps(payload), css=payload.get("css", ""), title_boxes=payload.get("title_boxes", []))
+    html = HTML_TEMPLATE.render(payload=json.dumps(payload), css=payload.get("css", ""))
     with open(out_html, "w", encoding="utf-8") as f:
         f.write(html)
