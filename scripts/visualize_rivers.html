@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xatra - World Rivers Visualization</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 300px;
+        }
+        .legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="info">
+        <h3>🌊 Xatra River Data</h3>
+        <p><strong>1,631 rivers</strong> from Natural Earth + Selected Overpass</p>
+        <p>Scale: 1:10m (detailed)</p>
+        <p>Multi-language support</p>
+        <p>Click on rivers for details</p>
+    </div>
+    <div class="legend">
+        <h4>River Importance</h4>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #1f77b4; width: 4px;"></div>
+            <span>Major Rivers (Rank 1-2)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ff7f0e; width: 3px;"></div>
+            <span>Important Rivers (Rank 3-5)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #2ca02c; width: 2px;"></div>
+            <span>Regional Rivers (Rank 6-8)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #d62728; width: 1px;"></div>
+            <span>Local Rivers (Rank 9)</span>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([20, 0], 2);
+        
+        // Add base layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Function to get river color based on scalerank
+        function getRiverColor(scalerank) {
+            if (scalerank <= 2) return '#1f77b4'; // Blue for major rivers
+            if (scalerank <= 5) return '#ff7f0e'; // Orange for important rivers
+            if (scalerank <= 8) return '#2ca02c'; // Green for regional rivers
+            return '#d62728'; // Red for local rivers
+        }
+
+        // Function to get river width based on scalerank
+        function getRiverWidth(scalerank) {
+            if (scalerank <= 2) return 4;
+            if (scalerank <= 5) return 3;
+            if (scalerank <= 8) return 2;
+            return 1;
+        }
+
+        // Function to create popup content
+        function createPopupContent(feature) {
+            const props = feature.properties;
+            let content = '<div style="max-width: 300px;">';
+            
+            if (props.name) {
+                content += `<h4>${props.name}</h4>`;
+            } else {
+                content += '<h4>Unnamed River</h4>';
+            }
+            
+            content += `<p><strong>Importance:</strong> Rank ${props.scalerank}</p>`;
+            content += `<p><strong>Type:</strong> ${props.featurecla}</p>`;
+            
+            if (props.source) {
+                content += `<p><strong>Source:</strong> ${props.source}</p>`;
+            }
+            
+            if (props.name_en && props.name_en !== props.name) {
+                content += `<p><strong>English:</strong> ${props.name_en}</p>`;
+            }
+            
+            if (props.wikidataid) {
+                content += `<p><strong>Wikidata:</strong> <a href="https://www.wikidata.org/wiki/${props.wikidataid}" target="_blank">${props.wikidataid}</a></p>`;
+            }
+            
+            // Show some multi-language names
+            const languages = ['name_ar', 'name_zh', 'name_es', 'name_fr', 'name_de', 'name_ja'];
+            const langNames = languages.filter(lang => props[lang]).slice(0, 3);
+            if (langNames.length > 0) {
+                content += '<p><strong>Other names:</strong><br>';
+                langNames.forEach(lang => {
+                    const langName = lang.replace('name_', '');
+                    content += `${langName.toUpperCase()}: ${props[lang]}<br>`;
+                });
+                content += '</p>';
+            }
+            
+            content += '</div>';
+            return content;
+        }
+
+        // Load and display rivers
+        fetch('../data/rivers/combined_rivers.geojson?v=' + Date.now())
+            .then(response => response.json())
+            .then(data => {
+                console.log('Loaded river data:', data);
+                console.log('Total features:', data.features.length);
+                console.log('Sample features:', data.features.slice(0, 3));
+                
+                // Create river layer
+                const riversLayer = L.geoJSON(data, {
+                    style: function(feature) {
+                        const scalerank = feature.properties.scalerank;
+                        return {
+                            color: getRiverColor(scalerank),
+                            weight: getRiverWidth(scalerank),
+                            opacity: 0.8
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        // Add popup
+                        layer.bindPopup(createPopupContent(feature));
+                        
+                        // Add hover effect
+                        layer.on('mouseover', function(e) {
+                            this.setStyle({
+                                weight: this.options.weight + 1,
+                                opacity: 1
+                            });
+                        });
+                        
+                        layer.on('mouseout', function(e) {
+                            this.setStyle({
+                                weight: this.options.weight - 1,
+                                opacity: 0.8
+                            });
+                        });
+                    }
+                });
+                
+                riversLayer.addTo(map);
+                
+                // Fit map to show all rivers
+                map.fitBounds(riversLayer.getBounds());
+                
+                console.log('Rivers loaded successfully!');
+            })
+            .catch(error => {
+                console.error('Error loading river data:', error);
+                alert('Error loading river data. Make sure the GeoJSON file is in the correct location.');
+            });
+    </script>
+</body>
+</html>
