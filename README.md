@@ -3,7 +3,8 @@ Stylistic changes
 - [x] the FixedTextBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [ ] River and Path should have optional parameters color and width, and should affect the display (is the CSS parameter for Path being used anywhere? if not it can be removed)
 - [ ] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
-- [ ] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
+- [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
+- 
 - [ ] color assignment
 
 Libraries
