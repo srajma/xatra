@@ -1,6 +1,21 @@
 Stylistic changes
-- [ ] the slider keeps disappearing -- it only appears when I'm scrolling or when I'm fully zoomed out
-- [ ] the FixedTextBox only appears when fully zoomed out. It should appear as a fixed element on the screen that stays at the exact same position regardless of where I pan or zoom to.
+- [ ] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
+- [ ] the FixedTextBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [ ] River and Path should have optional parameters color and width, and should affect the display (is the CSS parameter for Path being used anywhere? if not it can be removed)
 - [ ] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
-- [ ] map.Text labels should by defaultjust be plain text, without the border box and all that
+- [ ] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
+- [ ] color assignment
+
+Libraries
+- [ ] copy matchers from old xatra
+- [ ] copy maps from old xatra
+
+Development
+- [ ] xatra.RawDataMap
+- [ ] xatra.DataMap
+- [ ] possibly calculate and keep simplified geometries
+- [ ] loading geojson from file instead of storing it in html; i.e. with a server
+
+Interactive platform
+- [ ] DSL
+- [ ] 
