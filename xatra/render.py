@@ -25,7 +25,8 @@ HTML_TEMPLATE = Template(
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
-      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; }
+      .flag-label-container { background: none; border: none; }
+      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; text-align: center; white-space: nowrap; }
       {{ css }}
     </style>
   </head>
@@ -164,12 +165,14 @@ HTML_TEMPLATE = Template(
           // Add label at centroid
           const centroid = getCentroid(f.geometry);
           if (centroid[0] !== 0 || centroid[1] !== 0) {
-            const labelLayer = L.marker(centroid, { opacity: 0.0 }).addTo(map).bindTooltip(f.label, { 
-              permanent: true, 
-              direction: 'center', 
-              className: 'flag-label',
-              offset: [0, 0]
+            // Create custom label element
+            const labelDiv = L.divIcon({
+              html: `<div class="flag-label">${f.label}</div>`,
+              className: 'flag-label-container',
+              iconSize: [1, 1],
+              iconAnchor: [0.5, 0.5]
             });
+            const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
             layers.flags.push(labelLayer);
             
             // Debug: Add visible marker for centroid
@@ -249,12 +252,14 @@ HTML_TEMPLATE = Template(
           // Add label at centroid
           const centroid = getCentroid(f.geometry);
           if (centroid[0] !== 0 || centroid[1] !== 0) {
-            const labelLayer = L.marker(centroid, { opacity: 0.0 }).addTo(map).bindTooltip(f.label, { 
-              permanent: true, 
-              direction: 'center', 
-              className: 'flag-label',
-              offset: [0, 0]
+            // Create custom label element
+            const labelDiv = L.divIcon({
+              html: `<div class="flag-label">${f.label}</div>`,
+              className: 'flag-label-container',
+              iconSize: [1, 1],
+              iconAnchor: [0.5, 0.5]
             });
+            const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
             layers.flags.push(labelLayer);
             
             // Debug: Add visible marker for centroid
