@@ -65,12 +65,10 @@ HTML_TEMPLATE = Template(
       function renderRivers() {
         for (const r of payload.rivers) {
           if (!r.geometry) continue;
-          const style = { 
-            className: 'river',
-            color: r.color || '#0066cc',
-            weight: r.width || 1
-          };
-          const layer = addGeoJSON(r.geometry, { style }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
+          const layer = addGeoJSON(r.geometry, { style: { className: 'river' } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
+          if (r.css) {
+            layer.setStyle({ className: 'river ' + r.css });
+          }
           layers.rivers.push(layer);
         }
       }
@@ -78,11 +76,10 @@ HTML_TEMPLATE = Template(
       function renderPaths() {
         for (const p of payload.paths) {
           const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
-          const layer = L.polyline(latlngs, { 
-            className: 'path',
-            color: p.color || '#444',
-            weight: p.width || 2
-          }).addTo(map).bindTooltip(p.label);
+          const layer = L.polyline(latlngs, { className: 'path' }).addTo(map).bindTooltip(p.label);
+          if (p.css) {
+            layer.setStyle({ className: 'path ' + p.css });
+          }
           layers.paths.push(layer);
         }
       }
