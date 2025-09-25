@@ -4,8 +4,8 @@ Stylistic changes
 - [x] custom IDs and classes for styling
 - [ ] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
 - [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
-- 
 - [ ] color assignment
+- [ ] choice of BaseMaps
 
 Libraries
 - [ ] copy matchers from old xatra
