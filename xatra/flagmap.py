@@ -27,14 +27,14 @@ class RiverEntry:
     label: str
     geometry: Dict[str, Any]
     note: Optional[str] = None
-    class_name: Optional[str] = None
+    classes: Optional[str] = None
 
 
 @dataclass
 class PathEntry:
     label: str
     coords: List[Tuple[float, float]]
-    class_name: Optional[str] = None
+    classes: Optional[str] = None
 
 
 @dataclass
@@ -47,7 +47,7 @@ class PointEntry:
 class TextEntry:
     label: str
     position: Tuple[float, float]
-    class_name: Optional[str] = None
+    classes: Optional[str] = None
 
 
 @dataclass
@@ -74,18 +74,18 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note))
 
-    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, class_name: Optional[str] = None) -> None:
-        self._rivers.append(RiverEntry(label=label, geometry=value, note=note, class_name=class_name))
+    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None) -> None:
+        self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes))
 
-    def Path(self, label: str, value: List[List[float]], class_name: Optional[str] = None) -> None:
+    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None) -> None:
         coords = [(float(lat), float(lon)) for lat, lon in value]
-        self._paths.append(PathEntry(label=label, coords=coords, class_name=class_name))
+        self._paths.append(PathEntry(label=label, coords=coords, classes=classes))
 
     def Point(self, label: str, position: List[float]) -> None:
         self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1]))))
 
-    def Text(self, label: str, position: List[float], class_name: Optional[str] = None) -> None:
-        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), class_name=class_name))
+    def Text(self, label: str, position: List[float], classes: Optional[str] = None) -> None:
+        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), classes=classes))
 
     def FixedTextBox(self, html: str) -> None:
         self._fixed_text_boxes.append(FixedTextBoxEntry(html=html))
@@ -112,13 +112,13 @@ class FlagMap:
             "label": r.label,
             "geometry": r.geometry,
             "note": r.note,
-            "class_name": r.class_name,
+            "classes": r.classes,
         } for r in self._rivers]
 
         paths_serialized = [{
             "label": p.label,
             "coords": p.coords,
-            "class_name": p.class_name,
+            "classes": p.classes,
         } for p in self._paths]
 
         points_serialized = [{
@@ -129,7 +129,7 @@ class FlagMap:
         texts_serialized = [{
             "label": t.label,
             "position": t.position,
-            "class_name": t.class_name,
+            "classes": t.classes,
         } for t in self._texts]
 
         return {

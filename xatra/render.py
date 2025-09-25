@@ -66,7 +66,7 @@ HTML_TEMPLATE = Template(
         for (const r of payload.rivers) {
           if (!r.geometry) continue;
           let className = 'river';
-          if (r.class_name) className += ' ' + r.class_name;
+          if (r.classes) className += ' ' + r.classes;
           const layer = addGeoJSON(r.geometry, { style: { className } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
           layers.rivers.push(layer);
         }
@@ -76,7 +76,7 @@ HTML_TEMPLATE = Template(
         for (const p of payload.paths) {
           const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
           let className = 'path';
-          if (p.class_name) className += ' ' + p.class_name;
+          if (p.classes) className += ' ' + p.classes;
           const layer = L.polyline(latlngs, { className }).addTo(map).bindTooltip(p.label);
           layers.paths.push(layer);
         }
@@ -92,7 +92,7 @@ HTML_TEMPLATE = Template(
       function renderTexts() {
         for (const t of payload.texts) {
           let className = 'text-label';
-          if (t.class_name) className += ' ' + t.class_name;
+          if (t.classes) className += ' ' + t.classes;
           const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { 
             permanent: true, 
             direction: 'center', 
