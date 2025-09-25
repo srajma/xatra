@@ -2,8 +2,8 @@ Stylistic changes
 - [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [x] custom IDs and classes for styling
-- [ ] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
-- [ ] also need flag names to appear at centroid
+- [x] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
+- [x] also need flag names to appear at centroid
 - [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
 - [ ] color assignment
 - [x] choice of BaseMaps
@@ -13,6 +13,7 @@ Libraries
 - [ ] copy maps from old xatra
 
 Development
+- [ ] periods for things other than flags
 - [ ] xatra.AdminMap
 - [ ] xatra.DataMap
 - [ ] possibly calculate and keep simplified geometries

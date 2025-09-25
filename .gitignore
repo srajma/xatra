@@ -1,7 +1,8 @@
 *.log
 data/
 scripts/start_server.sh
-agents.md
+AGENTS.md
+SUMMARY.md
 
 # python
 __pycache__/
