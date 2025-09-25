@@ -17,7 +17,7 @@ HTML_TEMPLATE = Template(
     <style>
       html, body, #map { height: 100%; margin: 0; padding: 0; }
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
-      #fixed { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
+      #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
       .flag { stroke: #333; stroke-width: 1; fill: rgba(200,0,0,0.3); }
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
       .path { stroke: #444; stroke-dasharray: 4 2; }
@@ -28,7 +28,7 @@ HTML_TEMPLATE = Template(
   </head>
   <body>
     <div id="map"></div>
-    <div id="fixed">{% for html in fixed_texts %}<div class="fixed-box">{{ html | safe }}</div>{% endfor %}</div>
+    <div id="title">{% for html in title_boxes %}<div class="title-box">{{ html | safe }}</div>{% endfor %}</div>
     <div id="controls"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -152,6 +152,6 @@ HTML_TEMPLATE = Template(
 
 
 def export_html(payload: Dict[str, Any], out_html: str) -> None:
-    html = HTML_TEMPLATE.render(payload=json.dumps(payload), css=payload.get("css", ""), fixed_texts=payload.get("fixed_text_boxes", []))
+    html = HTML_TEMPLATE.render(payload=json.dumps(payload), css=payload.get("css", ""), title_boxes=payload.get("title_boxes", []))
     with open(out_html, "w", encoding="utf-8") as f:
         f.write(html)

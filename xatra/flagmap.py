@@ -51,7 +51,7 @@ class TextEntry:
 
 
 @dataclass
-class FixedTextBoxEntry:
+class TitleBoxEntry:
     html: str
 
 
@@ -62,7 +62,7 @@ class FlagMap:
         self._paths: List[PathEntry] = []
         self._points: List[PointEntry] = []
         self._texts: List[TextEntry] = []
-        self._fixed_text_boxes: List[FixedTextBoxEntry] = []
+        self._title_boxes: List[TitleBoxEntry] = []
         self._css: List[str] = []
 
     # API methods
@@ -87,8 +87,8 @@ class FlagMap:
     def Text(self, label: str, position: List[float], classes: Optional[str] = None) -> None:
         self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), classes=classes))
 
-    def FixedTextBox(self, html: str) -> None:
-        self._fixed_text_boxes.append(FixedTextBoxEntry(html=html))
+    def TitleBox(self, html: str) -> None:
+        self._title_boxes.append(TitleBoxEntry(html=html))
 
     def CSS(self, css: str) -> None:
         self._css.append(css)
@@ -139,7 +139,7 @@ class FlagMap:
             "paths": paths_serialized,
             "points": points_serialized,
             "texts": texts_serialized,
-            "fixed_text_boxes": [ft.html for ft in self._fixed_text_boxes],
+            "title_boxes": [ft.html for ft in self._title_boxes],
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
