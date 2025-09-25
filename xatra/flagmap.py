@@ -55,6 +55,13 @@ class TitleBoxEntry:
     html: str
 
 
+@dataclass
+class BaseOptionEntry:
+    url: str
+    name: str
+    default: bool = False
+
+
 class FlagMap:
     def __init__(self) -> None:
         self._flags: List[FlagEntry] = []
@@ -63,7 +70,11 @@ class FlagMap:
         self._points: List[PointEntry] = []
         self._texts: List[TextEntry] = []
         self._title_boxes: List[TitleBoxEntry] = []
+        self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
+        
+        # Add default base options
+        self._add_default_base_options()
 
     # API methods
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None) -> None:
@@ -92,6 +103,68 @@ class FlagMap:
 
     def CSS(self, css: str) -> None:
         self._css.append(css)
+
+    def BaseOption(self, url_or_provider: str, name: Optional[str] = None, default: bool = False) -> None:
+        """Add a base layer option.
+        
+        Args:
+            url_or_provider: Either a full tile URL template or a provider name from leaflet-providers
+            name: Display name for the layer (defaults to provider name or derived from URL)
+            default: Whether this should be the default layer
+        """
+        # Handle provider names from leaflet-providers
+        provider_urls = {
+            "OpenStreetMap": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "Esri.WorldImagery": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            "OpenTopoMap": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+            "Esri.WorldPhysical": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
+            "CartoDB.Positron": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+            "CartoDB.PositronNoLabels": "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+            "USGS.USImageryTopo": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
+            "Esri.OceanBasemap": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}",
+        }
+        
+        if url_or_provider in provider_urls:
+            url = provider_urls[url_or_provider]
+            display_name = name or url_or_provider
+        else:
+            url = url_or_provider
+            display_name = name or self._derive_name_from_url(url)
+        
+        # Check if this layer already exists and update it
+        for i, existing in enumerate(self._base_options):
+            if existing.url == url:
+                self._base_options[i] = BaseOptionEntry(url=url, name=display_name, default=default)
+                return
+        
+        # Add new layer
+        self._base_options.append(BaseOptionEntry(url=url, name=display_name, default=default))
+
+    def _derive_name_from_url(self, url: str) -> str:
+        """Derive a display name from URL."""
+        if "openstreetmap" in url:
+            return "OpenStreetMap"
+        elif "opentopomap" in url:
+            return "OpenTopoMap"
+        elif "arcgisonline" in url:
+            if "World_Imagery" in url:
+                return "Esri World Imagery"
+            elif "World_Physical" in url:
+                return "Esri World Physical"
+            elif "Ocean" in url:
+                return "Esri Ocean"
+        elif "cartocdn" in url:
+            return "CartoDB"
+        elif "nationalmap" in url:
+            return "USGS"
+        return "Custom Layer"
+
+    def _add_default_base_options(self) -> None:
+        """Add default base layer options."""
+        self.BaseOption("OpenStreetMap", default=True)
+        self.BaseOption("Esri.WorldImagery")
+        self.BaseOption("OpenTopoMap")
+        self.BaseOption("Esri.WorldPhysical")
 
     def _export_json(self) -> Dict[str, Any]:
         # Resolve territories to GeoJSON shapes
@@ -132,6 +205,12 @@ class FlagMap:
             "classes": t.classes,
         } for t in self._texts]
 
+        base_options_serialized = [{
+            "url": b.url,
+            "name": b.name,
+            "default": b.default,
+        } for b in self._base_options]
+
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -140,6 +219,7 @@ class FlagMap:
             "points": points_serialized,
             "texts": texts_serialized,
             "title_boxes": [ft.html for ft in self._title_boxes],
+            "base_options": base_options_serialized,
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:

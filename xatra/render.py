@@ -18,6 +18,8 @@ HTML_TEMPLATE = Template(
       html, body, #map { height: 100%; margin: 0; padding: 0; }
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
+      #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #layer-selector select { margin-left: 8px; }
       .flag { stroke: #333; stroke-width: 1; fill: rgba(200,0,0,0.3); }
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
       .path { stroke: #444; stroke-dasharray: 4 2; }
@@ -29,16 +31,36 @@ HTML_TEMPLATE = Template(
   <body>
     <div id="map"></div>
     <div id="title">{% for html in title_boxes %}<div class="title-box">{{ html | safe }}</div>{% endfor %}</div>
+    <div id="layer-selector">
+      <label for="baseLayer">Base Layer:</label>
+      <select id="baseLayer"></select>
+    </div>
     <div id="controls"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       const payload = {{ payload | safe }};
       const map = L.map('map').setView([22, 79], 4);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+      
+      // Base layer management
+      const baseLayers = {};
+      let currentBaseLayer = null;
+      
+      // Create base layers
+      for (const option of payload.base_options || []) {
+        const layer = L.tileLayer(option.url, {
+          maxZoom: 18,
+          attribution: '&copy; ' + option.name
+        });
+        baseLayers[option.name] = layer;
+      }
+      
+      // Find default layer
+      const defaultOption = payload.base_options?.find(opt => opt.default) || payload.base_options?.[0];
+      if (defaultOption) {
+        currentBaseLayer = baseLayers[defaultOption.name];
+        currentBaseLayer.addTo(map);
+      }
 
       const layers = { flags: [], rivers: [], paths: [], points: [], texts: [] };
 
@@ -123,6 +145,42 @@ HTML_TEMPLATE = Template(
         }
       }
 
+      function setupLayerSelector() {
+        const select = document.getElementById('baseLayer');
+        
+        // Add "None" option
+        const noneOption = document.createElement('option');
+        noneOption.value = 'none';
+        noneOption.textContent = 'None';
+        select.appendChild(noneOption);
+        
+        // Add base layer options
+        for (const option of payload.base_options || []) {
+          const optionElement = document.createElement('option');
+          optionElement.value = option.name;
+          optionElement.textContent = option.name;
+          if (option.default) {
+            optionElement.selected = true;
+          }
+          select.appendChild(optionElement);
+        }
+        
+        // Handle layer changes
+        select.addEventListener('change', function() {
+          // Remove current layer
+          if (currentBaseLayer) {
+            map.removeLayer(currentBaseLayer);
+            currentBaseLayer = null;
+          }
+          
+          // Add new layer
+          if (this.value !== 'none' && baseLayers[this.value]) {
+            currentBaseLayer = baseLayers[this.value];
+            currentBaseLayer.addTo(map);
+          }
+        });
+      }
+
       function setupControls() {
         const controls = document.getElementById('controls');
         if (payload.flags.mode === 'dynamic') {
@@ -143,6 +201,7 @@ HTML_TEMPLATE = Template(
       renderPaths();
       renderPoints();
       renderTexts();
+      setupLayerSelector();
       setupControls();
     </script>
   </body>
