@@ -9,7 +9,7 @@ Stylistic changes
 - [ ] color assignment
 - [x] choice of BaseMaps
 - [x] slider shouldn't appear for static maps
-- [x] slider.lim()
+- [x] map.lim()
 
 Libraries
 - [ ] copy matchers from old xatra
