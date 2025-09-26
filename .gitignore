@@ -2,7 +2,6 @@
 data/
 scripts/start_server.sh
 AGENTS.md
-# SUMMARY.md
 test_periods.*
 
 # python
@@ -17,6 +16,5 @@ __pycache__/
 *.pyzwz
 
 # temp
-example.py
 map.json
 map.html

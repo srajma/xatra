@@ -1,3 +1,14 @@
+"""
+Xatra HTML Rendering Module
+
+This module provides HTML template and JavaScript logic for rendering interactive
+maps using Leaflet.js. It supports both static and dynamic maps with time-based
+filtering, base layer selection, and various map elements.
+
+The module generates self-contained HTML files that can be opened in any web browser
+without requiring a web server.
+"""
+
 from __future__ import annotations
 
 import json
@@ -421,6 +432,15 @@ HTML_TEMPLATE = Template(
 
 
 def export_html(payload: Dict[str, Any], out_html: str) -> None:
+    """Export map data to an interactive HTML file.
+    
+    Args:
+        payload: Map data dictionary containing flags, rivers, paths, etc.
+        out_html: Output path for the HTML file
+        
+    Example:
+        >>> export_html(map_data, "my_map.html")
+    """
     html = HTML_TEMPLATE.render(payload=json.dumps(payload), css=payload.get("css", ""))
     with open(out_html, "w", encoding="utf-8") as f:
         f.write(html)

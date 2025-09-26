@@ -1,10 +1,20 @@
+"""
+Xatra FlagMap Module
+
+This module provides the core FlagMap class for creating interactive historical maps.
+It supports various map elements including flags (countries/kingdoms), rivers, paths, 
+points, text labels, and title boxes with optional time-based filtering for dynamic maps.
+
+The module uses the pax-max aggregation method to create stable periods for dynamic
+maps, allowing smooth transitions between different historical states.
+"""
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from shapely.geometry import shape, mapping, Point, LineString
-from shapely.ops import unary_union
+from shapely.geometry import mapping
 
 from .territory import Territory
 from .render import export_html
@@ -16,6 +26,14 @@ GeometryLike = Union[Territory, Dict[str, Any]]
 
 @dataclass
 class FlagEntry:
+    """Represents a flag (country/kingdom) with territory and optional time period.
+    
+    Args:
+        label: Display name for the flag
+        territory: Territory object defining the geographical extent
+        period: Optional time period as (start_year, end_year) tuple
+        note: Optional tooltip text for the flag
+    """
     label: str
     territory: Territory
     period: Optional[Tuple[int, int]] = None
@@ -24,6 +42,15 @@ class FlagEntry:
 
 @dataclass
 class RiverEntry:
+    """Represents a river with GeoJSON geometry and optional styling.
+    
+    Args:
+        label: Display name for the river
+        geometry: GeoJSON geometry object
+        note: Optional tooltip text for the river
+        classes: Optional CSS classes for styling
+        period: Optional time period as (start_year, end_year) tuple
+    """
     label: str
     geometry: Dict[str, Any]
     note: Optional[str] = None
@@ -33,6 +60,14 @@ class RiverEntry:
 
 @dataclass
 class PathEntry:
+    """Represents a path/route with coordinate list and optional styling.
+    
+    Args:
+        label: Display name for the path
+        coords: List of (latitude, longitude) coordinate tuples
+        classes: Optional CSS classes for styling
+        period: Optional time period as (start_year, end_year) tuple
+    """
     label: str
     coords: List[Tuple[float, float]]
     classes: Optional[str] = None
@@ -41,6 +76,13 @@ class PathEntry:
 
 @dataclass
 class PointEntry:
+    """Represents a point of interest with position and optional time period.
+    
+    Args:
+        label: Display name for the point
+        position: (latitude, longitude) coordinate tuple
+        period: Optional time period as (start_year, end_year) tuple
+    """
     label: str
     position: Tuple[float, float]
     period: Optional[Tuple[int, int]] = None
@@ -48,6 +90,14 @@ class PointEntry:
 
 @dataclass
 class TextEntry:
+    """Represents a text label with position and optional styling.
+    
+    Args:
+        label: Text content to display
+        position: (latitude, longitude) coordinate tuple
+        classes: Optional CSS classes for styling
+        period: Optional time period as (start_year, end_year) tuple
+    """
     label: str
     position: Tuple[float, float]
     classes: Optional[str] = None
@@ -56,19 +106,51 @@ class TextEntry:
 
 @dataclass
 class TitleBoxEntry:
+    """Represents a title box with HTML content and optional time period.
+    
+    Args:
+        html: HTML content for the title box
+        period: Optional time period as (start_year, end_year) tuple
+    """
     html: str
     period: Optional[Tuple[int, int]] = None
 
 
 @dataclass
 class BaseOptionEntry:
+    """Represents a base map layer option.
+    
+    Args:
+        url: Tile server URL or provider name
+        name: Display name for the layer
+        default: Whether this layer should be selected by default
+    """
     url: str
     name: str
     default: bool = False
 
 
 class FlagMap:
+    """Main class for creating interactive historical maps.
+    
+    FlagMap is the core class for creating maps similar to "matplotlib of maps".
+    It supports various map elements including flags (countries/kingdoms), rivers,
+    paths, points, text labels, and title boxes. Maps can be static or dynamic
+    with time-based filtering using the pax-max aggregation method.
+    
+    Example:
+        >>> map = FlagMap()
+        >>> map.Flag("Maurya", territory, period=[320, 180])
+        >>> map.River("Ganges", river_geometry, classes="major-river")
+        >>> map.export("map.html")
+    """
+    
     def __init__(self) -> None:
+        """Initialize a new FlagMap instance.
+        
+        Creates an empty map with default base layer options (OpenStreetMap,
+        Esri.WorldImagery, OpenTopoMap, Esri.WorldPhysical).
+        """
         self._flags: List[FlagEntry] = []
         self._rivers: List[RiverEntry] = []
         self._paths: List[PathEntry] = []
@@ -84,6 +166,17 @@ class FlagMap:
 
     # API methods
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None) -> None:
+        """Add a flag (country/kingdom) to the map.
+        
+        Args:
+            label: Display name for the flag
+            value: Territory object defining the geographical extent
+            period: Optional time period as [start_year, end_year] list
+            note: Optional tooltip text for the flag
+            
+        Example:
+            >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
+        """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
@@ -92,6 +185,18 @@ class FlagMap:
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note))
 
     def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+        """Add a river to the map.
+        
+        Args:
+            label: Display name for the river
+            value: GeoJSON geometry object
+            note: Optional tooltip text for the river
+            classes: Optional CSS classes for styling
+            period: Optional time period as [start_year, end_year] list
+            
+        Example:
+            >>> map.River("Ganges", ganges_geometry, classes="major-river", note="Sacred river")
+        """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
@@ -100,6 +205,17 @@ class FlagMap:
         self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes, period=period_tuple))
 
     def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+        """Add a path/route to the map.
+        
+        Args:
+            label: Display name for the path
+            value: List of [latitude, longitude] coordinate pairs
+            classes: Optional CSS classes for styling
+            period: Optional time period as [start_year, end_year] list
+            
+        Example:
+            >>> map.Path("Silk Road", [[40.0, 74.0], [35.0, 103.0]], classes="trade-route")
+        """
         coords = [(float(lat), float(lon)) for lat, lon in value]
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -109,6 +225,16 @@ class FlagMap:
         self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple))
 
     def Point(self, label: str, position: List[float], period: Optional[List[int]] = None) -> None:
+        """Add a point of interest to the map.
+        
+        Args:
+            label: Display name for the point
+            position: [latitude, longitude] coordinate pair
+            period: Optional time period as [start_year, end_year] list
+            
+        Example:
+            >>> map.Point("Delhi", [28.6139, 77.2090], period=[1200, 1800])
+        """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
@@ -117,6 +243,17 @@ class FlagMap:
         self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple))
 
     def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+        """Add a text label to the map.
+        
+        Args:
+            label: Text content to display
+            position: [latitude, longitude] coordinate pair
+            classes: Optional CSS classes for styling
+            period: Optional time period as [start_year, end_year] list
+            
+        Example:
+            >>> map.Text("Ancient City", [28.6139, 77.2090], classes="city-label")
+        """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
@@ -125,6 +262,15 @@ class FlagMap:
         self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), classes=classes, period=period_tuple))
 
     def TitleBox(self, html: str, period: Optional[List[int]] = None) -> None:
+        """Add a title box with HTML content to the map.
+        
+        Args:
+            html: HTML content for the title box
+            period: Optional time period as [start_year, end_year] list
+            
+        Example:
+            >>> map.TitleBox("<h1>Ancient India</h1><p>Map of historical kingdoms</p>")
+        """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
@@ -133,6 +279,14 @@ class FlagMap:
         self._title_boxes.append(TitleBoxEntry(html=html, period=period_tuple))
 
     def CSS(self, css: str) -> None:
+        """Add custom CSS styles to the map.
+        
+        Args:
+            css: CSS string to add to the map's stylesheet
+            
+        Example:
+            >>> map.CSS(".major-river { stroke: #0066cc; stroke-width: 3px; }")
+        """
         self._css.append(css)
 
     def lim(self, start: int, end: int) -> None:
@@ -174,7 +328,14 @@ class FlagMap:
         self._base_options.append(BaseOptionEntry(url=url, name=display_name, default=default))
 
     def _derive_name_from_url(self, url: str) -> str:
-        """Derive a display name from URL."""
+        """Derive a display name from URL.
+        
+        Args:
+            url: Tile server URL
+            
+        Returns:
+            Human-readable name for the layer
+        """
         if "openstreetmap" in url:
             return "OpenStreetMap"
         elif "opentopomap" in url:
@@ -193,7 +354,10 @@ class FlagMap:
         return "Custom Layer"
 
     def _add_default_base_options(self) -> None:
-        """Add default base layer options."""
+        """Add default base layer options.
+        
+        Currently disabled to allow users to override defaults.
+        """
         # self.BaseOption("OpenStreetMap", default=True)
         # self.BaseOption("Esri.WorldImagery")
         # self.BaseOption("OpenTopoMap")
@@ -234,6 +398,14 @@ class FlagMap:
         return (restricted_start, restricted_end)
 
     def _export_json(self) -> Dict[str, Any]:
+        """Export map data to JSON format for rendering.
+        
+        Applies time limits, performs pax-max aggregation on flags, and serializes
+        all map elements to a dictionary suitable for HTML rendering.
+        
+        Returns:
+            Dictionary containing all map data including flags, rivers, paths, etc.
+        """
         # Resolve territories to GeoJSON shapes and apply limits
         flags_serialized: List[Dict[str, Any]] = []
         for fl in self._flags:
@@ -360,6 +532,15 @@ class FlagMap:
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
+        """Export the map to JSON and HTML files.
+        
+        Args:
+            out_json: Output path for JSON data file
+            out_html: Output path for HTML visualization file
+            
+        Example:
+            >>> map.show("my_map.json", "my_map.html")
+        """
         payload = self._export_json()
         import json
         with open(out_json, "w", encoding="utf-8") as f:

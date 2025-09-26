@@ -1,3 +1,14 @@
+"""
+Xatra Territory Module
+
+This module provides the Territory class for representing geographical regions
+with support for set algebra operations (union, difference) and lazy loading
+from various GeoJSON data sources.
+
+The Territory class enables composable geographical regions by combining
+base datasets using Shapely geometry operations.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,6 +21,14 @@ from .loaders import load_gadm_like, load_naturalearth_like
 
 
 def _geojson_to_geometry(geojson_obj: Dict[str, Any]):
+    """Convert GeoJSON object to Shapely geometry.
+    
+    Args:
+        geojson_obj: GeoJSON Feature, FeatureCollection, or Geometry object
+        
+    Returns:
+        Shapely geometry object or None if invalid
+    """
     if geojson_obj is None:
         return None
     geom_type = geojson_obj.get("type")
@@ -24,19 +43,45 @@ def _geojson_to_geometry(geojson_obj: Dict[str, Any]):
 
 @dataclass
 class Territory:
-    """Represents a composable territory via set algebra over base GeoJSON datasets."""
+    """Represents a composable territory via set algebra over base GeoJSON datasets.
+    
+    Territory objects support lazy loading from various data sources and can be
+    combined using set algebra operations (union, difference). Geometries are
+    cached after first access for performance.
+    
+    Example:
+        >>> india = Territory.from_gadm("IND")
+        >>> pakistan = Territory.from_gadm("PAK")
+        >>> northern_india = india - pakistan
+    """
 
     _geometry_provider: Optional[callable] = None
     _geom_cache: Optional[Any] = None
 
     @staticmethod
     def from_geojson(geojson_obj: Dict[str, Any]) -> "Territory":
+        """Create Territory from GeoJSON object.
+        
+        Args:
+            geojson_obj: GeoJSON Feature, FeatureCollection, or Geometry object
+            
+        Returns:
+            Territory instance
+        """
         def provider():
             return _geojson_to_geometry(geojson_obj)
         return Territory(_geometry_provider=provider)
 
     @staticmethod
     def from_gadm(key: str) -> "Territory":
+        """Create Territory from GADM administrative boundary.
+        
+        Args:
+            key: GADM country code (e.g., "IND", "PAK")
+            
+        Returns:
+            Territory instance
+        """
         def provider():
             obj = load_gadm_like(key)
             return _geojson_to_geometry(obj)
@@ -44,12 +89,25 @@ class Territory:
 
     @staticmethod
     def from_naturalearth(ne_id: str) -> "Territory":
+        """Create Territory from Natural Earth dataset.
+        
+        Args:
+            ne_id: Natural Earth feature ID
+            
+        Returns:
+            Territory instance
+        """
         def provider():
             obj = load_naturalearth_like(ne_id)
             return _geojson_to_geometry(obj)
         return Territory(_geometry_provider=provider)
 
     def to_geometry(self):
+        """Get the Shapely geometry for this territory.
+        
+        Returns:
+            Shapely geometry object or None if invalid
+        """
         if self._geom_cache is not None:
             return self._geom_cache
         if self._geometry_provider is None:
@@ -59,6 +117,14 @@ class Territory:
 
     # Set algebra
     def __or__(self, other: "Territory") -> "Territory":
+        """Union of two territories.
+        
+        Args:
+            other: Another Territory object
+            
+        Returns:
+            New Territory representing the union
+        """
         def provider():
             a = self.to_geometry()
             b = other.to_geometry()
@@ -70,6 +136,14 @@ class Territory:
         return Territory(_geometry_provider=provider)
 
     def __sub__(self, other: "Territory") -> "Territory":
+        """Difference of two territories (self - other).
+        
+        Args:
+            other: Territory to subtract from self
+            
+        Returns:
+            New Territory representing the difference
+        """
         def provider():
             a = self.to_geometry()
             b = other.to_geometry()

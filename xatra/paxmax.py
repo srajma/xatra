@@ -1,3 +1,15 @@
+"""
+Xatra Pax-Max Aggregation Module
+
+This module implements the pax-max aggregation method for creating stable periods
+in dynamic maps. The pax-max method groups flags with the same label over time
+and creates stable periods where the territory remains unchanged, reducing the
+number of map updates needed for smooth visualization.
+
+The algorithm finds the maximum extent of each flag's territory over time and
+creates stable periods where the territory remains constant.
+"""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -8,6 +20,14 @@ from shapely.ops import unary_union
 
 
 def _to_shape(geojson):
+    """Convert GeoJSON to Shapely geometry.
+    
+    Args:
+        geojson: GeoJSON object
+        
+    Returns:
+        Shapely geometry or None if invalid
+    """
     if geojson is None:
         return None
     t = geojson.get("type")
@@ -20,6 +40,19 @@ def _to_shape(geojson):
 
 
 def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int = None) -> Dict[str, Any]:
+    """Aggregate flags using the pax-max method for dynamic maps.
+    
+    The pax-max method groups flags with the same label over time and creates
+    stable periods where the territory remains unchanged. This reduces the
+    number of map updates needed for smooth visualization.
+    
+    Args:
+        flags_serialized: List of flag dictionaries with geometry and period info
+        earliest_start: Optional earliest start year to ensure initial snapshot
+        
+    Returns:
+        Dictionary with mode ("static" or "dynamic"), flags, and snapshots
+    """
     # Group by label
     by_label: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for f in flags_serialized:
@@ -88,7 +121,15 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
 
 
 def filter_by_period(items: List[Dict[str, Any]], year: int) -> List[Dict[str, Any]]:
-    """Filter items by period for a given year."""
+    """Filter items by period for a given year.
+    
+    Args:
+        items: List of items with optional period information
+        year: Year to filter by
+        
+    Returns:
+        List of items that are active during the given year
+    """
     filtered = []
     for item in items:
         period = item.get("period")
