@@ -19,7 +19,7 @@ def _to_shape(geojson):
     return shape(geojson)
 
 
-def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
+def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int = None) -> Dict[str, Any]:
     # Group by label
     by_label: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for f in flags_serialized:
@@ -49,6 +49,10 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
             if per is not None:
                 breakpoints.extend([int(per[0]), int(per[1])])
     breakpoints = sorted(set(breakpoints))
+    
+    # Add the earliest start year to ensure we have a snapshot at the beginning
+    if earliest_start is not None and earliest_start not in breakpoints:
+        breakpoints.insert(0, earliest_start)
 
     # For each label and each breakpoint year, compute union of active geometries
     snapshots: List[Dict[str, Any]] = []

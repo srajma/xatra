@@ -199,8 +199,40 @@ class FlagMap:
                 "note": fl.note,
             })
 
+        # Find the earliest start year from all object types
+        earliest_start = None
+        for f in flags_serialized:
+            if f.get("period") is not None:
+                if earliest_start is None or f["period"][0] < earliest_start:
+                    earliest_start = f["period"][0]
+        
+        for r in self._rivers:
+            if r.period is not None:
+                if earliest_start is None or r.period[0] < earliest_start:
+                    earliest_start = r.period[0]
+                    
+        for p in self._paths:
+            if p.period is not None:
+                if earliest_start is None or p.period[0] < earliest_start:
+                    earliest_start = p.period[0]
+                    
+        for p in self._points:
+            if p.period is not None:
+                if earliest_start is None or p.period[0] < earliest_start:
+                    earliest_start = p.period[0]
+                    
+        for t in self._texts:
+            if t.period is not None:
+                if earliest_start is None or t.period[0] < earliest_start:
+                    earliest_start = t.period[0]
+                    
+        for tb in self._title_boxes:
+            if tb.period is not None:
+                if earliest_start is None or tb.period[0] < earliest_start:
+                    earliest_start = tb.period[0]
+
         # Pax-max aggregation
-        pax = paxmax_aggregate(flags_serialized)
+        pax = paxmax_aggregate(flags_serialized, earliest_start)
 
         rivers_serialized = [{
             "label": r.label,
