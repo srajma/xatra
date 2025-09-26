@@ -214,7 +214,9 @@ class FlagMap:
         Returns:
             Restricted period tuple or None if period becomes null
         """
-        if period is None or self._map_limits is None:
+        if period is None:
+            return None  # Objects with no period are always visible (handled separately)
+        if self._map_limits is None:
             return period
             
         start, end = period
@@ -236,12 +238,13 @@ class FlagMap:
         flags_serialized: List[Dict[str, Any]] = []
         for fl in self._flags:
             restricted_period = self._apply_limits_to_period(fl.period)
-            if restricted_period is not None:  # Skip if period becomes null set
+            # Include objects with no period (always visible) or valid restricted periods
+            if fl.period is None or restricted_period is not None:
                 geom = fl.territory.to_geometry()
                 flags_serialized.append({
                     "label": fl.label,
                     "geometry": mapping(geom) if geom is not None else None,
-                    "period": list(restricted_period),
+                    "period": list(restricted_period) if restricted_period is not None else None,
                     "note": fl.note,
                 })
 
@@ -283,45 +286,49 @@ class FlagMap:
         rivers_serialized = []
         for r in self._rivers:
             restricted_period = self._apply_limits_to_period(r.period)
-            if restricted_period is not None:  # Skip if period becomes null set
+            # Include objects with no period (always visible) or valid restricted periods
+            if r.period is None or restricted_period is not None:
                 rivers_serialized.append({
                     "label": r.label,
                     "geometry": r.geometry,
                     "note": r.note,
                     "classes": r.classes,
-                    "period": list(restricted_period),
+                    "period": list(restricted_period) if restricted_period is not None else None,
                 })
 
         paths_serialized = []
         for p in self._paths:
             restricted_period = self._apply_limits_to_period(p.period)
-            if restricted_period is not None:  # Skip if period becomes null set
+            # Include objects with no period (always visible) or valid restricted periods
+            if p.period is None or restricted_period is not None:
                 paths_serialized.append({
                     "label": p.label,
                     "coords": p.coords,
                     "classes": p.classes,
-                    "period": list(restricted_period),
+                    "period": list(restricted_period) if restricted_period is not None else None,
                 })
 
         points_serialized = []
         for p in self._points:
             restricted_period = self._apply_limits_to_period(p.period)
-            if restricted_period is not None:  # Skip if period becomes null set
+            # Include objects with no period (always visible) or valid restricted periods
+            if p.period is None or restricted_period is not None:
                 points_serialized.append({
                     "label": p.label,
                     "position": p.position,
-                    "period": list(restricted_period),
+                    "period": list(restricted_period) if restricted_period is not None else None,
                 })
 
         texts_serialized = []
         for t in self._texts:
             restricted_period = self._apply_limits_to_period(t.period)
-            if restricted_period is not None:  # Skip if period becomes null set
+            # Include objects with no period (always visible) or valid restricted periods
+            if t.period is None or restricted_period is not None:
                 texts_serialized.append({
                     "label": t.label,
                     "position": t.position,
                     "classes": t.classes,
-                    "period": list(restricted_period),
+                    "period": list(restricted_period) if restricted_period is not None else None,
                 })
 
         base_options_serialized = [{
@@ -333,10 +340,11 @@ class FlagMap:
         title_boxes_serialized = []
         for ft in self._title_boxes:
             restricted_period = self._apply_limits_to_period(ft.period)
-            if restricted_period is not None:  # Skip if period becomes null set
+            # Include objects with no period (always visible) or valid restricted periods
+            if ft.period is None or restricted_period is not None:
                 title_boxes_serialized.append({
                     "html": ft.html,
-                    "period": list(restricted_period),
+                    "period": list(restricted_period) if restricted_period is not None else None,
                 })
 
         return {
