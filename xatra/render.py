@@ -279,42 +279,43 @@ HTML_TEMPLATE = Template(
         for (const s of snapshots) {
           if (s.year <= year) current = s;
         }
-        if (!current) {
-          return;
-        }
-        for (const f of current.flags) {
-          if (!f.geometry) continue;
-          const layer = addGeoJSON(f.geometry, { style: { className: 'flag' } }, `${f.label}${f.note ? ' — ' + f.note : ''}`);
-          layers.flags.push(layer);
-          
-          // Add label at centroid
-          const centroid = getCentroid(f.geometry);
-          if (centroid[0] !== 0 || centroid[1] !== 0) {
-            // Create custom label element
-            const labelDiv = L.divIcon({
-              html: `<div class="flag-label">${f.label}</div>`,
-              className: 'flag-label-container',
-              iconSize: [1, 1],
-              iconAnchor: [0, 0]
-            });
-            const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
-            layers.flags.push(labelLayer);
+        
+        // Render flags if we have a snapshot
+        if (current) {
+          for (const f of current.flags) {
+            if (!f.geometry) continue;
+            const layer = addGeoJSON(f.geometry, { style: { className: 'flag' } }, `${f.label}${f.note ? ' — ' + f.note : ''}`);
+            layers.flags.push(layer);
             
-            // Debug: Add visible marker for centroid
-            if (DEBUG_CENTROIDS) {
-              const debugMarker = L.circleMarker(centroid, {
-                radius: 8,
-                color: 'red',
-                fillColor: 'yellow',
-                fillOpacity: 0.8,
-                weight: 2
-              }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
-              layers.flags.push(debugMarker);
+            // Add label at centroid
+            const centroid = getCentroid(f.geometry);
+            if (centroid[0] !== 0 || centroid[1] !== 0) {
+              // Create custom label element
+              const labelDiv = L.divIcon({
+                html: `<div class="flag-label">${f.label}</div>`,
+                className: 'flag-label-container',
+                iconSize: [1, 1],
+                iconAnchor: [0, 0]
+              });
+              const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
+              layers.flags.push(labelLayer);
+              
+              // Debug: Add visible marker for centroid
+              if (DEBUG_CENTROIDS) {
+                const debugMarker = L.circleMarker(centroid, {
+                  radius: 8,
+                  color: 'red',
+                  fillColor: 'yellow',
+                  fillOpacity: 0.8,
+                  weight: 2
+                }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
+                layers.flags.push(debugMarker);
+              }
             }
           }
         }
         
-        // Render other object types with period filtering
+        // Always render other object types with period filtering
         renderRivers(year);
         renderPaths(year);
         renderPoints(year);
