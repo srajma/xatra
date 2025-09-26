@@ -17,8 +17,8 @@ Libraries
 
 Development
 - [x] periods for things other than flags
-- [ ] xatra.AdminMap
-- [ ] xatra.DataMap
+- [ ] xatra.Admin
+- [ ] xatra.Data
 - [ ] possibly calculate and keep simplified geometries
 - [ ] loading geojson from file instead of storing it in html; i.e. with a server
 
