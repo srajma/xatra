@@ -2,7 +2,7 @@
 data/
 scripts/start_server.sh
 AGENTS.md
-SUMMARY.md
+# SUMMARY.md
 test_periods.*
 
 # python
