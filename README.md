@@ -7,7 +7,7 @@ Stylistic changes
 - [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
 - [ ] color assignment
 - [x] choice of BaseMaps
-- [ ] slider shouldn't appear for static maps
+- [x] slider shouldn't appear for static maps
 - [ ] slider.lim()
 
 Libraries
