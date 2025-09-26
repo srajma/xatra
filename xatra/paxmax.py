@@ -79,33 +79,6 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "note": "; ".join(notes) or None,
             })
         snapshots.append({"year": year, "flags": snapshot_flags})
-    
-    # Add flags without periods to all snapshots
-    for snapshot in snapshots:
-        for label, items in by_label.items():
-            # Check if this label already has flags in this snapshot
-            has_flags = any(f["label"] == label for f in snapshot["flags"])
-            if has_flags:
-                continue
-                
-            # Check if this label has any items without periods
-            no_period_items = [it for it in items if it.get("period") is None]
-            if no_period_items:
-                active = []
-                notes = []
-                for it in no_period_items:
-                    active.append(it)
-                    if it.get("note"):
-                        notes.append(it.get("note"))
-                if active:
-                    geoms = [_to_shape(a.get("geometry")) for a in active if a.get("geometry") is not None]
-                    geom = unary_union([g for g in geoms if g is not None]) if geoms else None
-                    snapshot["flags"].append({
-                        "label": label,
-                        "geometry": mapping(geom) if geom is not None else None,
-                        "note": "; ".join(notes) or None,
-                    })
-    
 
     return {"mode": "dynamic", "breakpoints": breakpoints, "snapshots": snapshots}
 

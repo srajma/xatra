@@ -244,7 +244,6 @@ class FlagMap:
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
-            "original_flags": flags_serialized,  # Include original flags for no-period rendering
             "rivers": rivers_serialized,
             "paths": paths_serialized,
             "points": points_serialized,
