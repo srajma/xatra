@@ -29,10 +29,25 @@ Interactive platform
 
 # Xatra: The Matplotlib of Maps
 
-Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever.
+Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever. Here's a minimal example:
 
+```python
+import xatra
+from xatra.loaders import gadm, naturalearth
+from xatra.territory_library import NORTHERN_INDIA
 
-## Quick Start
+map = xatra.FlagMap()
+
+map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"))
+map.Flag(label="Chola", value=gadm("IND.31") | gadm("IND.17") - gadm("IND.17.5"))
+map.River(label="Ganga", value=naturalearth("1159122643"))
+map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]])
+map.Point(label="Indraprastha", position=[28,77])
+map.Text(label="Jambudvipa", position=[22,79])
+map.TitleBox("<b>Sample historical map of India</b><br>Classical period, source: Majumdar.")
+map.show()
+```
+and here's a more complex example, of a dynamic map (items can have periods so they only show up at certain time periods), with base tile layers, notes that show up in tooltips, and custom CSS for each object:
 
 ```python
 import xatra
@@ -77,17 +92,15 @@ map.CSS("""
 .jambudvipa-text { font-size: 24px; font-weight: normal; color: #666666; }
 """)
 
-# Generate the map
 map.show()
 ```
 
 ## API Reference
 
-### FlagMap Class
+### FlagMap
 
 The main class for creating maps.
 
-#### Constructor
 ```python
 map = FlagMap()
 ```
@@ -107,7 +120,7 @@ map = FlagMap()
 
 - **`CSS(css)`**: Add custom CSS styles
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
-- **`lim(start, end)`**: Set time limits for dynamic maps
+- **`lim(start, end)`**: Optionally manually set time limit for dynamic maps
 
 ##### Export
 
@@ -133,123 +146,6 @@ Represents geographical regions with set algebra operations.
 - **`gadm(key)`**: Load GADM administrative boundary (e.g., "IND", "PAK")
 - **`naturalearth(ne_id)`**: Load Natural Earth feature by ID
 - **`overpass(osm_id)`**: Load Overpass API data by OSM ID
-
-## Examples
-
-### Static Map
-
-```python
-import xatra
-
-map = xatra.FlagMap()
-
-# Add territories
-india = xatra.gadm("IND")
-pakistan = xatra.gadm("PAK")
-northern_india = india - pakistan
-
-map.Flag("Northern India", northern_india, note="Historical region")
-
-# Add rivers
-ganges = xatra.naturalearth("ne_id_123")
-map.River("Ganges", ganges, classes="major-river")
-
-# Export
-map.show("static_map.html")
-```
-
-### Dynamic Map
-
-```python
-import xatra
-
-map = xatra.FlagMap()
-
-# Add flags with time periods
-maurya = xatra.gadm("IND")
-map.Flag("Maurya", maurya, period=[320, 180], note="Mauryan Empire")
-
-gupta = xatra.gadm("IND")
-map.Flag("Gupta", gupta, period=[320, 550], note="Gupta Empire")
-
-# Add rivers that change over time
-ganges_ancient = xatra.naturalearth("ne_id_123")
-map.River("Ganges", ganges_ancient, period=[320, 600], classes="ancient-river")
-
-ganges_modern = xatra.naturalearth("ne_id_124")
-map.River("Ganges", ganges_modern, period=[600, 2024], classes="modern-river")
-
-# Set time limits
-map.lim(300, 2024)
-
-# Export
-map.show("dynamic_map.html")
-```
-
-### Custom Styling
-
-```python
-import xatra
-
-map = xatra.FlagMap()
-
-# Add custom CSS
-map.CSS("""
-.empire { 
-    fill: rgba(200, 0, 0, 0.3); 
-    stroke: #cc0000; 
-    stroke-width: 2px; 
-}
-.major-river { 
-    stroke: #0066cc; 
-    stroke-width: 3px; 
-    stroke-opacity: 0.8; 
-}
-.trade-route { 
-    stroke: #ff6600; 
-    stroke-dasharray: 8 4; 
-    stroke-width: 2px; 
-}
-.city-label { 
-    font-size: 16px; 
-    font-weight: bold; 
-    color: #333; 
-    text-shadow: 1px 1px 2px rgba(255,255,255,0.8); 
-}
-""")
-
-# Add elements with custom classes
-map.Flag("Maurya", territory, classes="empire")
-map.River("Ganges", river_geom, classes="major-river")
-map.Path("Silk Road", coords, classes="trade-route")
-map.Text("Delhi", position, classes="city-label")
-
-map.show("styled_map.html")
-```
-
-### Base Layer Configuration
-
-```python
-import xatra
-
-map = xatra.FlagMap()
-
-# Add multiple base layers
-map.BaseOption("OpenStreetMap", default=True)
-map.BaseOption("Esri.WorldImagery")
-map.BaseOption("OpenTopoMap")
-map.BaseOption("CartoDB.Positron")
-map.BaseOption("USGS.USImageryTopo")
-
-# Custom tile server
-map.BaseOption(
-    "https://tiles.example.com/{z}/{x}/{y}.png",
-    name="Custom Tiles",
-    default=False
-)
-
-map.show("multi_layer_map.html")
-```
 
 ## Data Sources
 
