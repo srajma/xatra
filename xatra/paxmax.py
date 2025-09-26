@@ -20,13 +20,20 @@ def _to_shape(geojson):
 
 
 def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
+    print("DEBUG: paxmax_aggregate called with flags:", len(flags_serialized))
+    for i, f in enumerate(flags_serialized):
+        print(f"  Flag {i}: {f['label']} period={f.get('period')}")
+    
     # Group by label
     by_label: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for f in flags_serialized:
         by_label[f["label"]].append(f)
 
+    print("DEBUG: Grouped by label:", {k: len(v) for k, v in by_label.items()})
+
     # Determine if dynamic
     dynamic = any(f.get("period") is not None for f in flags_serialized)
+    print(f"DEBUG: Dynamic mode: {dynamic}")
 
     if not dynamic:
         # Simple union per label
@@ -49,10 +56,12 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
             if per is not None:
                 breakpoints.extend([int(per[0]), int(per[1])])
     breakpoints = sorted(set(breakpoints))
+    print(f"DEBUG: Flag breakpoints: {breakpoints}")
 
     # For each label and each breakpoint year, compute union of active geometries
     snapshots: List[Dict[str, Any]] = []
     for year in breakpoints:
+        print(f"DEBUG: Processing year {year}")
         snapshot_flags = []
         for label, items in by_label.items():
             active = []
@@ -60,17 +69,22 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
             for it in items:
                 per = it.get("period")
                 if per is None:
+                    print(f"  {label}: No period, always active")
                     active.append(it)
                     if it.get("note"):
                         notes.append(it.get("note"))
                 else:
                     start, end = int(per[0]), int(per[1])
-                    if year >= start and year < end:
+                    is_active = year >= start and year < end
+                    print(f"  {label}: period=[{start}, {end}), year={year}, active={is_active}")
+                    if is_active:
                         active.append(it)
                         if it.get("note"):
                             notes.append(it.get("note"))
             if not active:
+                print(f"  {label}: No active items for year {year}")
                 continue
+            print(f"  {label}: {len(active)} active items for year {year}")
             geoms = [_to_shape(a.get("geometry")) for a in active if a.get("geometry") is not None]
             geom = unary_union([g for g in geoms if g is not None]) if geoms else None
             snapshot_flags.append({
@@ -79,7 +93,12 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "note": "; ".join(notes) or None,
             })
         snapshots.append({"year": year, "flags": snapshot_flags})
+        print(f"DEBUG: Year {year} has {len(snapshot_flags)} flags")
 
+    print(f"DEBUG: Final snapshots: {len(snapshots)} snapshots")
+    for s in snapshots:
+        print(f"  Year {s['year']}: {[f['label'] for f in s['flags']]}")
+    
     return {"mode": "dynamic", "breakpoints": breakpoints, "snapshots": snapshots}
 
 

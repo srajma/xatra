@@ -275,9 +275,12 @@ HTML_TEMPLATE = Template(
         clearAllLayers();
         const snapshots = payload.flags.snapshots;
         // find closest snapshot at or before year
-        let current = snapshots[0];
+        let current = null;
         for (const s of snapshots) {
           if (s.year <= year) current = s;
+        }
+        if (!current) {
+          return;
         }
         for (const f of current.flags) {
           if (!f.geometry) continue;
