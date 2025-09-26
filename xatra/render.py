@@ -382,8 +382,15 @@ HTML_TEMPLATE = Template(
           
           if (allPeriods.length > 0) {
             const uniquePeriods = [...new Set(allPeriods)].sort((a, b) => a - b);
-            const min = uniquePeriods[0];
-            const max = uniquePeriods[uniquePeriods.length - 1];
+            let min = uniquePeriods[0];
+            let max = uniquePeriods[uniquePeriods.length - 1];
+            
+            // Use map limits if available (without epsilon for slider range)
+            if (payload.map_limits) {
+              min = payload.map_limits[0];
+              max = payload.map_limits[1];
+            }
+            
             controls.innerHTML = `<input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" /> <span id="yearLabel">${min}</span>`;
             const input = document.getElementById('year');
             const label = document.getElementById('yearLabel');

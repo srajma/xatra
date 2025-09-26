@@ -77,6 +77,7 @@ class FlagMap:
         self._title_boxes: List[TitleBoxEntry] = []
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
+        self._map_limits: Optional[Tuple[int, int]] = None
         
         # Add default base options
         self._add_default_base_options()
@@ -134,6 +135,19 @@ class FlagMap:
     def CSS(self, css: str) -> None:
         self._css.append(css)
 
+    def lim(self, start: int, end: int) -> None:
+        """Set the time limits for the map.
+        
+        This restricts all object periods to be within the specified range.
+        Object periods are considered clopen intervals [x, y), so we add a small
+        epsilon to ensure proper behavior at the boundaries.
+        
+        Args:
+            start: Start year (inclusive)
+            end: End year (exclusive)
+        """
+        self._map_limits = (int(start), int(end))
+
     def BaseOption(self, url_or_provider: str, name: Optional[str] = None, default: bool = False) -> None:
         """Add a base layer option.
         
@@ -187,17 +201,49 @@ class FlagMap:
         # let's not do this, because it makes it impossible to override the default
         pass
 
+    def _apply_limits_to_period(self, period: Optional[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
+        """Apply map limits to a period with epsilon adjustment.
+        
+        Object periods are clopen intervals [x, y), so we add epsilon to ensure
+        proper behavior at boundaries. If the resulting period becomes null
+        (start >= end), return None.
+        
+        Args:
+            period: Original period tuple (start, end) or None
+            
+        Returns:
+            Restricted period tuple or None if period becomes null
+        """
+        if period is None or self._map_limits is None:
+            return period
+            
+        start, end = period
+        map_start, map_end = self._map_limits
+        epsilon = 1  # Small epsilon for clopen interval handling
+        
+        # Apply limits with epsilon
+        restricted_start = max(start, map_start - epsilon)
+        restricted_end = min(end, map_end + epsilon)
+        
+        # Return None if period becomes null set
+        if restricted_start >= restricted_end:
+            return None
+            
+        return (restricted_start, restricted_end)
+
     def _export_json(self) -> Dict[str, Any]:
-        # Resolve territories to GeoJSON shapes
+        # Resolve territories to GeoJSON shapes and apply limits
         flags_serialized: List[Dict[str, Any]] = []
         for fl in self._flags:
-            geom = fl.territory.to_geometry()
-            flags_serialized.append({
-                "label": fl.label,
-                "geometry": mapping(geom) if geom is not None else None,
-                "period": list(fl.period) if fl.period is not None else None,
-                "note": fl.note,
-            })
+            restricted_period = self._apply_limits_to_period(fl.period)
+            if restricted_period is not None:  # Skip if period becomes null set
+                geom = fl.territory.to_geometry()
+                flags_serialized.append({
+                    "label": fl.label,
+                    "geometry": mapping(geom) if geom is not None else None,
+                    "period": list(restricted_period),
+                    "note": fl.note,
+                })
 
         # Find the earliest start year from all object types
         earliest_start = None
@@ -234,33 +280,49 @@ class FlagMap:
         # Pax-max aggregation
         pax = paxmax_aggregate(flags_serialized, earliest_start)
 
-        rivers_serialized = [{
-            "label": r.label,
-            "geometry": r.geometry,
-            "note": r.note,
-            "classes": r.classes,
-            "period": list(r.period) if r.period is not None else None,
-        } for r in self._rivers]
+        rivers_serialized = []
+        for r in self._rivers:
+            restricted_period = self._apply_limits_to_period(r.period)
+            if restricted_period is not None:  # Skip if period becomes null set
+                rivers_serialized.append({
+                    "label": r.label,
+                    "geometry": r.geometry,
+                    "note": r.note,
+                    "classes": r.classes,
+                    "period": list(restricted_period),
+                })
 
-        paths_serialized = [{
-            "label": p.label,
-            "coords": p.coords,
-            "classes": p.classes,
-            "period": list(p.period) if p.period is not None else None,
-        } for p in self._paths]
+        paths_serialized = []
+        for p in self._paths:
+            restricted_period = self._apply_limits_to_period(p.period)
+            if restricted_period is not None:  # Skip if period becomes null set
+                paths_serialized.append({
+                    "label": p.label,
+                    "coords": p.coords,
+                    "classes": p.classes,
+                    "period": list(restricted_period),
+                })
 
-        points_serialized = [{
-            "label": p.label,
-            "position": p.position,
-            "period": list(p.period) if p.period is not None else None,
-        } for p in self._points]
+        points_serialized = []
+        for p in self._points:
+            restricted_period = self._apply_limits_to_period(p.period)
+            if restricted_period is not None:  # Skip if period becomes null set
+                points_serialized.append({
+                    "label": p.label,
+                    "position": p.position,
+                    "period": list(restricted_period),
+                })
 
-        texts_serialized = [{
-            "label": t.label,
-            "position": t.position,
-            "classes": t.classes,
-            "period": list(t.period) if t.period is not None else None,
-        } for t in self._texts]
+        texts_serialized = []
+        for t in self._texts:
+            restricted_period = self._apply_limits_to_period(t.period)
+            if restricted_period is not None:  # Skip if period becomes null set
+                texts_serialized.append({
+                    "label": t.label,
+                    "position": t.position,
+                    "classes": t.classes,
+                    "period": list(restricted_period),
+                })
 
         base_options_serialized = [{
             "url": b.url,
@@ -268,10 +330,14 @@ class FlagMap:
             "default": b.default,
         } for b in self._base_options]
 
-        title_boxes_serialized = [{
-            "html": ft.html,
-            "period": list(ft.period) if ft.period is not None else None,
-        } for ft in self._title_boxes]
+        title_boxes_serialized = []
+        for ft in self._title_boxes:
+            restricted_period = self._apply_limits_to_period(ft.period)
+            if restricted_period is not None:  # Skip if period becomes null set
+                title_boxes_serialized.append({
+                    "html": ft.html,
+                    "period": list(restricted_period),
+                })
 
         return {
             "css": "\n".join(self._css) if self._css else "",
@@ -282,6 +348,7 @@ class FlagMap:
             "texts": texts_serialized,
             "title_boxes": title_boxes_serialized,
             "base_options": base_options_serialized,
+            "map_limits": list(self._map_limits) if self._map_limits is not None else None,
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
