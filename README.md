@@ -109,6 +109,8 @@ map = FlagMap()
 
 ##### Adding Map Elements
 
+The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
+
 - **`Flag(label, territory, period=None, note=None)`**: Add a flag (country/kingdom)
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
 - **`Path(label, coords, classes=None, period=None)`**: Add a path/route
