@@ -45,6 +45,14 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
     The pax-max method groups flags with the same label over time and creates
     stable periods where the territory remains unchanged. This reduces the
     number of map updates needed for smooth visualization.
+
+    For static maps (those where all flag periods are None), this amounts to just 
+    taking the union of all flags with the same label so we have a single item for 
+    each flag label. For dynamic maps -- we create an entry for each "stable period" 
+    of a Flag label. i.e. collect the breakpoint years for each label (the start 
+    and end years of every flag with a particular label), and create unions for the 
+    flags active at each breakpoint year (a flag is considered active at its start year 
+    but not its end year)
     
     Args:
         flags_serialized: List of flag dictionaries with geometry and period info

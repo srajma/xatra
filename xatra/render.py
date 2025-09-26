@@ -7,6 +7,12 @@ filtering, base layer selection, and various map elements.
 
 The module generates self-contained HTML files that can be opened in any web browser
 without requiring a web server.
+
+If period flags are present, the map is a *dynamic* map, and there should be a slider 
+at the bottom: whenever the slider passes a breakpoint year (a start or end year of any 
+flag), we change the displayed map to only display the united flags active at that time. 
+The labels of the flags are placed at the centroid of their geometries (at any given year), 
+and both labels and notes are shown in the hover tooltips.
 """
 
 from __future__ import annotations
