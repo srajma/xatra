@@ -313,6 +313,29 @@ HTML_TEMPLATE = Template(
               }
             }
           }
+        } else {
+          // No snapshot found - render flags without periods directly
+          for (const flag of payload.original_flags || []) {
+            if (flag.period === null || flag.period === undefined) {
+              if (!flag.geometry) continue;
+              const layer = addGeoJSON(flag.geometry, { style: { className: 'flag' } }, `${flag.label}${flag.note ? ' — ' + flag.note : ''}`);
+              layers.flags.push(layer);
+              
+              // Add label at centroid
+              const centroid = getCentroid(flag.geometry);
+              if (centroid[0] !== 0 || centroid[1] !== 0) {
+                // Create custom label element
+                const labelDiv = L.divIcon({
+                  html: `<div class="flag-label">${flag.label}</div>`,
+                  className: 'flag-label-container',
+                  iconSize: [1, 1],
+                  iconAnchor: [0, 0]
+                });
+                const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
+                layers.flags.push(labelLayer);
+              }
+            }
+          }
         }
         
         // Always render other object types with period filtering
