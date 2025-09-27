@@ -186,6 +186,9 @@ class FlagMap:
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
+        Flags automatically get colors from the map's color sequence. Flags with the same label
+        will always use the same color. You can override this behavior by providing a custom color.
+        
         Args:
             label: Display name for the flag
             value: Territory object defining the geographical extent
@@ -195,6 +198,8 @@ class FlagMap:
             
         Example:
             >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
+            >>> map.Flag("Maurya", other_territory)  # Reuses the same color as above
+            >>> map.Flag("Custom", territory, color="#ff0000")  # Custom red color
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:

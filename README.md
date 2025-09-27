@@ -6,7 +6,7 @@ Stylistic changes
 - [x] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
 - [x] also need flag names to appear at centroid
 - [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
-- [ ] color assignment
+- [x] color assignment
 - [x] choice of BaseMaps
 - [x] slider shouldn't appear for static maps
 - [x] map.lim()
@@ -39,8 +39,10 @@ from xatra.territory_library import NORTHERN_INDIA
 map = xatra.FlagMap()
 
 # Flags automatically get colors from the default LinearColorSequence
+# Flags with the same label will use the same color
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"))
 map.Flag(label="Chola", value=gadm("IND.31") | gadm("IND.17") - gadm("IND.17.5"))
+map.Flag(label="Maurya", value=gadm("IND.1"))  # Reuses Maurya color
 map.River(label="Ganga", value=naturalearth("1159122643"))
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]])
 map.Point(label="Indraprastha", position=[28,77])
