@@ -19,6 +19,7 @@ from shapely.geometry import mapping
 from .territory import Territory
 from .render import export_html
 from .paxmax import paxmax_aggregate
+from .colorseq import ColorSequence, LinearColorSequence
 
 
 GeometryLike = Union[Territory, Dict[str, Any]]
@@ -33,11 +34,13 @@ class FlagEntry:
         territory: Territory object defining the geographical extent
         period: Optional time period as (start_year, end_year) tuple
         note: Optional tooltip text for the flag
+        color: Optional color for the flag (overrides color sequence)
     """
     label: str
     territory: Territory
     period: Optional[Tuple[int, int]] = None
     note: Optional[str] = None
+    color: Optional[str] = None
 
 
 @dataclass
@@ -160,12 +163,26 @@ class FlagMap:
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
+        self._color_sequence: ColorSequence = LinearColorSequence()
+        self._flag_index: int = 0
         
         # Add default base options
         self._add_default_base_options()
 
     # API methods
-    def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None) -> None:
+    def FlagColorSequence(self, color_sequence: ColorSequence) -> None:
+        """Set the color sequence for flags.
+        
+        Args:
+            color_sequence: ColorSequence instance to use for flag colors
+            
+        Example:
+            >>> from xatra.colorseq import RotatingColorSequence
+            >>> map.FlagColorSequence(RotatingColorSequence())
+        """
+        self._color_sequence = color_sequence
+
+    def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
         Args:
@@ -173,6 +190,7 @@ class FlagMap:
             value: Territory object defining the geographical extent
             period: Optional time period as [start_year, end_year] list
             note: Optional tooltip text for the flag
+            color: Optional color for the flag (overrides color sequence) in hex code
             
         Example:
             >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
@@ -182,7 +200,19 @@ class FlagMap:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note))
+        
+        # Handle color assignment
+        if color is not None:
+            # Set the color in the color sequence at the current index
+            from .colorseq import Color
+            self._color_sequence[self._flag_index] = Color.hex(color)
+        else:
+            # Use the color from the sequence (will generate on demand if needed)
+            assigned_color = self._color_sequence[self._flag_index]
+            color = assigned_color.hex
+        
+        self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color))
+        self._flag_index += 1
 
     def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         """Add a river to the map.
@@ -418,6 +448,7 @@ class FlagMap:
                     "geometry": mapping(geom) if geom is not None else None,
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "note": fl.note,
+                    "color": fl.color,
                 })
 
         # Find the earliest start year from all object types

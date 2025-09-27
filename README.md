@@ -38,6 +38,7 @@ from xatra.territory_library import NORTHERN_INDIA
 
 map = xatra.FlagMap()
 
+# Flags automatically get colors from the default LinearColorSequence
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"))
 map.Flag(label="Chola", value=gadm("IND.31") | gadm("IND.17") - gadm("IND.17.5"))
 map.River(label="Ganga", value=naturalearth("1159122643"))
@@ -111,7 +112,7 @@ map = FlagMap()
 
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
-- **`Flag(label, territory, period=None, note=None)`**: Add a flag (country/kingdom)
+- **`Flag(label, territory, period=None, note=None, color=None)`**: Add a flag (country/kingdom)
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
 - **`Path(label, coords, classes=None, period=None)`**: Add a path/route
 - **`Point(label, position, period=None)`**: Add a point of interest
@@ -122,6 +123,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 - **`CSS(css)`**: Add custom CSS styles
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
+- **`FlagColorSequence(color_sequence)`**: Set the color sequence for flags
 - **`lim(start, end)`**: Optionally manually set time limit for dynamic maps
 
 ##### Export
@@ -148,6 +150,32 @@ Represents geographical regions with set algebra operations.
 - **`gadm(key)`**: Load GADM administrative boundary (e.g., "IND", "PAK")
 - **`naturalearth(ne_id)`**: Load Natural Earth feature by ID
 - **`overpass(osm_id)`**: Load Overpass API data by OSM ID
+
+### Color Sequences
+
+Xatra supports automatic color assignment for flags using color sequences. By default, maps use `LinearColorSequence()` which generates contrasting colors. You can also use other color sequences:
+
+- **`LinearColorSequence()`**: Generates contrasting colors (default)
+- **`RotatingColorSequence()`**: Cycles through a predefined set of colors
+- **`RandomColorSequence()`**: Generates random colors
+
+#### Examples
+
+```python
+from xatra.colorseq import RotatingColorSequence
+
+# Set a custom color sequence
+map.FlagColorSequence(RotatingColorSequence())
+
+# Flags will automatically get colors from the sequence
+map.Flag("Empire A", territory1)
+map.Flag("Empire B", territory2)
+
+# You can also override with custom colors
+map.Flag("Custom Empire", territory3, color="#ff0000")
+```
+
+Flag labels automatically use a darker, more opaque version of the flag color for better readability.
 
 ## Data Sources
 
