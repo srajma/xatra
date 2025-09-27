@@ -66,6 +66,11 @@ class ColorSequence:
             self.append_many(index - len(self.colors) + 1)
         
         return self.colors[index]
+    
+    def __setitem__(self, index: int, value: Color):
+        if index >= len(self.colors):
+            self.append_many(index - len(self.colors) + 1)
+        self.colors[index] = value
 
     def plot(self, ax: plt.Axes):
         """Plot the color sequence as a sequence of colored bars"""
