@@ -221,7 +221,10 @@ HTML_TEMPLATE = Template(
           layers.flags.push(layer);
           
           // Add label at centroid (use pre-computed centroid if available)
-          const centroid = f.centroid || getCentroid(f.geometry);
+          const centroid = f.centroid || (() => {
+            console.warn(`Centroid fallback calculation for flag: ${f.label}`);
+            return getCentroid(f.geometry);
+          })();
           if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
             // Create custom label element with flag color
             let labelStyle = '';
@@ -571,7 +574,10 @@ HTML_TEMPLATE = Template(
           layers.flags.push(layer);
           
           // Add label at centroid (use pre-computed centroid if available)
-          const centroid = f.centroid || getCentroid(f.geometry);
+          const centroid = f.centroid || (() => {
+            console.warn(`Centroid fallback calculation for flag: ${f.label}`);
+            return getCentroid(f.geometry);
+          })();
           if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
             // Create custom label element with flag color
             let labelStyle = '';

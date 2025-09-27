@@ -19,6 +19,82 @@ from shapely.geometry import shape, mapping
 from shapely.ops import unary_union
 
 
+def _compute_centroid_for_geometry(geometry: Dict[str, Any]) -> Optional[List[float]]:
+    """Compute centroid for a GeoJSON geometry.
+    
+    Args:
+        geometry: GeoJSON geometry object
+        
+    Returns:
+        [latitude, longitude] centroid coordinates or None if invalid
+    """
+    if geometry is None or geometry.get("type") not in ["Polygon", "MultiPolygon"]:
+        return None
+        
+    if geometry["type"] == "Polygon":
+        coords = geometry["coordinates"][0]  # Exterior ring
+        if len(coords) < 3:
+            return None
+            
+        area = 0
+        cx = cy = 0
+        
+        for i in range(len(coords) - 1):
+            x1, y1 = coords[i]
+            x2, y2 = coords[i + 1]
+            
+            cross = x1 * y2 - x2 * y1
+            area += cross
+            cx += (x1 + x2) * cross
+            cy += (y1 + y2) * cross
+            
+        area *= 0.5
+        if abs(area) < 1e-10:
+            return None
+            
+        cx /= (6 * area)
+        cy /= (6 * area)
+        
+        return [cy, cx]  # [lat, lng]
+        
+    elif geometry["type"] == "MultiPolygon":
+        total_area = 0
+        weighted_x = weighted_y = 0
+        
+        for polygon in geometry["coordinates"]:
+            coords = polygon[0]  # Exterior ring
+            if len(coords) < 3:
+                continue
+                
+            area = 0
+            cx = cy = 0
+            
+            for i in range(len(coords) - 1):
+                x1, y1 = coords[i]
+                x2, y2 = coords[i + 1]
+                
+                cross = x1 * y2 - x2 * y1
+                area += cross
+                cx += (x1 + x2) * cross
+                cy += (y1 + y2) * cross
+                
+            area *= 0.5
+            if abs(area) > 1e-10:
+                cx /= (6 * area)
+                cy /= (6 * area)
+                
+                weighted_x += cx * abs(area)
+                weighted_y += cy * abs(area)
+                total_area += abs(area)
+                
+        if total_area < 1e-10:
+            return None
+            
+        return [weighted_y / total_area, weighted_x / total_area]  # [lat, lng]
+        
+    return None
+
+
 def _to_shape(geojson):
     """Convert GeoJSON to Shapely geometry.
     
@@ -77,9 +153,14 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             geom = unary_union([g for g in geoms if g is not None]) if geoms else None
             # Preserve color from the first item (they should all have the same color for the same label)
             color = items[0].get("color") if items else None
+            # Recompute centroid for the unioned geometry
+            centroid = None
+            if geom is not None:
+                centroid = _compute_centroid_for_geometry(mapping(geom))
             out.append({
                 "label": label,
                 "geometry": mapping(geom) if geom is not None else None,
+                "centroid": centroid,
                 "note": "; ".join([it.get("note") for it in items if it.get("note")]) or None,
                 "color": color,
             })
@@ -123,9 +204,14 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             geom = unary_union([g for g in geoms if g is not None]) if geoms else None
             # Preserve color from the first active item
             color = active[0].get("color") if active else None
+            # Recompute centroid for the unioned geometry
+            centroid = None
+            if geom is not None:
+                centroid = _compute_centroid_for_geometry(mapping(geom))
             snapshot_flags.append({
                 "label": label,
                 "geometry": mapping(geom) if geom is not None else None,
+                "centroid": centroid,
                 "note": "; ".join(notes) or None,
                 "color": color,
             })
