@@ -22,6 +22,7 @@ OVERPASS_DIR = os.path.join(DATA_DIR, "rivers_overpass_india")
 # Global file cache to avoid repeated disk reads
 _file_cache: Dict[str, Any] = {}
 
+DEBUG_FILE_CACHE = False
 
 def _read_json(path: str):
     """Read JSON file from disk with caching.
@@ -38,8 +39,13 @@ def _read_json(path: str):
     if path not in _file_cache:
         if not os.path.exists(path):
             raise FileNotFoundError(f"Missing data file: {path}")
+        if DEBUG_FILE_CACHE:
+            print(f"DEBUG: Loading file from disk: {path}")
         with open(path, "r", encoding="utf-8") as f:
             _file_cache[path] = json.load(f)
+    else:
+        if DEBUG_FILE_CACHE:
+            print(f"DEBUG: Using cached file: {path}")
     return _file_cache[path]
 
 
