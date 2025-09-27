@@ -165,6 +165,7 @@ class FlagMap:
         self._map_limits: Optional[Tuple[int, int]] = None
         self._color_sequence: ColorSequence = LinearColorSequence()
         self._flag_index: int = 0
+        self._label_colors: Dict[str, str] = {}  # Track colors by label
         
         # Add default base options
         self._add_default_base_options()
@@ -203,16 +204,21 @@ class FlagMap:
         
         # Handle color assignment
         if color is not None:
-            # Set the color in the color sequence at the current index
-            from .colorseq import Color
-            self._color_sequence[self._flag_index] = Color.hex(color)
+            # Custom color provided - store it for this label
+            self._label_colors[label] = color
         else:
-            # Use the color from the sequence (will generate on demand if needed)
-            assigned_color = self._color_sequence[self._flag_index]
-            color = assigned_color.hex
+            # Check if we already have a color for this label
+            if label in self._label_colors:
+                # Reuse existing color for this label
+                color = self._label_colors[label]
+            else:
+                # Assign new color from sequence and store it for this label
+                assigned_color = self._color_sequence[self._flag_index]
+                color = assigned_color.hex
+                self._label_colors[label] = color
+                self._flag_index += 1
         
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color))
-        self._flag_index += 1
 
     def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         """Add a river to the map.
