@@ -19,9 +19,12 @@ GADM_DIR = os.path.join(DATA_DIR, "gadm")
 NE_RIVERS_FILE = os.path.join(DATA_DIR, "ne_10m_rivers.geojson")
 OVERPASS_DIR = os.path.join(DATA_DIR, "rivers_overpass_india")
 
+# Global file cache to avoid repeated disk reads
+_file_cache: Dict[str, Any] = {}
+
 
 def _read_json(path: str):
-    """Read JSON file from disk.
+    """Read JSON file from disk with caching.
     
     Args:
         path: Path to JSON file
@@ -32,10 +35,22 @@ def _read_json(path: str):
     Raises:
         FileNotFoundError: If file doesn't exist
     """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Missing data file: {path}")
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    if path not in _file_cache:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Missing data file: {path}")
+        with open(path, "r", encoding="utf-8") as f:
+            _file_cache[path] = json.load(f)
+    return _file_cache[path]
+
+
+def clear_file_cache():
+    """Clear the file cache to free memory.
+    
+    This can be useful when working with very large datasets or when
+    you want to ensure fresh data is loaded from disk.
+    """
+    global _file_cache
+    _file_cache.clear()
 
 
 def gadm(key: str):
