@@ -75,10 +75,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
         for label, items in by_label.items():
             geoms = [_to_shape(it.get("geometry")) for it in items if it.get("geometry") is not None]
             geom = unary_union([g for g in geoms if g is not None]) if geoms else None
+            # Preserve color from the first item (they should all have the same color for the same label)
+            color = items[0].get("color") if items else None
             out.append({
                 "label": label,
                 "geometry": mapping(geom) if geom is not None else None,
                 "note": "; ".join([it.get("note") for it in items if it.get("note")]) or None,
+                "color": color,
             })
         return {"mode": "static", "flags": out}
 
@@ -118,10 +121,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 continue
             geoms = [_to_shape(a.get("geometry")) for a in active if a.get("geometry") is not None]
             geom = unary_union([g for g in geoms if g is not None]) if geoms else None
+            # Preserve color from the first active item
+            color = active[0].get("color") if active else None
             snapshot_flags.append({
                 "label": label,
                 "geometry": mapping(geom) if geom is not None else None,
                 "note": "; ".join(notes) or None,
+                "color": color,
             })
         snapshots.append({"year": year, "flags": snapshot_flags})
 

@@ -201,6 +201,17 @@ HTML_TEMPLATE = Template(
           }
           
           const layer = addGeoJSON(f.geometry, flagStyle, `${f.label}${f.note ? ' — ' + f.note : ''}`);
+          
+          // Apply color styling after layer creation
+          if (f.color) {
+            layer.setStyle({
+              fillColor: f.color,
+              fillOpacity: 0.4,
+              color: f.color,
+              weight: 1
+            });
+          }
+          
           layers.flags.push(layer);
           
           // Add label at centroid
@@ -381,6 +392,17 @@ HTML_TEMPLATE = Template(
           }
           
           const layer = addGeoJSON(f.geometry, flagStyle, `${f.label}${f.note ? ' — ' + f.note : ''}`);
+          
+          // Apply color styling after layer creation
+          if (f.color) {
+            layer.setStyle({
+              fillColor: f.color,
+              fillOpacity: 0.4,
+              color: f.color,
+              weight: 1
+            });
+          }
+          
           layers.flags.push(layer);
           
           // Add label at centroid
