@@ -28,7 +28,6 @@ map.TitleBox("<h2>Classical Period (-100 to 400)</h2><p>This title appears only 
 map.lim(-480, 700) 
 map.CSS("""
 /* applies to all elements of given class */
-/*.flag { stroke: #555; fill: rgba(200,0,0,0.4); }*/
 .river { stroke: #0066cc; stroke-width: 2; }
 .path { stroke: #8B4513; stroke-width: 2; stroke-dasharray: 5 5;}
 #title { background: rgba(255,255,255,0.95); border: 1px solid #ccc; padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }

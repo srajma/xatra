@@ -37,7 +37,7 @@ HTML_TEMPLATE = Template(
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
       #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
       #layer-selector select { margin-left: 8px; }
-      .flag { stroke: #333; stroke-width: 1; fill: rgba(200,0,0,0.3); }
+      .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
