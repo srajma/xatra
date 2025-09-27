@@ -1,7 +1,7 @@
 *.log
 data/
 scripts/start_server.sh
-AGENTS.md
+ISSUE.md
 test_periods.*
 
 # python

@@ -70,6 +70,16 @@ HTML_TEMPLATE = Template(
       const centroidCache = new Map();
       const labelStyleCache = new Map();
       
+      // Track currently visible objects for incremental updates
+      let currentVisibleObjects = {
+        rivers: new Set(),
+        paths: new Set(), 
+        points: new Set(),
+        texts: new Set(),
+        admins: new Set(),
+        admin_rivers: new Set()
+      };
+      
       // Base layer management
       const baseLayers = {};
       let currentBaseLayer = null;
@@ -508,6 +518,347 @@ HTML_TEMPLATE = Template(
         }
       }
 
+      // Incremental rendering functions that only update changed objects
+      function renderRiversIncremental(year) {
+        const newVisible = new Set();
+        const rivers = filterByPeriod(payload.rivers, year);
+        
+        for (let i = 0; i < rivers.length; i++) {
+          const r = rivers[i];
+          const key = `${r.label}-${JSON.stringify(r.geometry)}`;
+          newVisible.add(key);
+          
+          if (!currentVisibleObjects.rivers.has(key)) {
+            // Add new river
+            if (r.geometry) {
+              let className = 'river';
+              if (r.classes) className += ' ' + r.classes;
+              const layer = addGeoJSON(r.geometry, { style: { className } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
+              layer._xatraKey = key;
+              layers.rivers.push(layer);
+            }
+          }
+        }
+        
+        // Remove rivers that are no longer visible
+        for (const key of currentVisibleObjects.rivers) {
+          if (!newVisible.has(key)) {
+            // Find and remove the layer
+            for (let i = layers.rivers.length - 1; i >= 0; i--) {
+              const layer = layers.rivers[i];
+              if (layer._xatraKey === key) {
+                map.removeLayer(layer);
+                layers.rivers.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+        
+        currentVisibleObjects.rivers = newVisible;
+      }
+
+      function renderPathsIncremental(year) {
+        const newVisible = new Set();
+        const paths = filterByPeriod(payload.paths, year);
+        
+        for (let i = 0; i < paths.length; i++) {
+          const p = paths[i];
+          const key = `${p.label}-${JSON.stringify(p.coords)}`;
+          newVisible.add(key);
+          
+          if (!currentVisibleObjects.paths.has(key)) {
+            // Add new path
+            const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
+            let className = 'path';
+            if (p.classes) className += ' ' + p.classes;
+            const layer = L.polyline(latlngs, { className }).addTo(map).bindTooltip(p.label);
+            layer._xatraKey = key;
+            layers.paths.push(layer);
+          }
+        }
+        
+        // Remove paths that are no longer visible
+        for (const key of currentVisibleObjects.paths) {
+          if (!newVisible.has(key)) {
+            for (let i = layers.paths.length - 1; i >= 0; i--) {
+              const layer = layers.paths[i];
+              if (layer._xatraKey === key) {
+                map.removeLayer(layer);
+                layers.paths.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+        
+        currentVisibleObjects.paths = newVisible;
+      }
+
+      function renderPointsIncremental(year) {
+        const newVisible = new Set();
+        const points = filterByPeriod(payload.points, year);
+        
+        for (let i = 0; i < points.length; i++) {
+          const p = points[i];
+          const key = `${p.label}-${p.position[0]}-${p.position[1]}`;
+          newVisible.add(key);
+          
+          if (!currentVisibleObjects.points.has(key)) {
+            // Add new point
+            const layer = L.marker([p.position[0], p.position[1]]).addTo(map).bindTooltip(p.label);
+            layer._xatraKey = key;
+            layers.points.push(layer);
+          }
+        }
+        
+        // Remove points that are no longer visible
+        for (const key of currentVisibleObjects.points) {
+          if (!newVisible.has(key)) {
+            for (let i = layers.points.length - 1; i >= 0; i--) {
+              const layer = layers.points[i];
+              if (layer._xatraKey === key) {
+                map.removeLayer(layer);
+                layers.points.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+        
+        currentVisibleObjects.points = newVisible;
+      }
+
+      function renderTextsIncremental(year) {
+        const newVisible = new Set();
+        const texts = filterByPeriod(payload.texts, year);
+        
+        for (let i = 0; i < texts.length; i++) {
+          const t = texts[i];
+          const key = `${t.label}-${t.position[0]}-${t.position[1]}`;
+          newVisible.add(key);
+          
+          if (!currentVisibleObjects.texts.has(key)) {
+            // Add new text
+            let className = 'text-label';
+            if (t.classes) className += ' ' + t.classes;
+            const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { 
+              permanent: true, 
+              direction: 'center', 
+              className: className,
+              offset: [0, 0]
+            });
+            layer._xatraKey = key;
+            layers.texts.push(layer);
+          }
+        }
+        
+        // Remove texts that are no longer visible
+        for (const key of currentVisibleObjects.texts) {
+          if (!newVisible.has(key)) {
+            for (let i = layers.texts.length - 1; i >= 0; i--) {
+              const layer = layers.texts[i];
+              if (layer._xatraKey === key) {
+                map.removeLayer(layer);
+                layers.texts.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+        
+        currentVisibleObjects.texts = newVisible;
+      }
+
+      function renderAdminsIncremental(year) {
+        const newVisible = new Set();
+        const admins = filterByPeriod(payload.admins, year);
+        
+        for (let i = 0; i < admins.length; i++) {
+          const a = admins[i];
+          const key = `${a.gadm}-${a.level}-${JSON.stringify(a.geometry)}`;
+          newVisible.add(key);
+          
+          if (!currentVisibleObjects.admins.has(key)) {
+            // Add new admin region
+            if (a.geometry) {
+              let className = 'admin';
+              if (a.classes) className += ' ' + a.classes;
+              
+              const layer = L.geoJSON(a.geometry, {
+                style: function(feature) {
+                  const props = feature.properties || {};
+                  const color = props._color;
+                  return {
+                    className: className,
+                    fillColor: color || '#cccccc',
+                    fillOpacity: 0.3,
+                    color: color || '#666666',
+                    weight: 1
+                  };
+                },
+                onEachFeature: function(feature, layer) {
+                  const props = feature.properties || {};
+                  
+                  // Create tooltip with all GADM properties
+                  let tooltip = '';
+                  
+                  let topName = '';
+                  if (props.NAME_3) topName = props.NAME_3;
+                  else if (props.NAME_2) topName = props.NAME_2;
+                  else if (props.NAME_1) topName = props.NAME_1;
+                  else if (props.COUNTRY) topName = props.COUNTRY;
+                  
+                  if (topName) tooltip += `<b>${topName}</b><br/>`;
+                  
+                  if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+                  if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+                  if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+                  if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+                  if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+                  if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+                  if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+                  if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+                  if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+                  if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+                  if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+                  
+                  if (tooltip.endsWith('<br/>')) {
+                    tooltip = tooltip.slice(0, -5);
+                  }
+                  
+                  if (tooltip) {
+                    layer.bindTooltip(tooltip, {
+                      direction: 'top',
+                      offset: [0, -10],
+                      opacity: 0.9,
+                      interactive: true,
+                      permanent: false,
+                      sticky: true
+                    });
+                  }
+                }
+              });
+              
+              layer._xatraKey = key;
+              layer.addTo(map);
+              layers.admins.push(layer);
+            }
+          }
+        }
+        
+        // Remove admins that are no longer visible
+        for (const key of currentVisibleObjects.admins) {
+          if (!newVisible.has(key)) {
+            for (let i = layers.admins.length - 1; i >= 0; i--) {
+              const layer = layers.admins[i];
+              if (layer._xatraKey === key) {
+                map.removeLayer(layer);
+                layers.admins.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+        
+        currentVisibleObjects.admins = newVisible;
+      }
+
+      function renderAdminRiversIncremental(year) {
+        const newVisible = new Set();
+        const adminRivers = filterByPeriod(payload.admin_rivers, year);
+        
+        for (let i = 0; i < adminRivers.length; i++) {
+          const ar = adminRivers[i];
+          const key = `${JSON.stringify(ar.geometry)}-${ar.classes}`;
+          newVisible.add(key);
+          
+          if (!currentVisibleObjects.admin_rivers.has(key)) {
+            // Add new admin river
+            if (ar.geometry) {
+              let className = 'admin-river';
+              if (ar.classes) className += ' ' + ar.classes;
+              
+              const layer = L.geoJSON(ar.geometry, {
+                style: function(feature) {
+                  const props = feature.properties || {};
+                  const source = props._source;
+                  let color = '#0066cc';
+                  if (source === 'naturalearth') color = '#0066cc';
+                  else if (source === 'overpass') color = '#cc6600';
+                  
+                  return {
+                    className: className,
+                    color: color,
+                    weight: 2,
+                    opacity: 0.8
+                  };
+                },
+                onEachFeature: function(feature, layer) {
+                  const props = feature.properties || {};
+                  
+                  let tooltip = '';
+                  const source = props._source;
+                  if (source === 'naturalearth') {
+                    tooltip += `<b>Natural Earth River</b><br/>`;
+                    if (props._ne_id) tooltip += `NE ID: ${props._ne_id}<br/>`;
+                  } else if (source === 'overpass') {
+                    tooltip += `<b>Overpass River</b><br/>`;
+                    if (props._filename) tooltip += `File: ${props._filename}<br/>`;
+                  }
+                  
+                  if (props.name) tooltip += `Name: ${props.name}<br/>`;
+                  if (props.NAME) tooltip += `NAME: ${props.NAME}<br/>`;
+                  if (props.NAME_EN) tooltip += `NAME_EN: ${props.NAME_EN}<br/>`;
+                  if (props.NAME_LOC) tooltip += `NAME_LOC: ${props.NAME_LOC}<br/>`;
+                  if (props.NAME_ALT) tooltip += `NAME_ALT: ${props.NAME_ALT}<br/>`;
+                  if (props.NAME_OTHER) tooltip += `NAME_OTHER: ${props.NAME_OTHER}<br/>`;
+                  
+                  if (props.scalerank) tooltip += `Scale Rank: ${props.scalerank}<br/>`;
+                  if (props.featurecla) tooltip += `Feature Class: ${props.featurecla}<br/>`;
+                  if (props.min_zoom) tooltip += `Min Zoom: ${props.min_zoom}<br/>`;
+                  
+                  if (tooltip.endsWith('<br/>')) {
+                    tooltip = tooltip.slice(0, -5);
+                  }
+                  
+                  if (tooltip) {
+                    layer.bindTooltip(tooltip, {
+                      direction: 'top',
+                      offset: [0, -10],
+                      opacity: 0.9,
+                      interactive: true,
+                      permanent: false,
+                      sticky: true
+                    });
+                  }
+                }
+              });
+              
+              layer._xatraKey = key;
+              layer.addTo(map);
+              layers.admin_rivers.push(layer);
+            }
+          }
+        }
+        
+        // Remove admin rivers that are no longer visible
+        for (const key of currentVisibleObjects.admin_rivers) {
+          if (!newVisible.has(key)) {
+            for (let i = layers.admin_rivers.length - 1; i >= 0; i--) {
+              const layer = layers.admin_rivers[i];
+              if (layer._xatraKey === key) {
+                map.removeLayer(layer);
+                layers.admin_rivers.splice(i, 1);
+                break;
+              }
+            }
+          }
+        }
+        
+        currentVisibleObjects.admin_rivers = newVisible;
+      }
+
       function clearFlagLayers() {
         for (const l of layers.flags) { map.removeLayer(l); }
         layers.flags = [];
@@ -531,17 +882,25 @@ HTML_TEMPLATE = Template(
       }
 
       function renderDynamic(year) {
-        // Performance optimization: only clear and re-render if year actually changed
+        // Performance optimization: only re-render if year actually changed
         if (window.lastRenderedYear === year) return;
-        window.lastRenderedYear = year;
         
-        clearAllLayers();
         const snapshots = payload.flags.snapshots;
         // find closest snapshot at or before year
         let current = snapshots[0];
         for (const s of snapshots) {
           if (s.year <= year) current = s;
         }
+        
+        // Only re-render if the snapshot actually changed
+        if (window.lastRenderedSnapshot === current) {
+          window.lastRenderedYear = year;
+          return;
+        }
+        window.lastRenderedSnapshot = current;
+        window.lastRenderedYear = year;
+        
+        clearAllLayers();
         for (const f of current.flags) {
           if (!f.geometry) continue;
           
@@ -655,14 +1014,14 @@ HTML_TEMPLATE = Template(
           }
         }
         
-        // Render other object types with period filtering
-        renderRivers(year);
-        renderPaths(year);
-        renderPoints(year);
-        renderTexts(year);
+        // Render other object types with incremental updates
+        renderRiversIncremental(year);
+        renderPathsIncremental(year);
+        renderPointsIncremental(year);
+        renderTextsIncremental(year);
         renderTitleBoxes(year);
-        renderAdmins(year);
-        renderAdminRivers(year);
+        renderAdminsIncremental(year);
+        renderAdminRiversIncremental(year);
       }
 
       function setupLayerSelector() {
