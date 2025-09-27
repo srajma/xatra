@@ -66,6 +66,10 @@ HTML_TEMPLATE = Template(
       // Debug mode - set to true to show centroid markers
       const DEBUG_CENTROIDS = false;
       
+      // Performance optimization: cache centroids and label styles
+      const centroidCache = new Map();
+      const labelStyleCache = new Map();
+      
       // Base layer management
       const baseLayers = {};
       let currentBaseLayer = null;
@@ -527,6 +531,10 @@ HTML_TEMPLATE = Template(
       }
 
       function renderDynamic(year) {
+        // Performance optimization: only clear and re-render if year actually changed
+        if (window.lastRenderedYear === year) return;
+        window.lastRenderedYear = year;
+        
         clearAllLayers();
         const snapshots = payload.flags.snapshots;
         // find closest snapshot at or before year
@@ -768,9 +776,10 @@ HTML_TEMPLATE = Template(
                     playPauseBtn.textContent = '▶';
                     isPlaying = false;
                   } else {
-                    input.value = currentYear + 1;
-                    label.textContent = input.value;
-                    renderDynamic(parseInt(input.value));
+                    const newYear = currentYear + 1;
+                    input.value = newYear;
+                    label.textContent = newYear;
+                    renderDynamic(newYear);
                   }
                 }, payload.play_speed || 200); // Use speed from payload or default to 200ms
               }
