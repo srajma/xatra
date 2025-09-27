@@ -153,6 +153,9 @@ class AdminRiversEntry:
     def __post_init__(self):
         if self.sources is None:
             self.sources = ["naturalearth", "overpass"]
+        else:
+            # Create a copy to avoid shared references
+            self.sources = list(self.sources)
 
 
 @dataclass
