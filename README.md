@@ -20,6 +20,7 @@ Development
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [ ] xatra.Data
+- [ ] do we need to redraw everything each frame?
 - [ ] possibly calculate and keep simplified geometries
 - [ ] loading geojson from file instead of storing it in html; i.e. with a server
 
@@ -134,7 +135,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
 - **`FlagColorSequence(color_sequence)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
-- **`slider(start=None, end=None, speed=200)`**: Set time limits and play speed for dynamic maps
+- **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
 

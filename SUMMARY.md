@@ -25,7 +25,7 @@ map.BaseOption(url_or_provider, name=None, default=False)
 map.FlagColorSequence(color_sequence)
 map.AdminColorSequence(color_sequence)
 map.CSS(css_string)
-map.lim(start, end)  # Set time limits for the map
+map.slider(start=None, end=None, speed=5.0)  # Set time limits and play speed for dynamic maps
 map.show(out_json="map.json", out_html="map.html")
 ```
 
@@ -43,12 +43,12 @@ map.show(out_json="map.json", out_html="map.html")
 - **Static maps**: Union all flags with same label
 - **Dynamic maps**: Create snapshots at breakpoint years, union active flags per snapshot
 - **Breakpoints**: All start/end years from flag periods only, plus the earliest start year of any object (without this it will show the earliest period-having flag even before its period begins, because it will display whatever's from the first snapshot)
-- **Map limits**: Optional time range restriction with `map.lim(start, end)`
+- **Map limits**: Optional time range restriction with `map.slider(start, end)`
 
 ### Rendering (`xatra/render.py`)
 - **Leaflet-based HTML**: Interactive map with zoom/pan
 - **Base layer selector**: Dropdown with custom URLs and provider names
-- **Time slider**: For dynamic maps with year controls
+- **Time slider**: For dynamic maps with year controls, play/pause button, and customizable speed
 - **Flag labels**: Centered at territory centroids using proper geometric calculation
 - **Tooltips**: Follow cursor, show on hover
 - **CSS styling**: Classes for rivers, paths, texts, flags
@@ -85,13 +85,24 @@ map.show(out_json="map.json", out_html="map.html")
 - **Time periods**: `period=[-320, -180]` on all object types (flags, admins, admin_rivers, rivers, paths, points, texts, title_boxes)
 - **Year slider**: Bottom controls for time navigation (only appears for maps with periods)
 - **Pax-max**: Stable periods with union of active flags
-- **Map limits**: `map.lim(start, end)` restricts all object periods to specified range
+- **Map limits**: `map.slider(start, end, speed)` restricts all object periods to specified range with customizable play speed
 - **Period filtering**: Objects with no period are always visible; objects with periods are filtered by time
 
 ### Centroid Calculation
 - **Geometric centroids**: Proper shoelace formula for polygons
 - **MultiPolygon support**: Area-weighted centroids
 - **Debug markers**: `DEBUG_CENTROIDS = true/false` for positioning
+
+### Time Slider Controls
+- **Enhanced slider**: Start/end years displayed, play/pause button, current year display
+- **Customizable speed**: `speed` parameter in years per second (default: 5.0 years/second)
+- **Performance optimization**: Caching to prevent unnecessary re-renders
+- **Layout**: `[Current Year] [Play/Pause] [Start Year] [Slider] [End Year]`
+- **Speed examples**: 
+  - `speed=1` → 1 year per second (slow)
+  - `speed=5` → 5 years per second (default)
+  - `speed=10` → 10 years per second (fast)
+  - `speed=20` → 20 years per second (very fast)
 
 ## File Structure
 ```
@@ -120,7 +131,10 @@ data/
 - ✅ CSS class-based styling
 - ✅ Debug mode for positioning
 - ✅ Period support for all object types (flags, rivers, paths, points, texts, title_boxes)
-- ✅ Map limits functionality (`map.lim()`)
+- ✅ Map limits functionality (`map.slider()`)
+- ✅ Enhanced time slider with play/pause controls
+- ✅ Customizable play speed (years per second)
+- ✅ Performance optimizations for smooth animation
 - ✅ Proper period filtering (objects without periods always visible)
 
 ## Example Usage
@@ -135,7 +149,7 @@ map.River("Ganga", naturalearth("1159122643"), classes="ganga-river", period=[-5
 map.Point("Delhi", [28.6, 77.2], period=[1000, 1500])
 map.Text("Ancient India", [22.0, 79.0], period=[-500, 300])
 map.TitleBox("<h2>Map of Major Indian Empires</h2>", period=[-1000, 2000])
-map.lim(-500, 500)  # Restrict map to 500 BCE - 500 CE
+map.slider(-500, 500, speed=5)  # Restrict map to 500 BCE - 500 CE, play at 5 years/second
 map.BaseOption("Esri.WorldImagery", default=True)
 map.show()
 ```

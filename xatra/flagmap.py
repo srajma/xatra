@@ -204,7 +204,7 @@ class FlagMap:
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
-        self._play_speed: int = 200  # Default play speed in milliseconds
+        self._play_speed: int = 200  # Default play speed in milliseconds (5 years/second)
         self._color_sequence: ColorSequence = LinearColorSequence()
         self._flag_index: int = 0
         self._label_colors: Dict[str, str] = {}  # Track colors by label
@@ -387,7 +387,7 @@ class FlagMap:
         """
         self._css.append(css)
 
-    def slider(self, start: Optional[int] = None, end: Optional[int] = None, speed: int = 200) -> None:
+    def slider(self, start: Optional[int] = None, end: Optional[int] = None, speed: float = 5.0) -> None:
         """Set the time limits and play speed for the map.
         
         This restricts all object periods to be within the specified range.
@@ -397,11 +397,12 @@ class FlagMap:
         Args:
             start: Start year (inclusive). If None, uses earliest period start.
             end: End year (exclusive). If None, uses latest period end.
-            speed: Play speed in milliseconds between year updates (default: 200ms)
+            speed: Play speed in years per second (default: 5.0 years/second)
         """
         if start is not None and end is not None:
             self._map_limits = (int(start), int(end))
-        self._play_speed = int(speed)
+        # Convert years per second to milliseconds per year
+        self._play_speed = int(1000 / float(speed))
 
     def BaseOption(self, url_or_provider: str, name: Optional[str] = None, default: bool = False) -> None:
         """Add a base layer option.
