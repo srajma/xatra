@@ -68,6 +68,7 @@ map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
 map.Admin(gadm="IND.31", level=3, classes="chola-tehsils", note="Chola administrative divisions")
+map.AdminRivers(classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
 map.River(label="Ganga", value=naturalearth("1159122643"), period=[0, 600], note="Modern course of Ganga", classes="modern-river")
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttarapatha-path")
@@ -95,6 +96,7 @@ map.CSS("""
 .uttarapatha-path { stroke: #ff0000; stroke-width: 2; stroke-dasharray: 5 5; }
 .jambudvipa-text { font-size: 24px; font-weight: normal; color: #666666; }
 .chola-tehsils { stroke: #8B4513; stroke-width: 0.5; }
+.all-rivers { stroke-width: 3; opacity: 0.7; }
 """)
 
 map.show()
@@ -118,6 +120,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 - **`Flag(label, territory, period=None, note=None, color=None)`**: Add a flag (country/kingdom)
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
+- **`AdminRivers(period=None, classes=None)`**: Add all rivers from Natural Earth and Overpass data
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
 - **`Path(label, coords, classes=None, period=None)`**: Add a path/route
 - **`Point(label, position, period=None)`**: Add a point of interest
@@ -219,6 +222,37 @@ map.Admin(gadm="IND", level=2, color_by_level=1, classes="districts")
 - `level=3, color_by_level=1`: Tehsils colored by state (all tehsils in same state have same color)
 - `level=3, color_by_level=2`: Tehsils colored by district (all tehsils in same district have same color)
 - `level=2, color_by_level=1`: Districts colored by state (all districts in same state have same color)
+
+### Admin Rivers
+
+The `AdminRivers` method displays all rivers from Natural Earth and Overpass data files with automatic source identification and rich tooltips:
+
+```python
+# Show all rivers from data files
+map.AdminRivers()
+
+# Show all rivers with custom styling
+map.AdminRivers(classes="all-rivers")
+
+# Show rivers for a specific time period
+map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
+```
+
+**Parameters:**
+- `period`: Optional time period as [start_year, end_year] list
+- `classes`: Optional CSS classes for styling
+
+**Features:**
+- **Source identification**: Rivers are colored differently by source (blue for Natural Earth, orange for Overpass)
+- **Rich tooltips**: Shows source information, IDs, and all available name fields
+- **Automatic loading**: Loads all rivers from both Natural Earth and Overpass data files
+- **Time support**: Works with dynamic maps and period filtering
+
+**Tooltip information:**
+- **Natural Earth rivers**: Shows "Natural Earth River", NE ID, and available name fields
+- **Overpass rivers**: Shows "Overpass River", filename, and available name fields
+- **Name fields**: Displays name, NAME, NAME_EN, NAME_LOC, NAME_ALT, NAME_OTHER as available
+- **Additional properties**: Scale rank, feature class, min zoom level, etc.
 
 ## Data Sources
 

@@ -15,6 +15,7 @@ A "matplotlib of maps" called `xatra` that creates interactive historical maps w
 ```python
 map.Flag(label, territory, period=None, note=None)
 map.Admin(gadm, level, period=None, classes=None, color_by_level=1)
+map.AdminRivers(period=None, classes=None)
 map.River(label, value, note=None, classes=None, period=None)  
 map.Path(label, coords, classes=None, period=None)
 map.Point(label, position, period=None)
@@ -67,13 +68,20 @@ map.show(out_json="map.json", out_html="map.html")
 - **Boundary-aware matching**: Exact prefix matching to avoid false matches
 - **Color sequences**: `map.AdminColorSequence()` for custom color schemes
 
+### Admin Rivers
+- **AdminRivers method**: `map.AdminRivers()` displays all rivers from Natural Earth and Overpass data
+- **Source identification**: Rivers colored differently by source (blue for Natural Earth, orange for Overpass)
+- **Rich tooltips**: Shows source information, IDs, and all available name fields
+- **Automatic loading**: Loads all rivers from both data sources
+- **Time support**: Works with dynamic maps and period filtering
+
 ### Styling System
-- **Classes**: `classes="custom-class"` parameter for rivers, paths, texts, admins
+- **Classes**: `classes="custom-class"` parameter for rivers, paths, texts, admins, admin_rivers
 - **CSS**: `map.CSS()` for global styling
 - **Flag labels**: Auto-positioned at centroids, no background boxes
 
 ### Dynamic Maps
-- **Time periods**: `period=[-320, -180]` on all object types (flags, admins, rivers, paths, points, texts, title_boxes)
+- **Time periods**: `period=[-320, -180]` on all object types (flags, admins, admin_rivers, rivers, paths, points, texts, title_boxes)
 - **Year slider**: Bottom controls for time navigation (only appears for maps with periods)
 - **Pax-max**: Stable periods with union of active flags
 - **Map limits**: `map.lim(start, end)` restricts all object periods to specified range

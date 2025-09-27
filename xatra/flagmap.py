@@ -138,6 +138,18 @@ class AdminEntry:
 
 
 @dataclass
+class AdminRiversEntry:
+    """Represents all rivers from data files.
+    
+    Args:
+        period: Optional time period as (start_year, end_year) tuple
+        classes: Optional CSS classes for styling
+    """
+    period: Optional[Tuple[int, int]] = None
+    classes: Optional[str] = None
+
+
+@dataclass
 class BaseOptionEntry:
     """Represents a base map layer option.
     
@@ -179,6 +191,7 @@ class FlagMap:
         self._texts: List[TextEntry] = []
         self._title_boxes: List[TitleBoxEntry] = []
         self._admins: List[AdminEntry] = []
+        self._admin_rivers: List[AdminRiversEntry] = []
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
@@ -462,6 +475,25 @@ class FlagMap:
         
         self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes, color_by_level=color_by_level))
 
+    def AdminRivers(self, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
+        """Add all rivers from data files.
+        
+        Args:
+            period: Optional time period as [start_year, end_year] list
+            classes: Optional CSS classes for styling
+            
+        Example:
+            >>> map.AdminRivers()  # Show all rivers from Natural Earth and Overpass data
+            >>> map.AdminRivers(classes="all-rivers")  # With custom styling
+        """
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        
+        self._admin_rivers.append(AdminRiversEntry(period=period_tuple, classes=classes))
+
     def _apply_limits_to_period(self, period: Optional[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
         """Apply map limits to a period with epsilon adjustment.
         
@@ -554,6 +586,11 @@ class FlagMap:
             if a.period is not None:
                 if earliest_start is None or a.period[0] < earliest_start:
                     earliest_start = a.period[0]
+                    
+        for ar in self._admin_rivers:
+            if ar.period is not None:
+                if earliest_start is None or ar.period[0] < earliest_start:
+                    earliest_start = ar.period[0]
 
         # Pax-max aggregation
         pax = paxmax_aggregate(flags_serialized, earliest_start)
@@ -695,6 +732,68 @@ class FlagMap:
                     print(f"Warning: Could not load admin regions for {a.gadm_key} level {a.level}: {e}")
                     continue
 
+        # Serialize admin rivers
+        admin_rivers_serialized = []
+        for ar in self._admin_rivers:
+            restricted_period = self._apply_limits_to_period(ar.period)
+            # Include objects with no period (always visible) or valid restricted periods
+            if ar.period is None or restricted_period is not None:
+                try:
+                    # Load all rivers from Natural Earth and Overpass data
+                    all_rivers = []
+                    
+                    # Load Natural Earth rivers
+                    from .loaders import _read_json
+                    import os
+                    
+                    ne_rivers_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ne_10m_rivers.geojson")
+                    if os.path.exists(ne_rivers_file):
+                        ne_data = _read_json(ne_rivers_file)
+                        for feature in ne_data.get("features", []):
+                            props = feature.get("properties", {}) or {}
+                            # Add source information to properties
+                            feature["properties"]["_source"] = "naturalearth"
+                            feature["properties"]["_ne_id"] = props.get("ne_id", "unknown")
+                            all_rivers.append(feature)
+                    
+                    # Load Overpass rivers
+                    overpass_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "rivers_overpass_india")
+                    if os.path.isdir(overpass_dir):
+                        for filename in os.listdir(overpass_dir):
+                            if filename.endswith('.json'):
+                                filepath = os.path.join(overpass_dir, filename)
+                                try:
+                                    overpass_data = _read_json(filepath)
+                                    # Handle both Feature and FeatureCollection
+                                    if overpass_data.get("type") == "Feature":
+                                        overpass_data["properties"]["_source"] = "overpass"
+                                        overpass_data["properties"]["_filename"] = filename
+                                        all_rivers.append(overpass_data)
+                                    elif overpass_data.get("type") == "FeatureCollection":
+                                        for feature in overpass_data.get("features", []):
+                                            feature["properties"]["_source"] = "overpass"
+                                            feature["properties"]["_filename"] = filename
+                                            all_rivers.append(feature)
+                                except Exception as e:
+                                    print(f"Warning: Could not load overpass file {filename}: {e}")
+                                    continue
+                    
+                    # Create a FeatureCollection with all rivers
+                    admin_rivers_geojson = {
+                        "type": "FeatureCollection",
+                        "features": all_rivers
+                    }
+                    
+                    admin_rivers_serialized.append({
+                        "geometry": admin_rivers_geojson,
+                        "classes": ar.classes,
+                        "period": list(restricted_period) if restricted_period is not None else None,
+                    })
+                except Exception as e:
+                    # Skip admin rivers that can't be loaded
+                    print(f"Warning: Could not load admin rivers: {e}")
+                    continue
+
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -704,6 +803,7 @@ class FlagMap:
             "texts": texts_serialized,
             "title_boxes": title_boxes_serialized,
             "admins": admins_serialized,
+            "admin_rivers": admin_rivers_serialized,
             "base_options": base_options_serialized,
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
         }

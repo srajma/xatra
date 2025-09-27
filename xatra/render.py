@@ -45,6 +45,7 @@ HTML_TEMPLATE = Template(
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
       .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
+    .admin-river { stroke: #0066cc; stroke-width: 2; opacity: 0.8; }
       {{ css }}
     </style>
   </head>
@@ -85,7 +86,7 @@ HTML_TEMPLATE = Template(
         currentBaseLayer.addTo(map);
       }
 
-      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [] };
+      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [], admin_rivers: [] };
 
       function addGeoJSON(geojson, options, tooltip) {
         const layer = L.geoJSON(geojson, options);
@@ -425,6 +426,84 @@ HTML_TEMPLATE = Template(
         }
       }
 
+      function renderAdminRivers(year = null) {
+        const adminRivers = year !== null ? filterByPeriod(payload.admin_rivers, year) : payload.admin_rivers;
+        for (const ar of adminRivers) {
+          if (!ar.geometry) continue;
+          
+          // Create style for admin rivers
+          let className = 'admin-river';
+          if (ar.classes) className += ' ' + ar.classes;
+          
+          // Add each feature with its own tooltip
+          const layer = L.geoJSON(ar.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const source = props._source;
+              // Different colors for different sources
+              let color = '#0066cc'; // Default blue
+              if (source === 'naturalearth') color = '#0066cc'; // Blue for Natural Earth
+              else if (source === 'overpass') color = '#cc6600'; // Orange for Overpass
+              
+              return {
+                className: className,
+                color: color,
+                weight: 2,
+                opacity: 0.8
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              // Create tooltip with source information and available properties
+              let tooltip = '';
+              
+              // Add source information
+              const source = props._source;
+              if (source === 'naturalearth') {
+                tooltip += `<b>Natural Earth River</b><br/>`;
+                if (props._ne_id) tooltip += `NE ID: ${props._ne_id}<br/>`;
+              } else if (source === 'overpass') {
+                tooltip += `<b>Overpass River</b><br/>`;
+                if (props._filename) tooltip += `File: ${props._filename}<br/>`;
+              }
+              
+              // Add name fields if available
+              if (props.name) tooltip += `Name: ${props.name}<br/>`;
+              if (props.NAME) tooltip += `NAME: ${props.NAME}<br/>`;
+              if (props.NAME_EN) tooltip += `NAME_EN: ${props.NAME_EN}<br/>`;
+              if (props.NAME_LOC) tooltip += `NAME_LOC: ${props.NAME_LOC}<br/>`;
+              if (props.NAME_ALT) tooltip += `NAME_ALT: ${props.NAME_ALT}<br/>`;
+              if (props.NAME_OTHER) tooltip += `NAME_OTHER: ${props.NAME_OTHER}<br/>`;
+              
+              // Add other relevant properties
+              if (props.scalerank) tooltip += `Scale Rank: ${props.scalerank}<br/>`;
+              if (props.featurecla) tooltip += `Feature Class: ${props.featurecla}<br/>`;
+              if (props.min_zoom) tooltip += `Min Zoom: ${props.min_zoom}<br/>`;
+              
+              // Remove trailing <br/> if present
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer.addTo(map);
+          layers.admin_rivers.push(layer);
+        }
+      }
+
       function clearFlagLayers() {
         for (const l of layers.flags) { map.removeLayer(l); }
         layers.flags = [];
@@ -437,12 +516,14 @@ HTML_TEMPLATE = Template(
         for (const l of layers.points) { map.removeLayer(l); }
         for (const l of layers.texts) { map.removeLayer(l); }
         for (const l of layers.admins) { map.removeLayer(l); }
+        for (const l of layers.admin_rivers) { map.removeLayer(l); }
         layers.flags = [];
         layers.rivers = [];
         layers.paths = [];
         layers.points = [];
         layers.texts = [];
         layers.admins = [];
+        layers.admin_rivers = [];
       }
 
       function renderDynamic(year) {
@@ -573,6 +654,7 @@ HTML_TEMPLATE = Template(
         renderTexts(year);
         renderTitleBoxes(year);
         renderAdmins(year);
+        renderAdminRivers(year);
       }
 
       function setupLayerSelector() {
@@ -630,7 +712,7 @@ HTML_TEMPLATE = Template(
           }
           
           // Add periods from other object types
-          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || []), ...(payload.admins || [])]) {
+          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || []), ...(payload.admins || []), ...(payload.admin_rivers || [])]) {
             if (obj.period) {
               allPeriods.push(obj.period[0], obj.period[1]);
             }
@@ -667,6 +749,7 @@ HTML_TEMPLATE = Template(
         renderTexts();
         renderTitleBoxes();
         renderAdmins();
+        renderAdminRivers();
       }
       setupLayerSelector();
       setupControls();
