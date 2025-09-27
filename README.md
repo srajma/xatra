@@ -10,6 +10,7 @@ Stylistic changes
 - [x] choice of BaseMaps
 - [x] slider shouldn't appear for static maps
 - [x] map.lim()
+- [ ] slider play button plus positions of years, start and end year
 
 Libraries
 - [ ] copy matchers from old xatra
