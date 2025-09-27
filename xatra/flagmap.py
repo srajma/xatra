@@ -654,11 +654,12 @@ class FlagMap:
                         if gid.startswith(a.gadm_key) and (len(gid) == len(a.gadm_key) or gid[len(a.gadm_key)] in ['.', '_']):
                             filtered_features.append(feature)
                     
-                    # Assign colors based on color_by_level
+                    # Assign colors based on color_by_level (clamped to level)
+                    effective_color_by_level = min(a.color_by_level, a.level)
                     color_groups = {}  # Maps grouping key to color
                     for feature in filtered_features:
                         props = feature.get("properties", {}) or {}
-                        grouping_key = str(props.get(f"GID_{a.color_by_level}", ""))
+                        grouping_key = str(props.get(f"GID_{effective_color_by_level}", ""))
                         
                         if grouping_key and grouping_key not in color_groups:
                             # Assign new color to this group
@@ -687,7 +688,7 @@ class FlagMap:
                         "geometry": admin_geojson,
                         "classes": a.classes,
                         "period": list(restricted_period) if restricted_period is not None else None,
-                        "color_by_level": a.color_by_level,
+                        "color_by_level": effective_color_by_level,
                     })
                 except Exception as e:
                     # Skip admin regions that can't be loaded
