@@ -264,6 +264,15 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 - **Name fields**: Displays name, NAME, NAME_EN, NAME_LOC, NAME_ALT, NAME_OTHER as available
 - **Additional properties**: Scale rank, feature class, min zoom level, etc.
 
+## Performance
+
+Xatra is optimized for large, complex maps with many elements:
+
+- **File Caching**: Data files (GADM, Natural Earth) are cached in memory to avoid repeated disk reads
+- **Centroid Pre-computation**: Flag centroids are calculated once during export, not on every render
+- **Layer Visibility Toggling**: Dynamic maps use efficient visibility toggling instead of recreating layers
+- **Memory Management**: Use `clear_file_cache()` to free memory when working with very large datasets
+
 ## Data Sources
 
 ### GADM (Global Administrative Areas)
