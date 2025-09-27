@@ -9,7 +9,7 @@ Stylistic changes
 - [x] color assignment
 - [x] choice of BaseMaps
 - [x] slider shouldn't appear for static maps
-- [x] map.lim()
+- [x] map.slider()
 - [ ] slider play button plus positions of years, start and end year
 
 Libraries
@@ -81,7 +81,7 @@ map.Text(label="Aryavarta", position=[22,79], classes="aryavarta-text", period=[
 map.TitleBox("<b>Map of major Indian empires</b><br>Classical period, source: Majumdar.")
 map.TitleBox("<h2>Ancient Period (-500 to 0)</h2><p>This title appears only in ancient times</p>", period=[-500, 0])
 map.TitleBox("<h2>Classical Period (-100 to 400)</h2><p>This title appears only in classical times</p>", period=[-100, 400])
-map.lim(-480, 700) 
+map.slider(-480, 700) 
 map.CSS("""
 /* applies to all elements of given class */
 .flag { stroke: #555; fill: rgba(200,0,0,0.4); }
@@ -134,7 +134,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
 - **`FlagColorSequence(color_sequence)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
-- **`lim(start, end)`**: Optionally manually set time limit for dynamic maps
+- **`slider(start=None, end=None, speed=200)`**: Set time limits and play speed for dynamic maps
 
 ##### Export
 

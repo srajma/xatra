@@ -772,7 +772,7 @@ HTML_TEMPLATE = Template(
                     label.textContent = input.value;
                     renderDynamic(parseInt(input.value));
                   }
-                }, 200); // 200ms interval for smooth animation
+                }, payload.play_speed || 200); // Use speed from payload or default to 200ms
               }
             });
             

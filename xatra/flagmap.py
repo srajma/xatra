@@ -204,6 +204,7 @@ class FlagMap:
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
+        self._play_speed: int = 200  # Default play speed in milliseconds
         self._color_sequence: ColorSequence = LinearColorSequence()
         self._flag_index: int = 0
         self._label_colors: Dict[str, str] = {}  # Track colors by label
@@ -386,18 +387,21 @@ class FlagMap:
         """
         self._css.append(css)
 
-    def lim(self, start: int, end: int) -> None:
-        """Set the time limits for the map.
+    def slider(self, start: Optional[int] = None, end: Optional[int] = None, speed: int = 200) -> None:
+        """Set the time limits and play speed for the map.
         
         This restricts all object periods to be within the specified range.
         Object periods are considered clopen intervals [x, y), so we add a small
         epsilon to ensure proper behavior at the boundaries.
         
         Args:
-            start: Start year (inclusive)
-            end: End year (exclusive)
+            start: Start year (inclusive). If None, uses earliest period start.
+            end: End year (exclusive). If None, uses latest period end.
+            speed: Play speed in milliseconds between year updates (default: 200ms)
         """
-        self._map_limits = (int(start), int(end))
+        if start is not None and end is not None:
+            self._map_limits = (int(start), int(end))
+        self._play_speed = int(speed)
 
     def BaseOption(self, url_or_provider: str, name: Optional[str] = None, default: bool = False) -> None:
         """Add a base layer option.
@@ -829,6 +833,7 @@ class FlagMap:
             "admin_rivers": admin_rivers_serialized,
             "base_options": base_options_serialized,
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
+            "play_speed": self._play_speed,
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
