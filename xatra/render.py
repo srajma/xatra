@@ -33,7 +33,7 @@ HTML_TEMPLATE = Template(
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
       html, body, #map { height: 100%; margin: 0; padding: 0; }
-      #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
       #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
       #layer-selector select { margin-left: 8px; }
@@ -729,10 +729,53 @@ HTML_TEMPLATE = Template(
               max = payload.map_limits[1];
             }
             
-            controls.innerHTML = `<input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" /> <span id="yearLabel">${min}</span>`;
+            controls.innerHTML = `
+              <span id="yearLabel">${min}</span>
+              <button id="playPause" style="margin: 0 8px; padding: 4px 8px; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; cursor: pointer;">▶</button>
+              <span id="startYear" style="margin-right: 8px;">${min}</span>
+              <input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" style="flex: 1; margin: 0 8px;" />
+              <span id="endYear" style="margin-left: 8px;">${max}</span>
+            `;
             const input = document.getElementById('year');
             const label = document.getElementById('yearLabel');
-            input.addEventListener('input', () => { label.textContent = input.value; renderDynamic(parseInt(input.value)); });
+            const playPauseBtn = document.getElementById('playPause');
+            const startYearSpan = document.getElementById('startYear');
+            const endYearSpan = document.getElementById('endYear');
+            
+            let isPlaying = false;
+            let playInterval = null;
+            
+            input.addEventListener('input', () => { 
+              label.textContent = input.value; 
+              renderDynamic(parseInt(input.value)); 
+            });
+            
+            playPauseBtn.addEventListener('click', () => {
+              if (isPlaying) {
+                // Pause
+                clearInterval(playInterval);
+                playPauseBtn.textContent = '▶';
+                isPlaying = false;
+              } else {
+                // Play
+                playPauseBtn.textContent = '⏸';
+                isPlaying = true;
+                playInterval = setInterval(() => {
+                  const currentYear = parseInt(input.value);
+                  if (currentYear >= max) {
+                    // Reached end, stop playing
+                    clearInterval(playInterval);
+                    playPauseBtn.textContent = '▶';
+                    isPlaying = false;
+                  } else {
+                    input.value = currentYear + 1;
+                    label.textContent = input.value;
+                    renderDynamic(parseInt(input.value));
+                  }
+                }, 200); // 200ms interval for smooth animation
+              }
+            });
+            
             renderDynamic(min);
           }
         } else {
