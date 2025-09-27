@@ -10,7 +10,11 @@ Stylistic changes
 - [x] choice of BaseMaps
 - [x] slider shouldn't appear for static maps
 - [x] map.slider()
-- [ ] slider play button plus positions of years, start and end year
+- [x] slider play button plus positions of years, start and end year
+- [ ] tooltips on slider displaying year
+
+Bugs
+- [ ] complicated issue with incremental rendering of non-Flag objects
 
 Libraries
 - [ ] copy matchers from old xatra
