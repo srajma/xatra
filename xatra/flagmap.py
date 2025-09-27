@@ -632,7 +632,8 @@ class FlagMap:
                         props = feature.get("properties", {}) or {}
                         gid_key = f"GID_{a.level}"
                         gid = str(props.get(gid_key, ""))
-                        if gid.startswith(a.gadm_key):
+                        # Use exact prefix matching with boundary check
+                        if gid.startswith(a.gadm_key) and (len(gid) == len(a.gadm_key) or gid[len(a.gadm_key)] in ['.', '_']):
                             filtered_features.append(feature)
                     
                     # Create a FeatureCollection with filtered features

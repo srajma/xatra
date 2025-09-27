@@ -10,8 +10,10 @@ map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
+map.Admin(gadm="PAK", level=1)
 map.Admin(gadm="IND.31", level=3)
 map.Admin(gadm="IND.15", level=2)
+map.Admin(gadm="IND.16.2", level=3)
 
 # Generate the map
 map.show()

@@ -367,15 +367,30 @@ HTML_TEMPLATE = Template(
             onEachFeature: function(feature, layer) {
               const props = feature.properties || {};
               
-              // Create tooltip with all relevant properties
+              // Create tooltip with all GADM properties in specified order
               let tooltip = '';
-              if (props.NAME_3) tooltip += `<b>${props.NAME_3}</b><br/>`;
-              if (props.NAME_2) tooltip += `District: ${props.NAME_2}<br/>`;
-              if (props.NAME_1) tooltip += `State: ${props.NAME_1}<br/>`;
-              if (props.COUNTRY) tooltip += `Country: ${props.COUNTRY}<br/>`;
-              if (props.TYPE_3) tooltip += `Type: ${props.TYPE_3}<br/>`;
-              if (props.GID_3) tooltip += `GID: ${props.GID_3}<br/>`;
-              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `Variant: ${props.VARNAME_3}<br/>`;
+              
+              // Find the highest level name to bold at the top
+              let topName = '';
+              if (props.NAME_3) topName = props.NAME_3;
+              else if (props.NAME_2) topName = props.NAME_2;
+              else if (props.NAME_1) topName = props.NAME_1;
+              else if (props.COUNTRY) topName = props.COUNTRY;
+              
+              if (topName) tooltip += `<b>${topName}</b><br/>`;
+              
+              // Add all fields in the specified order
+              if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+              if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+              if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+              if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+              if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+              if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+              if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+              if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+              if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+              if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
               
               // Remove trailing <br/> if present
               if (tooltip.endsWith('<br/>')) {
