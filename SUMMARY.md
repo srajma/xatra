@@ -14,12 +14,15 @@ A "matplotlib of maps" called `xatra` that creates interactive historical maps w
 ### Key Methods
 ```python
 map.Flag(label, territory, period=None, note=None)
+map.Admin(gadm, level, period=None, classes=None, color_by_level=1)
 map.River(label, value, note=None, classes=None, period=None)  
 map.Path(label, coords, classes=None, period=None)
 map.Point(label, position, period=None)
 map.Text(label, position, classes=None, period=None)
 map.TitleBox(html, period=None)
 map.BaseOption(url_or_provider, name=None, default=False)
+map.FlagColorSequence(color_sequence)
+map.AdminColorSequence(color_sequence)
 map.CSS(css_string)
 map.lim(start, end)  # Set time limits for the map
 map.show(out_json="map.json", out_html="map.html")
@@ -57,13 +60,20 @@ map.show(out_json="map.json", out_html="map.html")
 - Provider names: `map.BaseOption("Esri.WorldImagery")`
 - Layer selector UI with "None" option
 
+### Administrative Regions
+- **Admin method**: `map.Admin(gadm, level, color_by_level=1)` displays GADM administrative regions
+- **Rich tooltips**: Shows all GADM properties (GID_0, COUNTRY, GID_1, NAME_1, etc.) on hover
+- **Automatic coloring**: Regions colored by specified administrative level
+- **Boundary-aware matching**: Exact prefix matching to avoid false matches
+- **Color sequences**: `map.AdminColorSequence()` for custom color schemes
+
 ### Styling System
-- **Classes**: `classes="custom-class"` parameter for rivers, paths, texts
+- **Classes**: `classes="custom-class"` parameter for rivers, paths, texts, admins
 - **CSS**: `map.CSS()` for global styling
 - **Flag labels**: Auto-positioned at centroids, no background boxes
 
 ### Dynamic Maps
-- **Time periods**: `period=[-320, -180]` on all object types (flags, rivers, paths, points, texts, title_boxes)
+- **Time periods**: `period=[-320, -180]` on all object types (flags, admins, rivers, paths, points, texts, title_boxes)
 - **Year slider**: Bottom controls for time navigation (only appears for maps with periods)
 - **Pax-max**: Stable periods with union of active flags
 - **Map limits**: `map.lim(start, end)` restricts all object periods to specified range

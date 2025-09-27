@@ -17,7 +17,7 @@ Libraries
 
 Development
 - [x] periods for things other than flags
-- [ ] xatra.Admin
+- [x] xatra.Admin
 - [ ] xatra.Data
 - [ ] possibly calculate and keep simplified geometries
 - [ ] loading geojson from file instead of storing it in html; i.e. with a server
@@ -67,6 +67,7 @@ map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], n
 map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
+map.Admin(gadm="IND.31", level=3, classes="chola-tehsils", note="Chola administrative divisions")
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
 map.River(label="Ganga", value=naturalearth("1159122643"), period=[0, 600], note="Modern course of Ganga", classes="modern-river")
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttarapatha-path")
@@ -93,6 +94,7 @@ map.CSS("""
 .ganga-river { stroke-width: 4; }
 .uttarapatha-path { stroke: #ff0000; stroke-width: 2; stroke-dasharray: 5 5; }
 .jambudvipa-text { font-size: 24px; font-weight: normal; color: #666666; }
+.chola-tehsils { stroke: #8B4513; stroke-width: 0.5; }
 """)
 
 map.show()
@@ -115,6 +117,7 @@ map = FlagMap()
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
 - **`Flag(label, territory, period=None, note=None, color=None)`**: Add a flag (country/kingdom)
+- **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
 - **`Path(label, coords, classes=None, period=None)`**: Add a path/route
 - **`Point(label, position, period=None)`**: Add a point of interest
@@ -126,6 +129,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`CSS(css)`**: Add custom CSS styles
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
 - **`FlagColorSequence(color_sequence)`**: Set the color sequence for flags
+- **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
 - **`lim(start, end)`**: Optionally manually set time limit for dynamic maps
 
 ##### Export
@@ -155,7 +159,7 @@ Represents geographical regions with set algebra operations.
 
 ### Color Sequences
 
-Xatra supports automatic color assignment for flags using color sequences. By default, maps use `LinearColorSequence()` which generates contrasting colors. You can also use other color sequences:
+Xatra supports automatic color assignment for both flags and admin regions using color sequences. By default, maps use `LinearColorSequence()` which generates contrasting colors. You can also use other color sequences:
 
 - **`LinearColorSequence()`**: Generates contrasting colors (default)
 - **`RotatingColorSequence()`**: Cycles through a predefined set of colors
@@ -164,20 +168,57 @@ Xatra supports automatic color assignment for flags using color sequences. By de
 #### Examples
 
 ```python
-from xatra.colorseq import RotatingColorSequence
+from xatra.colorseq import RotatingColorSequence, LinearColorSequence
 
-# Set a custom color sequence
+# Set custom color sequences
 map.FlagColorSequence(RotatingColorSequence())
+map.AdminColorSequence(LinearColorSequence())
 
 # Flags will automatically get colors from the sequence
 map.Flag("Empire A", territory1)
 map.Flag("Empire B", territory2)
+
+# Admin regions will also get colors from their sequence
+map.Admin(gadm="IND", level=3, color_by_level=1)
 
 # You can also override with custom colors
 map.Flag("Custom Empire", territory3, color="#ff0000")
 ```
 
 Flag labels automatically use a darker, more opaque version of the flag color for better readability.
+
+### Administrative Regions
+
+The `Admin` method displays administrative regions directly from GADM data with automatic coloring and rich tooltips:
+
+```python
+# Show all tehsils in Tamil Nadu, colored by state
+map.Admin(gadm="IND.31", level=3)
+
+# Show all tehsils in India, colored by district
+map.Admin(gadm="IND", level=3, color_by_level=2)
+
+# Show districts colored by state with custom styling
+map.Admin(gadm="IND", level=2, color_by_level=1, classes="districts")
+```
+
+**Parameters:**
+- `gadm`: GADM key (e.g., "IND.31" for Tamil Nadu)
+- `level`: Administrative level to display (0=country, 1=state, 2=district, 3=tehsil)
+- `color_by_level`: Level to group colors by (default: 1 for states)
+- `period`: Optional time period as [start_year, end_year] list
+- `classes`: Optional CSS classes for styling
+
+**Features:**
+- **Rich tooltips**: Shows all GADM properties (GID_0, COUNTRY, GID_1, NAME_1, etc.) on hover
+- **Automatic coloring**: Regions are colored by the specified administrative level
+- **Boundary-aware matching**: Uses exact prefix matching to avoid false matches
+- **Time support**: Works with dynamic maps and period filtering
+
+**Color grouping examples:**
+- `level=3, color_by_level=1`: Tehsils colored by state (all tehsils in same state have same color)
+- `level=3, color_by_level=2`: Tehsils colored by district (all tehsils in same district have same color)
+- `level=2, color_by_level=1`: Districts colored by state (all districts in same state have same color)
 
 ## Data Sources
 
