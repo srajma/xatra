@@ -120,6 +120,22 @@ class TitleBoxEntry:
 
 
 @dataclass
+class AdminEntry:
+    """Represents administrative regions from GADM data.
+    
+    Args:
+        gadm_key: GADM key (e.g., "IND.31" for Tamil Nadu)
+        level: Administrative level to display (e.g., 3 for tehsils)
+        period: Optional time period as (start_year, end_year) tuple
+        classes: Optional CSS classes for styling
+    """
+    gadm_key: str
+    level: int
+    period: Optional[Tuple[int, int]] = None
+    classes: Optional[str] = None
+
+
+@dataclass
 class BaseOptionEntry:
     """Represents a base map layer option.
     
@@ -160,6 +176,7 @@ class FlagMap:
         self._points: List[PointEntry] = []
         self._texts: List[TextEntry] = []
         self._title_boxes: List[TitleBoxEntry] = []
+        self._admins: List[AdminEntry] = []
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
@@ -406,6 +423,27 @@ class FlagMap:
         # let's not do this, because it makes it impossible to override the default
         pass
 
+    def Admin(self, gadm: str, level: int, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
+        """Add administrative regions from GADM data.
+        
+        Args:
+            gadm: GADM key (e.g., "IND.31" for Tamil Nadu)
+            level: Administrative level to display (e.g., 3 for tehsils)
+            period: Optional time period as [start_year, end_year] list
+            classes: Optional CSS classes for styling
+            
+        Example:
+            >>> map.Admin(gadm="IND.31", level=3)  # Show all tehsils in Tamil Nadu
+            >>> map.Admin(gadm="IND", level=1, period=[1950, 2000])  # Show states in India for specific period
+        """
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        
+        self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes))
+
     def _apply_limits_to_period(self, period: Optional[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
         """Apply map limits to a period with epsilon adjustment.
         
@@ -493,6 +531,11 @@ class FlagMap:
             if tb.period is not None:
                 if earliest_start is None or tb.period[0] < earliest_start:
                     earliest_start = tb.period[0]
+                    
+        for a in self._admins:
+            if a.period is not None:
+                if earliest_start is None or a.period[0] < earliest_start:
+                    earliest_start = a.period[0]
 
         # Pax-max aggregation
         pax = paxmax_aggregate(flags_serialized, earliest_start)
@@ -561,6 +604,55 @@ class FlagMap:
                     "period": list(restricted_period) if restricted_period is not None else None,
                 })
 
+        # Serialize admin regions
+        admins_serialized = []
+        for a in self._admins:
+            restricted_period = self._apply_limits_to_period(a.period)
+            # Include objects with no period (always visible) or valid restricted periods
+            if a.period is None or restricted_period is not None:
+                # Load GADM data for the specified level and filter by the gadm_key
+                from .loaders import _read_json
+                import os
+                try:
+                    # Load the appropriate level file directly
+                    parts = a.gadm_key.split('.')
+                    iso3 = parts[0]
+                    gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
+                    level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_{a.level}.json")
+                    
+                    if not os.path.exists(level_file_path):
+                        print(f"Warning: GADM file not found: {level_file_path}")
+                        continue
+                    
+                    level_file = _read_json(level_file_path)
+                    
+                    # Filter features that match the gadm_key prefix
+                    filtered_features = []
+                    for feature in level_file.get("features", []):
+                        props = feature.get("properties", {}) or {}
+                        gid_key = f"GID_{a.level}"
+                        gid = str(props.get(gid_key, ""))
+                        if gid.startswith(a.gadm_key):
+                            filtered_features.append(feature)
+                    
+                    # Create a FeatureCollection with filtered features
+                    admin_geojson = {
+                        "type": "FeatureCollection",
+                        "features": filtered_features
+                    }
+                    
+                    admins_serialized.append({
+                        "gadm_key": a.gadm_key,
+                        "level": a.level,
+                        "geometry": admin_geojson,
+                        "classes": a.classes,
+                        "period": list(restricted_period) if restricted_period is not None else None,
+                    })
+                except Exception as e:
+                    # Skip admin regions that can't be loaded
+                    print(f"Warning: Could not load admin regions for {a.gadm_key} level {a.level}: {e}")
+                    continue
+
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -569,6 +661,7 @@ class FlagMap:
             "points": points_serialized,
             "texts": texts_serialized,
             "title_boxes": title_boxes_serialized,
+            "admins": admins_serialized,
             "base_options": base_options_serialized,
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
         }

@@ -44,6 +44,7 @@ HTML_TEMPLATE = Template(
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
+      .admin { stroke: #666; stroke-width: 1; fill: rgba(100,100,100,0.1); }
       {{ css }}
     </style>
   </head>
@@ -84,7 +85,7 @@ HTML_TEMPLATE = Template(
         currentBaseLayer.addTo(map);
       }
 
-      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [] };
+      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [] };
 
       function addGeoJSON(geojson, options, tooltip) {
         const layer = L.geoJSON(geojson, options);
@@ -351,6 +352,54 @@ HTML_TEMPLATE = Template(
         titleDiv.innerHTML = titleBoxes.map(tb => `<div class="title-box">${tb.html}</div>`).join('');
       }
 
+      function renderAdmins(year = null) {
+        const admins = year !== null ? filterByPeriod(payload.admins, year) : payload.admins;
+        for (const a of admins) {
+          if (!a.geometry) continue;
+          
+          // Create style for admin regions
+          let className = 'admin';
+          if (a.classes) className += ' ' + a.classes;
+          
+          // Add each feature with its own tooltip
+          const layer = L.geoJSON(a.geometry, {
+            style: { className },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              // Create tooltip with all relevant properties
+              let tooltip = '';
+              if (props.NAME_3) tooltip += `<b>${props.NAME_3}</b><br/>`;
+              if (props.NAME_2) tooltip += `District: ${props.NAME_2}<br/>`;
+              if (props.NAME_1) tooltip += `State: ${props.NAME_1}<br/>`;
+              if (props.COUNTRY) tooltip += `Country: ${props.COUNTRY}<br/>`;
+              if (props.TYPE_3) tooltip += `Type: ${props.TYPE_3}<br/>`;
+              if (props.GID_3) tooltip += `GID: ${props.GID_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `Variant: ${props.VARNAME_3}<br/>`;
+              
+              // Remove trailing <br/> if present
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer.addTo(map);
+          layers.admins.push(layer);
+        }
+      }
+
       function clearFlagLayers() {
         for (const l of layers.flags) { map.removeLayer(l); }
         layers.flags = [];
@@ -362,11 +411,13 @@ HTML_TEMPLATE = Template(
         for (const l of layers.paths) { map.removeLayer(l); }
         for (const l of layers.points) { map.removeLayer(l); }
         for (const l of layers.texts) { map.removeLayer(l); }
+        for (const l of layers.admins) { map.removeLayer(l); }
         layers.flags = [];
         layers.rivers = [];
         layers.paths = [];
         layers.points = [];
         layers.texts = [];
+        layers.admins = [];
       }
 
       function renderDynamic(year) {
@@ -496,6 +547,7 @@ HTML_TEMPLATE = Template(
         renderPoints(year);
         renderTexts(year);
         renderTitleBoxes(year);
+        renderAdmins(year);
       }
 
       function setupLayerSelector() {
@@ -553,7 +605,7 @@ HTML_TEMPLATE = Template(
           }
           
           // Add periods from other object types
-          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || [])]) {
+          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || []), ...(payload.admins || [])]) {
             if (obj.period) {
               allPeriods.push(obj.period[0], obj.period[1]);
             }
@@ -589,6 +641,7 @@ HTML_TEMPLATE = Template(
         renderPoints();
         renderTexts();
         renderTitleBoxes();
+        renderAdmins();
       }
       setupLayerSelector();
       setupControls();
