@@ -179,7 +179,8 @@ def load_gadm_like(key: str) -> Dict[str, Any]:
     for feat in fc.get("features", []):
         props = feat.get("properties", {}) or {}
         gid = str(props.get(gid_key, ""))
-        if gid.startswith(prefix):
+        # Use exact prefix matching with boundary check
+        if gid.startswith(prefix) and (len(gid) == len(prefix) or gid[len(prefix)] in ['.', '_']):
             features.append(feat)
     return {"type": "FeatureCollection", "features": features}
 
