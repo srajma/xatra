@@ -550,80 +550,6 @@ class FlagMap:
             
         return (restricted_start, restricted_end)
 
-    def _compute_centroid(self, geometry: Dict[str, Any]) -> Optional[List[float]]:
-        """Compute centroid for a GeoJSON geometry.
-        
-        Args:
-            geometry: GeoJSON geometry object
-            
-        Returns:
-            [latitude, longitude] centroid coordinates or None if invalid
-        """
-        if geometry is None or geometry.get("type") not in ["Polygon", "MultiPolygon"]:
-            return None
-            
-        if geometry["type"] == "Polygon":
-            coords = geometry["coordinates"][0]  # Exterior ring
-            if len(coords) < 3:
-                return None
-                
-            area = 0
-            cx = cy = 0
-            
-            for i in range(len(coords) - 1):
-                x1, y1 = coords[i]
-                x2, y2 = coords[i + 1]
-                
-                cross = x1 * y2 - x2 * y1
-                area += cross
-                cx += (x1 + x2) * cross
-                cy += (y1 + y2) * cross
-                
-            area *= 0.5
-            if abs(area) < 1e-10:
-                return None
-                
-            cx /= (6 * area)
-            cy /= (6 * area)
-            
-            return [cy, cx]  # [lat, lng]
-            
-        elif geometry["type"] == "MultiPolygon":
-            total_area = 0
-            weighted_x = weighted_y = 0
-            
-            for polygon in geometry["coordinates"]:
-                coords = polygon[0]  # Exterior ring
-                if len(coords) < 3:
-                    continue
-                    
-                area = 0
-                cx = cy = 0
-                
-                for i in range(len(coords) - 1):
-                    x1, y1 = coords[i]
-                    x2, y2 = coords[i + 1]
-                    
-                    cross = x1 * y2 - x2 * y1
-                    area += cross
-                    cx += (x1 + x2) * cross
-                    cy += (y1 + y2) * cross
-                    
-                area *= 0.5
-                if abs(area) > 1e-10:
-                    cx /= (6 * area)
-                    cy /= (6 * area)
-                    
-                    weighted_x += cx * abs(area)
-                    weighted_y += cy * abs(area)
-                    total_area += abs(area)
-                    
-            if total_area < 1e-10:
-                return None
-                
-            return [weighted_y / total_area, weighted_x / total_area]  # [lat, lng]
-            
-        return None
 
     def _export_json(self) -> Dict[str, Any]:
         """Export map data to JSON format for rendering.
@@ -643,15 +569,9 @@ class FlagMap:
                 geom = fl.territory.to_geometry()
                 geom_dict = mapping(geom) if geom is not None else None
                 
-                # Pre-compute centroid for caching
-                centroid = None
-                if geom_dict is not None:
-                    centroid = self._compute_centroid(geom_dict)
-                
                 flags_serialized.append({
                     "label": fl.label,
                     "geometry": geom_dict,
-                    "centroid": centroid,  # Pre-computed centroid
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "note": fl.note,
                     "color": fl.color,
