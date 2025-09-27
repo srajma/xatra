@@ -884,139 +884,12 @@ HTML_TEMPLATE = Template(
       function renderDynamic(year) {
         // Performance optimization: only re-render if year actually changed
         if (window.lastRenderedYear === year) return;
-        
-        const snapshots = payload.flags.snapshots;
-        // find closest snapshot at or before year
-        let current = snapshots[0];
-        for (const s of snapshots) {
-          if (s.year <= year) current = s;
-        }
-        
-        // Only re-render flags if the snapshot actually changed
-        let flagsChanged = false;
-        if (window.lastRenderedSnapshot !== current) {
-          window.lastRenderedSnapshot = current;
-          flagsChanged = true;
-          clearFlagLayers();
-        }
         window.lastRenderedYear = year;
-        // Only render flags if they changed
-        if (flagsChanged) {
-          for (const f of current.flags) {
-            if (!f.geometry) continue;
-            
-            // Create style with flag color
-            const flagStyle = { className: 'flag' };
-            if (f.color) {
-              flagStyle.style = {
-                fillColor: f.color,
-                fillOpacity: 0.4,
-                color: f.color,
-                weight: 1
-              };
-            }
-            
-            const layer = addGeoJSON(f.geometry, flagStyle, `${f.label}${f.note ? ' — ' + f.note : ''}`);
-            
-            // Apply color styling after layer creation
-            if (f.color) {
-              layer.setStyle({
-                fillColor: f.color,
-                fillOpacity: 0.4,
-                color: f.color,
-                weight: 1
-              });
-            }
-            
-            layers.flags.push(layer);
-            
-            // Add label at centroid
-            const centroid = getCentroid(f.geometry);
-            if (centroid[0] !== 0 || centroid[1] !== 0) {
-              // Create custom label element with flag color
-              let labelStyle = '';
-              if (f.color) {
-                // Convert hex to HSL and reduce luminosity, increase alpha
-                const hex = f.color.replace('#', '');
-                const r = parseInt(hex.substr(0, 2), 16) / 255;
-                const g = parseInt(hex.substr(2, 2), 16) / 255;
-                const b = parseInt(hex.substr(4, 2), 16) / 255;
-                
-                // Convert RGB to HSL
-                const max = Math.max(r, g, b);
-                const min = Math.min(r, g, b);
-                let h, s, l = (max + min) / 2;
-                
-                if (max === min) {
-                  h = s = 0; // achromatic
-                } else {
-                  const d = max - min;
-                  s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                  switch (max) {
-                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                    case g: h = (b - r) / d + 2; break;
-                    case b: h = (r - g) / d + 4; break;
-                  }
-                  h /= 6;
-                }
-                
-                // Reduce luminosity and set alpha to 0.9
-                l = Math.max(0, l - 0.2); // Reduce luminosity
-                const alpha = 0.9;
-                
-                // Convert back to RGB
-                const hue2rgb = (p, q, t) => {
-                  if (t < 0) t += 1;
-                  if (t > 1) t -= 1;
-                  if (t < 1/6) return p + (q - p) * 6 * t;
-                  if (t < 1/2) return q;
-                  if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                  return p;
-                };
-                
-                let r2, g2, b2;
-                if (s === 0) {
-                  r2 = g2 = b2 = l; // achromatic
-                } else {
-                  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                  const p = 2 * l - q;
-                  r2 = hue2rgb(p, q, h + 1/3);
-                  g2 = hue2rgb(p, q, h);
-                  b2 = hue2rgb(p, q, h - 1/3);
-                }
-                
-                const r3 = Math.round(r2 * 255);
-                const g3 = Math.round(g2 * 255);
-                const b3 = Math.round(b2 * 255);
-                
-                labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
-              }
-              
-              const labelDiv = L.divIcon({
-                html: `<div class="flag-label" style="${labelStyle}">${f.label}</div>`,
-                className: 'flag-label-container',
-                iconSize: [1, 1],
-                iconAnchor: [0, 0]
-              });
-              const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
-              layers.flags.push(labelLayer);
-              
-              // Debug: Add visible marker for centroid
-              if (DEBUG_CENTROIDS) {
-                const debugMarker = L.circleMarker(centroid, {
-                  radius: 8,
-                  color: 'red',
-                  fillColor: 'yellow',
-                  fillOpacity: 0.8,
-                  weight: 2
-                }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
-                layers.flags.push(debugMarker);
-              }
-            }
-          }
-        }
         
-        // Render other object types with incremental updates
+        // Update flags incrementally
+        updateFlagsIncremental(year);
+        
+        // Update other object types incrementally
         renderRiversIncremental(year);
         renderPathsIncremental(year);
         renderPointsIncremental(year);
@@ -1024,6 +897,134 @@ HTML_TEMPLATE = Template(
         renderTitleBoxes(year);
         renderAdminsIncremental(year);
         renderAdminRiversIncremental(year);
+      }
+
+      function updateFlagsIncremental(year) {
+        const snapshots = payload.flags.snapshots;
+        // find closest snapshot at or before year
+        let current = snapshots[0];
+        for (const s of snapshots) {
+          if (s.year <= year) current = s;
+        }
+        
+        // Only update if snapshot changed
+        if (window.lastRenderedSnapshot === current) return;
+        window.lastRenderedSnapshot = current;
+        
+        // Clear all flags and re-render from new snapshot
+        clearFlagLayers();
+        for (const f of current.flags) {
+          if (!f.geometry) continue;
+          
+          // Create style with flag color
+          const flagStyle = { className: 'flag' };
+          if (f.color) {
+            flagStyle.style = {
+              fillColor: f.color,
+              fillOpacity: 0.4,
+              color: f.color,
+              weight: 1
+            };
+          }
+          
+          const layer = addGeoJSON(f.geometry, flagStyle, `${f.label}${f.note ? ' — ' + f.note : ''}`);
+          
+          // Apply color styling after layer creation
+          if (f.color) {
+            layer.setStyle({
+              fillColor: f.color,
+              fillOpacity: 0.4,
+              color: f.color,
+              weight: 1
+            });
+          }
+          
+          layers.flags.push(layer);
+          
+          // Add label at centroid
+          const centroid = getCentroid(f.geometry);
+          if (centroid[0] !== 0 || centroid[1] !== 0) {
+            // Create custom label element with flag color
+            let labelStyle = '';
+            if (f.color) {
+              // Convert hex to HSL and reduce luminosity, increase alpha
+              const hex = f.color.replace('#', '');
+              const r = parseInt(hex.substr(0, 2), 16) / 255;
+              const g = parseInt(hex.substr(2, 2), 16) / 255;
+              const b = parseInt(hex.substr(4, 2), 16) / 255;
+              
+              // Convert RGB to HSL
+              const max = Math.max(r, g, b);
+              const min = Math.min(r, g, b);
+              let h, s, l = (max + min) / 2;
+              
+              if (max === min) {
+                h = s = 0; // achromatic
+              } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                  case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                  case g: h = (b - r) / d + 2; break;
+                  case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+              }
+              
+              // Reduce luminosity and set alpha to 0.9
+              l = Math.max(0, l - 0.2); // Reduce luminosity
+              const alpha = 0.9;
+              
+              // Convert back to RGB
+              const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+              };
+              
+              let r2, g2, b2;
+              if (s === 0) {
+                r2 = g2 = b2 = l; // achromatic
+              } else {
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r2 = hue2rgb(p, q, h + 1/3);
+                g2 = hue2rgb(p, q, h);
+                b2 = hue2rgb(p, q, h - 1/3);
+              }
+              
+              const r3 = Math.round(r2 * 255);
+              const g3 = Math.round(g2 * 255);
+              const b3 = Math.round(b2 * 255);
+              
+              labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
+            }
+            
+            const labelDiv = L.divIcon({
+              html: `<div class="flag-label" style="${labelStyle}">${f.label}</div>`,
+              className: 'flag-label-container',
+              iconSize: [1, 1],
+              iconAnchor: [0, 0]
+            });
+            const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
+            layers.flags.push(labelLayer);
+            
+            // Debug: Add visible marker for centroid
+            if (DEBUG_CENTROIDS) {
+              const debugMarker = L.circleMarker(centroid, {
+                radius: 8,
+                color: 'red',
+                fillColor: 'yellow',
+                fillOpacity: 0.8,
+                weight: 2
+              }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
+              layers.flags.push(debugMarker);
+            }
+          }
+        }
       }
 
       function setupLayerSelector() {
