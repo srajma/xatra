@@ -44,7 +44,7 @@ HTML_TEMPLATE = Template(
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
-      .admin { stroke: #666; stroke-width: 1;  } /* fill: rgba(100,100,100,0.1); */
+      .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
       {{ css }}
     </style>
   </head>
