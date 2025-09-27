@@ -128,11 +128,13 @@ class AdminEntry:
         level: Administrative level to display (e.g., 3 for tehsils)
         period: Optional time period as (start_year, end_year) tuple
         classes: Optional CSS classes for styling
+        color_by_level: Level to group colors by (e.g., 1 for states)
     """
     gadm_key: str
     level: int
     period: Optional[Tuple[int, int]] = None
     classes: Optional[str] = None
+    color_by_level: int = 1
 
 
 @dataclass
@@ -183,6 +185,9 @@ class FlagMap:
         self._color_sequence: ColorSequence = LinearColorSequence()
         self._flag_index: int = 0
         self._label_colors: Dict[str, str] = {}  # Track colors by label
+        self._admin_color_sequence: ColorSequence = LinearColorSequence()
+        self._admin_index: int = 0
+        self._admin_colors: Dict[str, str] = {}  # Track colors by admin grouping key
         
         # Add default base options
         self._add_default_base_options()
@@ -199,6 +204,18 @@ class FlagMap:
             >>> map.FlagColorSequence(RotatingColorSequence())
         """
         self._color_sequence = color_sequence
+
+    def AdminColorSequence(self, color_sequence: ColorSequence) -> None:
+        """Set the color sequence for admin regions.
+        
+        Args:
+            color_sequence: ColorSequence instance to use for admin region colors
+            
+        Example:
+            >>> from xatra.colorseq import RotatingColorSequence
+            >>> map.AdminColorSequence(RotatingColorSequence())
+        """
+        self._admin_color_sequence = color_sequence
 
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
@@ -423,7 +440,7 @@ class FlagMap:
         # let's not do this, because it makes it impossible to override the default
         pass
 
-    def Admin(self, gadm: str, level: int, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
+    def Admin(self, gadm: str, level: int, period: Optional[List[int]] = None, classes: Optional[str] = None, color_by_level: int = 1) -> None:
         """Add administrative regions from GADM data.
         
         Args:
@@ -431,10 +448,11 @@ class FlagMap:
             level: Administrative level to display (e.g., 3 for tehsils)
             period: Optional time period as [start_year, end_year] list
             classes: Optional CSS classes for styling
+            color_by_level: Level to group colors by (e.g., 1 for states, 2 for districts)
             
         Example:
-            >>> map.Admin(gadm="IND.31", level=3)  # Show all tehsils in Tamil Nadu
-            >>> map.Admin(gadm="IND", level=1, period=[1950, 2000])  # Show states in India for specific period
+            >>> map.Admin(gadm="IND.31", level=3)  # Show all tehsils in Tamil Nadu, colored by state
+            >>> map.Admin(gadm="IND", level=3, color_by_level=2)  # Show all tehsils in India, colored by district
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -442,7 +460,7 @@ class FlagMap:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
         
-        self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes))
+        self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes, color_by_level=color_by_level))
 
     def _apply_limits_to_period(self, period: Optional[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
         """Apply map limits to a period with epsilon adjustment.
@@ -636,6 +654,27 @@ class FlagMap:
                         if gid.startswith(a.gadm_key) and (len(gid) == len(a.gadm_key) or gid[len(a.gadm_key)] in ['.', '_']):
                             filtered_features.append(feature)
                     
+                    # Assign colors based on color_by_level
+                    color_groups = {}  # Maps grouping key to color
+                    for feature in filtered_features:
+                        props = feature.get("properties", {}) or {}
+                        grouping_key = str(props.get(f"GID_{a.color_by_level}", ""))
+                        
+                        if grouping_key and grouping_key not in color_groups:
+                            # Assign new color to this group
+                            if grouping_key in self._admin_colors:
+                                color_groups[grouping_key] = self._admin_colors[grouping_key]
+                            else:
+                                assigned_color = self._admin_color_sequence[self._admin_index]
+                                color = assigned_color.hex
+                                self._admin_colors[grouping_key] = color
+                                color_groups[grouping_key] = color
+                                self._admin_index += 1
+                        
+                        # Add color to feature properties
+                        if grouping_key in color_groups:
+                            feature["properties"]["_color"] = color_groups[grouping_key]
+                    
                     # Create a FeatureCollection with filtered features
                     admin_geojson = {
                         "type": "FeatureCollection",
@@ -648,6 +687,7 @@ class FlagMap:
                         "geometry": admin_geojson,
                         "classes": a.classes,
                         "period": list(restricted_period) if restricted_period is not None else None,
+                        "color_by_level": a.color_by_level,
                     })
                 except Exception as e:
                     # Skip admin regions that can't be loaded

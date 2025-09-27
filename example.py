@@ -3,6 +3,7 @@
 import xatra
 from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTHERN_INDIA
+from xatra.colorseq import LinearColorSequence
 
 # Create a test map
 map = xatra.FlagMap()
@@ -10,6 +11,7 @@ map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
+map.FlagColorSequence(LinearColorSequence())
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], note="south is lost after Ashoka's death")
 map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500], color="#ff0000")
@@ -17,6 +19,7 @@ map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout t
 map.Flag(label="Principality", value=gadm("IND.11.1"))
 map.Admin(gadm="IND.16", level=3)
 map.Admin(gadm="BGD", level=1)
+map.Admin(gadm="AFG", level=0)
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
 map.River(label="Ganga", value=naturalearth("1159122643"), period=[0, 600], note="Modern course of Ganga", classes="modern-river")
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttarapatha-path")
