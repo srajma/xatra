@@ -10,7 +10,7 @@ Stylistic changes
 - [x] choice of BaseMaps
 - [x] slider shouldn't appear for static maps
 - [x] map.slider()
-- [ ] slider play button plus positions of years, start and end year
+- [x] slider play button plus positions of years, start and end year
 
 Libraries
 - [ ] copy matchers from old xatra
@@ -20,7 +20,7 @@ Development
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [ ] xatra.Data
-- [ ] do we need to redraw everything each frame?
+- [x] do we need to redraw everything each frame?
 - [ ] possibly calculate and keep simplified geometries
 - [ ] loading geojson from file instead of storing it in html; i.e. with a server
 
