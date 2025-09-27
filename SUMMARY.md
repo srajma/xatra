@@ -15,7 +15,7 @@ A "matplotlib of maps" called `xatra` that creates interactive historical maps w
 ```python
 map.Flag(label, territory, period=None, note=None)
 map.Admin(gadm, level, period=None, classes=None, color_by_level=1)
-map.AdminRivers(period=None, classes=None)
+map.AdminRivers(period=None, classes=None, sources=None)
 map.River(label, value, note=None, classes=None, period=None)  
 map.Path(label, coords, classes=None, period=None)
 map.Point(label, position, period=None)
@@ -69,10 +69,11 @@ map.show(out_json="map.json", out_html="map.html")
 - **Color sequences**: `map.AdminColorSequence()` for custom color schemes
 
 ### Admin Rivers
-- **AdminRivers method**: `map.AdminRivers()` displays all rivers from Natural Earth and Overpass data
+- **AdminRivers method**: `map.AdminRivers(sources=["naturalearth", "overpass"])` displays rivers from specified data sources
+- **Source filtering**: Choose which data sources to include (Natural Earth, Overpass, or both)
 - **Source identification**: Rivers colored differently by source (blue for Natural Earth, orange for Overpass)
 - **Rich tooltips**: Shows source information, IDs, and all available name fields
-- **Automatic loading**: Loads all rivers from both data sources
+- **Automatic loading**: Loads rivers from specified data sources
 - **Time support**: Works with dynamic maps and period filtering
 
 ### Styling System

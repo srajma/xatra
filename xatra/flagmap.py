@@ -144,9 +144,15 @@ class AdminRiversEntry:
     Args:
         period: Optional time period as (start_year, end_year) tuple
         classes: Optional CSS classes for styling
+        sources: List of data sources to include (default: ["naturalearth", "overpass"])
     """
     period: Optional[Tuple[int, int]] = None
     classes: Optional[str] = None
+    sources: List[str] = None
+    
+    def __post_init__(self):
+        if self.sources is None:
+            self.sources = ["naturalearth", "overpass"]
 
 
 @dataclass
@@ -475,15 +481,18 @@ class FlagMap:
         
         self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes, color_by_level=color_by_level))
 
-    def AdminRivers(self, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
-        """Add all rivers from data files.
+    def AdminRivers(self, period: Optional[List[int]] = None, classes: Optional[str] = None, sources: Optional[List[str]] = None) -> None:
+        """Add rivers from specified data sources.
         
         Args:
             period: Optional time period as [start_year, end_year] list
             classes: Optional CSS classes for styling
+            sources: List of data sources to include (default: ["naturalearth", "overpass"])
             
         Example:
             >>> map.AdminRivers()  # Show all rivers from Natural Earth and Overpass data
+            >>> map.AdminRivers(sources=["naturalearth"])  # Only Natural Earth rivers
+            >>> map.AdminRivers(sources=["overpass"])  # Only Overpass rivers
             >>> map.AdminRivers(classes="all-rivers")  # With custom styling
         """
         period_tuple: Optional[Tuple[int, int]] = None
@@ -492,7 +501,14 @@ class FlagMap:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
         
-        self._admin_rivers.append(AdminRiversEntry(period=period_tuple, classes=classes))
+        # Validate sources
+        if sources is not None:
+            valid_sources = ["naturalearth", "overpass"]
+            for source in sources:
+                if source not in valid_sources:
+                    raise ValueError(f"Invalid source '{source}'. Must be one of: {valid_sources}")
+        
+        self._admin_rivers.append(AdminRiversEntry(period=period_tuple, classes=classes, sources=sources))
 
     def _apply_limits_to_period(self, period: Optional[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
         """Apply map limits to a period with epsilon adjustment.
@@ -742,41 +758,44 @@ class FlagMap:
                     # Load all rivers from Natural Earth and Overpass data
                     all_rivers = []
                     
-                    # Load Natural Earth rivers
+                    # Load rivers based on specified sources
                     from .loaders import _read_json
                     import os
                     
-                    ne_rivers_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ne_10m_rivers.geojson")
-                    if os.path.exists(ne_rivers_file):
-                        ne_data = _read_json(ne_rivers_file)
-                        for feature in ne_data.get("features", []):
-                            props = feature.get("properties", {}) or {}
-                            # Add source information to properties
-                            feature["properties"]["_source"] = "naturalearth"
-                            feature["properties"]["_ne_id"] = props.get("ne_id", "unknown")
-                            all_rivers.append(feature)
+                    # Load Natural Earth rivers if requested
+                    if "naturalearth" in ar.sources:
+                        ne_rivers_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ne_10m_rivers.geojson")
+                        if os.path.exists(ne_rivers_file):
+                            ne_data = _read_json(ne_rivers_file)
+                            for feature in ne_data.get("features", []):
+                                props = feature.get("properties", {}) or {}
+                                # Add source information to properties
+                                feature["properties"]["_source"] = "naturalearth"
+                                feature["properties"]["_ne_id"] = props.get("ne_id", "unknown")
+                                all_rivers.append(feature)
                     
-                    # Load Overpass rivers
-                    overpass_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "rivers_overpass_india")
-                    if os.path.isdir(overpass_dir):
-                        for filename in os.listdir(overpass_dir):
-                            if filename.endswith('.json'):
-                                filepath = os.path.join(overpass_dir, filename)
-                                try:
-                                    overpass_data = _read_json(filepath)
-                                    # Handle both Feature and FeatureCollection
-                                    if overpass_data.get("type") == "Feature":
-                                        overpass_data["properties"]["_source"] = "overpass"
-                                        overpass_data["properties"]["_filename"] = filename
-                                        all_rivers.append(overpass_data)
-                                    elif overpass_data.get("type") == "FeatureCollection":
-                                        for feature in overpass_data.get("features", []):
-                                            feature["properties"]["_source"] = "overpass"
-                                            feature["properties"]["_filename"] = filename
-                                            all_rivers.append(feature)
-                                except Exception as e:
-                                    print(f"Warning: Could not load overpass file {filename}: {e}")
-                                    continue
+                    # Load Overpass rivers if requested
+                    if "overpass" in ar.sources:
+                        overpass_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "rivers_overpass_india")
+                        if os.path.isdir(overpass_dir):
+                            for filename in os.listdir(overpass_dir):
+                                if filename.endswith('.json'):
+                                    filepath = os.path.join(overpass_dir, filename)
+                                    try:
+                                        overpass_data = _read_json(filepath)
+                                        # Handle both Feature and FeatureCollection
+                                        if overpass_data.get("type") == "Feature":
+                                            overpass_data["properties"]["_source"] = "overpass"
+                                            overpass_data["properties"]["_filename"] = filename
+                                            all_rivers.append(overpass_data)
+                                        elif overpass_data.get("type") == "FeatureCollection":
+                                            for feature in overpass_data.get("features", []):
+                                                feature["properties"]["_source"] = "overpass"
+                                                feature["properties"]["_filename"] = filename
+                                                all_rivers.append(feature)
+                                    except Exception as e:
+                                        print(f"Warning: Could not load overpass file {filename}: {e}")
+                                        continue
                     
                     # Create a FeatureCollection with all rivers
                     admin_rivers_geojson = {
@@ -788,6 +807,7 @@ class FlagMap:
                         "geometry": admin_rivers_geojson,
                         "classes": ar.classes,
                         "period": list(restricted_period) if restricted_period is not None else None,
+                        "sources": ar.sources,
                     })
                 except Exception as e:
                     # Skip admin rivers that can't be loaded

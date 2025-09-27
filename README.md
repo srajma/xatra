@@ -68,7 +68,7 @@ map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
 map.Admin(gadm="IND.31", level=3, classes="chola-tehsils", note="Chola administrative divisions")
-map.AdminRivers(classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
+map.AdminRivers(sources=["naturalearth", "overpass"], classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
 map.River(label="Ganga", value=naturalearth("1159122643"), period=[0, 600], note="Modern course of Ganga", classes="modern-river")
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttarapatha-path")
@@ -120,7 +120,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 - **`Flag(label, territory, period=None, note=None, color=None)`**: Add a flag (country/kingdom)
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
-- **`AdminRivers(period=None, classes=None)`**: Add all rivers from Natural Earth and Overpass data
+- **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
 - **`Path(label, coords, classes=None, period=None)`**: Add a path/route
 - **`Point(label, position, period=None)`**: Add a point of interest
@@ -231,6 +231,12 @@ The `AdminRivers` method displays all rivers from Natural Earth and Overpass dat
 # Show all rivers from data files
 map.AdminRivers()
 
+# Show only Natural Earth rivers
+map.AdminRivers(sources=["naturalearth"])
+
+# Show only Overpass rivers
+map.AdminRivers(sources=["overpass"])
+
 # Show all rivers with custom styling
 map.AdminRivers(classes="all-rivers")
 
@@ -241,11 +247,13 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 **Parameters:**
 - `period`: Optional time period as [start_year, end_year] list
 - `classes`: Optional CSS classes for styling
+- `sources`: List of data sources to include (default: ["naturalearth", "overpass"])
 
 **Features:**
+- **Source filtering**: Choose which data sources to include (Natural Earth, Overpass, or both)
 - **Source identification**: Rivers are colored differently by source (blue for Natural Earth, orange for Overpass)
 - **Rich tooltips**: Shows source information, IDs, and all available name fields
-- **Automatic loading**: Loads all rivers from both Natural Earth and Overpass data files
+- **Automatic loading**: Loads rivers from specified data sources
 - **Time support**: Works with dynamic maps and period filtering
 
 **Tooltip information:**
