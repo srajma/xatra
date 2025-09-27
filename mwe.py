@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from xatra.colorseq import *
 
-linear_seq = LinearColorSequence()
+linear_seq = LinearColorSequence([Color.hsl(0.3, 0.5, 0.5)])
 log_seq = LogColorSequence()
 trivial_seq = RotatingColorSequence()
 rotating_seq = RotatingColorSequence(color_sequences["tab10"])
@@ -24,5 +24,5 @@ linear_seq.plot(ax)
 # rotating_seq.plot(ax)
 # matplotlib_seq.plot(ax)
 # random_seq.plot(ax)
-stack_overflow_seq.plot(ax)
+# stack_overflow_seq.plot(ax)
 plt.show()

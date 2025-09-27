@@ -82,7 +82,7 @@ class LinearColorSequence(ColorSequence):
         self.step = step
 
     def next_color(self, colors: list[Color]) -> Color:
-        return Color.hsl(*(a + b for a, b in zip(colors[-1].hsl, self.step.hsl)))
+        return Color.hsl(*(a + b % 1 for a, b in zip(colors[-1].hsl, self.step.hsl)))
     
 
 class LogColorSequence(ColorSequence):
@@ -92,7 +92,7 @@ class LogColorSequence(ColorSequence):
         self.step = step
 
     def next_color(self, colors: list[Color]) -> Color:
-        return Color.hsl(*(a * b for a, b in zip(colors[-1].hsl, self.step.hsl)))
+        return Color.hsl(*(a * b % 1 for a, b in zip(colors[-1].hsl, self.step.hsl)))
 
 class RotatingColorSequence(ColorSequence):
 
