@@ -16,10 +16,18 @@ Libraries
 - [ ] copy matchers from old xatra
 - [ ] copy maps from old xatra
 
+Bugfixes
+- [x] xatra.Data issue with colors of data in dynamic maps and exact range
+- [ ] sub-regions -- use boundary-aware starts matching, same as elsewhere
+- [ ] disputed areas -- compare code to Flags
+- [ ] Data period doesn't seem to affect slider etc.
+- [ ] add color map
+
 Development
 - [x] periods for things other than flags
 - [x] xatra.Admin
-- [ ] xatra.Data
+- [x] xatra.Data
+- [ ] xatra.Dataframe
 - [x] do we need to redraw everything each frame?
 - [ ] possibly calculate and keep simplified geometries
 - [ ] loading geojson from file instead of storing it in html; i.e. with a server
