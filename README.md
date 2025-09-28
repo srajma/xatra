@@ -24,8 +24,8 @@ Bugfixes
 - [x] why country name appears on Data tooltip?
 - [x] default color scheme
 - [x] add color map in html
-- [ ] rename Colormap to Colormap
-- [ ] efficiency and documentation
+- [x] rename Colormap to Colormap
+- [x] efficiency and documentation
 
 Development
 - [x] periods for things other than flags
