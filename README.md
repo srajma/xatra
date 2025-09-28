@@ -11,15 +11,16 @@ Stylistic changes
 - [x] slider shouldn't appear for static maps
 - [x] map.slider()
 - [x] slider play button plus positions of years, start and end year
+- [ ] watermark
 
 Libraries
 - [ ] copy matchers from old xatra
 - [ ] copy maps from old xatra
 
 Bugfixes
+- [ ] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] xatra.Data issue with colors of data in dynamic maps and exact range
 - [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
-- [ ] disputed areas for Admin -- compare code to Flags
 - [x] Mark map as dynamic if any element as period
 - [x] why country name appears on Data tooltip?
 - [x] default color scheme
