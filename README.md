@@ -18,10 +18,12 @@ Libraries
 
 Bugfixes
 - [x] xatra.Data issue with colors of data in dynamic maps and exact range
-- [ ] sub-regions -- use boundary-aware starts matching, same as elsewhere
-- [ ] disputed areas -- compare code to Flags
+- [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
+- [ ] disputed areas for Admin -- compare code to Flags
 - [ ] Data period doesn't seem to affect slider etc.
-- [ ] add color map
+- [ ] add color map in html
+- [ ] rename ColorMap to Colormap
+- [ ] efficiency and documentation
 
 Development
 - [x] periods for things other than flags
