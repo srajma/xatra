@@ -366,6 +366,7 @@ class FlagMap:
             >>> map.FlagColorSequence(RotatingColorSequence())
         """
         self._color_sequence = color_sequence
+        # self._flag_index = 0 # reset index every time we set a new color sequence
 
     def AdminColorSequence(self, color_sequence: ColorSequence) -> None:
         """Set the color sequence for admin regions.

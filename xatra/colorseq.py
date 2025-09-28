@@ -28,7 +28,7 @@ class Color:
     }
 
     def __init__(self, h: float, s: float, l: float):
-        print(h, s, l)
+        self.hsl = (h, s, l)
         self.rgb = colorsys.hls_to_rgb(h, s, l)
         self.hex = Color.rgb_to_hex(self.rgb)
     
