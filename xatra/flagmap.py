@@ -242,10 +242,12 @@ class DataColorMap:
         
         # Normalize value to [0, 1] range
         if vmax == vmin:
-            normalized = 0.5  # Avoid division by zero
+            # If all values are the same, use the middle of the colormap
+            normalized = 0.5
         else:
             normalized = (value - vmin) / (vmax - vmin)
-            normalized = max(0, min(1, normalized))  # Clamp to [0, 1]
+            # Clamp to [0, 1] range
+            normalized = max(0.0, min(1.0, normalized))
         
         # Get color from colormap
         color_rgba = self.colormap(normalized)
@@ -958,74 +960,93 @@ class FlagMap:
                     print(f"Warning: Could not load admin rivers: {e}")
                     continue
 
-        # Serialize data elements
+        # Serialize data elements - group by GADM and period for proper handling
         data_serialized = []
+        data_by_gadm = {}  # Group data elements by GADM code
+        
+        # First, group all data elements by GADM code
         for d in self._data:
             restricted_period = self._apply_limits_to_period(d.period)
             # Include objects with no period (always visible) or valid restricted periods
             if d.period is None or restricted_period is not None:
-                # Load GADM data for the data element
-                from .loaders import _read_json
-                import os
-                try:
-                    # Load the appropriate level file directly
-                    parts = d.gadm.split('.')
-                    iso3 = parts[0]
-                    gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
-                    level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_0.json")  # Use level 0 for data elements
-                    
-                    if not os.path.exists(level_file_path):
-                        print(f"Warning: GADM file not found: {level_file_path}")
-                        continue
-                    
-                    level_file = _read_json(level_file_path)
-                    
-                    # Find the feature that matches the gadm_key
-                    target_feature = None
-                    for feature in level_file.get("features", []):
-                        props = feature.get("properties", {}) or {}
-                        gid = str(props.get("GID_0", ""))
-                        if gid == d.gadm:
-                            target_feature = feature
-                            break
-                    
-                    if target_feature is None:
-                        print(f"Warning: GADM region not found: {d.gadm}")
-                        continue
+                if d.gadm not in data_by_gadm:
+                    data_by_gadm[d.gadm] = []
+                data_by_gadm[d.gadm].append({
+                    "value": d.value,
+                    "period": list(restricted_period) if restricted_period is not None else None,
+                    "classes": d.classes,
+                })
+        
+        # Now process each GADM group
+        for gadm, data_elements in data_by_gadm.items():
+            # Load GADM data for this region
+            from .loaders import _read_json
+            import os
+            try:
+                # Load the appropriate level file directly
+                parts = gadm.split('.')
+                iso3 = parts[0]
+                gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
+                level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_0.json")  # Use level 0 for data elements
+                
+                if not os.path.exists(level_file_path):
+                    print(f"Warning: GADM file not found: {level_file_path}")
+                    continue
+                
+                level_file = _read_json(level_file_path)
+                
+                # Find the feature that matches the gadm_key
+                target_feature = None
+                for feature in level_file.get("features", []):
+                    props = feature.get("properties", {}) or {}
+                    gid = str(props.get("GID_0", ""))
+                    if gid == gadm:
+                        target_feature = feature
+                        break
+                
+                if target_feature is None:
+                    print(f"Warning: GADM region not found: {gadm}")
+                    continue
+                
+                # Create a copy of the feature for each data element
+                for data_element in data_elements:
+                    # Create a deep copy of the feature
+                    import copy
+                    feature_copy = copy.deepcopy(target_feature)
                     
                     # Get color from colormap
                     color = "#cccccc"  # Default color
                     if self._data_colormap is not None:
-                        color = self._data_colormap.get_color(d.value)
+                        color = self._data_colormap.get_color(data_element["value"])
                     else:
                         # Use default viridis colormap if none set
                         import matplotlib.pyplot as plt
                         default_colormap = DataColorMap(plt.cm.viridis)
-                        default_colormap.add_value(d.value)
-                        color = default_colormap.get_color(d.value)
+                        default_colormap.add_value(data_element["value"])
+                        color = default_colormap.get_color(data_element["value"])
                     
-                    # Add color to feature properties
-                    target_feature["properties"]["_color"] = color
-                    target_feature["properties"]["_value"] = d.value
+                    # Add color and value to feature properties
+                    feature_copy["properties"]["_color"] = color
+                    feature_copy["properties"]["_value"] = data_element["value"]
                     
                     # Create a FeatureCollection with the single feature
                     data_geojson = {
                         "type": "FeatureCollection",
-                        "features": [target_feature]
+                        "features": [feature_copy]
                     }
                     
                     data_serialized.append({
-                        "gadm": d.gadm,
-                        "value": d.value,
+                        "gadm": gadm,
+                        "value": data_element["value"],
                         "geometry": data_geojson,
-                        "classes": d.classes,
-                        "period": list(restricted_period) if restricted_period is not None else None,
+                        "classes": data_element["classes"],
+                        "period": data_element["period"],
                         "color": color,
                     })
-                except Exception as e:
-                    # Skip data elements that can't be loaded
-                    print(f"Warning: Could not load data element for {d.gadm}: {e}")
-                    continue
+            except Exception as e:
+                # Skip data elements that can't be loaded
+                print(f"Warning: Could not load data element for {gadm}: {e}")
+                continue
 
         return {
             "css": "\n".join(self._css) if self._css else "",
