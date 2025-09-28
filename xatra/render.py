@@ -46,6 +46,7 @@ HTML_TEMPLATE = Template(
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
       .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
     .admin-river { stroke: #0066cc; stroke-width: 2; opacity: 0.8; }
+      .data { stroke: #333; stroke-width: 1; }
       {{ css }}
     </style>
   </head>
@@ -90,7 +91,7 @@ HTML_TEMPLATE = Template(
         currentBaseLayer.addTo(map);
       }
 
-      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [], admin_rivers: [] };
+      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [], admin_rivers: [], data: [] };
       
       // Layer visibility management for dynamic maps
       const layerVisibility = new Map(); // Maps layer objects to their visibility state
@@ -336,6 +337,7 @@ HTML_TEMPLATE = Template(
         createAllTexts();
         createAllAdmins();
         createAllAdminRivers();
+        createAllData();
         
         allLayersCreated = true;
         console.log("All layers created for dynamic map");
@@ -527,6 +529,55 @@ HTML_TEMPLATE = Template(
           
           layer._adminRiverData = { period: ar.period };
           layers.admin_rivers.push(layer);
+        }
+      }
+
+      function createAllData() {
+        for (const d of payload.data || []) {
+          if (!d.geometry) continue;
+          
+          let className = 'data';
+          if (d.classes) className += ' ' + d.classes;
+          
+          const layer = L.geoJSON(d.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const color = props._color || d.color || '#cccccc';
+              return {
+                className: className,
+                fillColor: color,
+                fillOpacity: 0.6,
+                color: color,
+                weight: 1
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              let tooltip = '';
+              if (props.COUNTRY) tooltip += `<b>${props.COUNTRY}</b><br/>`;
+              if (props._value !== undefined) tooltip += `Value: ${props._value}<br/>`;
+              if (d.gadm) tooltip += `GADM: ${d.gadm}<br/>`;
+              
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer._dataData = { period: d.period };
+          layers.data.push(layer);
         }
       }
 
@@ -851,6 +902,56 @@ HTML_TEMPLATE = Template(
         }
       }
 
+      function renderData(year = null) {
+        const data = year !== null ? filterByPeriod(payload.data, year) : payload.data;
+        for (const d of data) {
+          if (!d.geometry) continue;
+          
+          let className = 'data';
+          if (d.classes) className += ' ' + d.classes;
+          
+          const layer = L.geoJSON(d.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const color = props._color || d.color || '#cccccc';
+              return {
+                className: className,
+                fillColor: color,
+                fillOpacity: 0.6,
+                color: color,
+                weight: 1
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              let tooltip = '';
+              if (props.COUNTRY) tooltip += `<b>${props.COUNTRY}</b><br/>`;
+              if (props._value !== undefined) tooltip += `Value: ${props._value}<br/>`;
+              if (d.gadm) tooltip += `GADM: ${d.gadm}<br/>`;
+              
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer.addTo(map);
+          layers.data.push(layer);
+        }
+      }
+
       function clearFlagLayers() {
         for (const l of layers.flags) { map.removeLayer(l); }
         layers.flags = [];
@@ -864,6 +965,7 @@ HTML_TEMPLATE = Template(
         for (const l of layers.texts) { map.removeLayer(l); }
         for (const l of layers.admins) { map.removeLayer(l); }
         for (const l of layers.admin_rivers) { map.removeLayer(l); }
+        for (const l of layers.data) { map.removeLayer(l); }
         layers.flags = [];
         layers.rivers = [];
         layers.paths = [];
@@ -871,6 +973,7 @@ HTML_TEMPLATE = Template(
         layers.texts = [];
         layers.admins = [];
         layers.admin_rivers = [];
+        layers.data = [];
       }
 
       function renderDynamic(year) {
@@ -903,6 +1006,7 @@ HTML_TEMPLATE = Template(
         updateLayerVisibility(layers.texts, year, '_textData');
         updateLayerVisibility(layers.admins, year, '_adminData');
         updateLayerVisibility(layers.admin_rivers, year, '_adminRiverData');
+        updateLayerVisibility(layers.data, year, '_dataData');
         
         // Update title boxes
         renderTitleBoxes(year);
@@ -977,7 +1081,7 @@ HTML_TEMPLATE = Template(
           }
           
           // Add periods from other object types
-          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || []), ...(payload.admins || []), ...(payload.admin_rivers || [])]) {
+          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || []), ...(payload.admins || []), ...(payload.admin_rivers || []), ...(payload.data || [])]) {
             if (obj.period) {
               allPeriods.push(obj.period[0], obj.period[1]);
             }
@@ -1059,6 +1163,7 @@ HTML_TEMPLATE = Template(
         renderTitleBoxes();
         renderAdmins();
         renderAdminRivers();
+        renderData();
       } else {
         // For dynamic maps, create all layers and show initial state
         createAllLayers();

@@ -172,6 +172,89 @@ class BaseOptionEntry:
     default: bool = False
 
 
+@dataclass
+class DataEntry:
+    """Represents a data element with GADM region and value for color mapping.
+    
+    Args:
+        gadm: GADM key (e.g., "IND.31" for Tamil Nadu)
+        value: Numeric value for color mapping
+        period: Optional time period as (start_year, end_year) tuple
+        classes: Optional CSS classes for styling
+    """
+    gadm: str
+    value: float
+    period: Optional[Tuple[int, int]] = None
+    classes: Optional[str] = None
+
+
+class DataColorMap:
+    """Handles color mapping for data elements using matplotlib ColorMap objects.
+    
+    This class wraps matplotlib ColorMap objects to provide color mapping functionality
+    for data elements based on their numeric values.
+    
+    Args:
+        colormap: matplotlib ColorMap object (e.g., plt.cm.viridis, plt.cm.Reds)
+        vmin: Minimum value for normalization (default: None, auto-detect)
+        vmax: Maximum value for normalization (default: None, auto-detect)
+    """
+    
+    def __init__(self, colormap, vmin: Optional[float] = None, vmax: Optional[float] = None):
+        self.colormap = colormap
+        self.vmin = vmin
+        self.vmax = vmax
+        self._values = []  # Store values for auto-detection of vmin/vmax
+    
+    def add_value(self, value: float) -> None:
+        """Add a value to the dataset for auto-detection of vmin/vmax.
+        
+        Args:
+            value: Numeric value to add to the dataset
+        """
+        self._values.append(value)
+    
+    def get_color(self, value: float) -> str:
+        """Get color for a given value using the colormap.
+        
+        Args:
+            value: Numeric value to map to color
+            
+        Returns:
+            Hex color string (e.g., "#ff0000")
+        """
+        import matplotlib.pyplot as plt
+        
+        # Determine vmin and vmax
+        vmin = self.vmin
+        vmax = self.vmax
+        
+        if vmin is None or vmax is None:
+            if self._values:
+                all_values = self._values
+            else:
+                all_values = [value]
+            
+            if vmin is None:
+                vmin = min(all_values)
+            if vmax is None:
+                vmax = max(all_values)
+        
+        # Normalize value to [0, 1] range
+        if vmax == vmin:
+            normalized = 0.5  # Avoid division by zero
+        else:
+            normalized = (value - vmin) / (vmax - vmin)
+            normalized = max(0, min(1, normalized))  # Clamp to [0, 1]
+        
+        # Get color from colormap
+        color_rgba = self.colormap(normalized)
+        
+        # Convert to hex
+        r, g, b = int(color_rgba[0] * 255), int(color_rgba[1] * 255), int(color_rgba[2] * 255)
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+
 class FlagMap:
     """Main class for creating interactive historical maps.
     
@@ -201,6 +284,7 @@ class FlagMap:
         self._title_boxes: List[TitleBoxEntry] = []
         self._admins: List[AdminEntry] = []
         self._admin_rivers: List[AdminRiversEntry] = []
+        self._data: List[DataEntry] = []
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
@@ -211,6 +295,7 @@ class FlagMap:
         self._admin_color_sequence: ColorSequence = LinearColorSequence()
         self._admin_index: int = 0
         self._admin_colors: Dict[str, str] = {}  # Track colors by admin grouping key
+        self._data_colormap: Optional[DataColorMap] = None
         
         # Add default base options
         self._add_default_base_options()
@@ -239,6 +324,49 @@ class FlagMap:
             >>> map.AdminColorSequence(RotatingColorSequence())
         """
         self._admin_color_sequence = color_sequence
+
+    def DataColorMap(self, colormap, vmin: Optional[float] = None, vmax: Optional[float] = None) -> None:
+        """Set the color map for data elements.
+        
+        Args:
+            colormap: matplotlib ColorMap object (e.g., plt.cm.viridis, plt.cm.Reds)
+            vmin: Minimum value for normalization (default: None, auto-detect)
+            vmax: Maximum value for normalization (default: None, auto-detect)
+            
+        Example:
+            >>> import matplotlib.pyplot as plt
+            >>> map.DataColorMap(plt.cm.viridis)
+            >>> map.DataColorMap(plt.cm.Reds, vmin=0, vmax=100)
+        """
+        self._data_colormap = DataColorMap(colormap, vmin, vmax)
+
+    def Data(self, gadm: str, value: float, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
+        """Add a data element to the map.
+        
+        Data elements are colored based on their numeric values using the map's data colormap.
+        If no colormap is set, a default viridis colormap will be used.
+        
+        Args:
+            gadm: GADM key (e.g., "IND.31" for Tamil Nadu)
+            value: Numeric value for color mapping
+            period: Optional time period as [start_year, end_year] list
+            classes: Optional CSS classes for styling
+            
+        Example:
+            >>> map.Data("IND.31", 85.5, period=[2020, 2025], classes="population-data")
+            >>> map.Data("IND.11", 42.3, classes="gdp-data")
+        """
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be [start, end]")
+            period_tuple = (int(period[0]), int(period[1]))
+        
+        # Add value to colormap for auto-detection of vmin/vmax
+        if self._data_colormap is not None:
+            self._data_colormap.add_value(value)
+        
+        self._data.append(DataEntry(gadm=gadm, value=value, period=period_tuple, classes=classes))
 
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
@@ -618,6 +746,11 @@ class FlagMap:
             if ar.period is not None:
                 if earliest_start is None or ar.period[0] < earliest_start:
                     earliest_start = ar.period[0]
+                    
+        for d in self._data:
+            if d.period is not None:
+                if earliest_start is None or d.period[0] < earliest_start:
+                    earliest_start = d.period[0]
 
         # Pax-max aggregation
         pax = paxmax_aggregate(flags_serialized, earliest_start)
@@ -825,6 +958,75 @@ class FlagMap:
                     print(f"Warning: Could not load admin rivers: {e}")
                     continue
 
+        # Serialize data elements
+        data_serialized = []
+        for d in self._data:
+            restricted_period = self._apply_limits_to_period(d.period)
+            # Include objects with no period (always visible) or valid restricted periods
+            if d.period is None or restricted_period is not None:
+                # Load GADM data for the data element
+                from .loaders import _read_json
+                import os
+                try:
+                    # Load the appropriate level file directly
+                    parts = d.gadm.split('.')
+                    iso3 = parts[0]
+                    gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
+                    level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_0.json")  # Use level 0 for data elements
+                    
+                    if not os.path.exists(level_file_path):
+                        print(f"Warning: GADM file not found: {level_file_path}")
+                        continue
+                    
+                    level_file = _read_json(level_file_path)
+                    
+                    # Find the feature that matches the gadm_key
+                    target_feature = None
+                    for feature in level_file.get("features", []):
+                        props = feature.get("properties", {}) or {}
+                        gid = str(props.get("GID_0", ""))
+                        if gid == d.gadm:
+                            target_feature = feature
+                            break
+                    
+                    if target_feature is None:
+                        print(f"Warning: GADM region not found: {d.gadm}")
+                        continue
+                    
+                    # Get color from colormap
+                    color = "#cccccc"  # Default color
+                    if self._data_colormap is not None:
+                        color = self._data_colormap.get_color(d.value)
+                    else:
+                        # Use default viridis colormap if none set
+                        import matplotlib.pyplot as plt
+                        default_colormap = DataColorMap(plt.cm.viridis)
+                        default_colormap.add_value(d.value)
+                        color = default_colormap.get_color(d.value)
+                    
+                    # Add color to feature properties
+                    target_feature["properties"]["_color"] = color
+                    target_feature["properties"]["_value"] = d.value
+                    
+                    # Create a FeatureCollection with the single feature
+                    data_geojson = {
+                        "type": "FeatureCollection",
+                        "features": [target_feature]
+                    }
+                    
+                    data_serialized.append({
+                        "gadm": d.gadm,
+                        "value": d.value,
+                        "geometry": data_geojson,
+                        "classes": d.classes,
+                        "period": list(restricted_period) if restricted_period is not None else None,
+                        "color": color,
+                    })
+                except Exception as e:
+                    # Skip data elements that can't be loaded
+                    print(f"Warning: Could not load data element for {d.gadm}: {e}")
+                    continue
+
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -835,6 +1037,7 @@ class FlagMap:
             "title_boxes": title_boxes_serialized,
             "admins": admins_serialized,
             "admin_rivers": admin_rivers_serialized,
+            "data": data_serialized,
             "base_options": base_options_serialized,
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,
