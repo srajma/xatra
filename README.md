@@ -32,7 +32,7 @@ Development
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [x] xatra.Data
-- [ ] xatra.Flag color groups
+- [x] xatra.Flag color groups -- just declare 
 - [ ] xatra.Dataframe
 - [x] do we need to redraw everything each frame?
 - [ ] possibly calculate and keep simplified geometries
@@ -45,7 +45,9 @@ Interactive platform
 
 # Xatra: The Matplotlib of Maps
 
-Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever. Here's a minimal example:
+Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever.
+
+## Example: Historical map
 
 ```python
 import xatra
@@ -66,7 +68,10 @@ map.Text(label="Jambudvipa", position=[22,79])
 map.TitleBox("<b>Sample historical map of India</b><br>Classical period, source: Majumdar.")
 map.show()
 ```
-and here's a more complex example, of a dynamic map (items can have periods so they only show up at certain time periods), with base tile layers, notes that show up in tooltips, and custom CSS for each object:
+
+## Example: A map with everything
+
+And here's a more complex example, of a dynamic map (items can have periods so they only show up at certain time periods), with base tile layers, notes that show up in tooltips, and custom CSS for each object:
 
 ```python
 import xatra
@@ -83,19 +88,19 @@ map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], n
 map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
-map.Data("IND", 100, period=[-320, -180], classes="maurya-population")  # some data
-map.Data("IND", 150, period=[250, 500], classes="gupta-population")     # some data
-map.Data("IND.31", 75, classes="chola-data")  # Chola region data
-map.Admin(gadm="IND.31", level=3, classes="chola-tehsils", note="Chola administrative divisions")
+map.Data("IND", 100, period=[-320, -180])  # some data
+map.Data("IND", 150, period=[250, 500])     # some data
+map.Data("IND.31", 75,)  # Chola region data
+map.Admin(gadm="IND.31", level=3)
 map.AdminRivers(sources=["naturalearth", "overpass"], classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
-map.River(label="Ganga", value=naturalearth("1159122643"), period=[0, 600], note="Modern course of Ganga", classes="modern-river")
+map.River(label="Ganga", value=naturalearth("1159122643"), period=[0, 600], note="Modern course of Ganga")
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttarapatha-path")
-map.Path(label="Silk Road", value=[[35.0, 75.0], [40.0, 80.0], [45.0, 85.0]], period=[-200, 600], classes="silk-road")
+map.Path(label="Silk Road", value=[[35.0, 75.0], [40.0, 80.0], [45.0, 85.0]], period=[-200, 600])
 map.Point(label="Indraprastha", position=[28,77])
 map.Point(label="Delhi", position=[28.6, 77.2], period=[400, 800])
 map.Text(label="Jambudvipa", position=[22,79], classes="jambudvipa-text")
-map.Text(label="Aryavarta", position=[22,79], classes="aryavarta-text", period=[0, 600])
+map.Text(label="Aryavarta", position=[22,79], period=[0, 600])
 map.TitleBox("<b>Map of major Indian empires</b><br>Classical period, source: Majumdar.")
 map.TitleBox("<h2>Ancient Period (-500 to 0)</h2><p>This title appears only in ancient times</p>", period=[-500, 0])
 map.TitleBox("<h2>Classical Period (-100 to 400)</h2><p>This title appears only in classical times</p>", period=[-100, 400])
@@ -120,6 +125,57 @@ map.CSS("""
 
 map.show()
 ```
+
+## Example: Administrative map
+
+Here's a taluk-level administrative map of the Indian subcontinent
+
+```python
+import xatra
+
+# Create a test map
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldImagery")
+map.BaseOption("OpenTopoMap")
+map.BaseOption("Esri.WorldPhysical")
+map.Admin(gadm="IND", level=3)
+map.Admin(gadm="PAK", level=3) # level-3 GADM divisions in Pak are more like districts, but we don't have finer data
+map.Admin(gadm="BGD", level=3)
+map.Admin(gadm="AFG", level=2) # level-2 is the best we have for Afghanistan
+map.Admin(gadm="NPL", level=3) # level-3 GADM divisions in Nepal are more like districts, but level-4 is WAY too fine
+map.Admin(gadm="BTN", level=2) # level-2 is the best we have for Bhutan, and they're like taluks anyway
+map.Admin(gadm="LKA", level=2) # level-2 is the best we have for Lanka, and they're like taluks anyway
+map.AdminRivers(sources=["naturalearth", "overpass"])
+map.TitleBox("<b>Taluk-level map of the Indian subcontinent.")
+map.show()
+```
+
+## Example: Data map
+
+And here's a data map:
+
+```python
+import xatra
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldImagery")
+map.BaseOption("OpenTopoMap")
+map.BaseOption("Esri.WorldPhysical")
+map.Data(gadm = "IND.12", value=100)
+map.Data(gadm = "IND.12", value=100)
+map.Data(gadm = "IND.21", value=300, period=[0, 600])
+map.Data(gadm = "IND.22", value=300, period=[0, 600])
+map.Data(gadm = "IND.21", value=1000, period=[600, 700])
+map.Data(gadm = "IND.22", value=1000, period=[600, 800])
+map.TitleBox("Some random data.")
+
+map.show()
+```
+## Tip on coloring historical maps well
+
+Successive Flags you define are assigned colors based on the map's `FlagColorSequence`.
 
 ## API Reference
 
