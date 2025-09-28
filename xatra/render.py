@@ -36,6 +36,7 @@ HTML_TEMPLATE = Template(
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
       #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #colormap { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
       #layer-selector select { margin-left: 8px; }
       .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
@@ -57,6 +58,7 @@ HTML_TEMPLATE = Template(
       <label for="baseLayer">Base Layer:</label>
       <select id="baseLayer"></select>
     </div>
+    <div id="colormap"></div>
     <div id="controls"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1154,6 +1156,15 @@ HTML_TEMPLATE = Template(
         }
       }
 
+      function setupColormap() {
+        const colormapDiv = document.getElementById('colormap');
+        if (payload.colormap_svg) {
+          colormapDiv.innerHTML = '<div style="font-size: 12px; margin-bottom: 4px; font-weight: bold;">Color Scale</div>' + payload.colormap_svg;
+        } else {
+          colormapDiv.style.display = 'none';
+        }
+      }
+
       if (payload.flags.mode === 'static') {
         renderStatic();
         renderRivers();
@@ -1174,6 +1185,7 @@ HTML_TEMPLATE = Template(
       }
       setupLayerSelector();
       setupControls();
+      setupColormap();
     </script>
   </body>
   </html>

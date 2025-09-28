@@ -257,6 +257,56 @@ class DataColorMap:
         return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, height: int = 20) -> str:
+    """Generate an SVG color bar for a colormap.
+    
+    Args:
+        colormap: matplotlib ColorMap object
+        vmin: Minimum value for the color bar
+        vmax: Maximum value for the color bar
+        width: Width of the color bar in pixels
+        height: Height of the color bar in pixels
+        
+    Returns:
+        SVG string for the color bar
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import io
+    
+    # Create a figure with just the color bar
+    fig, ax = plt.subplots(figsize=(width/100, height/100))
+    fig.patch.set_facecolor('white')
+    
+    # Create a gradient
+    gradient = np.linspace(0, 1, width)
+    gradient = np.vstack((gradient, gradient))
+    
+    # Display the gradient
+    ax.imshow(gradient, aspect='auto', cmap=colormap, extent=[vmin, vmax, 0, 1])
+    ax.set_xlim(vmin, vmax)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel('Value')
+    ax.set_ylabel('')
+    ax.set_yticks([])
+    
+    # Remove borders
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    
+    # Save to SVG string
+    svg_buffer = io.StringIO()
+    plt.savefig(svg_buffer, format='svg', bbox_inches='tight', pad_inches=0.1)
+    plt.close(fig)
+    
+    svg_content = svg_buffer.getvalue()
+    svg_buffer.close()
+    
+    return svg_content
+
+
 class FlagMap:
     """Main class for creating interactive historical maps.
     
@@ -327,26 +377,31 @@ class FlagMap:
         """
         self._admin_color_sequence = color_sequence
 
-    def DataColorMap(self, colormap, vmin: Optional[float] = None, vmax: Optional[float] = None) -> None:
+    def DataColorMap(self, colormap=None, vmin: Optional[float] = None, vmax: Optional[float] = None) -> None:
         """Set the color map for data elements.
         
         Args:
-            colormap: matplotlib ColorMap object (e.g., plt.cm.viridis, plt.cm.Reds)
+            colormap: matplotlib ColorMap object (e.g., plt.cm.viridis, plt.cm.Reds).
+                     If None, uses default yellow-orange-red colormap.
             vmin: Minimum value for normalization (default: None, auto-detect)
             vmax: Maximum value for normalization (default: None, auto-detect)
             
         Example:
             >>> import matplotlib.pyplot as plt
+            >>> map.DataColorMap()  # Uses default yellow-orange-red colormap
             >>> map.DataColorMap(plt.cm.viridis)
             >>> map.DataColorMap(plt.cm.Reds, vmin=0, vmax=100)
         """
+        if colormap is None:
+            from matplotlib.colors import LinearSegmentedColormap
+            colormap = LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"])
         self._data_colormap = DataColorMap(colormap, vmin, vmax)
 
     def Data(self, gadm: str, value: float, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
         """Add a data element to the map.
         
         Data elements are colored based on their numeric values using the map's data colormap.
-        If no colormap is set, a default viridis colormap will be used.
+        If no colormap is set, a default yellow-orange-red colormap will be used.
         
         Args:
             gadm: GADM key (e.g., "IND.31" for Tamil Nadu)
@@ -364,9 +419,13 @@ class FlagMap:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
         
+        # Create default colormap if none exists
+        if self._data_colormap is None:
+            from matplotlib.colors import LinearSegmentedColormap
+            self._data_colormap = DataColorMap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+        
         # Add value to colormap for auto-detection of vmin/vmax
-        if self._data_colormap is not None:
-            self._data_colormap.add_value(value)
+        self._data_colormap.add_value(value)
         
         self._data.append(DataEntry(gadm=gadm, value=value, period=period_tuple, classes=classes))
 
@@ -1018,9 +1077,9 @@ class FlagMap:
                     if self._data_colormap is not None:
                         color = self._data_colormap.get_color(data_element["value"])
                     else:
-                        # Use default viridis colormap if none set
-                        import matplotlib.pyplot as plt
-                        default_colormap = DataColorMap(plt.cm.viridis)
+                        # Use default yellow-orange-red colormap if none set
+                        from matplotlib.colors import LinearSegmentedColormap
+                        default_colormap = DataColorMap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
                         default_colormap.add_value(data_element["value"])
                         color = default_colormap.get_color(data_element["value"])
                     
@@ -1053,6 +1112,24 @@ class FlagMap:
                 print(f"Warning: Could not load data element for {gadm}: {e}")
                 continue
 
+        # Generate color bar if data elements exist
+        colormap_svg = None
+        if data_serialized and self._data_colormap is not None:
+            # Get the actual vmin/vmax from the colormap
+            vmin = self._data_colormap.vmin
+            vmax = self._data_colormap.vmax
+            
+            # If vmin/vmax are None, calculate from values
+            if vmin is None or vmax is None:
+                all_values = [d["value"] for d in data_serialized]
+                vmin = vmin if vmin is not None else min(all_values)
+                vmax = vmax if vmax is not None else max(all_values)
+            
+            try:
+                colormap_svg = generate_colormap_svg(self._data_colormap.colormap, vmin, vmax)
+            except Exception as e:
+                print(f"Warning: Could not generate color bar: {e}")
+
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -1067,6 +1144,7 @@ class FlagMap:
             "base_options": base_options_serialized,
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,
+            "colormap_svg": colormap_svg,
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
