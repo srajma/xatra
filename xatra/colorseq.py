@@ -6,8 +6,29 @@ import matplotlib.pyplot as plt
 GOLDEN_RATIO = (1 + 5**0.5) / 2 # in HSL space
 
 class Color:
+    
+    COLOR_NAMES = {
+        "red": (0, 1, 0.5),
+        "green": (120 / 360, 1, 0.5),
+        "blue": (240 / 360, 1, 0.5),
+        "yellow": (60 / 360, 1, 0.5),
+        "purple": (300 / 360, 1, 0.5),
+        "orange": (30 / 360, 1, 0.5),
+        "brown": (30 / 360, 0.5, 0.5),
+        "gray": (0 / 360, 0, 0.5),
+        "black": (0 / 360, 0, 0),
+        "white": (0 / 360, 0, 1),
+        "pink": (320 / 360, 1, 0.5),
+        "cyan": (180 / 360, 1, 0.5),
+        "magenta": (300 / 360, 1, 0.5),
+        "lime": (120 / 360, 1, 0.5),
+        "teal": (180 / 360, 1, 0.5),
+        "indigo": (240 / 360, 1, 0.5),
+        "violet": (300 / 360, 1, 0.5),
+    }
+
     def __init__(self, h: float, s: float, l: float):
-        self.hsl = (h, s, l)
+        print(h, s, l)
         self.rgb = colorsys.hls_to_rgb(h, s, l)
         self.hex = Color.rgb_to_hex(self.rgb)
     
@@ -22,6 +43,10 @@ class Color:
     @classmethod
     def hex(cls, hex: str):
         return cls.rgb(*Color.hex_to_rgb(hex))
+
+    @classmethod
+    def named(cls, name: str):
+        return cls(*Color.COLOR_NAMES[name])
     
     def __str__(self):
         return self.hex

@@ -32,6 +32,7 @@ Development
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [x] xatra.Data
+- [ ] xatra.Flag color groups
 - [ ] xatra.Dataframe
 - [x] do we need to redraw everything each frame?
 - [ ] possibly calculate and keep simplified geometries

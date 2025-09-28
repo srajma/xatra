@@ -16,5 +16,5 @@ __pycache__/
 *.pyzwz
 
 # temp
-map.json
-map.html
+map*.json
+map*.html
