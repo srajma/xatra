@@ -36,7 +36,7 @@ HTML_TEMPLATE = Template(
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
       #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
-      #colormap { position: fixed; bottom: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #colormap { position: fixed; top: 80px; right: 20px; background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
       #layer-selector select { margin-left: 8px; }
       .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
@@ -557,9 +557,26 @@ HTML_TEMPLATE = Template(
               const props = feature.properties || {};
               
               let tooltip = '';
-              if (props.COUNTRY) tooltip += `<b>${props.COUNTRY}</b><br/>`;
+              let topName = '';
+              if (props.NAME_3) topName = props.NAME_3;
+              else if (props.NAME_2) topName = props.NAME_2;
+              else if (props.NAME_1) topName = props.NAME_1;
+              else if (props.COUNTRY) topName = props.COUNTRY;
+              
+              if (topName) tooltip += `<b>${topName}</b><br/>`;
+              
+              if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+              if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+              if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+              if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+              if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+              if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+              if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+              if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+              if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+              if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
               if (props._value !== undefined) tooltip += `Value: ${props._value}<br/>`;
-              if (d.gadm) tooltip += `GADM: ${d.gadm}<br/>`;
               
               if (tooltip.endsWith('<br/>')) {
                 tooltip = tooltip.slice(0, -5);
@@ -928,9 +945,26 @@ HTML_TEMPLATE = Template(
               const props = feature.properties || {};
               
               let tooltip = '';
-              if (props.COUNTRY) tooltip += `<b>${props.COUNTRY}</b><br/>`;
+              let topName = '';
+              if (props.NAME_3) topName = props.NAME_3;
+              else if (props.NAME_2) topName = props.NAME_2;
+              else if (props.NAME_1) topName = props.NAME_1;
+              else if (props.COUNTRY) topName = props.COUNTRY;
+              
+              if (topName) tooltip += `<b>${topName}</b><br/>`;
+              
+              if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+              if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+              if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+              if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+              if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+              if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+              if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+              if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+              if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+              if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
               if (props._value !== undefined) tooltip += `Value: ${props._value}<br/>`;
-              if (d.gadm) tooltip += `GADM: ${d.gadm}<br/>`;
               
               if (tooltip.endsWith('<br/>')) {
                 tooltip = tooltip.slice(0, -5);
@@ -1159,7 +1193,7 @@ HTML_TEMPLATE = Template(
       function setupColormap() {
         const colormapDiv = document.getElementById('colormap');
         if (payload.colormap_svg) {
-          colormapDiv.innerHTML = '<div style="font-size: 12px; margin-bottom: 4px; font-weight: bold;">Color Scale</div>' + payload.colormap_svg;
+          colormapDiv.innerHTML = payload.colormap_svg;
         } else {
           colormapDiv.style.display = 'none';
         }

@@ -21,9 +21,9 @@ Bugfixes
 - [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
 - [ ] disputed areas for Admin -- compare code to Flags
 - [x] Mark map as dynamic if any element as period
-- [ ] why country name appears on Data tooltip?
-- [ ] default color scheme
-- [ ] add color map in html
+- [x] why country name appears on Data tooltip?
+- [x] default color scheme
+- [x] add color map in html
 - [ ] rename ColorMap to Colormap
 - [ ] efficiency and documentation
 

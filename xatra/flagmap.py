@@ -286,9 +286,11 @@ def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, 
     ax.imshow(gradient, aspect='auto', cmap=colormap, extent=[vmin, vmax, 0, 1])
     ax.set_xlim(vmin, vmax)
     ax.set_ylim(0, 1)
-    ax.set_xlabel('Value')
+    ax.set_xlabel('')
     ax.set_ylabel('')
     ax.set_yticks([])
+    ax.set_xticks([vmin, vmax])
+    ax.set_xticklabels([str(vmin), str(vmax)])
     
     # Remove borders
     ax.spines['top'].set_visible(False)
