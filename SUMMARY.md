@@ -13,7 +13,7 @@ A "matplotlib of maps" called `xatra` that creates interactive historical maps w
 
 ### Key Methods
 ```python
-map.Flag(label, territory, period=None, note=None)
+map.Flag(label, territory, period=None, note=None, color=None, classes=None)
 map.Data(gadm, value, period=None, classes=None)
 map.Admin(gadm, level, period=None, classes=None, color_by_level=1)
 map.AdminRivers(period=None, classes=None, sources=None)
@@ -23,7 +23,7 @@ map.Point(label, position, period=None)
 map.Text(label, position, classes=None, period=None)
 map.TitleBox(html, period=None)
 map.BaseOption(url_or_provider, name=None, default=False)
-map.FlagColorSequence(color_sequence)
+map.FlagColorSequence(color_sequence, class_name=None)  # Class-based color sequences
 map.AdminColorSequence(color_sequence)
 map.DataColorMap(colormap, vmin=None, vmax=None)
 map.CSS(css_string)
@@ -93,6 +93,14 @@ map.show(out_json="map.json", out_html="map.html")
 - **Classes**: `classes="custom-class"` parameter for rivers, paths, texts, admins, admin_rivers
 - **CSS**: `map.CSS()` for global styling
 - **Flag labels**: Auto-positioned at centroids, no background boxes
+
+### Class-Based Flag Coloring
+- **Multiple color sequences**: `map.FlagColorSequence(color_sequence, class_name=None)` supports different color sequences per CSS class
+- **Class assignment**: `map.Flag(label, territory, classes="empire")` assigns flags to CSS classes
+- **Color sequence selection**: Flags use the first class that has a color sequence assigned
+- **Fallback behavior**: Flags with unknown classes or no classes use the default color sequence
+- **Label consistency**: Flags with the same label reuse the same color regardless of class
+- **Storage**: `_color_sequences` dictionary and `_flag_indexes` dictionary track sequences and indices per class
 
 ### Dynamic Maps
 - **Time periods**: `period=[-320, -180]` on all object types (flags, admins, admin_rivers, rivers, paths, points, texts, title_boxes)

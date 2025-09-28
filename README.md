@@ -229,7 +229,7 @@ map = FlagMap()
 
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
-- **`Flag(label, territory, period=None, note=None, color=None)`**: Add a flag (country/kingdom)
+- **`Flag(label, territory, period=None, note=None, color=None, classes=None)`**: Add a flag (country/kingdom)
 - **`Data(gadm, value, period=None, classes=None)`**: Add a data element with color mapping
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
@@ -243,7 +243,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 - **`CSS(css)`**: Add custom CSS styles
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
-- **`FlagColorSequence(color_sequence)`**: Set the color sequence for flags
+- **`FlagColorSequence(color_sequence, class_name=None)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
 - **`DataColormap(colormap, vmin=None, vmax=None)`**: Set the color map for data elements
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
@@ -299,6 +299,32 @@ map.Admin(gadm="IND", level=3, color_by_level=1)
 
 # You can also override with custom colors
 map.Flag("Custom Empire", territory3, color="#ff0000")
+```
+
+#### Class-Based Color Sequences
+
+Flags can be assigned to CSS classes for different color sequences. This allows you to group related flags (e.g., by religion, alliance, or historical period) with similar color schemes:
+
+```python
+from xatra.colorseq import RotatingColorSequence, LinearColorSequence
+
+# Set up different color sequences for different classes
+map.FlagColorSequence(LinearColorSequence(), None)  # Default sequence
+map.FlagColorSequence(RotatingColorSequence(), "empire")  # For empires
+map.FlagColorSequence(LinearColorSequence(), "kingdom")  # For kingdoms
+
+# Add flags with different classes
+map.Flag("Maurya", territory1, classes="empire")  # Uses empire colors
+map.Flag("Gupta", territory2, classes="empire")   # Uses empire colors
+map.Flag("Chola", territory3, classes="kingdom")  # Uses kingdom colors
+map.Flag("Pandya", territory4, classes="kingdom") # Uses kingdom colors
+map.Flag("Generic", territory5)  # Uses default colors (no classes)
+
+# Flags with multiple classes use the first matching class
+map.Flag("Mixed", territory6, classes="kingdom empire")  # Uses kingdom colors
+
+# Flags with unknown classes fall back to default
+map.Flag("Unknown", territory7, classes="unknown-class")  # Uses default colors
 ```
 
 Flag labels automatically use a darker, more opaque version of the flag color for better readability.
