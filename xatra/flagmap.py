@@ -188,14 +188,14 @@ class DataEntry:
     classes: Optional[str] = None
 
 
-class DataColorMap:
-    """Handles color mapping for data elements using matplotlib ColorMap objects.
+class DataColormap:
+    """Handles color mapping for data elements using matplotlib Colormap objects.
     
-    This class wraps matplotlib ColorMap objects to provide color mapping functionality
+    This class wraps matplotlib Colormap objects to provide color mapping functionality
     for data elements based on their numeric values.
     
     Args:
-        colormap: matplotlib ColorMap object (e.g., plt.cm.viridis, plt.cm.Reds)
+        colormap: matplotlib Colormap object (e.g., plt.cm.viridis, plt.cm.Reds)
         vmin: Minimum value for normalization (default: None, auto-detect)
         vmax: Maximum value for normalization (default: None, auto-detect)
     """
@@ -261,7 +261,7 @@ def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, 
     """Generate an SVG color bar for a colormap.
     
     Args:
-        colormap: matplotlib ColorMap object
+        colormap: matplotlib Colormap object
         vmin: Minimum value for the color bar
         vmax: Maximum value for the color bar
         width: Width of the color bar in pixels
@@ -349,7 +349,7 @@ class FlagMap:
         self._admin_color_sequence: ColorSequence = LinearColorSequence()
         self._admin_index: int = 0
         self._admin_colors: Dict[str, str] = {}  # Track colors by admin grouping key
-        self._data_colormap: Optional[DataColorMap] = None
+        self._data_colormap: Optional[DataColormap] = None
         
         # Add default base options
         self._add_default_base_options()
@@ -379,25 +379,25 @@ class FlagMap:
         """
         self._admin_color_sequence = color_sequence
 
-    def DataColorMap(self, colormap=None, vmin: Optional[float] = None, vmax: Optional[float] = None) -> None:
+    def DataColormap(self, colormap=None, vmin: Optional[float] = None, vmax: Optional[float] = None) -> None:
         """Set the color map for data elements.
         
         Args:
-            colormap: matplotlib ColorMap object (e.g., plt.cm.viridis, plt.cm.Reds).
+            colormap: matplotlib Colormap object (e.g., plt.cm.viridis, plt.cm.Reds).
                      If None, uses default yellow-orange-red colormap.
             vmin: Minimum value for normalization (default: None, auto-detect)
             vmax: Maximum value for normalization (default: None, auto-detect)
             
         Example:
             >>> import matplotlib.pyplot as plt
-            >>> map.DataColorMap()  # Uses default yellow-orange-red colormap
-            >>> map.DataColorMap(plt.cm.viridis)
-            >>> map.DataColorMap(plt.cm.Reds, vmin=0, vmax=100)
+            >>> map.DataColormap()  # Uses default yellow-orange-red colormap
+            >>> map.DataColormap(plt.cm.viridis)
+            >>> map.DataColormap(plt.cm.Reds, vmin=0, vmax=100)
         """
         if colormap is None:
             from matplotlib.colors import LinearSegmentedColormap
             colormap = LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"])
-        self._data_colormap = DataColorMap(colormap, vmin, vmax)
+        self._data_colormap = DataColormap(colormap, vmin, vmax)
 
     def Data(self, gadm: str, value: float, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
         """Add a data element to the map.
@@ -424,7 +424,7 @@ class FlagMap:
         # Create default colormap if none exists
         if self._data_colormap is None:
             from matplotlib.colors import LinearSegmentedColormap
-            self._data_colormap = DataColorMap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+            self._data_colormap = DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
         
         # Add value to colormap for auto-detection of vmin/vmax
         self._data_colormap.add_value(value)
@@ -1093,7 +1093,7 @@ class FlagMap:
                         else:
                             # Use default yellow-orange-red colormap if none set
                             from matplotlib.colors import LinearSegmentedColormap
-                            default_colormap = DataColorMap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+                            default_colormap = DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
                             default_colormap.add_value(de["value"])
                             colors.append(default_colormap.get_color(de["value"]))
                     

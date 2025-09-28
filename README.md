@@ -24,7 +24,7 @@ Bugfixes
 - [x] why country name appears on Data tooltip?
 - [x] default color scheme
 - [x] add color map in html
-- [ ] rename ColorMap to Colormap
+- [ ] rename Colormap to Colormap
 - [ ] efficiency and documentation
 
 Development
@@ -151,7 +151,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
 - **`FlagColorSequence(color_sequence)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
-- **`DataColorMap(colormap, vmin=None, vmax=None)`**: Set the color map for data elements
+- **`DataColormap(colormap, vmin=None, vmax=None)`**: Set the color map for data elements
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
@@ -225,7 +225,7 @@ map.Data("IND", 150, period=[100, 200])  # India shows value 150 from 100-200 CE
 
 # Custom colormap
 import matplotlib.pyplot as plt
-map.DataColorMap(plt.cm.viridis, vmin=0, vmax=300)
+map.DataColormap(plt.cm.viridis, vmin=0, vmax=300)
 
 # Subdivision data (state, district, tehsil level)
 map.Data("IND.31", 85.5, classes="tamil-nadu-data")  # Tamil Nadu state
@@ -251,21 +251,21 @@ map.Data("IND.31.1", 42.3, classes="chennai-data")   # Chennai district
 **Colormap Configuration:**
 ```python
 # Use default yellow-orange-red colormap
-map.DataColorMap()
+map.DataColormap()
 
 # Use matplotlib colormaps
 import matplotlib.pyplot as plt
-map.DataColorMap(plt.cm.viridis)      # Viridis colormap
-map.DataColorMap(plt.cm.Reds)         # Red colormap
-map.DataColorMap(plt.cm.Blues)        # Blue colormap
+map.DataColormap(plt.cm.viridis)      # Viridis colormap
+map.DataColormap(plt.cm.Reds)         # Red colormap
+map.DataColormap(plt.cm.Blues)        # Blue colormap
 
 # Custom colormap with specific value range
-map.DataColorMap(plt.cm.viridis, vmin=0, vmax=100)
+map.DataColormap(plt.cm.viridis, vmin=0, vmax=100)
 
 # Custom colormap from color list
 from matplotlib.colors import LinearSegmentedColormap
 custom_cmap = LinearSegmentedColormap.from_list("custom", ["#000000", "#ffffff"])
-map.DataColorMap(custom_cmap)
+map.DataColormap(custom_cmap)
 ```
 
 **Tooltip Information:**
