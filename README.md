@@ -20,7 +20,7 @@ Bugfixes
 - [x] xatra.Data issue with colors of data in dynamic maps and exact range
 - [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
 - [ ] disputed areas for Admin -- compare code to Flags
-- [ ] Data period doesn't seem to affect slider etc.
+- [x] Mark map as dynamic if any element as period
 - [ ] add color map in html
 - [ ] rename ColorMap to Colormap
 - [ ] efficiency and documentation

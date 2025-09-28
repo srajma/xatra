@@ -754,8 +754,30 @@ class FlagMap:
                 if earliest_start is None or d.period[0] < earliest_start:
                     earliest_start = d.period[0]
 
+        # Check if any object type has periods to determine if map is dynamic
+        has_periods = (
+            any(f.get("period") is not None for f in flags_serialized) or
+            any(r.period is not None for r in self._rivers) or
+            any(p.period is not None for p in self._paths) or
+            any(p.period is not None for p in self._points) or
+            any(t.period is not None for t in self._texts) or
+            any(tb.period is not None for tb in self._title_boxes) or
+            any(a.period is not None for a in self._admins) or
+            any(ar.period is not None for ar in self._admin_rivers) or
+            any(d.period is not None for d in self._data)
+        )
+
         # Pax-max aggregation
         pax = paxmax_aggregate(flags_serialized, earliest_start)
+        
+        # Override mode if any non-flag objects have periods
+        if has_periods and pax.get("mode") == "static":
+            # Convert static flags to dynamic format
+            pax = {
+                "mode": "dynamic",
+                "breakpoints": [earliest_start] if earliest_start is not None else [],
+                "snapshots": [{"year": earliest_start, "flags": pax.get("flags", [])}] if earliest_start is not None else []
+            }
 
         rivers_serialized = []
         for r in self._rivers:
