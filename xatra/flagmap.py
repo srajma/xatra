@@ -979,41 +979,18 @@ class FlagMap:
         
         # Now process each GADM group
         for gadm, data_elements in data_by_gadm.items():
-            # Load GADM data for this region
-            from .loaders import _read_json
-            import os
+            # Load GADM data for this region using the same logic as load_gadm_like
+            from .loaders import load_gadm_like
             try:
-                # Load the appropriate level file directly
-                parts = gadm.split('.')
-                iso3 = parts[0]
-                gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
-                level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_0.json")  # Use level 0 for data elements
+                # Use load_gadm_like to get the appropriate features with boundary-aware matching
+                gadm_geojson = load_gadm_like(gadm)
                 
-                if not os.path.exists(level_file_path):
-                    print(f"Warning: GADM file not found: {level_file_path}")
+                if not gadm_geojson.get("features"):
+                    print(f"Warning: No GADM features found for: {gadm}")
                     continue
                 
-                level_file = _read_json(level_file_path)
-                
-                # Find the feature that matches the gadm_key
-                target_feature = None
-                for feature in level_file.get("features", []):
-                    props = feature.get("properties", {}) or {}
-                    gid = str(props.get("GID_0", ""))
-                    if gid == gadm:
-                        target_feature = feature
-                        break
-                
-                if target_feature is None:
-                    print(f"Warning: GADM region not found: {gadm}")
-                    continue
-                
-                # Create a copy of the feature for each data element
+                # Process each data element for this GADM region
                 for data_element in data_elements:
-                    # Create a deep copy of the feature
-                    import copy
-                    feature_copy = copy.deepcopy(target_feature)
-                    
                     # Get color from colormap
                     color = "#cccccc"  # Default color
                     if self._data_colormap is not None:
@@ -1025,14 +1002,20 @@ class FlagMap:
                         default_colormap.add_value(data_element["value"])
                         color = default_colormap.get_color(data_element["value"])
                     
-                    # Add color and value to feature properties
-                    feature_copy["properties"]["_color"] = color
-                    feature_copy["properties"]["_value"] = data_element["value"]
+                    # Create a copy of the GADM features and add color/value properties
+                    import copy
+                    features_with_data = []
+                    for feature in gadm_geojson.get("features", []):
+                        feature_copy = copy.deepcopy(feature)
+                        # Add color and value to feature properties
+                        feature_copy["properties"]["_color"] = color
+                        feature_copy["properties"]["_value"] = data_element["value"]
+                        features_with_data.append(feature_copy)
                     
-                    # Create a FeatureCollection with the single feature
+                    # Create a FeatureCollection with the features
                     data_geojson = {
                         "type": "FeatureCollection",
-                        "features": [feature_copy]
+                        "features": features_with_data
                     }
                     
                     data_serialized.append({
