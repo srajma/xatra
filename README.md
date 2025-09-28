@@ -78,7 +78,6 @@ import xatra
 from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTHERN_INDIA
 
-# Create a test map
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
@@ -133,7 +132,6 @@ Here's a taluk-level administrative map of the Indian subcontinent
 ```python
 import xatra
 
-# Create a test map
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
@@ -183,7 +181,36 @@ map.FlagColorSequence(LinearColorSequence(colors=[<random>], step = Color.hsl(GO
 
 This is [best for making nearby colors as contrasting as possible](https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/) -- so as a general tip: place nearby flags near each other.
 
-Sometimes you want to group some flags to be "similarly-colored" -- e.g. nations allied with each other, or belonging to the same religion. You can do this by 
+Sometimes you want to group some flags to be "similarly-colored" -- e.g. nations allied with each other, or belonging to the same religion. You can do this by assigning different color sequences to different groups, and using a smaller step size for each group's color sequence:
+
+```python
+#!/usr/bin/env python3
+
+import xatra
+from xatra.loaders import gadm, naturalearth
+from xatra.territory_library import NORTHERN_INDIA
+from xatra.colorseq import LinearColorSequence, Color
+from matplotlib.colors import LinearSegmentedColormap
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldImagery")
+map.BaseOption("OpenTopoMap")
+map.BaseOption("Esri.WorldPhysical")
+
+map.FlagColorSequence(LinearColorSequence(colors=[Color.hex("#ff0000")], step=Color.hsl(0.03, 0.0, 0.0)), class_name="hindu")
+map.FlagColorSequence(LinearColorSequence(colors=[Color.hex("#00ff00")], step=Color.hsl(0.03, 0.0, 0.0)), class_name="muslim")
+
+map.Flag(label="Vijayanagara", value=gadm("IND.16") | gadm("IND.2") | gadm("IND.32") | gadm("IND.31") | gadm("IND.17"), classes="hindu")
+map.Flag(label="Yadava", value=gadm("IND.20"), classes="hindu")
+map.Flag(label="Rajput", value=gadm("IND.29"), classes="hindu")
+map.Flag(label="Mughal", value=gadm("IND.25") | gadm("IND.12") | gadm("IND.34"), classes="muslim")
+map.Flag(label="Ahmedabad", value=gadm("IND.11"), classes="muslim")
+map.Flag(label="Bhopal", value=gadm("IND.19"), classes="muslim")
+map.Flag(label="Gajapati", value=gadm("IND.26"), classes="hindu")
+
+map.show(out_json="map_colorgroups.json", out_html="map_colorgroups.html")
+```
 
 
 ## API Reference

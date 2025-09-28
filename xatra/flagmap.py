@@ -35,12 +35,14 @@ class FlagEntry:
         period: Optional time period as (start_year, end_year) tuple
         note: Optional tooltip text for the flag
         color: Optional color for the flag (overrides color sequence)
+        classes: Optional CSS classes for styling and color sequence assignment
     """
     label: str
     territory: Territory
     period: Optional[Tuple[int, int]] = None
     note: Optional[str] = None
     color: Optional[str] = None
+    classes: Optional[str] = None
 
 
 @dataclass
@@ -343,8 +345,8 @@ class FlagMap:
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
         self._play_speed: int = 200  # Default play speed in milliseconds (5 years/second)
-        self._color_sequence: ColorSequence = LinearColorSequence()
-        self._flag_index: int = 0
+        self._color_sequences: Dict[Optional[str], ColorSequence] = {None: LinearColorSequence()}
+        self._flag_indexes: Dict[Optional[str], int] = {None: 0}
         self._label_colors: Dict[str, str] = {}  # Track colors by label
         self._admin_color_sequence: ColorSequence = LinearColorSequence()
         self._admin_index: int = 0
@@ -355,18 +357,21 @@ class FlagMap:
         self._add_default_base_options()
 
     # API methods
-    def FlagColorSequence(self, color_sequence: ColorSequence) -> None:
+    def FlagColorSequence(self, color_sequence: ColorSequence, class_name: Optional[str] = None) -> None:
         """Set the color sequence for flags.
         
         Args:
             color_sequence: ColorSequence instance to use for flag colors
+            class_name: Optional CSS class name to assign this color sequence to.
+                       If None, assigns to the default color sequence for flags without classes.
             
         Example:
             >>> from xatra.colorseq import RotatingColorSequence
-            >>> map.FlagColorSequence(RotatingColorSequence())
+            >>> map.FlagColorSequence(RotatingColorSequence())  # Default sequence
+            >>> map.FlagColorSequence(RotatingColorSequence(), "empire")  # For flags with class "empire"
         """
-        self._color_sequence = color_sequence
-        self._flag_index = 0 # reset index every time we set a new color sequence
+        self._color_sequences[class_name] = color_sequence
+        self._flag_indexes[class_name] = 0  # reset index every time we set a new color sequence
 
     def AdminColorSequence(self, color_sequence: ColorSequence) -> None:
         """Set the color sequence for admin regions.
@@ -432,11 +437,12 @@ class FlagMap:
         
         self._data.append(DataEntry(gadm=gadm, value=value, period=period_tuple, classes=classes))
 
-    def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None) -> None:
+    def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
         Flags automatically get colors from the map's color sequence. Flags with the same label
         will always use the same color. You can override this behavior by providing a custom color.
+        Flags can be assigned to CSS classes for different color sequences.
         
         Args:
             label: Display name for the flag
@@ -444,11 +450,13 @@ class FlagMap:
             period: Optional time period as [start_year, end_year] list
             note: Optional tooltip text for the flag
             color: Optional color for the flag (overrides color sequence) in hex code
+            classes: Optional CSS classes for styling and color sequence assignment
             
         Example:
             >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
             >>> map.Flag("Maurya", other_territory)  # Reuses the same color as above
             >>> map.Flag("Custom", territory, color="#ff0000")  # Custom red color
+            >>> map.Flag("Empire", territory, classes="empire")  # Uses empire color sequence
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -466,13 +474,23 @@ class FlagMap:
                 # Reuse existing color for this label
                 color = self._label_colors[label]
             else:
-                # Assign new color from sequence and store it for this label
-                assigned_color = self._color_sequence[self._flag_index]
+                # Determine which color sequence to use based on classes
+                color_sequence_class = None
+                if classes:
+                    # Extract first class that has a color sequence assigned
+                    class_list = classes.split()
+                    for cls in class_list:
+                        if cls in self._color_sequences:
+                            color_sequence_class = cls
+                            break
+                
+                # Use the determined class (or None for default)
+                assigned_color = self._color_sequences[color_sequence_class][self._flag_indexes[color_sequence_class]]
                 color = assigned_color.hex
                 self._label_colors[label] = color
-                self._flag_index += 1
+                self._flag_indexes[color_sequence_class] += 1
         
-        self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color))
+        self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color, classes=classes))
 
     def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         """Add a river to the map.
