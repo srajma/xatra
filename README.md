@@ -175,7 +175,16 @@ map.show()
 ```
 ## Tip on coloring historical maps well
 
-Successive Flags you define are assigned colors based on the map's `FlagColorSequence`.
+Successive Flags you define are assigned colors based on the map's `FlagColorSequence`, which is a class that determines how the next color is calculated. The default color sequence increments successive colors' hues by the conjugate golden ratio of the hue spectrum (taken from 0 to 1, so 0 is red, 1/3 is green, 2/3 is blue and 1 is red again) mod 1:
+
+```python
+map.FlagColorSequence(LinearColorSequence(colors=[<random>], step = Color.hsl(GOLDEN_RATIO, 0.0, 0.0)))
+```
+
+This is [best for making nearby colors as contrasting as possible](https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/) -- so as a general tip: place nearby flags near each other.
+
+Sometimes you want to group some flags to be "similarly-colored" -- e.g. nations allied with each other, or belonging to the same religion. You can do this by 
+
 
 ## API Reference
 
