@@ -544,7 +544,8 @@ HTML_TEMPLATE = Template(
           const layer = L.geoJSON(d.geometry, {
             style: function(feature) {
               const props = feature.properties || {};
-              const color = props._color || d.color || '#cccccc';
+              const dataIndex = d.data_index || 0;
+              const color = (props._data_colors && props._data_colors[dataIndex]) || d.color || '#cccccc';
               return {
                 className: className,
                 fillColor: color,
@@ -555,6 +556,7 @@ HTML_TEMPLATE = Template(
             },
             onEachFeature: function(feature, layer) {
               const props = feature.properties || {};
+              const dataIndex = d.data_index || 0;
               
               let tooltip = '';
               let topName = '';
@@ -576,7 +578,10 @@ HTML_TEMPLATE = Template(
               if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
               if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
               if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
-              if (props._value !== undefined) tooltip += `Value: ${props._value}<br/>`;
+              
+              // Get the specific value for this data element
+              const value = (props._data_values && props._data_values[dataIndex]) || d.value;
+              if (value !== undefined) tooltip += `Value: ${value}<br/>`;
               
               if (tooltip.endsWith('<br/>')) {
                 tooltip = tooltip.slice(0, -5);
@@ -932,7 +937,8 @@ HTML_TEMPLATE = Template(
           const layer = L.geoJSON(d.geometry, {
             style: function(feature) {
               const props = feature.properties || {};
-              const color = props._color || d.color || '#cccccc';
+              const dataIndex = d.data_index || 0;
+              const color = (props._data_colors && props._data_colors[dataIndex]) || d.color || '#cccccc';
               return {
                 className: className,
                 fillColor: color,
@@ -943,6 +949,7 @@ HTML_TEMPLATE = Template(
             },
             onEachFeature: function(feature, layer) {
               const props = feature.properties || {};
+              const dataIndex = d.data_index || 0;
               
               let tooltip = '';
               let topName = '';
@@ -964,7 +971,10 @@ HTML_TEMPLATE = Template(
               if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
               if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
               if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
-              if (props._value !== undefined) tooltip += `Value: ${props._value}<br/>`;
+              
+              // Get the specific value for this data element
+              const value = (props._data_values && props._data_values[dataIndex]) || d.value;
+              if (value !== undefined) tooltip += `Value: ${value}<br/>`;
               
               if (tooltip.endsWith('<br/>')) {
                 tooltip = tooltip.slice(0, -5);

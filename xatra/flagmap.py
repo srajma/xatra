@@ -1043,7 +1043,7 @@ class FlagMap:
                     print(f"Warning: Could not load admin rivers: {e}")
                     continue
 
-        # Serialize data elements - group by GADM and period for proper handling
+        # Serialize data elements - optimized approach
         data_serialized = []
         data_by_gadm = {}  # Group data elements by GADM code
         
@@ -1060,55 +1060,64 @@ class FlagMap:
                     "classes": d.classes,
                 })
         
-        # Now process each GADM group
+        # Process each GADM group efficiently
+        from .loaders import load_gadm_like
+        
         for gadm, data_elements in data_by_gadm.items():
-            # Load GADM data for this region using the same logic as load_gadm_like
-            from .loaders import load_gadm_like
             try:
-                # Use load_gadm_like to get the appropriate features with boundary-aware matching
+                # Load GADM data once per GADM (already cached via _file_cache)
                 gadm_geojson = load_gadm_like(gadm)
                 
                 if not gadm_geojson.get("features"):
                     print(f"Warning: No GADM features found for: {gadm}")
                     continue
                 
-                # Process each data element for this GADM region
-                for data_element in data_elements:
-                    # Get color from colormap
-                    color = "#cccccc"  # Default color
-                    if self._data_colormap is not None:
-                        color = self._data_colormap.get_color(data_element["value"])
-                    else:
-                        # Use default yellow-orange-red colormap if none set
-                        from matplotlib.colors import LinearSegmentedColormap
-                        default_colormap = DataColorMap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
-                        default_colormap.add_value(data_element["value"])
-                        color = default_colormap.get_color(data_element["value"])
+                # Create a single FeatureCollection for this GADM with all data elements
+                # This avoids deep copying the same geometry multiple times
+                features_with_data = []
+                for feature in gadm_geojson.get("features", []):
+                    # Shallow copy the feature (much faster than deep copy)
+                    feature_copy = feature.copy()
+                    feature_copy["properties"] = feature["properties"].copy()
                     
-                    # Create a copy of the GADM features and add color/value properties
-                    import copy
-                    features_with_data = []
-                    for feature in gadm_geojson.get("features", []):
-                        feature_copy = copy.deepcopy(feature)
-                        # Add color and value to feature properties
-                        feature_copy["properties"]["_color"] = color
-                        feature_copy["properties"]["_value"] = data_element["value"]
-                        features_with_data.append(feature_copy)
+                    # Add all data values as properties for this feature
+                    feature_copy["properties"]["_data_values"] = [de["value"] for de in data_elements]
+                    feature_copy["properties"]["_data_periods"] = [de["period"] for de in data_elements]
+                    feature_copy["properties"]["_data_classes"] = [de["classes"] for de in data_elements]
                     
-                    # Create a FeatureCollection with the features
-                    data_geojson = {
-                        "type": "FeatureCollection",
-                        "features": features_with_data
-                    }
+                    # Calculate colors for all values at once
+                    colors = []
+                    for de in data_elements:
+                        if self._data_colormap is not None:
+                            colors.append(self._data_colormap.get_color(de["value"]))
+                        else:
+                            # Use default yellow-orange-red colormap if none set
+                            from matplotlib.colors import LinearSegmentedColormap
+                            default_colormap = DataColorMap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+                            default_colormap.add_value(de["value"])
+                            colors.append(default_colormap.get_color(de["value"]))
                     
+                    feature_copy["properties"]["_data_colors"] = colors
+                    features_with_data.append(feature_copy)
+                
+                # Create a single FeatureCollection for this GADM
+                data_geojson = {
+                    "type": "FeatureCollection",
+                    "features": features_with_data
+                }
+                
+                # Create one data entry per data element, but all share the same geometry
+                for i, data_element in enumerate(data_elements):
                     data_serialized.append({
                         "gadm": gadm,
                         "value": data_element["value"],
-                        "geometry": data_geojson,
+                        "geometry": data_geojson,  # Shared geometry
                         "classes": data_element["classes"],
                         "period": data_element["period"],
-                        "color": color,
+                        "color": colors[i],  # Pre-calculated color
+                        "data_index": i,  # Index to identify which data element this represents
                     })
+                    
             except Exception as e:
                 # Skip data elements that can't be loaded
                 print(f"Warning: Could not load data element for {gadm}: {e}")
