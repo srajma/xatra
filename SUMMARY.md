@@ -14,6 +14,7 @@ A "matplotlib of maps" called `xatra` that creates interactive historical maps w
 ### Key Methods
 ```python
 map.Flag(label, territory, period=None, note=None)
+map.Data(gadm, value, period=None, classes=None)
 map.Admin(gadm, level, period=None, classes=None, color_by_level=1)
 map.AdminRivers(period=None, classes=None, sources=None)
 map.River(label, value, note=None, classes=None, period=None)  
@@ -24,6 +25,7 @@ map.TitleBox(html, period=None)
 map.BaseOption(url_or_provider, name=None, default=False)
 map.FlagColorSequence(color_sequence)
 map.AdminColorSequence(color_sequence)
+map.DataColorMap(colormap, vmin=None, vmax=None)
 map.CSS(css_string)
 map.slider(start=None, end=None, speed=5.0)  # Set time limits and play speed for dynamic maps
 map.show(out_json="map.json", out_html="map.html")
@@ -60,6 +62,17 @@ map.show(out_json="map.json", out_html="map.html")
 - Custom URLs: `map.BaseOption("https://...")`
 - Provider names: `map.BaseOption("Esri.WorldImagery")`
 - Layer selector UI with "None" option
+
+### Data Mapping
+- **Data method**: `map.Data(gadm, value, period=None, classes=None)` creates data visualizations
+- **Automatic color mapping**: Values mapped to colors using data colormap
+- **Default colormap**: Yellow-orange-red gradient if no colormap is set
+- **Custom colormaps**: Use any matplotlib colormap (viridis, Reds, Blues, etc.)
+- **Color scale legend**: Automatically displays colormap with min/max values
+- **Rich tooltips**: Shows appropriate level name and all GADM properties
+- **Subdivision support**: Works with country, state, district, and tehsil levels
+- **Memory efficient**: Shared geometry for multiple data points per region
+- **Colormap configuration**: `map.DataColorMap(colormap, vmin=None, vmax=None)`
 
 ### Administrative Regions
 - **Admin method**: `map.Admin(gadm, level, color_by_level=1)` displays GADM administrative regions
@@ -130,7 +143,10 @@ data/
 - ✅ Tooltips following cursor
 - ✅ CSS class-based styling
 - ✅ Debug mode for positioning
-- ✅ Period support for all object types (flags, rivers, paths, points, texts, title_boxes)
+- ✅ Period support for all object types (flags, data, rivers, paths, points, texts, title_boxes)
+- ✅ Data mapping with automatic color mapping and color scale legend
+- ✅ Custom colormaps using matplotlib ColorMap objects
+- ✅ Memory-efficient data serialization with shared geometry
 - ✅ Map limits functionality (`map.slider()`)
 - ✅ Enhanced time slider with play/pause controls
 - ✅ Customizable play speed (years per second)
@@ -145,6 +161,8 @@ from xatra.territory_library import NORTHERN_INDIA
 
 map = xatra.FlagMap()
 map.Flag("Maurya", gadm("IND") | gadm("PAK"), period=[-320, -240])
+map.Data("IND", 100, period=[-320, -240], classes="maurya-population")
+map.Data("PAK", 50, period=[-320, -240], classes="maurya-population")
 map.River("Ganga", naturalearth("1159122643"), classes="ganga-river", period=[-500, 0])
 map.Point("Delhi", [28.6, 77.2], period=[1000, 1500])
 map.Text("Ancient India", [22.0, 79.0], period=[-500, 300])

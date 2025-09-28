@@ -81,6 +81,9 @@ map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], n
 map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
+map.Data("IND", 100, period=[-320, -180], classes="maurya-population")  # some data
+map.Data("IND", 150, period=[250, 500], classes="gupta-population")     # some data
+map.Data("IND.31", 75, classes="chola-data")  # Chola region data
 map.Admin(gadm="IND.31", level=3, classes="chola-tehsils", note="Chola administrative divisions")
 map.AdminRivers(sources=["naturalearth", "overpass"], classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
@@ -133,6 +136,7 @@ map = FlagMap()
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
 - **`Flag(label, territory, period=None, note=None, color=None)`**: Add a flag (country/kingdom)
+- **`Data(gadm, value, period=None, classes=None)`**: Add a data element with color mapping
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
@@ -147,6 +151,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
 - **`FlagColorSequence(color_sequence)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
+- **`DataColorMap(colormap, vmin=None, vmax=None)`**: Set the color map for data elements
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
@@ -203,6 +208,70 @@ map.Flag("Custom Empire", territory3, color="#ff0000")
 ```
 
 Flag labels automatically use a darker, more opaque version of the flag color for better readability.
+
+### Data Mapping
+
+The `Data` method creates data visualizations by mapping numeric values to colors on geographical regions. Data elements automatically get colors from the map's data colormap and display a color scale legend.
+
+```python
+# Basic data mapping with default yellow-orange-red colormap
+map.Data("IND", 100)  # India with value 100
+map.Data("PAK", 50)   # Pakistan with value 50
+map.Data("CHN", 200)  # China with value 200
+
+# Data with time periods for dynamic maps
+map.Data("IND", 100, period=[0, 100])  # India shows value 100 from 0-100 CE
+map.Data("IND", 150, period=[100, 200])  # India shows value 150 from 100-200 CE
+
+# Custom colormap
+import matplotlib.pyplot as plt
+map.DataColorMap(plt.cm.viridis, vmin=0, vmax=300)
+
+# Subdivision data (state, district, tehsil level)
+map.Data("IND.31", 85.5, classes="tamil-nadu-data")  # Tamil Nadu state
+map.Data("IND.31.1", 42.3, classes="chennai-data")   # Chennai district
+```
+
+**Parameters:**
+- `gadm`: GADM key (e.g., "IND", "IND.31", "IND.31.1")
+- `value`: Numeric value for color mapping
+- `period`: Optional time period as [start_year, end_year] list
+- `classes`: Optional CSS classes for styling
+
+**Features:**
+- **Automatic color mapping**: Values are mapped to colors using the data colormap
+- **Default colormap**: Yellow-orange-red gradient if no colormap is set
+- **Custom colormaps**: Use any matplotlib colormap (viridis, Reds, Blues, etc.)
+- **Color scale legend**: Automatically displays the colormap with min/max values
+- **Rich tooltips**: Shows appropriate level name and all GADM properties
+- **Subdivision support**: Works with country, state, district, and tehsil levels
+- **Time support**: Works with dynamic maps and period filtering
+- **Memory efficient**: Shared geometry for multiple data points per region
+
+**Colormap Configuration:**
+```python
+# Use default yellow-orange-red colormap
+map.DataColorMap()
+
+# Use matplotlib colormaps
+import matplotlib.pyplot as plt
+map.DataColorMap(plt.cm.viridis)      # Viridis colormap
+map.DataColorMap(plt.cm.Reds)         # Red colormap
+map.DataColorMap(plt.cm.Blues)        # Blue colormap
+
+# Custom colormap with specific value range
+map.DataColorMap(plt.cm.viridis, vmin=0, vmax=100)
+
+# Custom colormap from color list
+from matplotlib.colors import LinearSegmentedColormap
+custom_cmap = LinearSegmentedColormap.from_list("custom", ["#000000", "#ffffff"])
+map.DataColorMap(custom_cmap)
+```
+
+**Tooltip Information:**
+- **Level-appropriate names**: Shows NAME_3, NAME_2, NAME_1, or COUNTRY as most specific
+- **Complete GADM data**: GID_0, COUNTRY, GID_1, NAME_1, VARNAME_1, etc.
+- **Data value**: The numeric value being visualized
 
 ### Administrative Regions
 
