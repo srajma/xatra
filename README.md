@@ -439,15 +439,15 @@ The `Dataframe` method creates efficient choropleth maps from pandas DataFrames 
 ```python
 import pandas as pd
 
-# Static map with single data column
+# Static map with single data column (auto-detected)
 df = pd.DataFrame({
     'GID': ['IND.31', 'IND.12', 'IND.20'],
     'population': [100, 200, 150]
 })
 df.set_index('GID', inplace=True)
-map.Dataframe(df, data_column='population')
+map.Dataframe(df)  # 'population' auto-detected as data_column
 
-# Dynamic map with year columns
+# Dynamic map with year columns (auto-detected)
 df = pd.DataFrame({
     'GID': ['IND.31', 'IND.12'],
     '2020': [100, 200],
@@ -455,7 +455,7 @@ df = pd.DataFrame({
     '2022': [120, 220]
 })
 df.set_index('GID', inplace=True)
-map.Dataframe(df, year_columns=['2020', '2021', '2022'])
+map.Dataframe(df)  # ['2020', '2021', '2022'] auto-detected as year_columns
 
 # With custom styling and disputed territories
 map.Dataframe(df, data_column='population', classes='population-data', find_in_gadm=['IND'])
@@ -463,10 +463,15 @@ map.Dataframe(df, data_column='population', classes='population-data', find_in_g
 
 **Parameters:**
 - `dataframe`: pandas DataFrame with GID-indexed rows and data columns
-- `data_column`: Column name containing the data values (for static maps)
-- `year_columns`: List of year columns for time-series data (for dynamic maps)
+- `data_column`: Column name containing the data values (for static maps). If None, auto-detected.
+- `year_columns`: List of year columns for time-series data (for dynamic maps). If None, auto-detected.
 - `classes`: Optional CSS classes for styling
 - `find_in_gadm`: Optional list of country codes to search in if GID is not found in its own file
+
+**Auto-detection behavior:**
+- If neither `data_column` nor `year_columns` is specified:
+  - Single data column (besides GID): treated as `data_column` for static map
+  - Multiple data columns (besides GID): treated as `year_columns` for dynamic map
 
 **Features:**
 - **Efficient processing**: DataFrames are processed once and converted to optimized data entries

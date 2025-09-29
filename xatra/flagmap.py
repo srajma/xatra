@@ -468,20 +468,29 @@ class FlagMap:
         
         Args:
             dataframe: pandas DataFrame with GID-indexed rows and data columns
-            data_column: Column name containing the data values (for static maps)
-            year_columns: List of year columns for time-series data (for dynamic maps)
+            data_column: Column name containing the data values (for static maps). If None, auto-detected.
+            year_columns: List of year columns for time-series data (for dynamic maps). If None, auto-detected.
             classes: Optional CSS classes for styling
             find_in_gadm: Optional list of country codes to search in if GID is not found in its own file
             
+        Auto-detection behavior:
+            - If neither data_column nor year_columns is specified:
+              - Single data column (besides GID): treated as data_column for static map
+              - Multiple data columns (besides GID): treated as year_columns for dynamic map
+            
         Example:
-            >>> # Static map with single data column
+            >>> # Static map with single data column (auto-detected)
             >>> df = pd.DataFrame({'GID': ['IND.31', 'IND.12'], 'population': [100, 200]})
             >>> df.set_index('GID', inplace=True)
-            >>> map.Dataframe(df, data_column='population')
+            >>> map.Dataframe(df)  # 'population' auto-detected as data_column
             
-            >>> # Dynamic map with year columns
+            >>> # Dynamic map with year columns (auto-detected)
             >>> df = pd.DataFrame({'GID': ['IND.31', 'IND.12'], '2020': [100, 200], '2021': [110, 210]})
             >>> df.set_index('GID', inplace=True)
+            >>> map.Dataframe(df)  # ['2020', '2021'] auto-detected as year_columns
+            
+            >>> # Explicit specification (overrides auto-detection)
+            >>> map.Dataframe(df, data_column='population')
             >>> map.Dataframe(df, year_columns=['2020', '2021'])
         """
         try:
@@ -493,8 +502,24 @@ class FlagMap:
         if not isinstance(dataframe, pd.DataFrame):
             raise ValueError("dataframe must be a pandas DataFrame")
         
+        # Auto-detect data_column or year_columns if not specified
         if data_column is None and year_columns is None:
-            raise ValueError("Either data_column or year_columns must be specified")
+            # Ensure GID is the index for analysis
+            temp_df = dataframe.copy()
+            if temp_df.index.name != 'GID' and 'GID' in temp_df.columns:
+                temp_df = temp_df.set_index('GID')
+            
+            # Get non-GID columns
+            data_columns = [col for col in temp_df.columns if col != 'GID']
+            
+            if len(data_columns) == 1:
+                # Single column - assume it's data_column
+                data_column = data_columns[0]
+            elif len(data_columns) > 1:
+                # Multiple columns - assume they're year_columns
+                year_columns = data_columns
+            else:
+                raise ValueError("DataFrame must have at least one data column besides GID")
         
         if data_column is not None and year_columns is not None:
             raise ValueError("Cannot specify both data_column and year_columns")
