@@ -2,7 +2,7 @@
 
 import xatra
 from xatra.loaders import gadm, naturalearth
-from xatra.territory_library import NORTHERN_INDIA
+from xatra.territory_library import NORTH_INDIA
 from xatra.colorseq import LinearColorSequence
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -21,8 +21,8 @@ map.Data(gadm = "IND.22", value=300, period=[0, 600])
 map.Data(gadm = "IND.21", value=1000, period=[600, 700])
 map.Data(gadm = "IND.22", value=1000, period=[600, 800])
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], note="south is lost after Ashoka's death")
-map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
-map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500], color="#ff0000")
+map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
+map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500], color="#ff0000")
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
 map.Flag(label="Principality", value=gadm("IND.11.1"))
 # map.Admin(gadm="IND", level=2)
