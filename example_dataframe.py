@@ -9,8 +9,8 @@ map.BaseOption("Esri.WorldPhysical")
 
 ### STATIC MAP
 # df = pd.DataFrame({
-#     'GID': ['IND.31', 'IND.12', 'IND.20'],
-#     'population': [100, 200, 150]
+#     'GID': ['IND.31', 'IND.12', 'IND.20', 'Z01.14'],
+#     'population': [100, 200, 150, 100]
 # })
 ### DYNAMIC MAP
 df = pd.DataFrame({
