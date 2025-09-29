@@ -269,6 +269,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 - **`Flag(label, territory, period=None, note=None, color=None, classes=None)`**: Add a flag (country/kingdom)
 - **`Data(gadm, value, period=None, classes=None)`**: Add a data element with color mapping
+- **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
@@ -430,6 +431,66 @@ map.DataColormap(custom_cmap)
 - **Level-appropriate names**: Shows NAME_3, NAME_2, NAME_1, or COUNTRY as most specific
 - **Complete GADM data**: GID_0, COUNTRY, GID_1, NAME_1, VARNAME_1, etc.
 - **Data value**: The numeric value being visualized
+
+### DataFrame-Based Data Mapping
+
+The `Dataframe` method creates efficient choropleth maps from pandas DataFrames where each row represents an administrative division indexed by GID, and columns represent either a single data value or time-series data.
+
+```python
+import pandas as pd
+
+# Static map with single data column
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'IND.20'],
+    'population': [100, 200, 150]
+})
+df.set_index('GID', inplace=True)
+map.Dataframe(df, data_column='population')
+
+# Dynamic map with year columns
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12'],
+    '2020': [100, 200],
+    '2021': [110, 210],
+    '2022': [120, 220]
+})
+df.set_index('GID', inplace=True)
+map.Dataframe(df, year_columns=['2020', '2021', '2022'])
+
+# With custom styling and disputed territories
+map.Dataframe(df, data_column='population', classes='population-data', find_in_gadm=['IND'])
+```
+
+**Parameters:**
+- `dataframe`: pandas DataFrame with GID-indexed rows and data columns
+- `data_column`: Column name containing the data values (for static maps)
+- `year_columns`: List of year columns for time-series data (for dynamic maps)
+- `classes`: Optional CSS classes for styling
+- `find_in_gadm`: Optional list of country codes to search in if GID is not found in its own file
+
+**Features:**
+- **Efficient processing**: DataFrames are processed once and converted to optimized data entries
+- **Static maps**: Single data column creates a static choropleth map
+- **Dynamic maps**: Year columns create time-series data with automatic period detection
+- **Automatic validation**: Validates DataFrame structure and GID indexing
+- **Memory efficient**: Shared geometry for multiple data points per region
+- **Time support**: Works with dynamic maps and period filtering
+- **Color mapping**: Uses the same colormap system as individual Data elements
+- **Rich tooltips**: Shows appropriate level name and all GADM properties
+
+**DataFrame Requirements:**
+- Must be a pandas DataFrame
+- Must have GID as index or as a column named 'GID'
+- For static maps: specify `data_column` with the column containing values
+- For dynamic maps: specify `year_columns` with list of year column names
+- Year columns should contain numeric year values (e.g., '2020', '2021')
+- Missing values (NaN) are automatically skipped
+
+**Performance Benefits:**
+- **No redrawing**: DataFrame data is processed once during export, not on every render
+- **Shared geometry**: Multiple data points per region share the same geometry
+- **Efficient grouping**: Data is grouped by GADM code for optimal rendering
+- **Memory optimization**: Large DataFrames are handled efficiently without memory bloat
 
 ### Administrative Regions
 

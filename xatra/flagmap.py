@@ -194,6 +194,24 @@ class DataEntry:
     find_in_gadm: Optional[List[str]] = None
 
 
+@dataclass
+class DataframeEntry:
+    """Represents a DataFrame-based data visualization for choropleth mapping.
+    
+    Args:
+        dataframe: pandas DataFrame with GID-indexed rows and year/data columns
+        data_column: Column name containing the data values (if single column)
+        year_columns: List of year columns for time-series data (if multiple columns)
+        classes: Optional CSS classes for styling
+        find_in_gadm: Optional list of country codes to search in if GID is not found in its own file
+    """
+    dataframe: Any  # pandas DataFrame
+    data_column: Optional[str] = None
+    year_columns: Optional[List[str]] = None
+    classes: Optional[str] = None
+    find_in_gadm: Optional[List[str]] = None
+
+
 class DataColormap:
     """Handles color mapping for data elements using matplotlib Colormap objects.
     
@@ -343,6 +361,7 @@ class FlagMap:
         self._admins: List[AdminEntry] = []
         self._admin_rivers: List[AdminRiversEntry] = []
         self._data: List[DataEntry] = []
+        self._dataframes: List[DataframeEntry] = []
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
@@ -440,6 +459,85 @@ class FlagMap:
         self._data_colormap.add_value(value)
         
         self._data.append(DataEntry(gadm=gadm, value=value, period=period_tuple, classes=classes, find_in_gadm=find_in_gadm))
+
+    def Dataframe(self, dataframe, data_column: Optional[str] = None, year_columns: Optional[List[str]] = None, classes: Optional[str] = None, find_in_gadm: Optional[List[str]] = None) -> None:
+        """Add a DataFrame-based data visualization to the map.
+        
+        Creates a choropleth map from a pandas DataFrame where each row represents an administrative
+        division indexed by GID, and columns represent either a single data value or time-series data.
+        
+        Args:
+            dataframe: pandas DataFrame with GID-indexed rows and data columns
+            data_column: Column name containing the data values (for static maps)
+            year_columns: List of year columns for time-series data (for dynamic maps)
+            classes: Optional CSS classes for styling
+            find_in_gadm: Optional list of country codes to search in if GID is not found in its own file
+            
+        Example:
+            >>> # Static map with single data column
+            >>> df = pd.DataFrame({'GID': ['IND.31', 'IND.12'], 'population': [100, 200]})
+            >>> df.set_index('GID', inplace=True)
+            >>> map.Dataframe(df, data_column='population')
+            
+            >>> # Dynamic map with year columns
+            >>> df = pd.DataFrame({'GID': ['IND.31', 'IND.12'], '2020': [100, 200], '2021': [110, 210]})
+            >>> df.set_index('GID', inplace=True)
+            >>> map.Dataframe(df, year_columns=['2020', '2021'])
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError("pandas is required for DataFrame functionality. Install it with: pip install pandas")
+        
+        # Validate input
+        if not isinstance(dataframe, pd.DataFrame):
+            raise ValueError("dataframe must be a pandas DataFrame")
+        
+        if data_column is None and year_columns is None:
+            raise ValueError("Either data_column or year_columns must be specified")
+        
+        if data_column is not None and year_columns is not None:
+            raise ValueError("Cannot specify both data_column and year_columns")
+        
+        # Validate DataFrame structure
+        if dataframe.index.name is None and 'GID' not in dataframe.columns:
+            raise ValueError("DataFrame must have GID as index or as a column")
+        
+        # Ensure GID is the index
+        if dataframe.index.name != 'GID' and 'GID' in dataframe.columns:
+            dataframe = dataframe.set_index('GID')
+        
+        if data_column is not None:
+            if data_column not in dataframe.columns:
+                raise ValueError(f"Column '{data_column}' not found in DataFrame")
+        else:
+            # Validate year columns
+            missing_cols = [col for col in year_columns if col not in dataframe.columns]
+            if missing_cols:
+                raise ValueError(f"Year columns not found in DataFrame: {missing_cols}")
+        
+        # Create default colormap if none exists
+        if self._data_colormap is None:
+            from matplotlib.colors import LinearSegmentedColormap
+            self._data_colormap = DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+        
+        # Add all values to colormap for auto-detection of vmin/vmax
+        if data_column is not None:
+            values = dataframe[data_column].dropna()
+        else:
+            values = dataframe[year_columns].values.flatten()
+            values = pd.Series(values).dropna()
+        
+        for value in values:
+            self._data_colormap.add_value(value)
+        
+        self._dataframes.append(DataframeEntry(
+            dataframe=dataframe,
+            data_column=data_column,
+            year_columns=year_columns,
+            classes=classes,
+            find_in_gadm=find_in_gadm
+        ))
 
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
@@ -1168,6 +1266,80 @@ class FlagMap:
             except Exception as e:
                 # Skip data elements that can't be loaded
                 print(f"Warning: Could not load data element for {gadm}: {e}")
+                continue
+
+        # Process DataFrame elements - convert to DataEntry format for efficient rendering
+        for df_entry in self._dataframes:
+            try:
+                import pandas as pd
+                
+                # Process static DataFrame (single data column)
+                if df_entry.data_column is not None:
+                    for gid, row in df_entry.dataframe.iterrows():
+                        value = row[df_entry.data_column]
+                        if pd.isna(value):
+                            continue
+                        
+                        # Create a DataEntry for this row
+                        data_entry = DataEntry(
+                            gadm=str(gid),
+                            value=float(value),
+                            period=None,  # Static data
+                            classes=df_entry.classes,
+                            find_in_gadm=df_entry.find_in_gadm
+                        )
+                        
+                        # Add to data_serialized using the same processing as regular Data entries
+                        restricted_period = self._apply_limits_to_period(data_entry.period)
+                        if data_entry.period is None or restricted_period is not None:
+                            key = (data_entry.gadm, tuple(data_entry.find_in_gadm) if data_entry.find_in_gadm else None)
+                            if key not in data_by_gadm:
+                                data_by_gadm[key] = []
+                            data_by_gadm[key].append({
+                                "value": data_entry.value,
+                                "period": list(restricted_period) if restricted_period is not None else None,
+                                "classes": data_entry.classes,
+                            })
+                
+                # Process dynamic DataFrame (year columns)
+                elif df_entry.year_columns is not None:
+                    for gid, row in df_entry.dataframe.iterrows():
+                        for year_col in df_entry.year_columns:
+                            value = row[year_col]
+                            if pd.isna(value):
+                                continue
+                            
+                            # Parse year from column name
+                            try:
+                                year = int(year_col)
+                                period = [year, year + 1]  # Single year period
+                            except ValueError:
+                                # If year parsing fails, treat as static
+                                period = None
+                            
+                            # Create a DataEntry for this row/year combination
+                            data_entry = DataEntry(
+                                gadm=str(gid),
+                                value=float(value),
+                                period=period,
+                                classes=df_entry.classes,
+                                find_in_gadm=df_entry.find_in_gadm
+                            )
+                            
+                            # Add to data_serialized using the same processing as regular Data entries
+                            restricted_period = self._apply_limits_to_period(data_entry.period)
+                            if data_entry.period is None or restricted_period is not None:
+                                key = (data_entry.gadm, tuple(data_entry.find_in_gadm) if data_entry.find_in_gadm else None)
+                                if key not in data_by_gadm:
+                                    data_by_gadm[key] = []
+                                data_by_gadm[key].append({
+                                    "value": data_entry.value,
+                                    "period": list(restricted_period) if restricted_period is not None else None,
+                                    "classes": data_entry.classes,
+                                })
+            
+            except Exception as e:
+                print(f"Warning: Could not process DataFrame: {e}")
                 continue
 
         # Generate color bar if data elements exist
