@@ -948,7 +948,8 @@ class FlagMap:
             any(tb.period is not None for tb in self._title_boxes) or
             any(a.period is not None for a in self._admins) or
             any(ar.period is not None for ar in self._admin_rivers) or
-            any(d.period is not None for d in self._data)
+            any(d.period is not None for d in self._data) or
+            any(df.year_columns is not None for df in self._dataframes)
         )
 
         # Pax-max aggregation

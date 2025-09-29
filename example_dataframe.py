@@ -23,7 +23,4 @@ df = pd.DataFrame({
 df.set_index('GID', inplace=True)
 map.Dataframe(df, year_columns=['2020', '2021', '2022'])
 
-# With custom styling and disputed territories
-# map.Dataframe(df, data_column='population', classes='population-data', find_in_gadm=['IND'])
-
 map.show(out_json="map_dataframe.json", out_html="map_dataframe.html")
