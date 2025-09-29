@@ -17,5 +17,6 @@ __pycache__/
 
 # temp
 old/
+old_xatra/
 map*.json
 map*.html
