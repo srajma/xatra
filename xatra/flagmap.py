@@ -1205,6 +1205,61 @@ class FlagMap:
                     "classes": d.classes,
                 })
         
+        # Process DataFrame elements - convert to DataEntry format and add to data_by_gadm
+        for df_entry in self._dataframes:
+            try:
+                import pandas as pd
+                
+                # Process static DataFrame (single data column)
+                if df_entry.data_column is not None:
+                    for gid, row in df_entry.dataframe.iterrows():
+                        value = row[df_entry.data_column]
+                        if pd.isna(value):
+                            continue
+                        
+                        # Add to data_by_gadm using the same processing as regular Data entries
+                        # For static data (no period), always include it
+                        key = (str(gid), tuple(df_entry.find_in_gadm) if df_entry.find_in_gadm else None)
+                        if key not in data_by_gadm:
+                            data_by_gadm[key] = []
+                        data_by_gadm[key].append({
+                            "value": float(value),
+                            "period": None,  # Static data has no period
+                            "classes": df_entry.classes,
+                        })
+                
+                # Process dynamic DataFrame (year columns)
+                elif df_entry.year_columns is not None:
+                    for gid, row in df_entry.dataframe.iterrows():
+                        for year_col in df_entry.year_columns:
+                            value = row[year_col]
+                            if pd.isna(value):
+                                continue
+                            
+                            # Parse year from column name
+                            try:
+                                year = int(year_col)
+                                period = [year, year + 1]  # Single year period
+                            except ValueError:
+                                # If year parsing fails, treat as static
+                                period = None
+                            
+                            # Add to data_by_gadm using the same processing as regular Data entries
+                            restricted_period = self._apply_limits_to_period(period)
+                            if restricted_period is not None:
+                                key = (str(gid), tuple(df_entry.find_in_gadm) if df_entry.find_in_gadm else None)
+                                if key not in data_by_gadm:
+                                    data_by_gadm[key] = []
+                                data_by_gadm[key].append({
+                                    "value": float(value),
+                                    "period": list(restricted_period) if restricted_period is not None else None,
+                                    "classes": df_entry.classes,
+                                })
+            
+            except Exception as e:
+                print(f"Warning: Could not process DataFrame: {e}")
+                continue
+        
         # Process each GADM group efficiently
         from .loaders import load_gadm_like
         
@@ -1266,80 +1321,6 @@ class FlagMap:
             except Exception as e:
                 # Skip data elements that can't be loaded
                 print(f"Warning: Could not load data element for {gadm}: {e}")
-                continue
-
-        # Process DataFrame elements - convert to DataEntry format for efficient rendering
-        for df_entry in self._dataframes:
-            try:
-                import pandas as pd
-                
-                # Process static DataFrame (single data column)
-                if df_entry.data_column is not None:
-                    for gid, row in df_entry.dataframe.iterrows():
-                        value = row[df_entry.data_column]
-                        if pd.isna(value):
-                            continue
-                        
-                        # Create a DataEntry for this row
-                        data_entry = DataEntry(
-                            gadm=str(gid),
-                            value=float(value),
-                            period=None,  # Static data
-                            classes=df_entry.classes,
-                            find_in_gadm=df_entry.find_in_gadm
-                        )
-                        
-                        # Add to data_serialized using the same processing as regular Data entries
-                        restricted_period = self._apply_limits_to_period(data_entry.period)
-                        if data_entry.period is None or restricted_period is not None:
-                            key = (data_entry.gadm, tuple(data_entry.find_in_gadm) if data_entry.find_in_gadm else None)
-                            if key not in data_by_gadm:
-                                data_by_gadm[key] = []
-                            data_by_gadm[key].append({
-                                "value": data_entry.value,
-                                "period": list(restricted_period) if restricted_period is not None else None,
-                                "classes": data_entry.classes,
-                            })
-                
-                # Process dynamic DataFrame (year columns)
-                elif df_entry.year_columns is not None:
-                    for gid, row in df_entry.dataframe.iterrows():
-                        for year_col in df_entry.year_columns:
-                            value = row[year_col]
-                            if pd.isna(value):
-                                continue
-                            
-                            # Parse year from column name
-                            try:
-                                year = int(year_col)
-                                period = [year, year + 1]  # Single year period
-                            except ValueError:
-                                # If year parsing fails, treat as static
-                                period = None
-                            
-                            # Create a DataEntry for this row/year combination
-                            data_entry = DataEntry(
-                                gadm=str(gid),
-                                value=float(value),
-                                period=period,
-                                classes=df_entry.classes,
-                                find_in_gadm=df_entry.find_in_gadm
-                            )
-                            
-                            # Add to data_serialized using the same processing as regular Data entries
-                            restricted_period = self._apply_limits_to_period(data_entry.period)
-                            if data_entry.period is None or restricted_period is not None:
-                                key = (data_entry.gadm, tuple(data_entry.find_in_gadm) if data_entry.find_in_gadm else None)
-                                if key not in data_by_gadm:
-                                    data_by_gadm[key] = []
-                                data_by_gadm[key].append({
-                                    "value": data_entry.value,
-                                    "period": list(restricted_period) if restricted_period is not None else None,
-                                    "classes": data_entry.classes,
-                                })
-            
-            except Exception as e:
-                print(f"Warning: Could not process DataFrame: {e}")
                 continue
 
         # Generate color bar if data elements exist
