@@ -14,7 +14,7 @@ map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
 
 # map.Admin(gadm="IND", level=0) # this should work, but doesn't
-map.Admin(gadm="IND", level=1) # this should work, but doesn't
+map.Admin(gadm="IND", level=2) # this should work, but doesn't
 # map.Admin(gadm="Z01.14", level=0, find_in_gadm=["IND"]) # need to implement "find_in_gadm" feature 
 # map.Flag(label="India", value=gadm("IND")) # this works
 # map.Flag(label="Kashmir", value=gadm("Z01.14", find_in_gadm=["IND"])) # need to implement "find_in_gadm" feature 

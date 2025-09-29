@@ -938,29 +938,48 @@ class FlagMap:
             # Include objects with no period (always visible) or valid restricted periods
             if a.period is None or restricted_period is not None:
                 try:
-                    # Use load_gadm_like to handle disputed territories and find_in_gadm
-                    from .loaders import load_gadm_like
+                    from .loaders import _read_json
+                    import os
                     
-                    # Load GADM data using the enhanced loader
-                    gadm_geojson = load_gadm_like(a.gadm_key, a.find_in_gadm)
+                    # Load the appropriate level file directly
+                    parts = a.gadm_key.split('.')
+                    iso3 = parts[0]
+                    gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
+                    level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_{a.level}.json")
                     
-                    if not gadm_geojson.get("features"):
-                        print(f"Warning: No GADM features found for: {a.gadm_key}")
+                    # Try to load the level file, with fallback to find_in_gadm if specified
+                    level_file = None
+                    if os.path.exists(level_file_path):
+                        level_file = _read_json(level_file_path)
+                    elif a.find_in_gadm:
+                        # Try to find the territory in the specified countries
+                        for country_code in a.find_in_gadm:
+                            search_path = os.path.join(gadm_dir, f"gadm41_{country_code}_{a.level}.json")
+                            if os.path.exists(search_path):
+                                level_file = _read_json(search_path)
+                                break
+                    
+                    if not level_file:
+                        print(f"Warning: GADM file not found for level {a.level}: {level_file_path}")
+                        if a.find_in_gadm:
+                            print(f"Also tried find_in_gadm countries: {a.find_in_gadm}")
                         continue
                     
-                    # For level 0, we want all features from the country file (including disputed territories)
-                    # For higher levels, we want features that match the specific GADM key
-                    if a.level == 0:
-                        # For level 0, include all features from the country file
-                        filtered_features = gadm_geojson.get("features", [])
-                    else:
-                        # For higher levels, filter by GADM key prefix
-                        filtered_features = []
-                        for feature in gadm_geojson.get("features", []):
-                            props = feature.get("properties", {}) or {}
-                            gid_key = f"GID_{a.level}"
-                            gid = str(props.get(gid_key, ""))
-                            # Use exact prefix matching with boundary check
+                    # Filter features that match the gadm_key prefix
+                    filtered_features = []
+                    for feature in level_file.get("features", []):
+                        props = feature.get("properties", {}) or {}
+                        gid_key = f"GID_{a.level}"
+                        gid = str(props.get(gid_key, ""))
+                        
+                        # For level 0, include all features from the country file (including disputed territories)
+                        # For higher levels, include all features from the country file if gadm_key is just the country code
+                        # Otherwise use exact prefix matching with boundary check
+                        if a.level == 0 or (a.level > 0 and len(a.gadm_key.split('.')) == 1):
+                            # Include all features from the country file (including disputed territories)
+                            filtered_features.append(feature)
+                        else:
+                            # Use exact prefix matching with boundary check for specific regions
                             if gid.startswith(a.gadm_key) and (len(gid) == len(a.gadm_key) or gid[len(a.gadm_key)] in ['.', '_']):
                                 filtered_features.append(feature)
                     
