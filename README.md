@@ -53,7 +53,7 @@ Xatra is the matplotlib of maps. You can create historical maps (static or dynam
 ```python
 import xatra
 from xatra.loaders import gadm, naturalearth
-from xatra.territory_library import NORTHERN_INDIA
+from xatra.territory_library import NORTH_INDIA
 
 map = xatra.FlagMap()
 
@@ -61,7 +61,7 @@ map = xatra.FlagMap()
 # Flags with the same label will use the same color
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"))
 map.Flag(label="Chola", value=gadm("IND.31") | gadm("IND.17") - gadm("IND.17.5"))
-map.Flag(label="Maurya", value=gadm("IND.1"))  # Reuses Maurya color
+map.Flag(label="Gupta", value=NORTH_INDIA)
 map.River(label="Ganga", value=naturalearth("1159122643"))
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]])
 map.Point(label="Indraprastha", position=[28,77])
@@ -77,7 +77,7 @@ And here's a more complex example, of a dynamic map (items can have periods so t
 ```python
 import xatra
 from xatra.loaders import gadm, naturalearth
-from xatra.territory_library import NORTHERN_INDIA
+from xatra.territory_library import NORTH_INDIA
 
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
@@ -85,8 +85,8 @@ map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], note="south is lost after Ashoka's death")
-map.Flag(label="Maurya", value=NORTHERN_INDIA, period=[-320, -180])
-map.Flag(label="Gupta", value=NORTHERN_INDIA, period=[250, 500])
+map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
+map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
 map.Data("IND", 100, period=[-320, -180])  # some data
 map.Data("IND", 150, period=[250, 500])     # some data
@@ -189,7 +189,6 @@ Sometimes you want to group some flags to be "similarly-colored" -- e.g. nations
 
 import xatra
 from xatra.loaders import gadm, naturalearth
-from xatra.territory_library import NORTHERN_INDIA
 from xatra.colorseq import LinearColorSequence, Color
 from matplotlib.colors import LinearSegmentedColormap
 

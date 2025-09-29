@@ -134,7 +134,7 @@ xatra/
 ├── loaders.py           # GADM, NaturalEarth, Overpass loaders
 ├── paxmax.py           # Time-based flag aggregation
 ├── render.py            # Leaflet HTML generation
-└── territory_library.py # Predefined territories (NORTHERN_INDIA)
+└── territory_library.py # Predefined territories
 
 data/
 ├── gadm/               # GADM GeoJSON files
@@ -165,7 +165,6 @@ data/
 ```python
 import xatra
 from xatra.loaders import gadm, naturalearth
-from xatra.territory_library import NORTHERN_INDIA
 
 map = xatra.FlagMap()
 map.Flag("Maurya", gadm("IND") | gadm("PAK"), period=[-320, -240])

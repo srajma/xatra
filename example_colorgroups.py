@@ -2,9 +2,7 @@
 
 import xatra
 from xatra.loaders import gadm, naturalearth
-from xatra.territory_library import NORTHERN_INDIA
 from xatra.colorseq import LinearColorSequence, Color
-from matplotlib.colors import LinearSegmentedColormap
 
 # Create a test map
 map = xatra.FlagMap()

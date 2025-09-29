@@ -2,7 +2,6 @@
 
 import xatra
 from xatra.loaders import gadm, naturalearth
-from xatra.territory_library import NORTHERN_INDIA
 from xatra.colorseq import LinearColorSequence
 from matplotlib.colors import LinearSegmentedColormap
 

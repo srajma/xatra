@@ -25,7 +25,6 @@ Example:
 from .flagmap import FlagMap
 from .territory import Territory
 from .loaders import gadm, naturalearth, overpass
-from .territory_library import NORTHERN_INDIA
 
 __version__ = "0.1.0"
-__all__ = ["FlagMap", "Territory", "gadm", "naturalearth", "overpass", "NORTHERN_INDIA"]
+__all__ = ["FlagMap", "Territory", "gadm", "naturalearth", "overpass"]
