@@ -549,7 +549,7 @@ HTML_TEMPLATE = Template(
               return {
                 className: className,
                 fillColor: color,
-                fillOpacity: 0.6,
+                fillOpacity: 1.0,
                 color: color,
                 weight: 1
               };
@@ -942,7 +942,7 @@ HTML_TEMPLATE = Template(
               return {
                 className: className,
                 fillColor: color,
-                fillOpacity: 0.6,
+                fillOpacity: 1.0,
                 color: color,
                 weight: 1
               };
