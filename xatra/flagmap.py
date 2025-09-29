@@ -131,12 +131,14 @@ class AdminEntry:
         period: Optional time period as (start_year, end_year) tuple
         classes: Optional CSS classes for styling
         color_by_level: Level to group colors by (e.g., 1 for states)
+        find_in_gadm: Optional list of country codes to search in if gadm is not found in its own file
     """
     gadm_key: str
     level: int
     period: Optional[Tuple[int, int]] = None
     classes: Optional[str] = None
     color_by_level: int = 1
+    find_in_gadm: Optional[List[str]] = None
 
 
 @dataclass
@@ -183,11 +185,13 @@ class DataEntry:
         value: Numeric value for color mapping
         period: Optional time period as (start_year, end_year) tuple
         classes: Optional CSS classes for styling
+        find_in_gadm: Optional list of country codes to search in if gadm is not found in its own file
     """
     gadm: str
     value: float
     period: Optional[Tuple[int, int]] = None
     classes: Optional[str] = None
+    find_in_gadm: Optional[List[str]] = None
 
 
 class DataColormap:
@@ -405,7 +409,7 @@ class FlagMap:
             colormap = LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"])
         self._data_colormap = DataColormap(colormap, vmin, vmax)
 
-    def Data(self, gadm: str, value: float, period: Optional[List[int]] = None, classes: Optional[str] = None) -> None:
+    def Data(self, gadm: str, value: float, period: Optional[List[int]] = None, classes: Optional[str] = None, find_in_gadm: Optional[List[str]] = None) -> None:
         """Add a data element to the map.
         
         Data elements are colored based on their numeric values using the map's data colormap.
@@ -416,10 +420,12 @@ class FlagMap:
             value: Numeric value for color mapping
             period: Optional time period as [start_year, end_year] list
             classes: Optional CSS classes for styling
+            find_in_gadm: Optional list of country codes to search in if gadm is not found in its own file
             
         Example:
             >>> map.Data("IND.31", 85.5, period=[2020, 2025], classes="population-data")
             >>> map.Data("IND.11", 42.3, classes="gdp-data")
+            >>> map.Data("Z01.14", 100, find_in_gadm=["IND"])  # Disputed territory from IND file
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -435,7 +441,7 @@ class FlagMap:
         # Add value to colormap for auto-detection of vmin/vmax
         self._data_colormap.add_value(value)
         
-        self._data.append(DataEntry(gadm=gadm, value=value, period=period_tuple, classes=classes))
+        self._data.append(DataEntry(gadm=gadm, value=value, period=period_tuple, classes=classes, find_in_gadm=find_in_gadm))
 
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
@@ -677,7 +683,7 @@ class FlagMap:
         # let's not do this, because it makes it impossible to override the default
         pass
 
-    def Admin(self, gadm: str, level: int, period: Optional[List[int]] = None, classes: Optional[str] = None, color_by_level: int = 1) -> None:
+    def Admin(self, gadm: str, level: int, period: Optional[List[int]] = None, classes: Optional[str] = None, color_by_level: int = 1, find_in_gadm: Optional[List[str]] = None) -> None:
         """Add administrative regions from GADM data.
         
         Args:
@@ -686,10 +692,12 @@ class FlagMap:
             period: Optional time period as [start_year, end_year] list
             classes: Optional CSS classes for styling
             color_by_level: Level to group colors by (e.g., 1 for states, 2 for districts)
+            find_in_gadm: Optional list of country codes to search in if gadm is not found in its own file
             
         Example:
             >>> map.Admin(gadm="IND.31", level=3)  # Show all tehsils in Tamil Nadu, colored by state
             >>> map.Admin(gadm="IND", level=3, color_by_level=2)  # Show all tehsils in India, colored by district
+            >>> map.Admin(gadm="Z01.14", level=0, find_in_gadm=["IND"])  # Show disputed territory from IND file
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -697,7 +705,7 @@ class FlagMap:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
         
-        self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes, color_by_level=color_by_level))
+        self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes, color_by_level=color_by_level, find_in_gadm=find_in_gadm))
 
     def AdminRivers(self, period: Optional[List[int]] = None, classes: Optional[str] = None, sources: Optional[List[str]] = None) -> None:
         """Add rivers from specified data sources.
@@ -929,31 +937,32 @@ class FlagMap:
             restricted_period = self._apply_limits_to_period(a.period)
             # Include objects with no period (always visible) or valid restricted periods
             if a.period is None or restricted_period is not None:
-                # Load GADM data for the specified level and filter by the gadm_key
-                from .loaders import _read_json
-                import os
                 try:
-                    # Load the appropriate level file directly
-                    parts = a.gadm_key.split('.')
-                    iso3 = parts[0]
-                    gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
-                    level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_{a.level}.json")
+                    # Use load_gadm_like to handle disputed territories and find_in_gadm
+                    from .loaders import load_gadm_like
                     
-                    if not os.path.exists(level_file_path):
-                        print(f"Warning: GADM file not found: {level_file_path}")
+                    # Load GADM data using the enhanced loader
+                    gadm_geojson = load_gadm_like(a.gadm_key, a.find_in_gadm)
+                    
+                    if not gadm_geojson.get("features"):
+                        print(f"Warning: No GADM features found for: {a.gadm_key}")
                         continue
                     
-                    level_file = _read_json(level_file_path)
-                    
-                    # Filter features that match the gadm_key prefix
-                    filtered_features = []
-                    for feature in level_file.get("features", []):
-                        props = feature.get("properties", {}) or {}
-                        gid_key = f"GID_{a.level}"
-                        gid = str(props.get(gid_key, ""))
-                        # Use exact prefix matching with boundary check
-                        if gid.startswith(a.gadm_key) and (len(gid) == len(a.gadm_key) or gid[len(a.gadm_key)] in ['.', '_']):
-                            filtered_features.append(feature)
+                    # For level 0, we want all features from the country file (including disputed territories)
+                    # For higher levels, we want features that match the specific GADM key
+                    if a.level == 0:
+                        # For level 0, include all features from the country file
+                        filtered_features = gadm_geojson.get("features", [])
+                    else:
+                        # For higher levels, filter by GADM key prefix
+                        filtered_features = []
+                        for feature in gadm_geojson.get("features", []):
+                            props = feature.get("properties", {}) or {}
+                            gid_key = f"GID_{a.level}"
+                            gid = str(props.get(gid_key, ""))
+                            # Use exact prefix matching with boundary check
+                            if gid.startswith(a.gadm_key) and (len(gid) == len(a.gadm_key) or gid[len(a.gadm_key)] in ['.', '_']):
+                                filtered_features.append(feature)
                     
                     # Assign colors based on color_by_level (clamped to level)
                     effective_color_by_level = min(a.color_by_level, a.level)
@@ -1064,16 +1073,18 @@ class FlagMap:
 
         # Serialize data elements - optimized approach
         data_serialized = []
-        data_by_gadm = {}  # Group data elements by GADM code
+        data_by_gadm = {}  # Group data elements by GADM code and find_in_gadm
         
-        # First, group all data elements by GADM code
+        # First, group all data elements by GADM code and find_in_gadm
         for d in self._data:
             restricted_period = self._apply_limits_to_period(d.period)
             # Include objects with no period (always visible) or valid restricted periods
             if d.period is None or restricted_period is not None:
-                if d.gadm not in data_by_gadm:
-                    data_by_gadm[d.gadm] = []
-                data_by_gadm[d.gadm].append({
+                # Create a unique key that includes both gadm and find_in_gadm
+                key = (d.gadm, tuple(d.find_in_gadm) if d.find_in_gadm else None)
+                if key not in data_by_gadm:
+                    data_by_gadm[key] = []
+                data_by_gadm[key].append({
                     "value": d.value,
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "classes": d.classes,
@@ -1082,10 +1093,10 @@ class FlagMap:
         # Process each GADM group efficiently
         from .loaders import load_gadm_like
         
-        for gadm, data_elements in data_by_gadm.items():
+        for (gadm, find_in_gadm), data_elements in data_by_gadm.items():
             try:
                 # Load GADM data once per GADM (already cached via _file_cache)
-                gadm_geojson = load_gadm_like(gadm)
+                gadm_geojson = load_gadm_like(gadm, list(find_in_gadm) if find_in_gadm else None)
                 
                 if not gadm_geojson.get("features"):
                     print(f"Warning: No GADM features found for: {gadm}")

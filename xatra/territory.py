@@ -73,17 +73,18 @@ class Territory:
         return Territory(_geometry_provider=provider)
 
     @staticmethod
-    def from_gadm(key: str) -> "Territory":
+    def from_gadm(key: str, find_in_gadm: Optional[List[str]] = None) -> "Territory":
         """Create Territory from GADM administrative boundary.
         
         Args:
             key: GADM country code (e.g., "IND", "PAK")
+            find_in_gadm: Optional list of country codes to search in if key is not found in its own file
             
         Returns:
             Territory instance
         """
         def provider():
-            obj = load_gadm_like(key)
+            obj = load_gadm_like(key, find_in_gadm)
             return _geojson_to_geometry(obj)
         return Territory(_geometry_provider=provider)
 

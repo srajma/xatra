@@ -59,17 +59,18 @@ def clear_file_cache():
     _file_cache.clear()
 
 
-def gadm(key: str):
+def gadm(key: str, find_in_gadm: Optional[List[str]] = None):
     """Load GADM administrative boundary as Territory.
     
     Args:
         key: GADM country code (e.g., "IND", "PAK")
+        find_in_gadm: Optional list of country codes to search in if key is not found in its own file
         
     Returns:
         Territory object
     """
     from .territory import Territory
-    return Territory.from_gadm(key)
+    return Territory.from_gadm(key, find_in_gadm)
 
 
 def naturalearth(ne_id: str) -> Dict[str, Any]:
@@ -162,7 +163,7 @@ def overpass(osm_id: str) -> Dict[str, Any]:
     return {"type": "Feature", "properties": {"source": os.path.basename(path)}, "geometry": geometry}
 
 
-def load_gadm_like(key: str) -> Dict[str, Any]:
+def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[str, Any]:
     """Load GADM geometry by key like 'IND' or 'IND.31' or deeper.
 
     - If key has no dot: open gadm41_<ISO>_0.json and return its FeatureCollection
@@ -173,6 +174,7 @@ def load_gadm_like(key: str) -> Dict[str, Any]:
     
     Args:
         key: GADM key (e.g., "IND", "IND.31", "IND.31.1")
+        find_in_gadm: Optional list of country codes to search in if key is not found in its own file
         
     Returns:
         GeoJSON FeatureCollection
@@ -186,24 +188,51 @@ def load_gadm_like(key: str) -> Dict[str, Any]:
     parts = key.split('.')
     iso3 = parts[0]
     level = 0 if len(parts) == 1 else len(parts) - 1
+    
+    # Try to load from the key's own file first
     path = os.path.join(GADM_DIR, f"gadm41_{iso3}_{level}.json")
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"GADM file not found: {path}")
-    fc = _read_json(path)
-    if fc.get("type") != "FeatureCollection":
-        raise ValueError(f"Expected FeatureCollection in {path}")
-    if level == 0:
-        return fc
-    prefix = '.'.join(parts[:level+1])
-    gid_key = f"GID_{level}"
-    features = []
-    for feat in fc.get("features", []):
-        props = feat.get("properties", {}) or {}
-        gid = str(props.get(gid_key, ""))
-        # Use exact prefix matching with boundary check
-        if gid.startswith(prefix) and (len(gid) == len(prefix) or gid[len(prefix)] in ['.', '_']):
-            features.append(feat)
-    return {"type": "FeatureCollection", "features": features}
+    if os.path.exists(path):
+        fc = _read_json(path)
+        if fc.get("type") != "FeatureCollection":
+            raise ValueError(f"Expected FeatureCollection in {path}")
+        if level == 0:
+            return fc
+        prefix = '.'.join(parts[:level+1])
+        gid_key = f"GID_{level}"
+        features = []
+        for feat in fc.get("features", []):
+            props = feat.get("properties", {}) or {}
+            gid = str(props.get(gid_key, ""))
+            # Use exact prefix matching with boundary check
+            if gid.startswith(prefix) and (len(gid) == len(prefix) or gid[len(prefix)] in ['.', '_']):
+                features.append(feat)
+        return {"type": "FeatureCollection", "features": features}
+    
+    # If not found and find_in_gadm is provided, search in those files
+    if find_in_gadm:
+        for country_code in find_in_gadm:
+            search_path = os.path.join(GADM_DIR, f"gadm41_{country_code}_{level}.json")
+            if os.path.exists(search_path):
+                fc = _read_json(search_path)
+                if fc.get("type") != "FeatureCollection":
+                    continue
+                if level == 0:
+                    # For level 0, return all features from the country file
+                    return fc
+                prefix = '.'.join(parts[:level+1])
+                gid_key = f"GID_{level}"
+                features = []
+                for feat in fc.get("features", []):
+                    props = feat.get("properties", {}) or {}
+                    gid = str(props.get(gid_key, ""))
+                    # Use exact prefix matching with boundary check
+                    if gid.startswith(prefix) and (len(gid) == len(prefix) or gid[len(prefix)] in ['.', '_']):
+                        features.append(feat)
+                if features:  # If we found features, return them
+                    return {"type": "FeatureCollection", "features": features}
+    
+    # If still not found, raise the original error
+    raise FileNotFoundError(f"GADM file not found: {path}")
 
 
 def load_naturalearth_like(ne_id: str) -> Dict[str, Any]:
