@@ -438,7 +438,6 @@ map.Dataframe(df, find_in_gadm=["IND"])
 
 
 map.show(out_json="map_dataframe.json", out_html="map_dataframe.html")
-
 ```
 
 **Parameters:**
