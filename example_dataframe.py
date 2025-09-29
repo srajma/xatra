@@ -14,14 +14,14 @@ map.BaseOption("Esri.WorldPhysical")
 # })
 ### DYNAMIC MAP
 df = pd.DataFrame({
-    'GID': ['IND.31', 'IND.12'],
-    '2020': [100, 200],
-    '2021': [110, 210],
-    '2022': [120, 220]
+    'GID': ['IND.31', 'IND.12', 'Z01.14'],
+    '2020': [100, 200, 100],
+    '2021': [110, 210, 110],
+    '2022': [120, 220, 120]
 })
 
 df.set_index('GID', inplace=True)
-map.Dataframe(df)
+map.Dataframe(df, find_in_gadm=["IND"])
 
 
 map.show(out_json="map_dataframe.json", out_html="map_dataframe.html")

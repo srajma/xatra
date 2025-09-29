@@ -34,7 +34,7 @@ Development
 - [x] xatra.Admin
 - [x] xatra.Data
 - [x] xatra.Flag color groups
-- [ ] xatra.Dataframe
+- [x] xatra.Dataframe
 - [x] do we need to redraw everything each frame?
 - [ ] possibly calculate and keep simplified geometries
 - [ ] loading geojson from file instead of storing it in html; i.e. with a server
