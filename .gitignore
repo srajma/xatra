@@ -16,5 +16,6 @@ __pycache__/
 *.pyzwz
 
 # temp
+old/
 map*.json
 map*.html
