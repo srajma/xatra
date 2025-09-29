@@ -18,7 +18,8 @@ Libraries
 - [ ] copy maps from old xatra
 
 Bugfixes
-- [ ] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
+- [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
+- [ ] disputed areas admin map
 - [x] xatra.Data issue with colors of data in dynamic maps and exact range
 - [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
 - [x] Mark map as dynamic if any element as period
@@ -148,6 +149,43 @@ map.AdminRivers(sources=["naturalearth", "overpass"])
 map.TitleBox("<b>Taluk-level map of the Indian subcontinent.")
 map.show()
 ```
+
+## Disputed Territories
+
+Xatra now properly handles disputed territories in GADM data. Disputed territories like Kashmir and Arunachal Pradesh are coded with special GID_0 values (like "Z01", "Z04", etc.) instead of the country code, but they are still included in the country's GADM files.
+
+### Automatic Inclusion
+
+When you call `map.Admin(gadm="IND", level=1)` or `map.Admin(gadm="IND", level=2)`, disputed territories are automatically included in the map. This works for all administrative levels.
+
+### Manual Territory Mapping
+
+For specific disputed territories, you can use the `find_in_gadm` parameter to specify which country files to search in:
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+
+# Show all Indian states including disputed territories
+map.Admin(gadm="IND", level=1)
+
+# Show specific disputed territories
+map.Admin(gadm="Z01.14", level=0, find_in_gadm=["IND"])  # Kashmir
+map.Flag(label="Kashmir", value=gadm("Z01.14", find_in_gadm=["IND"]))
+map.Data(gadm="Z01.14", value=100, find_in_gadm=["IND"])
+
+map.show()
+```
+
+The `find_in_gadm` parameter is available for:
+- `map.Admin()` - Administrative regions
+- `map.Flag()` - When using `gadm()` loader
+- `map.Data()` - Data elements
+
+This ensures that disputed territories are properly displayed and can be referenced by their specific GADM codes.
 
 ## Example: Data map
 

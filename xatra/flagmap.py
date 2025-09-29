@@ -229,8 +229,6 @@ class DataColormap:
         Returns:
             Hex color string (e.g., "#ff0000")
         """
-        import matplotlib.pyplot as plt
-        
         # Determine vmin and vmax
         vmin = self.vmin
         vmax = self.vmax
