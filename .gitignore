@@ -1,5 +1,6 @@
 *.log
-data/
+data/gadm/
+data/ne_*
 scripts/start_server.sh
 test_periods.*
 

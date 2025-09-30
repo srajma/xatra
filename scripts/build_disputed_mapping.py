@@ -28,19 +28,33 @@ def iter_gadm_files() -> List[Tuple[str, str, int]]:
     return sorted(files)
 
 
-def extract_gid_values(feature_props: Dict[str, object]) -> Set[str]:
-    roots: Set[str] = set()
-    # Consider all keys that look like GID_0, GID_1, ... up to 4
+def extract_highest_gid_root(feature_props: Dict[str, object]) -> str:
+    """Extract the root from the highest-level GID in the feature properties."""
+    # Find all GID_n keys and their values
+    gid_entries = []
     for key, value in feature_props.items():
         if not isinstance(value, str):
             continue
         if not key.startswith("GID_"):
             continue
-        m = GID_VALUE_RE.match(value)
-        if not m:
+        try:
+            level = int(key.split("_")[1])
+            gid_entries.append((level, value))
+        except (ValueError, IndexError):
             continue
-        roots.add(m.group("root"))
-    return roots
+    
+    if not gid_entries:
+        return ""
+    
+    # Get the highest level GID
+    highest_level, highest_gid = max(gid_entries, key=lambda x: x[0])
+    
+    # Extract root from the highest GID
+    m = GID_VALUE_RE.match(highest_gid)
+    if not m:
+        return ""
+    
+    return m.group("root")
 
 
 def load_json(path: str) -> Dict[str, object]:
@@ -63,33 +77,35 @@ def build_mapping() -> Tuple[List[Dict[str, object]], Dict[str, List[Dict[str, o
         features = doc.get("features", [])
         for feat in features:
             props = feat.get("properties", {}) if isinstance(feat, dict) else {}
-            roots = extract_gid_values(props)
-            for gid_root in roots:
-                # Only include disputed blocks that look like Z followed by digits (e.g., Z01, Z06)
-                is_disputed_root = bool(re.match(r"^Z\d+$", gid_root))
-                if not is_disputed_root:
-                    continue
+            highest_gid_root = extract_highest_gid_root(props)
+            
+            if not highest_gid_root:
+                continue
+                
+            # Only include entries where the highest GID doesn't match the file's country code
+            if highest_gid_root == file_country:
+                continue
 
-                row = {
-                    "gid_root": gid_root,
+            row = {
+                "gid_root": highest_gid_root,
+                "file_country": file_country,
+                "file": filename,
+                "level": level,
+            }
+            rows.append(row)
+
+            aggregated.setdefault(highest_gid_root, [])
+            # Avoid duplicate entries for same gid_root/file_country/level
+            key_tuple = (file_country, level, filename)
+            if not any(
+                (r.get("file_country"), r.get("level"), r.get("file")) == key_tuple
+                for r in aggregated[highest_gid_root]
+            ):
+                aggregated[highest_gid_root].append({
                     "file_country": file_country,
-                    "file": filename,
                     "level": level,
-                }
-                rows.append(row)
-
-                aggregated.setdefault(gid_root, [])
-                # Avoid duplicate entries for same gid_root/file_country/level
-                key_tuple = (file_country, level, filename)
-                if not any(
-                    (r.get("file_country"), r.get("level"), r.get("file")) == key_tuple
-                    for r in aggregated[gid_root]
-                ):
-                    aggregated[gid_root].append({
-                        "file_country": file_country,
-                        "level": level,
-                        "file": filename,
-                    })
+                    "file": filename,
+                })
 
     # Sort outputs for reproducibility
     rows.sort(key=lambda r: (r["gid_root"], r["file_country"], r["level"], r["file"]))
