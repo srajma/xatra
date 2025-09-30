@@ -1,70 +1,4 @@
 {
-  "Z02": [
-    {
-      "file_country": "CHN",
-      "level": 0,
-      "file": "gadm41_CHN_0.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 1,
-      "file": "gadm41_IND_1.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 2,
-      "file": "gadm41_IND_2.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 3,
-      "file": "gadm41_IND_3.json"
-    }
-  ],
-  "Z03": [
-    {
-      "file_country": "CHN",
-      "level": 0,
-      "file": "gadm41_CHN_0.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 1,
-      "file": "gadm41_IND_1.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 2,
-      "file": "gadm41_IND_2.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 3,
-      "file": "gadm41_IND_3.json"
-    }
-  ],
-  "Z08": [
-    {
-      "file_country": "CHN",
-      "level": 0,
-      "file": "gadm41_CHN_0.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 1,
-      "file": "gadm41_IND_1.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 2,
-      "file": "gadm41_IND_2.json"
-    },
-    {
-      "file_country": "IND",
-      "level": 3,
-      "file": "gadm41_IND_3.json"
-    }
-  ],
   "HKG": [
     {
       "file_country": "CHN",
@@ -197,6 +131,11 @@
   "Z06": [
     {
       "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
       "level": 1,
       "file": "gadm41_IND_1.json"
     },
@@ -209,11 +148,72 @@
       "file_country": "IND",
       "level": 3,
       "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z02": [
+    {
+      "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
     },
     {
-      "file_country": "PAK",
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z03": [
+    {
+      "file_country": "IND",
       "level": 0,
-      "file": "gadm41_PAK_0.json"
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z08": [
+    {
+      "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
     }
   ]
 }

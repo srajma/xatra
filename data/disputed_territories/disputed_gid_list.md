@@ -1,13 +1,14 @@
 | GID | Root | GID_0 | File Country | Level | File |
 |---|---|---|---|---|---|
-| Z02 | Z02 | Z02 | CHN | 0 | gadm41_CHN_0.json |
-| Z03 | Z03 | Z03 | CHN | 0 | gadm41_CHN_0.json |
-| Z08 | Z08 | Z08 | CHN | 0 | gadm41_CHN_0.json |
 | Z01 | Z01 | Z01 | IND | 0 | gadm41_IND_0.json |
 | Z04 | Z04 | Z04 | IND | 0 | gadm41_IND_0.json |
 | Z05 | Z05 | Z05 | IND | 0 | gadm41_IND_0.json |
 | Z07 | Z07 | Z07 | IND | 0 | gadm41_IND_0.json |
 | Z09 | Z09 | Z09 | IND | 0 | gadm41_IND_0.json |
+| Z06 | Z06 | Z06 | IND | 0 | gadm41_IND_0.json |
+| Z02 | Z02 | Z02 | IND | 0 | gadm41_IND_0.json |
+| Z03 | Z03 | Z03 | IND | 0 | gadm41_IND_0.json |
+| Z08 | Z08 | Z08 | IND | 0 | gadm41_IND_0.json |
 | Z07.3_1 | Z07 | Z07 | IND | 1 | gadm41_IND_1.json |
 | Z04.13_1 | Z04 | Z04 | IND | 1 | gadm41_IND_1.json |
 | Z09.13_1 | Z09 | Z09 | IND | 1 | gadm41_IND_1.json |
@@ -131,4 +132,3 @@
 | Z03.28.10.1_1 | Z03 | Z03 | IND | 3 | gadm41_IND_3.json |
 | Z08.29.4.3_1 | Z08 | Z08 | IND | 3 | gadm41_IND_3.json |
 | Z03.29.4.6_1 | Z03 | Z03 | IND | 3 | gadm41_IND_3.json |
-| Z06 | Z06 | Z06 | PAK | 0 | gadm41_PAK_0.json |

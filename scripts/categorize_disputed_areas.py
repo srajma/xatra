@@ -89,7 +89,7 @@ def main():
         print(f"\nProcessing {country} files...")
         
         # Process all level files (1, 2, 3, etc.)
-        for level in range(1, 10):  # Check up to level 9
+        for level in range(0, 10):  # Check up to level 9
             filename = f"gadm41_{country}_{level}.json"
             file_path = data_dir / filename
             
@@ -126,7 +126,7 @@ def main():
     print(f"\nStep 2: Processing IND files to append Z entries...")
     
     # Process IND files
-    for level in range(1, 10):  # Check up to level 9
+    for level in range(0, 10):  # Check up to level 9
         filename = f"gadm41_{target_country}_{level}.json"
         file_path = data_dir / filename
         

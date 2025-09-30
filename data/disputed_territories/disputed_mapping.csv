@@ -75,11 +75,11 @@ Z01,IND,3,gadm41_IND_3.json
 Z01,IND,3,gadm41_IND_3.json
 Z01,IND,3,gadm41_IND_3.json
 Z01,IND,3,gadm41_IND_3.json
-Z02,CHN,0,gadm41_CHN_0.json
+Z02,IND,0,gadm41_IND_0.json
 Z02,IND,1,gadm41_IND_1.json
 Z02,IND,2,gadm41_IND_2.json
 Z02,IND,3,gadm41_IND_3.json
-Z03,CHN,0,gadm41_CHN_0.json
+Z03,IND,0,gadm41_IND_0.json
 Z03,IND,1,gadm41_IND_1.json
 Z03,IND,1,gadm41_IND_1.json
 Z03,IND,2,gadm41_IND_2.json
@@ -98,6 +98,7 @@ Z05,IND,2,gadm41_IND_2.json
 Z05,IND,2,gadm41_IND_2.json
 Z05,IND,3,gadm41_IND_3.json
 Z05,IND,3,gadm41_IND_3.json
+Z06,IND,0,gadm41_IND_0.json
 Z06,IND,1,gadm41_IND_1.json
 Z06,IND,1,gadm41_IND_1.json
 Z06,IND,2,gadm41_IND_2.json
@@ -116,7 +117,6 @@ Z06,IND,3,gadm41_IND_3.json
 Z06,IND,3,gadm41_IND_3.json
 Z06,IND,3,gadm41_IND_3.json
 Z06,IND,3,gadm41_IND_3.json
-Z06,PAK,0,gadm41_PAK_0.json
 Z07,IND,0,gadm41_IND_0.json
 Z07,IND,1,gadm41_IND_1.json
 Z07,IND,2,gadm41_IND_2.json
@@ -147,7 +147,7 @@ Z07,IND,3,gadm41_IND_3.json
 Z07,IND,3,gadm41_IND_3.json
 Z07,IND,3,gadm41_IND_3.json
 Z07,IND,3,gadm41_IND_3.json
-Z08,CHN,0,gadm41_CHN_0.json
+Z08,IND,0,gadm41_IND_0.json
 Z08,IND,1,gadm41_IND_1.json
 Z08,IND,2,gadm41_IND_2.json
 Z08,IND,3,gadm41_IND_3.json
