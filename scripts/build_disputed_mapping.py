@@ -65,9 +65,8 @@ def build_mapping() -> Tuple[List[Dict[str, object]], Dict[str, List[Dict[str, o
             props = feat.get("properties", {}) if isinstance(feat, dict) else {}
             roots = extract_gid_values(props)
             for gid_root in roots:
-                # We only care about disputed/mismatched roots (i.e., not matching the file country)
-                # or Zxx roots which indicate disputed blocks.
-                is_disputed_root = gid_root.startswith("Z") or gid_root != file_country
+                # Only include disputed blocks that look like Z followed by digits (e.g., Z01, Z06)
+                is_disputed_root = bool(re.match(r"^Z\d+$", gid_root))
                 if not is_disputed_root:
                     continue
 
