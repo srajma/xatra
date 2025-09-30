@@ -1,6 +1,6 @@
 *.log
-data/gadm/
-data/ne_*
+src/xatra/data/gadm/
+src/xatra/data/ne_*
 scripts/start_server.sh
 
 # python

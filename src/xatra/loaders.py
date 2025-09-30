@@ -14,7 +14,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 GADM_DIR = os.path.join(DATA_DIR, "gadm")
 DISPUTED_DIR = os.path.join(DATA_DIR, "disputed_territories")
 DISPUTED_MAPPING_JSON = os.path.join(DISPUTED_DIR, "disputed_mapping.json")

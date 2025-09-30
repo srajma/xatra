@@ -1066,7 +1066,7 @@ class FlagMap:
                     # Load the appropriate level file directly
                     parts = a.gadm_key.split('.')
                     iso3 = parts[0]
-                    gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
+                    gadm_dir = os.path.join(os.path.dirname(__file__), "data", "gadm")
                     level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_{a.level}.json")
                     
                     # Try to load the level file, with fallback to find_in_gadm (explicit or computed) if needed
