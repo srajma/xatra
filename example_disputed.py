@@ -3,6 +3,7 @@
 import xatra
 from xatra.loaders import gadm, naturalearth
 from xatra.colorseq import LinearColorSequence
+from xatra.territory_library import Z01
 from matplotlib.colors import LinearSegmentedColormap
 
 # Create a test map
@@ -20,16 +21,7 @@ map.BaseOption("Esri.WorldPhysical")
 # map.Data(gadm="IND", value=100)
 # map.Data(gadm="Z01.14", value=100) # , find_in_gadm=["IND"]
 
-map.Admin(gadm="Z01", level=1)
-map.Admin(gadm="Z02", level=1)
-map.Admin(gadm="Z03", level=1)
-map.Admin(gadm="Z04", level=1)
-map.Admin(gadm="Z05", level=1)
-map.Admin(gadm="Z06", level=1)
-map.Admin(gadm="Z07", level=1)
-map.Admin(gadm="Z08", level=1)
-map.Admin(gadm="Z09", level=1)
-# map.Flag(label="Z01", value=gadm("Z01"))
+map.Flag(label="Z01", value=Z01)
 # map.Data(gadm="Z01", value=100)
 
 # Generate the map

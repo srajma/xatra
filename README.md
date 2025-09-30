@@ -20,7 +20,7 @@ Libraries
 Bugfixes
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
-- [ ] fix issue with disputed areas
+- [x] fix issue with disputed areas
 - [x] top-level disputed areas
 - [x] debug slowness
 - [x] xatra.Data issue with colors of data in dynamic maps and exact range
