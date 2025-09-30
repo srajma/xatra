@@ -1396,6 +1396,8 @@ class FlagMap:
         Example:
             >>> map.show("my_map.json", "my_map.html")
         """
+        # watermark with a TitleBox
+        self.TitleBox("<i>made with <a href='https://github.com/srajma/xatra'>xatra</a></i>")
         payload = self._export_json()
         import json
         with open(out_json, "w", encoding="utf-8") as f:
