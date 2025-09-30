@@ -291,8 +291,8 @@ Every element type automatically receives a default CSS class that you can use f
 | `Text()` | `.text` | Text label |
 | `Admin()` | `.admin` | Administrative region geometry |
 | `Data()` | `.data` | Data visualization geometry |
-| Title box | `#title` | The title box container (ID, not class) |
-| Controls | `#controls` | The time slider controls (ID, not class) |
+| `TitleBox()` | `#title` | The title box container (ID, not class) |
+| `slider()` | `#controls` | The time slider controls (ID, not class) |
 
 #### Custom CSS Classes
 
