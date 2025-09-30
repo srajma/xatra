@@ -11,13 +11,15 @@ Stylistic changes
 - [x] slider shouldn't appear for static maps
 - [x] map.slider()
 - [x] slider play button plus positions of years, start and end year
-- [ ] watermark
+- [x] watermark
 
 Libraries
 - [x] copy matchers from old xatra
 - [ ] copy maps from old xatra
 
 Bugfixes
+- [ ] ideally make it so hovering hovers on *all* flags/elements at that point
+- [ ] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
 - [x] fix issue with disputed areas

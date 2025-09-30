@@ -15,6 +15,7 @@ map.BaseOption("Esri.WorldPhysical")
 map.FlagColorSequence(LinearColorSequence())
 map.DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]), 100, 1000)
 map.Data(gadm = "IND.12", value=100)
+
 map.Data(gadm = "IND.12", value=100)
 map.Data(gadm = "IND.21", value=300, period=[0, 600])
 map.Data(gadm = "IND.22", value=300, period=[0, 600])
@@ -23,7 +24,7 @@ map.Data(gadm = "IND.22", value=1000, period=[600, 800])
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], note="south is lost after Ashoka's death")
 map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500], color="#ff0000")
-map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
+map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period", classes="tamil")
 map.Flag(label="Principality", value=gadm("IND.11.1"))
 # map.Admin(gadm="IND", level=2)
 map.Admin(gadm="IND.16", level=3, period=[-500,750])
@@ -51,6 +52,7 @@ map.CSS("""
 #controls, #controls input {width:90%;}
 
 /* Specific styling for individual elements */
+.tamil {fill: #880088}
 .indian-river { stroke: #ff0000; }
 .ganga-river { stroke-width: 4; }
 .uttarapatha-path { stroke: #ff0000; stroke-width: 2; stroke-dasharray: 5 5; }
