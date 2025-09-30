@@ -273,6 +273,223 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 - **`show(out_json="map.json", out_html="map.html")`**: Export map to JSON and HTML files
 
+### CSS Classes and Styling
+
+Xatra provides powerful CSS-based styling for all map elements. Each element type receives default CSS classes, and you can add custom classes for fine-grained control.
+
+#### Default CSS Classes
+
+Every element type automatically receives a default CSS class that you can use for styling:
+
+| Element Type | Default Class | Element |
+|--------------|---------------|---------|
+| `Flag()` | `.flag` | The flag geometry (polygon/path) |
+| Flag labels | `.flag-label` | The text label that appears at the flag's centroid |
+| `River()` | `.river` | River line geometry |
+| `Path()` | `.path` | Path line geometry |
+| `Point()` | `.point` | Point marker |
+| `Text()` | `.text` | Text label |
+| `Admin()` | `.admin` | Administrative region geometry |
+| `Data()` | `.data` | Data visualization geometry |
+| Title box | `#title` | The title box container (ID, not class) |
+| Controls | `#controls` | The time slider controls (ID, not class) |
+
+#### Custom CSS Classes
+
+You can add custom classes to most elements for individual styling. Custom classes are added using the `classes` parameter:
+
+```python
+# Add custom classes to flags
+map.Flag(label="Maurya", value=gadm("IND"), classes="empire hindu")
+map.Flag(label="Chola", value=gadm("IND.31"), classes="kingdom hindu")
+map.Flag(label="Mughal", value=gadm("IND.25"), classes="empire muslim")
+
+# Add custom classes to other elements
+map.River(label="Ganga", value=naturalearth("1159122643"), classes="sacred-river major-river")
+map.Path(label="Silk Road", value=[[35, 75], [40, 80]], classes="trade-route ancient")
+map.Text(label="Jambudvipa", position=[22, 79], classes="region-name large-text")
+map.Admin(gadm="IND.31", level=3, classes="tamil-nadu-tehsils")
+map.Data(gadm="IND.12", value=100, classes="state-data")
+```
+
+**Important:** Flag labels automatically inherit the custom classes from their parent flag. This means if you define:
+
+```python
+map.Flag(label="Maurya", value=gadm("IND"), classes="empire hindu")
+```
+
+Both the flag geometry and its label will receive the classes `empire` and `hindu`, in addition to their default classes (`.flag` and `.flag-label` respectively).
+
+#### Styling with CSS
+
+Use the `CSS()` method to add custom styles. You can target default classes, custom classes, or both:
+
+```python
+map.CSS("""
+/* Style all flags */
+.flag {
+  stroke: #333;
+  stroke-width: 1;
+  fill-opacity: 0.4;
+}
+
+/* Style all flag labels */
+.flag-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+}
+
+/* Style specific custom classes */
+.empire {
+  stroke-width: 3;
+  stroke: #ff0000;
+}
+
+.kingdom {
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+}
+
+.hindu {
+  fill: rgba(255, 200, 100, 0.4);
+}
+
+.muslim {
+  fill: rgba(100, 200, 255, 0.4);
+}
+
+/* Style flag labels with custom classes */
+.flag-label.empire {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.flag-label.kingdom {
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Style rivers */
+.river {
+  stroke: #0066cc;
+  stroke-width: 2;
+}
+
+.sacred-river {
+  stroke: #ff6600;
+  stroke-width: 4;
+}
+
+/* Style paths */
+.path {
+  stroke: #8B4513;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+
+.trade-route {
+  stroke: #FFD700;
+  stroke-width: 3;
+}
+
+/* Style text labels */
+.text {
+  font-size: 16px;
+  color: #666;
+}
+
+.region-name {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Style the title box */
+#title {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  max-width: 400px;
+}
+
+/* Style the time controls */
+#controls {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+}
+""")
+```
+
+#### Complete Example
+
+Here's a complete example showing how to use default and custom CSS classes together:
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+
+# Add flags with custom classes
+map.Flag(label="Maurya", value=gadm("IND"), classes="empire hindu", period=[-320, -180])
+map.Flag(label="Gupta", value=gadm("IND.12"), classes="empire hindu", period=[250, 500])
+map.Flag(label="Chola", value=gadm("IND.31"), classes="kingdom hindu")
+map.Flag(label="Mughal", value=gadm("IND.25"), classes="empire muslim", period=[1500, 1700])
+
+# Style using both default and custom classes
+map.CSS("""
+/* Default styling for all flags */
+.flag {
+  stroke-width: 1;
+  fill-opacity: 0.5;
+}
+
+/* All empires get thick borders */
+.empire {
+  stroke-width: 3;
+}
+
+/* All kingdoms get dashed borders */
+.kingdom {
+  stroke-dasharray: 5 5;
+}
+
+/* Hindu states get orange fill */
+.hindu {
+  fill: rgba(255, 150, 50, 0.4);
+  stroke: #cc6600;
+}
+
+/* Muslim states get green fill */
+.muslim {
+  fill: rgba(50, 200, 100, 0.4);
+  stroke: #00aa44;
+}
+
+/* Empire labels are larger and bold */
+.flag-label.empire {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Kingdom labels are smaller and italic */
+.flag-label.kingdom {
+  font-size: 14px;
+  font-style: italic;
+}
+""")
+
+map.show()
+```
+
+In this example:
+- The Maurya flag gets: `.flag`, `.empire`, `.hindu` classes (thick border, orange fill)
+- The Maurya label gets: `.flag-label`, `.empire`, `.hindu` classes (large, bold text)
+- The Chola flag gets: `.flag`, `.kingdom`, `.hindu` classes (dashed border, orange fill)
+- The Chola label gets: `.flag-label`, `.kingdom`, `.hindu` classes (small, italic text)
+
 ### Territory Class
 
 Represents geographical regions with set algebra operations.
