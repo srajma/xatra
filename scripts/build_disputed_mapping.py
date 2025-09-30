@@ -9,7 +9,7 @@ from typing import Dict, List, Tuple, Set
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GADM_DIR = os.path.join(PROJECT_ROOT, "data", "gadm")
-OUTPUT_DIR = os.path.join(PROJECT_ROOT, "scripts")
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, "data/disputed_territories")
 
 
 FILENAME_RE = re.compile(r"^gadm41_([A-Z0-9]{3})_([0-4])\.json$")

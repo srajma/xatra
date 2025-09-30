@@ -10,14 +10,11 @@
 
 We generate a table mapping disputed GADM roots (e.g. `Z01`, `Z06`, etc.) and any other GIDs that appear in a different country's file (e.g. `Z09.*` found inside an `IND` file) to the country files in which they occur. This helps set sensible defaults for `find_in_gadm`.
 
-How to build the mapping:
+Run:
 
-1. Ensure the relevant GADM files are present in `data/gadm/`. The mapping quality depends on which files are available. For South Asia, download at least: `IND`, `PAK`, `CHN`, `AFG`, `NPL`, `BTN`, `LKA`.
-2. Run:
-
-   ```bash
-   python3 scripts/build_disputed_mapping.py
-   ```
+```bash
+uv run scripts/build_disputed_mapping.py
+```
 
 This writes:
 
