@@ -15,11 +15,3 @@ Run:
 ```bash
 uv run scripts/build_disputed_mapping.py
 ```
-
-This writes:
-
-- `scripts/disputed_mapping.csv` — flat rows: `gid_root,file_country,level,file`
-- `scripts/disputed_mapping.json` — dict keyed by `gid_root` to arrays of `{file_country, level, file}`
-- `scripts/disputed_mapping.md` — readable Markdown table of the mapping
-
-Note: If the output is empty/near-empty, it likely means the counterpart country files containing disputed features (e.g. `IND`/`PAK` for `Z01`/`Z06`) are not yet downloaded. Download those country files and re-run the builder.
