@@ -317,8 +317,10 @@ HTML_TEMPLATE = Template(
                 labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
               }
               
+              let labelClassName = 'flag-label';
+              if (f.classes) labelClassName += ' ' + f.classes;
               const labelDiv = L.divIcon({
-                html: `<div class="flag-label" style="${labelStyle}">${f.label}</div>`,
+                html: `<div class="${labelClassName}" style="${labelStyle}">${f.label}</div>`,
                 className: 'flag-label-container',
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
@@ -704,8 +706,10 @@ HTML_TEMPLATE = Template(
               labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
             }
             
+            let labelClassName = 'flag-label';
+            if (f.classes) labelClassName += ' ' + f.classes;
             const labelDiv = L.divIcon({
-              html: `<div class="flag-label" style="${labelStyle}">${f.label}</div>`,
+              html: `<div class="${labelClassName}" style="${labelStyle}">${f.label}</div>`,
               className: 'flag-label-container',
               iconSize: [1, 1],
               iconAnchor: [0, 0]

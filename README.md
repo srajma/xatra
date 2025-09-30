@@ -35,6 +35,7 @@ Bugfixes
 - [x] efficiency and documentation
 
 Development
+- [ ] grouping of map elements and layer selection
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [x] xatra.Data
