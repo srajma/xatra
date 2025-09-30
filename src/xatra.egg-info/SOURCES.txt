@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/xatra/__init__.py
+src/xatra/colorseq.py
+src/xatra/flagmap.py
+src/xatra/loaders.py
+src/xatra/paxmax.py
+src/xatra/render.py
+src/xatra/territory.py
+src/xatra/territory_library.py
+src/xatra.egg-info/PKG-INFO
+src/xatra.egg-info/SOURCES.txt
+src/xatra.egg-info/dependency_links.txt
+src/xatra.egg-info/requires.txt
+src/xatra.egg-info/top_level.txt

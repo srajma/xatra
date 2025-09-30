@@ -690,3 +690,6 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.5" },
     { name = "shapely", specifier = ">=2.0.4" },
 ]
+
+[package.metadata.requires-dev]
+dev = []
