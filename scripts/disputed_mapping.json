@@ -1,0 +1,285 @@
+{
+  "Z02": [
+    {
+      "file_country": "CHN",
+      "level": 0,
+      "file": "gadm41_CHN_0.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 1,
+      "file": "gadm41_CHN_1.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 2,
+      "file": "gadm41_CHN_2.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 3,
+      "file": "gadm41_CHN_3.json"
+    }
+  ],
+  "Z03": [
+    {
+      "file_country": "CHN",
+      "level": 0,
+      "file": "gadm41_CHN_0.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 1,
+      "file": "gadm41_CHN_1.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 2,
+      "file": "gadm41_CHN_2.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 3,
+      "file": "gadm41_CHN_3.json"
+    }
+  ],
+  "Z08": [
+    {
+      "file_country": "CHN",
+      "level": 0,
+      "file": "gadm41_CHN_0.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 1,
+      "file": "gadm41_CHN_1.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 2,
+      "file": "gadm41_CHN_2.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 3,
+      "file": "gadm41_CHN_3.json"
+    }
+  ],
+  "HKG": [
+    {
+      "file_country": "CHN",
+      "level": 2,
+      "file": "gadm41_CHN_2.json"
+    }
+  ],
+  "MAC": [
+    {
+      "file_country": "CHN",
+      "level": 2,
+      "file": "gadm41_CHN_2.json"
+    },
+    {
+      "file_country": "CHN",
+      "level": 3,
+      "file": "gadm41_CHN_3.json"
+    }
+  ],
+  "Z01": [
+    {
+      "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z04": [
+    {
+      "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z05": [
+    {
+      "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z07": [
+    {
+      "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z09": [
+    {
+      "file_country": "IND",
+      "level": 0,
+      "file": "gadm41_IND_0.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 1,
+      "file": "gadm41_IND_1.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 2,
+      "file": "gadm41_IND_2.json"
+    },
+    {
+      "file_country": "IND",
+      "level": 3,
+      "file": "gadm41_IND_3.json"
+    }
+  ],
+  "Z06": [
+    {
+      "file_country": "PAK",
+      "level": 0,
+      "file": "gadm41_PAK_0.json"
+    },
+    {
+      "file_country": "PAK",
+      "level": 1,
+      "file": "gadm41_PAK_1.json"
+    },
+    {
+      "file_country": "PAK",
+      "level": 2,
+      "file": "gadm41_PAK_2.json"
+    },
+    {
+      "file_country": "PAK",
+      "level": 3,
+      "file": "gadm41_PAK_3.json"
+    }
+  ],
+  "ZAF": [
+    {
+      "file_country": "ZAF",
+      "level": 0,
+      "file": "gadm41_ZAF_0.json"
+    },
+    {
+      "file_country": "ZAF",
+      "level": 1,
+      "file": "gadm41_ZAF_1.json"
+    },
+    {
+      "file_country": "ZAF",
+      "level": 2,
+      "file": "gadm41_ZAF_2.json"
+    },
+    {
+      "file_country": "ZAF",
+      "level": 3,
+      "file": "gadm41_ZAF_3.json"
+    },
+    {
+      "file_country": "ZAF",
+      "level": 4,
+      "file": "gadm41_ZAF_4.json"
+    }
+  ],
+  "ZMB": [
+    {
+      "file_country": "ZMB",
+      "level": 0,
+      "file": "gadm41_ZMB_0.json"
+    },
+    {
+      "file_country": "ZMB",
+      "level": 1,
+      "file": "gadm41_ZMB_1.json"
+    },
+    {
+      "file_country": "ZMB",
+      "level": 2,
+      "file": "gadm41_ZMB_2.json"
+    }
+  ],
+  "ZWE": [
+    {
+      "file_country": "ZWE",
+      "level": 0,
+      "file": "gadm41_ZWE_0.json"
+    },
+    {
+      "file_country": "ZWE",
+      "level": 1,
+      "file": "gadm41_ZWE_1.json"
+    },
+    {
+      "file_country": "ZWE",
+      "level": 2,
+      "file": "gadm41_ZWE_2.json"
+    },
+    {
+      "file_country": "ZWE",
+      "level": 3,
+      "file": "gadm41_ZWE_3.json"
+    }
+  ]
+}
