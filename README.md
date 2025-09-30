@@ -14,12 +14,15 @@ Stylistic changes
 - [ ] watermark
 
 Libraries
-- [ ] copy matchers from old xatra
+- [x] copy matchers from old xatra
 - [ ] copy maps from old xatra
 
 Bugfixes
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
-- [ ] disputed areas admin map
+- [x] disputed areas admin map
+- [ ] fix issue with disputed areas
+- [ ] top-level disputed areas
+- [ ] debug slowness
 - [x] xatra.Data issue with colors of data in dynamic maps and exact range
 - [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
 - [x] Mark map as dynamic if any element as period
