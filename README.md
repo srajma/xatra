@@ -19,7 +19,7 @@ Libraries
 
 Bugfixes
 - [ ] ideally make it so hovering hovers on *all* flags/elements at that point
-- [ ] classes attribute not being passed on
+- [x] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
 - [x] fix issue with disputed areas

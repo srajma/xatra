@@ -157,12 +157,20 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             centroid = None
             if geom is not None:
                 centroid = _compute_centroid_for_geometry(mapping(geom))
+            # Collect all unique classes from items with the same label
+            all_classes = []
+            for it in items:
+                if it.get("classes"):
+                    all_classes.extend(it.get("classes").split())
+            unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
+            
             out.append({
                 "label": label,
                 "geometry": mapping(geom) if geom is not None else None,
                 "centroid": centroid,
                 "note": "; ".join([it.get("note") for it in items if it.get("note")]) or None,
                 "color": color,
+                "classes": unique_classes,
             })
         return {"mode": "static", "flags": out}
 
@@ -208,12 +216,20 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             centroid = None
             if geom is not None:
                 centroid = _compute_centroid_for_geometry(mapping(geom))
+            # Collect all unique classes from active items
+            all_classes = []
+            for it in active:
+                if it.get("classes"):
+                    all_classes.extend(it.get("classes").split())
+            unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
+            
             snapshot_flags.append({
                 "label": label,
                 "geometry": mapping(geom) if geom is not None else None,
                 "centroid": centroid,
                 "note": "; ".join(notes) or None,
                 "color": color,
+                "classes": unique_classes,
             })
         snapshots.append({"year": year, "flags": snapshot_flags})
 

@@ -225,7 +225,9 @@ HTML_TEMPLATE = Template(
           for (const f of snapshot.flags) {
             if (!f.geometry) continue;
             
-            const flagStyle = { className: 'flag' };
+            let className = 'flag';
+            if (f.classes) className += ' ' + f.classes;
+            const flagStyle = { className: className };
             if (f.color) {
               flagStyle.style = {
                 fillColor: f.color,
@@ -611,7 +613,9 @@ HTML_TEMPLATE = Template(
           if (!f.geometry) continue;
           
           // Create style with flag color
-          const flagStyle = { className: 'flag' };
+          let className = 'flag';
+          if (f.classes) className += ' ' + f.classes;
+          const flagStyle = { className: className };
           if (f.color) {
             flagStyle.style = {
               fillColor: f.color,

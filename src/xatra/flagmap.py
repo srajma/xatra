@@ -914,6 +914,7 @@ class FlagMap:
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "note": fl.note,
                     "color": fl.color,
+                    "classes": fl.classes,
                 })
 
         # Find the earliest start year from all object types
