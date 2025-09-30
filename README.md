@@ -18,7 +18,6 @@ Libraries
 - [ ] copy maps from old xatra
 
 Bugfixes
-- [ ] ideally make it so hovering hovers on *all* flags/elements at that point
 - [x] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
@@ -35,7 +34,9 @@ Bugfixes
 - [x] efficiency and documentation
 
 Development
+- [ ] option for different point markers besides pin
 - [ ] grouping of map elements and layer selection
+- [ ] ideally make it so hovering hovers on *all* flags/elements at that point
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [x] xatra.Data
