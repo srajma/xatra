@@ -523,7 +523,8 @@ MP = AVANTI | AKARA | DASARNA | PULINDA | CEDI | HADOTI
 RJ = gadm("IND.29")
 
 PUNJAB = (
-    gadm("PAK.7")
+    gadm("IND.28")
+    | gadm("PAK.7")
     | gadm("IND.6.1")
     | gadm("PAK.4.1")
     | gadm("PAK.5")

@@ -20,17 +20,17 @@ map.BaseOption("Esri.WorldPhysical")
 # map.Data(gadm="IND", value=100)
 # map.Data(gadm="Z01.14", value=100) # , find_in_gadm=["IND"]
 
-map.Admin(gadm="Z01", level=2)
-map.Admin(gadm="Z02", level=2)
-map.Admin(gadm="Z03", level=2)
-map.Admin(gadm="Z04", level=2)
-map.Admin(gadm="Z05", level=2)
-map.Admin(gadm="Z06", level=2)
-map.Admin(gadm="Z07", level=2)
-map.Admin(gadm="Z08", level=2)
-map.Admin(gadm="Z09", level=2)
-
-# map.slider(speed=1000) # a slider is automatically added, but you can use this to set the time limits and play speed
+map.Admin(gadm="Z01", level=1)
+map.Admin(gadm="Z02", level=1)
+map.Admin(gadm="Z03", level=1)
+map.Admin(gadm="Z04", level=1)
+map.Admin(gadm="Z05", level=1)
+map.Admin(gadm="Z06", level=1)
+map.Admin(gadm="Z07", level=1)
+map.Admin(gadm="Z08", level=1)
+map.Admin(gadm="Z09", level=1)
+# map.Flag(label="Z01", value=gadm("Z01"))
+# map.Data(gadm="Z01", value=100)
 
 # Generate the map
 map.show(out_json="map_disputed.json", out_html="map_disputed.html")
