@@ -21,7 +21,7 @@ df = pd.DataFrame({
 })
 
 df.set_index('GID', inplace=True)
-map.Dataframe(df, find_in_gadm=["IND"])
+map.Dataframe(df)
 
 
 map.show(out_json="map_dataframe.json", out_html="map_dataframe.html")

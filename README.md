@@ -217,8 +217,9 @@ Some stuff to note about disputed territories:
 - these are coded not under their country name (e.g. "IND.12") but under some `Z<some number>`. E.g. Jammu and Kashmir is Z01.14.
 - they are typically contained under the json files of the countries that administer them. So e.g. Z01 (Jammu and Kashmir) is in the India data while Z06 (Pakistan-occupied Jammu and Gilgit-Baltistan) is in the Pakistan data.
 
-When mapping a country, e.g. `map.Admin(gadm="IND", level=1)`, it will map all the regions administered by it (i.e. contained in its file). When mapping a specific disputed region, xatra would have no way of a priori knowing which geojson file to find it in (since it doesn't start with the country code), so you need to specify which countries' files to find it in, e.g. `map.Admin(gadm="Z01.14", level=3, find_in_gadm=["IND"])`. 
+When mapping a country, e.g. `map.Admin(gadm="IND", level=1)`, it will map all the regions administered by it (i.e. contained in its file). When mapping a specific disputed region, e.g. `map.Flag(label="Kashmir", value=gadm("Z01.14"))` xatra finds out from data/disputed_territories/disputed_mapping.json which country it belongs to.
 
+If for whatever reason that doesn't work, you can also specify which countries' files to find it in, e.g. `map.Admin(gadm="Z01.14", level=3, find_in_gadm=["IND"])`. But you probably won't need to use it.
 
 The `find_in_gadm` parameter is available for:
 - `map.Admin()` - Administrative regions
