@@ -1,4 +1,29 @@
 # TODO
+
+Kanging
+- [ ] copy maps from old xatra (colonies and hsr remaining)
+- [ ] maps of north-west: Panini, Puranas and Greek
+- [ ] full history timeline
+
+Development
+- [ ] option for different point markers besides pin
+- [ ] grouping of map elements and layer selection
+- [ ] ideally make it so hovering hovers on *all* flags/elements at that point
+- [x] periods for things other than flags
+- [x] xatra.Admin
+- [x] xatra.Data
+- [x] xatra.Flag color groups
+- [x] xatra.Dataframe
+- [x] do we need to redraw everything each frame?
+- [ ] possibly: calculate and keep simplified geometries (check what the main source of slowness is)
+- [ ] possibly: loading geojson from file instead of storing it in html; i.e. with a server
+
+Interactive platform
+- [ ] DSL
+- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
+- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
+- [ ] ideally we want a crud type of thing for real-time updating
+
 Stylistic changes
 - [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
@@ -15,7 +40,6 @@ Stylistic changes
 
 Libraries
 - [x] copy matchers from old xatra
-- [ ] copy maps from old xatra
 
 Bugfixes
 - [x] classes attribute not being passed on
@@ -32,24 +56,6 @@ Bugfixes
 - [x] add color map in html
 - [x] rename Colormap to Colormap
 - [x] efficiency and documentation
-
-Development
-- [ ] option for different point markers besides pin
-- [ ] grouping of map elements and layer selection
-- [ ] ideally make it so hovering hovers on *all* flags/elements at that point
-- [x] periods for things other than flags
-- [x] xatra.Admin
-- [x] xatra.Data
-- [x] xatra.Flag color groups
-- [x] xatra.Dataframe
-- [x] do we need to redraw everything each frame?
-- [ ] possibly calculate and keep simplified geometries
-- [ ] loading geojson from file instead of storing it in html; i.e. with a server
-
-Interactive platform
-- [ ] DSL
-- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
-- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
 
 # Xatra: The Matplotlib of Maps
 
