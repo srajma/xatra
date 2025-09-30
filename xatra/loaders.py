@@ -16,11 +16,14 @@ from typing import Any, Dict, List, Optional, Tuple
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 GADM_DIR = os.path.join(DATA_DIR, "gadm")
+DISPUTED_DIR = os.path.join(DATA_DIR, "disputed_territories")
+DISPUTED_MAPPING_JSON = os.path.join(DISPUTED_DIR, "disputed_mapping.json")
 NE_RIVERS_FILE = os.path.join(DATA_DIR, "ne_10m_rivers.geojson")
 OVERPASS_DIR = os.path.join(DATA_DIR, "rivers_overpass_india")
 
 # Global file cache to avoid repeated disk reads
 _file_cache: Dict[str, Any] = {}
+_disputed_mapping_cache: Optional[Dict[str, Any]] = None
 
 DEBUG_FILE_CACHE = False
 
@@ -57,6 +60,51 @@ def clear_file_cache():
     """
     global _file_cache
     _file_cache.clear()
+    global _disputed_mapping_cache
+    _disputed_mapping_cache = None
+
+
+def _load_disputed_mapping() -> Optional[Dict[str, Any]]:
+    global _disputed_mapping_cache
+    if _disputed_mapping_cache is not None:
+        return _disputed_mapping_cache
+    try:
+        if os.path.exists(DISPUTED_MAPPING_JSON):
+            _disputed_mapping_cache = _read_json(DISPUTED_MAPPING_JSON)
+        else:
+            _disputed_mapping_cache = None
+    except Exception:
+        _disputed_mapping_cache = None
+    return _disputed_mapping_cache
+
+
+def _compute_find_in_gadm_default(key: str) -> Optional[List[str]]:
+    """Compute default find_in_gadm list from disputed mapping for a given GADM key.
+
+    Selects countries that contain the gid_root at the exact level implied by the key.
+    """
+    parts = key.split('.')
+    gid_root = parts[0]
+    # Expected level equals number of dots in key
+    desired_level = 0 if len(parts) == 1 else len(parts) - 1
+
+    mapping = _load_disputed_mapping()
+    if not mapping:
+        return None
+    entries = mapping.get(gid_root)
+    if not entries:
+        return None
+    # Filter by level match
+    countries: List[str] = []
+    for e in entries:
+        try:
+            if int(e.get("level", -1)) == desired_level:
+                c = str(e.get("file_country"))
+                if c and c not in countries:
+                    countries.append(c)
+        except Exception:
+            continue
+    return countries or None
 
 
 def gadm(key: str, find_in_gadm: Optional[List[str]] = None):
@@ -208,7 +256,9 @@ def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[s
                 features.append(feat)
         return {"type": "FeatureCollection", "features": features}
     
-    # If not found and find_in_gadm is provided, search in those files
+    # If not found, search in provided or computed find_in_gadm
+    if find_in_gadm is None:
+        find_in_gadm = _compute_find_in_gadm_default(key)
     if find_in_gadm:
         for country_code in find_in_gadm:
             search_path = os.path.join(GADM_DIR, f"gadm41_{country_code}_{level}.json")

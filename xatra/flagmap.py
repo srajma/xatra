@@ -1060,7 +1060,7 @@ class FlagMap:
             # Include objects with no period (always visible) or valid restricted periods
             if a.period is None or restricted_period is not None:
                 try:
-                    from .loaders import _read_json
+                    from .loaders import _read_json, _compute_find_in_gadm_default
                     import os
                     
                     # Load the appropriate level file directly
@@ -1069,17 +1069,19 @@ class FlagMap:
                     gadm_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gadm")
                     level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_{a.level}.json")
                     
-                    # Try to load the level file, with fallback to find_in_gadm if specified
+                    # Try to load the level file, with fallback to find_in_gadm (explicit or computed) if needed
                     level_file = None
                     if os.path.exists(level_file_path):
                         level_file = _read_json(level_file_path)
-                    elif a.find_in_gadm:
-                        # Try to find the territory in the specified countries
-                        for country_code in a.find_in_gadm:
-                            search_path = os.path.join(gadm_dir, f"gadm41_{country_code}_{a.level}.json")
-                            if os.path.exists(search_path):
-                                level_file = _read_json(search_path)
-                                break
+                    else:
+                        # Determine candidate countries: explicit list or computed from disputed mapping
+                        candidate_countries = a.find_in_gadm or _compute_find_in_gadm_default(a.gadm_key)
+                        if candidate_countries:
+                            for country_code in candidate_countries:
+                                search_path = os.path.join(gadm_dir, f"gadm41_{country_code}_{a.level}.json")
+                                if os.path.exists(search_path):
+                                    level_file = _read_json(search_path)
+                                    break
                     
                     if not level_file:
                         print(f"Warning: GADM file not found for level {a.level}: {level_file_path}")
