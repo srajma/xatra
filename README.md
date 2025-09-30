@@ -21,8 +21,8 @@ Bugfixes
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
 - [ ] fix issue with disputed areas
-- [ ] top-level disputed areas
-- [ ] debug slowness
+- [x] top-level disputed areas
+- [x] debug slowness
 - [x] xatra.Data issue with colors of data in dynamic maps and exact range
 - [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
 - [x] Mark map as dynamic if any element as period
