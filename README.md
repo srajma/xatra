@@ -219,6 +219,7 @@ map.show(out_json="map_colorgroups.json", out_html="map_colorgroups.html")
 Some stuff to note about disputed territories:
 - these are coded not under their country name (e.g. "IND.12") but under some `Z<some number>`. E.g. Jammu and Kashmir is Z01.14.
 - they are typically contained under the json files of the countries that administer them. So e.g. Z01 (Jammu and Kashmir) is in the India data while Z06 (Pakistan-occupied Jammu and Gilgit-Baltistan) is in the Pakistan data.
+- **This is the only important thing you need to know:** you cannot write `gadm("Z01")` -- there are no zeroth-level disputed territories, because those would just be the countries they belong to. You *can* do `gadm("Z01.14")`, `gadm("Z01.14.1")` etc. There are also custom territories `Z01`, `Z02` etc. that you can import from `xatra.territory_library`.
 
 When mapping a country, e.g. `map.Admin(gadm="IND", level=1)`, it will map all the regions administered by it (i.e. contained in its file). When mapping a specific disputed region, e.g. `map.Flag(label="Kashmir", value=gadm("Z01.14"))` xatra finds out from data/disputed_territories/disputed_mapping.json which country it belongs to.
 
