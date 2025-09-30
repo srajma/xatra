@@ -24,4 +24,4 @@ df.set_index('GID', inplace=True)
 map.Dataframe(df)
 
 
-map.show(out_json="map_dataframe.json", out_html="map_dataframe.html")
+map.show(out_json="tests/map_dataframe.json", out_html="tests/map_dataframe.html")

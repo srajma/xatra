@@ -34,4 +34,4 @@ map.Flag(label="Myanmar", value=gadm("MMR"))
 map.Flag(label="Somali", value=gadm("SOM"), classes="china")
 
 # Generate the map
-map.show(out_json="map_colorgroups.json", out_html="map_colorgroups.html")
+map.show(out_json="tests/map_colorgroups.json", out_html="tests/map_colorgroups.html")

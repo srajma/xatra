@@ -7,4 +7,4 @@ from matplotlib.colors import LinearSegmentedColormap
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="punjab", value=PUNJAB)
-map.show(out_json="map_punjab.json", out_html="map_punjab.html")
+map.show(out_json="tests/map_punjab.json", out_html="tests/map_punjab.html")

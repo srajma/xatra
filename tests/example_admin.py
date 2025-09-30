@@ -14,4 +14,4 @@ map.Admin(gadm="BTN", level=2) # level-2 is the best we have for Bhutan, and the
 map.Admin(gadm="LKA", level=2) # level-2 is the best we have for Lanka, and they're like taluks anyway
 map.AdminRivers(sources=["naturalearth", "overpass"])
 map.TitleBox("<b>Taluk-level map of the Indian subcontinent.")
-map.show(out_json="map_admin.json", out_html="map_admin.html")
+map.show(out_json="tests/map_admin.json", out_html="tests/map_admin.html")

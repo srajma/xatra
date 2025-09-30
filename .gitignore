@@ -2,7 +2,6 @@
 data/gadm/
 data/ne_*
 scripts/start_server.sh
-test_periods.*
 
 # python
 __pycache__/
@@ -18,5 +17,5 @@ __pycache__/
 # temp
 old/
 old_xatra/
-map*.json
-map*.html
+tests/*.json
+tests/*.html

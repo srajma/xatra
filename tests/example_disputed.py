@@ -33,4 +33,4 @@ map.Admin(gadm="Z09", level=1)
 # map.Data(gadm="Z01", value=100)
 
 # Generate the map
-map.show(out_json="map_disputed.json", out_html="map_disputed.html")
+map.show(out_json="tests/map_disputed.json", out_html="tests/map_disputed.html")

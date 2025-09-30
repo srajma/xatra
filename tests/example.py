@@ -58,4 +58,4 @@ map.CSS("""
 """)
 
 # Generate the map
-map.show()
+map.show(out_json="tests/map.json", out_html="tests/map.html")
