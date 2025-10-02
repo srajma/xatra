@@ -4,6 +4,7 @@ Kanging
 - [ ] copy maps from old xatra (colonies and hsr remaining)
 - [ ] maps of north-west: Panini, Puranas and Greek
 - [ ] full history timeline
+- [ ] GDP per capita map
 
 Development
 - [ ] option for different point markers besides pin
@@ -43,6 +44,7 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
+- [ ] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
 - [x] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
