@@ -906,11 +906,22 @@ class FlagMap:
         
         # Handle disputed territories (Z prefix)
         if gid.startswith("Z"):
-            # For disputed territories, check against the actual GID in the feature
-            for key in ["GID_0", "GID_1", "GID_2", "GID_3"]:
-                if props.get(key) == gid:
-                    return True
-            return False
+            # For disputed territories, use the same prefix matching logic as load_gadm_like
+            parts = gid.split('.')
+            level = 0 if len(parts) == 1 else len(parts) - 1
+            
+            if level == 0:
+                # Country level - check GID_0
+                feature_gid = props.get("GID_0", "")
+                return str(feature_gid) == gid
+            else:
+                # Subdivision level - check appropriate GID field
+                gid_key = f"GID_{level}"
+                feature_gid = props.get(gid_key, "")
+                
+                # Use exact prefix matching with boundary check (same as load_gadm_like)
+                return (str(feature_gid).startswith(gid) and 
+                       (len(str(feature_gid)) == len(gid) or str(feature_gid)[len(gid)] in ['.', '_']))
         
         # Handle regular GADM codes
         parts = gid.split('.')
