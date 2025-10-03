@@ -1,6 +1,6 @@
 import pandas as pd
 import xatra
-
+import matplotlib.pyplot as plt
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
@@ -21,6 +21,7 @@ df = pd.DataFrame({
 })
 
 df.set_index('GID', inplace=True)
+map.DataColormap(plt.cm.viridis)
 map.Dataframe(df)
 
 

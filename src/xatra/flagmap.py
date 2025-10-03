@@ -1272,6 +1272,8 @@ class FlagMap:
         
         # Process DataFrame elements - create efficient dataframe entries with actual geometry
         dataframes_serialized = []
+        all_dataframe_values = []  # Collect all values for colormap generation
+        
         for df_entry in self._dataframes:
             try:
                 import pandas as pd
@@ -1287,6 +1289,7 @@ class FlagMap:
                         if not pd.isna(value):
                             gid_str = str(gid)
                             dataframe_data[gid_str] = float(value)
+                            all_dataframe_values.append(float(value))
                             # Determine the GADM file key for this GID
                             if gid_str.startswith('Z'):
                                 # Disputed territory - use the GID itself
@@ -1355,6 +1358,7 @@ class FlagMap:
                                 value = row[year_col]
                                 if not pd.isna(value):
                                     gid_data[year] = float(value)
+                                    all_dataframe_values.append(float(value))
                             except ValueError:
                                 continue
                         
@@ -1473,23 +1477,61 @@ class FlagMap:
                 print(f"Warning: Could not load data element for {gadm}: {e}")
                 continue
 
-        # Generate color bar if data elements exist
+        # Generate color bar if data elements or DataFrames exist
         colormap_svg = None
-        if data_serialized and self._data_colormap is not None:
-            # Get the actual vmin/vmax from the colormap
-            vmin = self._data_colormap.vmin
-            vmax = self._data_colormap.vmax
+        if (data_serialized and self._data_colormap is not None) or all_dataframe_values:
+            # Use DataFrame colormap if available, otherwise use data colormap
+            if all_dataframe_values:
+                # Generate colormap for DataFrame data
+                from matplotlib.colors import LinearSegmentedColormap
+                from matplotlib import pyplot as plt
+                import io
+                
+                # Use default yellow-orange-red colormap for DataFrame data
+                dataframe_colormap = LinearSegmentedColormap.from_list("dataframe_cmap", ["yellow", "orange", "red"])
+                
+                vmin = min(all_dataframe_values)
+                vmax = max(all_dataframe_values)
+                
+                try:
+                    # Create a figure and axis for the colorbar
+                    fig, ax = plt.subplots(figsize=(6, 0.8))
+                    fig.patch.set_facecolor('white')
+                    
+                    # Create a scalar mappable for the colorbar
+                    sm = plt.cm.ScalarMappable(cmap=dataframe_colormap, norm=plt.Normalize(vmin=vmin, vmax=vmax))
+                    sm.set_array([])
+                    
+                    # Add colorbar
+                    cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', shrink=0.8, aspect=20)
+                    cbar.set_label('Data Values', fontsize=12)
+                    
+                    # Convert to SVG
+                    svg_buffer = io.StringIO()
+                    plt.savefig(svg_buffer, format='svg', bbox_inches='tight', facecolor='white', edgecolor='none')
+                    svg_buffer.seek(0)
+                    colormap_svg = svg_buffer.getvalue()
+                    plt.close(fig)
+                    
+                except Exception as e:
+                    print(f"Warning: Could not generate DataFrame color bar: {e}")
             
-            # If vmin/vmax are None, calculate from values
-            if vmin is None or vmax is None:
-                all_values = [d["value"] for d in data_serialized]
-                vmin = vmin if vmin is not None else min(all_values)
-                vmax = vmax if vmax is not None else max(all_values)
-            
-            try:
-                colormap_svg = generate_colormap_svg(self._data_colormap.colormap, vmin, vmax)
-            except Exception as e:
-                print(f"Warning: Could not generate color bar: {e}")
+            elif data_serialized and self._data_colormap is not None:
+                # Use existing data colormap logic
+                # Get the actual vmin/vmax from the colormap
+                vmin = self._data_colormap.vmin
+                vmax = self._data_colormap.vmax
+                
+                # If vmin/vmax are None, calculate from values
+                if vmin is None or vmax is None:
+                    all_values = [d["value"] for d in data_serialized]
+                    vmin = vmin if vmin is not None else min(all_values)
+                    vmax = vmax if vmax is not None else max(all_values)
+                
+                try:
+                    colormap_svg = generate_colormap_svg(self._data_colormap.colormap, vmin, vmax)
+                except Exception as e:
+                    print(f"Warning: Could not generate color bar: {e}")
 
         return {
             "css": "\n".join(self._css) if self._css else "",

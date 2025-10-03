@@ -1352,22 +1352,55 @@ HTML_TEMPLATE = Template(
       }
 
       function getDataColor(value) {
-        // Use the default yellow-orange-red colormap for DataFrame data
-        // This matches the default colormap used in the Python code
-        const normalized = Math.min(1, Math.max(0, value / 300)); // Assume max value of 300
+        // Calculate min/max values from DataFrame data for proper normalization
+        let minValue = Infinity;
+        let maxValue = -Infinity;
         
+        for (const df of payload.dataframes || []) {
+          if (df.type === 'static' && df.geometry) {
+            for (const feature of df.geometry.features || []) {
+              const val = feature.properties._dataframe_value;
+              if (val !== undefined) {
+                minValue = Math.min(minValue, val);
+                maxValue = Math.max(maxValue, val);
+              }
+            }
+          } else if (df.type === 'dynamic' && df.geometry) {
+            for (const feature of df.geometry.features || []) {
+              const data = feature.properties._dataframe_data;
+              if (data) {
+                for (const yearValue of Object.values(data)) {
+                  minValue = Math.min(minValue, yearValue);
+                  maxValue = Math.max(maxValue, yearValue);
+                }
+              }
+            }
+          }
+        }
+        
+        // Use default range if no data found
+        if (minValue === Infinity) {
+          minValue = 0;
+          maxValue = 300;
+        }
+        
+        // Normalize value to 0-1 range
+        const normalized = Math.min(1, Math.max(0, (value - minValue) / (maxValue - minValue)));
+        
+        // Use the same LinearSegmentedColormap logic as matplotlib
+        // Yellow (255,255,0) -> Orange (255,165,0) -> Red (255,0,0)
         if (normalized < 0.5) {
-          // Yellow to orange
+          // Yellow to Orange
           const t = normalized * 2;
-          const r = Math.round(255 * (1 - t * 0.5));
-          const g = Math.round(255 * (1 - t * 0.2));
+          const r = 255;
+          const g = Math.round(255 - t * 90); // 255 -> 165
           const b = 0;
           return `rgb(${r}, ${g}, ${b})`;
         } else {
-          // Orange to red
+          // Orange to Red
           const t = (normalized - 0.5) * 2;
           const r = 255;
-          const g = Math.round(255 * (0.8 - t * 0.8));
+          const g = Math.round(165 - t * 165); // 165 -> 0
           const b = 0;
           return `rgb(${r}, ${g}, ${b})`;
         }
@@ -1512,36 +1545,12 @@ HTML_TEMPLATE = Template(
         const colormapDiv = document.getElementById('colormap');
         if (payload.colormap_svg) {
           colormapDiv.innerHTML = payload.colormap_svg;
-        } else if (payload.dataframes && payload.dataframes.length > 0) {
-          // Create a simple colormap for DataFrame data
-          createDataframeColormap(colormapDiv);
+          colormapDiv.style.display = 'block';
         } else {
           colormapDiv.style.display = 'none';
         }
       }
 
-      function createDataframeColormap(colormapDiv) {
-        // Create a simple colormap legend for DataFrame data
-        const svg = `
-          <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4;">
-            <div style="font-weight: bold; margin-bottom: 8px;">Data Values</div>
-            <div style="display: flex; align-items: center; margin-bottom: 4px;">
-              <div style="width: 20px; height: 12px; background: rgb(255, 255, 0); border: 1px solid #ccc; margin-right: 8px;"></div>
-              <span>Low</span>
-            </div>
-            <div style="display: flex; align-items: center; margin-bottom: 4px;">
-              <div style="width: 20px; height: 12px; background: rgb(255, 128, 0); border: 1px solid #ccc; margin-right: 8px;"></div>
-              <span>Medium</span>
-            </div>
-            <div style="display: flex; align-items: center; margin-bottom: 4px;">
-              <div style="width: 20px; height: 12px; background: rgb(255, 0, 0); border: 1px solid #ccc; margin-right: 8px;"></div>
-              <span>High</span>
-            </div>
-          </div>
-        `;
-        colormapDiv.innerHTML = svg;
-        colormapDiv.style.display = 'block';
-      }
 
       if (payload.flags.mode === 'static') {
         renderStatic();
