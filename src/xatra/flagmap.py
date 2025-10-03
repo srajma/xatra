@@ -889,6 +889,42 @@ class FlagMap:
             
         return (restricted_start, restricted_end)
 
+    def _feature_matches_gid(self, feature: Dict[str, Any], gid: str) -> bool:
+        """Check if a GADM feature matches a given GID.
+        
+        Args:
+            feature: GeoJSON feature with GADM properties
+            gid: GID string to match (e.g., "IND.31", "Z01.14")
+            
+        Returns:
+            True if feature matches the GID
+        """
+        props = feature.get("properties", {}) or {}
+        
+        # Handle disputed territories (Z prefix)
+        if gid.startswith("Z"):
+            # For disputed territories, check against the actual GID in the feature
+            for key in ["GID_0", "GID_1", "GID_2", "GID_3"]:
+                if props.get(key) == gid:
+                    return True
+            return False
+        
+        # Handle regular GADM codes
+        parts = gid.split('.')
+        level = len(parts) - 1
+        
+        if level == 0:
+            # Country level - check GID_0
+            return props.get("GID_0") == gid
+        else:
+            # Subdivision level - check appropriate GID field
+            gid_key = f"GID_{level}"
+            feature_gid = props.get(gid_key, "")
+            
+            # Use exact prefix matching with boundary check
+            return (str(feature_gid).startswith(gid) and 
+                   (len(str(feature_gid)) == len(gid) or str(feature_gid)[len(gid)] in ['.', '_']))
+
 
     def _export_json(self) -> Dict[str, Any]:
         """Export map data to JSON format for rendering.
@@ -1234,56 +1270,141 @@ class FlagMap:
                     "classes": d.classes,
                 })
         
-        # Process DataFrame elements - convert to DataEntry format and add to data_by_gadm
+        # Process DataFrame elements - create efficient dataframe entries with actual geometry
+        dataframes_serialized = []
         for df_entry in self._dataframes:
             try:
                 import pandas as pd
+                from .loaders import load_gadm_like
                 
                 # Process static DataFrame (single data column)
                 if df_entry.data_column is not None:
+                    # Group GIDs by their GADM file for efficient loading
+                    gid_groups = {}
+                    dataframe_data = {}
                     for gid, row in df_entry.dataframe.iterrows():
                         value = row[df_entry.data_column]
-                        if pd.isna(value):
+                        if not pd.isna(value):
+                            gid_str = str(gid)
+                            dataframe_data[gid_str] = float(value)
+                            # Determine the GADM file key for this GID
+                            if gid_str.startswith('Z'):
+                                # Disputed territory - use the GID itself
+                                gadm_key = gid_str
+                            else:
+                                # Regular GADM - use the GID itself to determine level
+                                gadm_key = gid_str
+                            if gadm_key not in gid_groups:
+                                gid_groups[gadm_key] = []
+                            gid_groups[gadm_key].append(gid_str)
+                    
+                    # Load geometry and create layers for each GADM group
+                    for gadm_key, gids in gid_groups.items():
+                        try:
+                            # Load GADM data for this key
+                            gadm_geojson = load_gadm_like(gadm_key, df_entry.find_in_gadm)
+                            if not gadm_geojson.get("features"):
+                                continue
+                            
+                            # Filter features that match our GIDs
+                            matching_features = []
+                            for feature in gadm_geojson.get("features", []):
+                                props = feature.get("properties", {}) or {}
+                                # Check if this feature matches any of our GIDs
+                                for gid in gids:
+                                    if self._feature_matches_gid(feature, gid):
+                                        # Add data value to feature properties
+                                        feature_copy = feature.copy()
+                                        feature_copy["properties"] = props.copy()
+                                        feature_copy["properties"]["_dataframe_value"] = dataframe_data[gid]
+                                        feature_copy["properties"]["_dataframe_gid"] = gid
+                                        matching_features.append(feature_copy)
+                            
+                            if matching_features:
+                                dataframes_serialized.append({
+                                    "type": "static",
+                                    "geometry": {"type": "FeatureCollection", "features": matching_features},
+                                    "classes": df_entry.classes,
+                                })
+                                
+                        except Exception as e:
+                            print(f"Warning: Could not load GADM data for {gadm_key}: {e}")
                             continue
-                        
-                        # Add to data_by_gadm using the same processing as regular Data entries
-                        # For static data (no period), always include it
-                        key = (str(gid), tuple(df_entry.find_in_gadm) if df_entry.find_in_gadm else None)
-                        if key not in data_by_gadm:
-                            data_by_gadm[key] = []
-                        data_by_gadm[key].append({
-                            "value": float(value),
-                            "period": None,  # Static data has no period
-                            "classes": df_entry.classes,
-                        })
                 
                 # Process dynamic DataFrame (year columns)
                 elif df_entry.year_columns is not None:
+                    # Group GIDs by their GADM file for efficient loading
+                    gid_groups = {}
+                    dataframe_data = {}
+                    years = []
+                    
+                    # Parse years from column names
+                    for year_col in df_entry.year_columns:
+                        try:
+                            year = int(year_col)
+                            years.append(year)
+                        except ValueError:
+                            continue
+                    
+                    # Build data structure: {gid: {year: value}}
                     for gid, row in df_entry.dataframe.iterrows():
+                        gid_data = {}
                         for year_col in df_entry.year_columns:
-                            value = row[year_col]
-                            if pd.isna(value):
-                                continue
-                            
-                            # Parse year from column name
                             try:
                                 year = int(year_col)
-                                period = [year, year + 1]  # Single year period
+                                value = row[year_col]
+                                if not pd.isna(value):
+                                    gid_data[year] = float(value)
                             except ValueError:
-                                # If year parsing fails, treat as static
-                                period = None
+                                continue
+                        
+                        if gid_data:  # Only include GIDs with valid data
+                            gid_str = str(gid)
+                            dataframe_data[gid_str] = gid_data
+                            # Determine the GADM file key for this GID
+                            if gid_str.startswith('Z'):
+                                # Disputed territory - use the GID itself
+                                gadm_key = gid_str
+                            else:
+                                # Regular GADM - use the GID itself to determine level
+                                gadm_key = gid_str
+                            if gadm_key not in gid_groups:
+                                gid_groups[gadm_key] = []
+                            gid_groups[gadm_key].append(gid_str)
+                    
+                    # Load geometry and create layers for each GADM group
+                    for gadm_key, gids in gid_groups.items():
+                        try:
+                            # Load GADM data for this key
+                            gadm_geojson = load_gadm_like(gadm_key, df_entry.find_in_gadm)
+                            if not gadm_geojson.get("features"):
+                                continue
                             
-                            # Add to data_by_gadm using the same processing as regular Data entries
-                            restricted_period = self._apply_limits_to_period(period)
-                            if restricted_period is not None:
-                                key = (str(gid), tuple(df_entry.find_in_gadm) if df_entry.find_in_gadm else None)
-                                if key not in data_by_gadm:
-                                    data_by_gadm[key] = []
-                                data_by_gadm[key].append({
-                                    "value": float(value),
-                                    "period": list(restricted_period) if restricted_period is not None else None,
+                            # Filter features that match our GIDs
+                            matching_features = []
+                            for feature in gadm_geojson.get("features", []):
+                                props = feature.get("properties", {}) or {}
+                                # Check if this feature matches any of our GIDs
+                                for gid in gids:
+                                    if self._feature_matches_gid(feature, gid):
+                                        # Add time-series data to feature properties
+                                        feature_copy = feature.copy()
+                                        feature_copy["properties"] = props.copy()
+                                        feature_copy["properties"]["_dataframe_data"] = dataframe_data[gid]
+                                        feature_copy["properties"]["_dataframe_gid"] = gid
+                                        matching_features.append(feature_copy)
+                            
+                            if matching_features:
+                                dataframes_serialized.append({
+                                    "type": "dynamic",
+                                    "geometry": {"type": "FeatureCollection", "features": matching_features},
+                                    "years": sorted(years),
                                     "classes": df_entry.classes,
                                 })
+                                
+                        except Exception as e:
+                            print(f"Warning: Could not load GADM data for {gadm_key}: {e}")
+                            continue
             
             except Exception as e:
                 print(f"Warning: Could not process DataFrame: {e}")
@@ -1381,6 +1502,7 @@ class FlagMap:
             "admins": admins_serialized,
             "admin_rivers": admin_rivers_serialized,
             "data": data_serialized,
+            "dataframes": dataframes_serialized,
             "base_options": base_options_serialized,
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,

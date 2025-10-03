@@ -93,7 +93,7 @@ HTML_TEMPLATE = Template(
         currentBaseLayer.addTo(map);
       }
 
-      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [], admin_rivers: [], data: [] };
+      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [], admin_rivers: [], data: [], dataframes: [] };
       
       // Layer visibility management for dynamic maps
       const layerVisibility = new Map(); // Maps layer objects to their visibility state
@@ -344,6 +344,7 @@ HTML_TEMPLATE = Template(
         createAllAdmins();
         createAllAdminRivers();
         createAllData();
+        createAllDataframes();
         
         allLayersCreated = true;
         console.log("All layers created for dynamic map");
@@ -607,6 +608,171 @@ HTML_TEMPLATE = Template(
           layer._dataData = { period: d.period };
           layers.data.push(layer);
         }
+      }
+
+      function createAllDataframes() {
+        for (const df of payload.dataframes || []) {
+          if (df.type === 'static') {
+            // Static DataFrame - create simple data layers
+            createStaticDataframe(df);
+          } else if (df.type === 'dynamic') {
+            // Dynamic DataFrame - create time-series data layers
+            createDynamicDataframe(df);
+          }
+        }
+      }
+
+      function createStaticDataframe(df) {
+        if (!df.geometry) return;
+        
+        let className = 'data';
+        if (df.classes) className += ' ' + df.classes;
+        
+        const layer = L.geoJSON(df.geometry, {
+          style: function(feature) {
+            const props = feature.properties || {};
+            const value = props._dataframe_value;
+            const color = getDataColor(value);
+            return {
+              className: className,
+              fillColor: color,
+              fillOpacity: 1.0,
+              color: color,
+              weight: 1
+            };
+          },
+          onEachFeature: function(feature, layer) {
+            const props = feature.properties || {};
+            
+            let tooltip = '';
+            let topName = '';
+            if (props.NAME_3) topName = props.NAME_3;
+            else if (props.NAME_2) topName = props.NAME_2;
+            else if (props.NAME_1) topName = props.NAME_1;
+            else if (props.COUNTRY) topName = props.COUNTRY;
+            
+            if (topName) tooltip += `<b>${topName}</b><br/>`;
+            
+            // Add GADM properties
+            if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+            if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+            if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+            if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+            if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+            if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+            if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+            if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+            if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+            if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+            if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+            
+            // Add DataFrame value
+            if (props._dataframe_value !== undefined) tooltip += `Value: ${props._dataframe_value}<br/>`;
+            
+            if (tooltip.endsWith('<br/>')) {
+              tooltip = tooltip.slice(0, -5);
+            }
+            
+            if (tooltip) {
+              layer.bindTooltip(tooltip, {
+                direction: 'top',
+                offset: [0, -10],
+                opacity: 0.9,
+                interactive: true,
+                permanent: false,
+                sticky: true
+              });
+            }
+          }
+        });
+        
+        layer._dataframeType = 'static';
+        layers.dataframes.push(layer);
+      }
+
+      function createDynamicDataframe(df) {
+        if (!df.geometry) return;
+        
+        let className = 'data';
+        if (df.classes) className += ' ' + df.classes;
+        
+        const layer = L.geoJSON(df.geometry, {
+          style: function(feature) {
+            const props = feature.properties || {};
+            const dataframeData = props._dataframe_data;
+            const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+            
+            // Find the closest available year
+            let closestYear = null;
+            let closestDistance = Infinity;
+            
+            for (const year of Object.keys(dataframeData || {})) {
+              const distance = Math.abs(parseInt(year) - currentYear);
+              if (distance < closestDistance) {
+                closestDistance = distance;
+                closestYear = parseInt(year);
+              }
+            }
+            
+            let value = null;
+            if (closestYear !== null && dataframeData) {
+              value = dataframeData[closestYear];
+            }
+            
+            const color = value !== null ? getDataColor(value) : '#cccccc';
+            return {
+              className: className,
+              fillColor: color,
+              fillOpacity: 1.0,
+              color: color,
+              weight: 1
+            };
+          },
+          onEachFeature: function(feature, layer) {
+            const props = feature.properties || {};
+            
+            let tooltip = '';
+            let topName = '';
+            if (props.NAME_3) topName = props.NAME_3;
+            else if (props.NAME_2) topName = props.NAME_2;
+            else if (props.NAME_1) topName = props.NAME_1;
+            else if (props.COUNTRY) topName = props.COUNTRY;
+            
+            if (topName) tooltip += `<b>${topName}</b><br/>`;
+            
+            // Add GADM properties
+            if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+            if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+            if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+            if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+            if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+            if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+            if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+            if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+            if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+            if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+            if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+            
+            if (tooltip.endsWith('<br/>')) {
+              tooltip = tooltip.slice(0, -5);
+            }
+            
+            if (tooltip) {
+              layer.bindTooltip(tooltip, {
+                direction: 'top',
+                offset: [0, -10],
+                opacity: 0.9,
+                interactive: true,
+                permanent: false,
+                sticky: true
+              });
+            }
+          }
+        });
+        
+        layer._dataframeType = 'dynamic';
+        layer._dataframeYears = df.years;
+        layers.dataframes.push(layer);
       }
 
       function renderStatic() {
@@ -1020,6 +1186,7 @@ HTML_TEMPLATE = Template(
         for (const l of layers.admins) { map.removeLayer(l); }
         for (const l of layers.admin_rivers) { map.removeLayer(l); }
         for (const l of layers.data) { map.removeLayer(l); }
+        for (const l of layers.dataframes) { map.removeLayer(l); }
         layers.flags = [];
         layers.rivers = [];
         layers.paths = [];
@@ -1028,6 +1195,7 @@ HTML_TEMPLATE = Template(
         layers.admins = [];
         layers.admin_rivers = [];
         layers.data = [];
+        layers.dataframes = [];
       }
 
       function renderDynamic(year) {
@@ -1061,6 +1229,7 @@ HTML_TEMPLATE = Template(
         updateLayerVisibility(layers.admins, year, '_adminData');
         updateLayerVisibility(layers.admin_rivers, year, '_adminRiverData');
         updateLayerVisibility(layers.data, year, '_dataData');
+        updateDataframeLayers(year);
         
         // Update title boxes
         renderTitleBoxes(year);
@@ -1077,6 +1246,73 @@ HTML_TEMPLATE = Template(
             // No period means always visible
             setLayerVisibility(layer, true);
           }
+        }
+      }
+
+      function updateDataframeLayers(year) {
+        window.currentYear = year; // Store current year globally
+        
+        for (const layer of layers.dataframes) {
+          if (layer._dataframeType === 'dynamic') {
+            // Update colors based on current year by re-styling the layer
+            layer.eachLayer(function(feature) {
+              const props = feature.feature.properties || {};
+              const dataframeData = props._dataframe_data;
+              
+              if (!dataframeData) return;
+              
+              // Find the closest available year
+              let closestYear = null;
+              let closestDistance = Infinity;
+              
+              for (const dataYear of Object.keys(dataframeData)) {
+                const distance = Math.abs(parseInt(dataYear) - year);
+                if (distance < closestDistance) {
+                  closestDistance = distance;
+                  closestYear = parseInt(dataYear);
+                }
+              }
+              
+              let value = null;
+              if (closestYear !== null) {
+                value = dataframeData[closestYear];
+              }
+              
+              const color = value !== null ? getDataColor(value) : '#cccccc';
+              
+              // Update the feature's style
+              feature.setStyle({
+                fillColor: color,
+                fillOpacity: 1.0,
+                color: color,
+                weight: 1
+              });
+            });
+            
+            setLayerVisibility(layer, true); // DataFrames are always visible
+          }
+        }
+      }
+
+      function getDataColor(value) {
+        // Use the default yellow-orange-red colormap for DataFrame data
+        // This matches the default colormap used in the Python code
+        const normalized = Math.min(1, Math.max(0, value / 300)); // Assume max value of 300
+        
+        if (normalized < 0.5) {
+          // Yellow to orange
+          const t = normalized * 2;
+          const r = Math.round(255 * (1 - t * 0.5));
+          const g = Math.round(255 * (1 - t * 0.2));
+          const b = 0;
+          return `rgb(${r}, ${g}, ${b})`;
+        } else {
+          // Orange to red
+          const t = (normalized - 0.5) * 2;
+          const r = 255;
+          const g = Math.round(255 * (0.8 - t * 0.8));
+          const b = 0;
+          return `rgb(${r}, ${g}, ${b})`;
         }
       }
 
@@ -1138,6 +1374,13 @@ HTML_TEMPLATE = Template(
           for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || []), ...(payload.admins || []), ...(payload.admin_rivers || []), ...(payload.data || [])]) {
             if (obj.period) {
               allPeriods.push(obj.period[0], obj.period[1]);
+            }
+          }
+          
+          // Add DataFrame years
+          for (const df of payload.dataframes || []) {
+            if (df.type === 'dynamic' && df.years) {
+              allPeriods.push(...df.years);
             }
           }
           
@@ -1227,6 +1470,7 @@ HTML_TEMPLATE = Template(
         renderAdmins();
         renderAdminRivers();
         renderData();
+        createAllDataframes();
       } else {
         // For dynamic maps, create all layers and show initial state
         createAllLayers();
