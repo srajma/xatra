@@ -753,6 +753,28 @@ HTML_TEMPLATE = Template(
             if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
             if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
             
+            // Add DataFrame value for current year
+            if (props._dataframe_data) {
+              const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+              
+              // Find the closest available year
+              let closestYear = null;
+              let closestDistance = Infinity;
+              
+              for (const year of Object.keys(props._dataframe_data)) {
+                const distance = Math.abs(parseInt(year) - currentYear);
+                if (distance < closestDistance) {
+                  closestDistance = distance;
+                  closestYear = parseInt(year);
+                }
+              }
+              
+              if (closestYear !== null) {
+                const value = props._dataframe_data[closestYear];
+                tooltip += `Value (${closestYear}): ${value}<br/>`;
+              }
+            }
+            
             if (tooltip.endsWith('<br/>')) {
               tooltip = tooltip.slice(0, -5);
             }
@@ -1287,6 +1309,41 @@ HTML_TEMPLATE = Template(
                 color: color,
                 weight: 1
               });
+              
+              // Update tooltip with new year's data
+              if (value !== null) {
+                let tooltip = '';
+                let topName = '';
+                if (props.NAME_3) topName = props.NAME_3;
+                else if (props.NAME_2) topName = props.NAME_2;
+                else if (props.NAME_1) topName = props.NAME_1;
+                else if (props.COUNTRY) topName = props.COUNTRY;
+                
+                if (topName) tooltip += `<b>${topName}</b><br/>`;
+                
+                // Add GADM properties
+                if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+                if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+                if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+                if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+                if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+                if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+                if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+                if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+                if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+                if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+                if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+                
+                // Add current year's data value
+                tooltip += `Value (${closestYear}): ${value}<br/>`;
+                
+                if (tooltip.endsWith('<br/>')) {
+                  tooltip = tooltip.slice(0, -5);
+                }
+                
+                // Update tooltip
+                feature.setTooltipContent(tooltip);
+              }
             });
             
             setLayerVisibility(layer, true); // DataFrames are always visible
@@ -1455,9 +1512,35 @@ HTML_TEMPLATE = Template(
         const colormapDiv = document.getElementById('colormap');
         if (payload.colormap_svg) {
           colormapDiv.innerHTML = payload.colormap_svg;
+        } else if (payload.dataframes && payload.dataframes.length > 0) {
+          // Create a simple colormap for DataFrame data
+          createDataframeColormap(colormapDiv);
         } else {
           colormapDiv.style.display = 'none';
         }
+      }
+
+      function createDataframeColormap(colormapDiv) {
+        // Create a simple colormap legend for DataFrame data
+        const svg = `
+          <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4;">
+            <div style="font-weight: bold; margin-bottom: 8px;">Data Values</div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+              <div style="width: 20px; height: 12px; background: rgb(255, 255, 0); border: 1px solid #ccc; margin-right: 8px;"></div>
+              <span>Low</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+              <div style="width: 20px; height: 12px; background: rgb(255, 128, 0); border: 1px solid #ccc; margin-right: 8px;"></div>
+              <span>Medium</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+              <div style="width: 20px; height: 12px; background: rgb(255, 0, 0); border: 1px solid #ccc; margin-right: 8px;"></div>
+              <span>High</span>
+            </div>
+          </div>
+        `;
+        colormapDiv.innerHTML = svg;
+        colormapDiv.style.display = 'block';
       }
 
       if (payload.flags.mode === 'static') {
