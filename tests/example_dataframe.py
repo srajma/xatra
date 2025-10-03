@@ -17,11 +17,11 @@ df = pd.DataFrame({
     'GID': ['IND.31', 'IND.12', 'Z01.14'],
     '2020': [100, 200, 100],
     '2021': [110, 210, 110],
-    '2022': [120, 220, 120]
+    '2022': [120, 220, 1200]
 })
 
 df.set_index('GID', inplace=True)
-map.DataColormap(plt.cm.viridis)
+# map.DataColormap(plt.cm.viridis)
 map.Dataframe(df)
 
 

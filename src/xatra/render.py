@@ -449,6 +449,28 @@ HTML_TEMPLATE = Template(
               if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
               if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
               
+              // Add DataFrame value for current year
+              if (props._dataframe_data) {
+                const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+                
+                // Find the closest available year
+                let closestYear = null;
+                let closestDistance = Infinity;
+                
+                for (const year of Object.keys(props._dataframe_data)) {
+                  const distance = Math.abs(parseInt(year) - currentYear);
+                  if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestYear = parseInt(year);
+                  }
+                }
+                
+                if (closestYear !== null) {
+                  const value = props._dataframe_data[closestYear];
+                  tooltip += `Value (${closestYear}): ${value}<br/>`;
+                }
+              }
+              
               if (tooltip.endsWith('<br/>')) {
                 tooltip = tooltip.slice(0, -5);
               }
@@ -753,27 +775,8 @@ HTML_TEMPLATE = Template(
             if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
             if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
             
-            // Add DataFrame value for current year
-            if (props._dataframe_data) {
-              const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
-              
-              // Find the closest available year
-              let closestYear = null;
-              let closestDistance = Infinity;
-              
-              for (const year of Object.keys(props._dataframe_data)) {
-                const distance = Math.abs(parseInt(year) - currentYear);
-                if (distance < closestDistance) {
-                  closestDistance = distance;
-                  closestYear = parseInt(year);
-                }
-              }
-              
-              if (closestYear !== null) {
-                const value = props._dataframe_data[closestYear];
-                tooltip += `Value (${closestYear}): ${value}<br/>`;
-              }
-            }
+            // Add DataFrame value
+            if (props._dataframe_value !== undefined) tooltip += `Value: ${props._dataframe_value}<br/>`;
             
             if (tooltip.endsWith('<br/>')) {
               tooltip = tooltip.slice(0, -5);
@@ -1352,55 +1355,41 @@ HTML_TEMPLATE = Template(
       }
 
       function getDataColor(value) {
-        // Calculate min/max values from DataFrame data for proper normalization
-        let minValue = Infinity;
-        let maxValue = -Infinity;
-        
-        for (const df of payload.dataframes || []) {
-          if (df.type === 'static' && df.geometry) {
-            for (const feature of df.geometry.features || []) {
-              const val = feature.properties._dataframe_value;
-              if (val !== undefined) {
-                minValue = Math.min(minValue, val);
-                maxValue = Math.max(maxValue, val);
-              }
-            }
-          } else if (df.type === 'dynamic' && df.geometry) {
-            for (const feature of df.geometry.features || []) {
-              const data = feature.properties._dataframe_data;
-              if (data) {
-                for (const yearValue of Object.values(data)) {
-                  minValue = Math.min(minValue, yearValue);
-                  maxValue = Math.max(maxValue, yearValue);
-                }
-              }
-            }
+        // Use colormap info from backend if available
+        if (payload.colormap_info && payload.colormap_info.colors && payload.colormap_info.vmin !== null && payload.colormap_info.vmax !== null) {
+          const vmin = payload.colormap_info.vmin;
+          const vmax = payload.colormap_info.vmax;
+          
+          // Normalize value to 0-1 range
+          const normalized = Math.min(1, Math.max(0, (value - vmin) / (vmax - vmin)));
+          
+          // Get color from the user's colormap
+          const colorIndex = Math.floor(normalized * 255);
+          const color = payload.colormap_info.colors[colorIndex];
+          
+          if (color && color.length >= 3) {
+            const r = Math.round(color[0] * 255);
+            const g = Math.round(color[1] * 255);
+            const b = Math.round(color[2] * 255);
+            return `rgb(${r}, ${g}, ${b})`;
           }
         }
         
-        // Use default range if no data found
-        if (minValue === Infinity) {
-          minValue = 0;
-          maxValue = 300;
-        }
+        // Fallback to default yellow-orange-red colormap
+        const normalized = Math.min(1, Math.max(0, value / 300)); // Assume max value of 300
         
-        // Normalize value to 0-1 range
-        const normalized = Math.min(1, Math.max(0, (value - minValue) / (maxValue - minValue)));
-        
-        // Use the same LinearSegmentedColormap logic as matplotlib
-        // Yellow (255,255,0) -> Orange (255,165,0) -> Red (255,0,0)
         if (normalized < 0.5) {
-          // Yellow to Orange
+          // Yellow to orange
           const t = normalized * 2;
-          const r = 255;
-          const g = Math.round(255 - t * 90); // 255 -> 165
+          const r = Math.round(255 * (1 - t * 0.5));
+          const g = Math.round(255 * (1 - t * 0.2));
           const b = 0;
           return `rgb(${r}, ${g}, ${b})`;
         } else {
-          // Orange to Red
+          // Orange to red
           const t = (normalized - 0.5) * 2;
           const r = 255;
-          const g = Math.round(165 - t * 165); // 165 -> 0
+          const g = Math.round(255 * (0.8 - t * 0.8));
           const b = 0;
           return `rgb(${r}, ${g}, ${b})`;
         }
@@ -1545,12 +1534,10 @@ HTML_TEMPLATE = Template(
         const colormapDiv = document.getElementById('colormap');
         if (payload.colormap_svg) {
           colormapDiv.innerHTML = payload.colormap_svg;
-          colormapDiv.style.display = 'block';
         } else {
           colormapDiv.style.display = 'none';
         }
       }
-
 
       if (payload.flags.mode === 'static') {
         renderStatic();

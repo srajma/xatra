@@ -424,6 +424,9 @@ class FlagMap:
         if colormap is None:
             from matplotlib.colors import LinearSegmentedColormap
             colormap = LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"])
+        elif isinstance(colormap, str):
+            import matplotlib.pyplot as plt
+            colormap = plt.get_cmap(colormap)
         self._data_colormap = DataColormap(colormap, vmin, vmax)
 
     def Data(self, gadm: str, value: float, period: Optional[List[int]] = None, classes: Optional[str] = None, find_in_gadm: Optional[List[str]] = None) -> None:
@@ -1481,44 +1484,27 @@ class FlagMap:
         colormap_svg = None
         if (data_serialized and self._data_colormap is not None) or all_dataframe_values:
             # Use DataFrame colormap if available, otherwise use data colormap
-            if all_dataframe_values:
-                # Generate colormap for DataFrame data
-                from matplotlib.colors import LinearSegmentedColormap
-                from matplotlib import pyplot as plt
-                import io
+            if all_dataframe_values and self._data_colormap is not None:
+                # Generate colormap for DataFrame data using user's colormap
+                colormap = self._data_colormap.colormap
                 
-                # Use default yellow-orange-red colormap for DataFrame data
-                dataframe_colormap = LinearSegmentedColormap.from_list("dataframe_cmap", ["yellow", "orange", "red"])
-                
-                vmin = min(all_dataframe_values)
-                vmax = max(all_dataframe_values)
+                # Use DataFrame values for vmin/vmax if not explicitly set
+                if self._data_colormap.vmin is not None:
+                    vmin = self._data_colormap.vmin
+                else:
+                    vmin = min(all_dataframe_values)
+                if self._data_colormap.vmax is not None:
+                    vmax = self._data_colormap.vmax
+                else:
+                    vmax = max(all_dataframe_values)
                 
                 try:
-                    # Create a figure and axis for the colorbar
-                    fig, ax = plt.subplots(figsize=(6, 0.8))
-                    fig.patch.set_facecolor('white')
-                    
-                    # Create a scalar mappable for the colorbar
-                    sm = plt.cm.ScalarMappable(cmap=dataframe_colormap, norm=plt.Normalize(vmin=vmin, vmax=vmax))
-                    sm.set_array([])
-                    
-                    # Add colorbar
-                    cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', shrink=0.8, aspect=20)
-                    cbar.set_label('Data Values', fontsize=12)
-                    
-                    # Convert to SVG
-                    svg_buffer = io.StringIO()
-                    plt.savefig(svg_buffer, format='svg', bbox_inches='tight', facecolor='white', edgecolor='none')
-                    svg_buffer.seek(0)
-                    colormap_svg = svg_buffer.getvalue()
-                    plt.close(fig)
-                    
+                    colormap_svg = generate_colormap_svg(colormap, vmin, vmax)
                 except Exception as e:
                     print(f"Warning: Could not generate DataFrame color bar: {e}")
             
             elif data_serialized and self._data_colormap is not None:
                 # Use existing data colormap logic
-                # Get the actual vmin/vmax from the colormap
                 vmin = self._data_colormap.vmin
                 vmax = self._data_colormap.vmax
                 
@@ -1549,6 +1535,11 @@ class FlagMap:
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,
             "colormap_svg": colormap_svg,
+            "colormap_info": {
+                "vmin": self._data_colormap.vmin if (self._data_colormap is not None and self._data_colormap.vmin is not None) else (min(all_dataframe_values) if all_dataframe_values else None),
+                "vmax": self._data_colormap.vmax if (self._data_colormap is not None and self._data_colormap.vmax is not None) else (max(all_dataframe_values) if all_dataframe_values else None),
+                "colors": [self._data_colormap.colormap(i/255.0) for i in range(256)] if self._data_colormap is not None else None,
+            } if self._data_colormap is not None else None,
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
