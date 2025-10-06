@@ -726,29 +726,30 @@ HTML_TEMPLATE = Template(
             const dataframeData = props._dataframe_data;
             const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
             
-            // Find the closest available year
-            let closestYear = null;
-            let closestDistance = Infinity;
-            
-            for (const year of Object.keys(dataframeData || {})) {
-              const distance = Math.abs(parseInt(year) - currentYear);
-              if (distance < closestDistance) {
-                closestDistance = distance;
-                closestYear = parseInt(year);
-              }
-            }
-            
+            // Use only exact year; if missing, render fully transparent
             let value = null;
-            if (closestYear !== null && dataframeData) {
-              value = dataframeData[closestYear];
+            if (dataframeData && (currentYear in dataframeData)) {
+              value = dataframeData[currentYear];
             }
             
-            const color = value !== null ? getDataColor(value) : '#cccccc';
+            if (value === null || value === undefined) {
+              return {
+                className: className,
+                fillColor: '#000000',
+                fillOpacity: 0.0,
+                color: '#000000',
+                opacity: 0.0,
+                weight: 0
+              };
+            }
+            
+            const color = getDataColor(value);
             return {
               className: className,
               fillColor: color,
               fillOpacity: 1.0,
               color: color,
+              opacity: 1.0,
               weight: 1
             };
           },
@@ -1288,35 +1289,33 @@ HTML_TEMPLATE = Template(
               
               if (!dataframeData) return;
               
-              // Find the closest available year
-              let closestYear = null;
-              let closestDistance = Infinity;
-              
-              for (const dataYear of Object.keys(dataframeData)) {
-                const distance = Math.abs(parseInt(dataYear) - year);
-                if (distance < closestDistance) {
-                  closestDistance = distance;
-                  closestYear = parseInt(dataYear);
-                }
-              }
-              
+              // Use only exact year; if missing, render fully transparent
               let value = null;
-              if (closestYear !== null) {
-                value = dataframeData[closestYear];
+              if (year in dataframeData) {
+                value = dataframeData[year];
               }
               
-              const color = value !== null ? getDataColor(value) : '#cccccc';
+              if (value === null || value === undefined) {
+                feature.setStyle({
+                  fillColor: '#000000',
+                  fillOpacity: 0.0,
+                  color: '#000000',
+                  opacity: 0.0,
+                  weight: 0
+                });
+              } else {
+                const color = getDataColor(value);
+                feature.setStyle({
+                  fillColor: color,
+                  fillOpacity: 1.0,
+                  color: color,
+                  opacity: 1.0,
+                  weight: 1
+                });
+              }
               
-              // Update the feature's style
-              feature.setStyle({
-                fillColor: color,
-                fillOpacity: 1.0,
-                color: color,
-                weight: 1
-              });
-              
-              // Update tooltip with new year's data
-              if (value !== null) {
+              // Update tooltip with current year's data if present
+              if (value !== null && value !== undefined) {
                 let tooltip = '';
                 let topName = '';
                 if (props.NAME_3) topName = props.NAME_3;
@@ -1340,7 +1339,7 @@ HTML_TEMPLATE = Template(
                 if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
                 
                 // Add current year's data value
-                tooltip += `Value (${closestYear}): ${value}<br/>`;
+                tooltip += `Value (${year}): ${value}<br/>`;
                 
                 if (tooltip.endsWith('<br/>')) {
                   tooltip = tooltip.slice(0, -5);
