@@ -48,7 +48,8 @@ Bugfixes
 - [x] Static Dataframe maps don't work
 - [ ] Hover over color bar
 - [ ] Make sure color bars are shown correctly regardless of how it is
-- [ ] Better handling of missing values
+- [ ] Support a "note" column for Dataframe.
+- [x] Don't assume missing values
 - [x] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
