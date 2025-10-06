@@ -1546,11 +1546,11 @@ class FlagMap:
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,
             "colormap_svg": colormap_svg,
-            "colormap_info": {
-                "vmin": self._data_colormap.vmin if (self._data_colormap is not None and self._data_colormap.vmin is not None) else (min(all_dataframe_values) if all_dataframe_values else None),
-                "vmax": self._data_colormap.vmax if (self._data_colormap is not None and self._data_colormap.vmax is not None) else (max(all_dataframe_values) if all_dataframe_values else None),
-                "colors": [self._data_colormap.colormap(i/255.0) for i in range(256)] if self._data_colormap is not None else None,
-            } if self._data_colormap is not None else None,
+                "colormap_info": {
+                    "vmin": float(self._data_colormap.vmin) if (self._data_colormap is not None and self._data_colormap.vmin is not None) else (float(min(all_dataframe_values)) if all_dataframe_values else None),
+                    "vmax": float(self._data_colormap.vmax) if (self._data_colormap is not None and self._data_colormap.vmax is not None) else (float(max(all_dataframe_values)) if all_dataframe_values else None),
+                    "colors": [[float(x) for x in self._data_colormap.colormap(i/255.0)] for i in range(256)] if self._data_colormap is not None else None,
+                } if self._data_colormap is not None else None,
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:

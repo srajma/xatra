@@ -44,7 +44,10 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
+- [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
+- [x] Static Dataframe maps don't work
+- [ ] Hover over color bar
+- [ ] Make sure color bars are shown correctly regardless of how it is
 - [x] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map

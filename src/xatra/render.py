@@ -708,6 +708,8 @@ HTML_TEMPLATE = Template(
           }
         });
         
+        // Ensure static DataFrame layers are actually shown on static maps
+        layer.addTo(map);
         layer._dataframeType = 'static';
         layers.dataframes.push(layer);
       }
@@ -1578,6 +1580,6 @@ def export_html(payload: Dict[str, Any], out_html: str) -> None:
     Example:
         >>> export_html(map_data, "my_map.html")
     """
-    html = HTML_TEMPLATE.render(payload=json.dumps(payload), css=payload.get("css", ""))
+    html = HTML_TEMPLATE.render(payload=json.dumps(payload, ensure_ascii=False), css=payload.get("css", ""))
     with open(out_html, "w", encoding="utf-8") as f:
         f.write(html)
