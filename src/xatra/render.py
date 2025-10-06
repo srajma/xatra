@@ -690,6 +690,7 @@ HTML_TEMPLATE = Template(
             
             // Add DataFrame value
             if (props._dataframe_value !== undefined) tooltip += `Value: ${props._dataframe_value}<br/>`;
+            if (props._dataframe_note !== undefined) tooltip += `Note: ${props._dataframe_note}<br/>`;
             
             if (tooltip.endsWith('<br/>')) {
               tooltip = tooltip.slice(0, -5);
@@ -780,6 +781,13 @@ HTML_TEMPLATE = Template(
             
             // Add DataFrame value
             if (props._dataframe_value !== undefined) tooltip += `Value: ${props._dataframe_value}<br/>`;
+            
+            // Add note for current year if available
+            const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+            const notes = props._dataframe_notes || {};
+            if (notes && (currentYear in notes)) {
+              tooltip += `Note (${currentYear}): ${notes[currentYear]}<br/>`;
+            }
             
             if (tooltip.endsWith('<br/>')) {
               tooltip = tooltip.slice(0, -5);
@@ -1340,6 +1348,12 @@ HTML_TEMPLATE = Template(
                 
                 // Add current year's data value
                 tooltip += `Value (${year}): ${value}<br/>`;
+                
+                // Add note if available for current year
+                const notes = props._dataframe_notes || {};
+                if (notes && (year in notes)) {
+                  tooltip += `Note (${year}): ${notes[year]}<br/>`;
+                }
                 
                 if (tooltip.endsWith('<br/>')) {
                   tooltip = tooltip.slice(0, -5);

@@ -513,7 +513,11 @@ class FlagMap:
                 temp_df = temp_df.set_index('GID')
             
             # Get non-GID columns
-            data_columns = [col for col in temp_df.columns if col != 'GID']
+            # Exclude note columns from detection
+            import re
+            def is_note_column(c: str) -> bool:
+                return c == 'note' or bool(re.match(r"^\d{1,4}_note$", str(c)))
+            data_columns = [col for col in temp_df.columns if col != 'GID' and not is_note_column(str(col))]
             
             if len(data_columns) == 1:
                 # Single column - assume it's data_column
@@ -553,6 +557,7 @@ class FlagMap:
         if data_column is not None:
             values = dataframe[data_column].dropna()
         else:
+            # Only include specified year_columns, which exclude note columns
             values = dataframe[year_columns].values.flatten()
             values = pd.Series(values).dropna()
         
@@ -1298,11 +1303,17 @@ class FlagMap:
                     # Group GIDs by their GADM file for efficient loading
                     gid_groups = {}
                     dataframe_data = {}
+                    dataframe_notes = {}
                     for gid, row in df_entry.dataframe.iterrows():
                         value = row[df_entry.data_column]
+                        note_val = None
+                        if 'note' in df_entry.dataframe.columns:
+                            note_val = row.get('note')
                         if not pd.isna(value):
                             gid_str = str(gid)
                             dataframe_data[gid_str] = float(value)
+                            if note_val is not None and not (isinstance(note_val, float) and pd.isna(note_val)):
+                                dataframe_notes[gid_str] = str(note_val)
                             all_dataframe_values.append(float(value))
                             # Determine the GADM file key for this GID
                             if gid_str.startswith('Z'):
@@ -1335,6 +1346,8 @@ class FlagMap:
                                         feature_copy["properties"] = props.copy()
                                         feature_copy["properties"]["_dataframe_value"] = dataframe_data[gid]
                                         feature_copy["properties"]["_dataframe_gid"] = gid
+                                        if gid in dataframe_notes:
+                                            feature_copy["properties"]["_dataframe_note"] = dataframe_notes[gid]
                                         matching_features.append(feature_copy)
                             
                             if matching_features:
@@ -1353,6 +1366,7 @@ class FlagMap:
                     # Group GIDs by their GADM file for efficient loading
                     gid_groups = {}
                     dataframe_data = {}
+                    dataframe_notes = {}
                     years = []
                     
                     # Parse years from column names
@@ -1366,6 +1380,7 @@ class FlagMap:
                     # Build data structure: {gid: {year: value}}
                     for gid, row in df_entry.dataframe.iterrows():
                         gid_data = {}
+                        gid_notes = {}
                         for year_col in df_entry.year_columns:
                             try:
                                 year = int(year_col)
@@ -1373,12 +1388,20 @@ class FlagMap:
                                 if not pd.isna(value):
                                     gid_data[year] = float(value)
                                     all_dataframe_values.append(float(value))
+                                # Optional per-year note column like 2021_note
+                                note_col = f"{year_col}_note"
+                                if note_col in df_entry.dataframe.columns:
+                                    note_val = row.get(note_col)
+                                    if note_val is not None and not (isinstance(note_val, float) and pd.isna(note_val)):
+                                        gid_notes[year] = str(note_val)
                             except ValueError:
                                 continue
                         
                         if gid_data:  # Only include GIDs with valid data
                             gid_str = str(gid)
                             dataframe_data[gid_str] = gid_data
+                            if gid_notes:
+                                dataframe_notes[gid_str] = gid_notes
                             # Determine the GADM file key for this GID
                             if gid_str.startswith('Z'):
                                 # Disputed territory - use the GID itself
@@ -1410,6 +1433,8 @@ class FlagMap:
                                         feature_copy["properties"] = props.copy()
                                         feature_copy["properties"]["_dataframe_data"] = dataframe_data[gid]
                                         feature_copy["properties"]["_dataframe_gid"] = gid
+                                        if gid in dataframe_notes:
+                                            feature_copy["properties"]["_dataframe_notes"] = dataframe_notes[gid]
                                         matching_features.append(feature_copy)
                             
                             if matching_features:
