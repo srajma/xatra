@@ -14,7 +14,7 @@ df.set_index('GID', inplace=True)
 # Test with LogNorm
 map_log = xatra.FlagMap()
 map_log.BaseOption("OpenStreetMap", default=True)
-map_log.DataColormap(plt.cm.viridis, norm=LogNorm(vmin=1, vmax=10000000))
+map_log.DataColormap(plt.cm.viridis, norm=LogNorm())
 map_log.Dataframe(df)
 map_log.show(out_json="tests/map_log_norm.json", out_html="tests/map_log_norm.html")
 

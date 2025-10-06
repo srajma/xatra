@@ -951,10 +951,25 @@ class FlagMap:
             # Sample values across the range and normalize them
             sample_values = [vmin + (vmax - vmin) * i / 255.0 for i in range(256)]
             try:
-                normalized_values = [self._data_colormap.norm(v) for v in sample_values]
+                # Create a new norm object with the correct bounds
+                norm_type = type(self._data_colormap.norm)
+                if norm_type.__name__ == 'LogNorm':
+                    from matplotlib.colors import LogNorm
+                    working_norm = LogNorm(vmin=vmin, vmax=vmax)
+                elif norm_type.__name__ == 'PowerNorm':
+                    from matplotlib.colors import PowerNorm
+                    # Copy gamma parameter if available
+                    gamma = getattr(self._data_colormap.norm, 'gamma', 1.0)
+                    working_norm = PowerNorm(gamma=gamma, vmin=vmin, vmax=vmax)
+                else:
+                    # For other norm types, try to create with vmin/vmax
+                    working_norm = norm_type(vmin=vmin, vmax=vmax)
+                
+                normalized_values = [working_norm(v) for v in sample_values]
                 # Clamp to [0, 1] range
                 normalized_values = [max(0.0, min(1.0, n)) for n in normalized_values]
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as e:
+                print(f"Warning: Normalization failed: {e}, falling back to linear")
                 # Fallback to linear normalization if norm fails
                 normalized_values = [i / 255.0 for i in range(256)]
         else:
@@ -963,16 +978,19 @@ class FlagMap:
         
         # Generate colors using the colormap
         colors = []
-        for norm_val in normalized_values:
+        sample_values_for_frontend = []
+        for i, norm_val in enumerate(normalized_values):
             color_rgba = self._data_colormap.colormap(norm_val)
             colors.append([float(x) for x in color_rgba[:3]])  # RGB only
+            sample_values_for_frontend.append(vmin + (vmax - vmin) * i / 255.0)
         
         return {
             "vmin": float(vmin),
             "vmax": float(vmax),
             "colors": colors,
             "has_norm": self._data_colormap.norm is not None,
-            "norm_type": type(self._data_colormap.norm).__name__ if self._data_colormap.norm is not None else None
+            "norm_type": type(self._data_colormap.norm).__name__ if self._data_colormap.norm is not None else None,
+            "sample_values": sample_values_for_frontend if self._data_colormap.norm is not None else None
         }
 
     def _feature_matches_gid(self, feature: Dict[str, Any], gid: str) -> bool:
