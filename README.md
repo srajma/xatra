@@ -46,9 +46,10 @@ Libraries
 Bugfixes
 - [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
 - [x] Static Dataframe maps don't work
+- [ ] logarithmic/normalized color bars
 - [ ] Hover over color bar
 - [ ] Make sure color bars are shown correctly regardless of how it is
-- [ ] Support a "note" column for Dataframe.
+- [x] Support a "note" column for Dataframe.
 - [x] Don't assume missing values
 - [x] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
