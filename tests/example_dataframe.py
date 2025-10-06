@@ -21,7 +21,7 @@ df = pd.DataFrame({
     '2020_note': ['2020_ooga', '2020_booga', '2020_mooga'],
     '2021': [110, 210, 110],
     '2021_note': ['2021_ooga', '2021_booga', '2021_mooga'],
-    '2022': [120, 220, 1200]
+    '2022': [120, 220, 340]
 })
 
 df.set_index('GID', inplace=True)

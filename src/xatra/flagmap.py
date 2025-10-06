@@ -216,18 +216,22 @@ class DataColormap:
     """Handles color mapping for data elements using matplotlib Colormap objects.
     
     This class wraps matplotlib Colormap objects to provide color mapping functionality
-    for data elements based on their numeric values.
+    for data elements based on their numeric values. Supports both basic normalization
+    and matplotlib Normalize objects for advanced scaling.
     
     Args:
         colormap: matplotlib Colormap object (e.g., plt.cm.viridis, plt.cm.Reds)
         vmin: Minimum value for normalization (default: None, auto-detect)
         vmax: Maximum value for normalization (default: None, auto-detect)
+        norm: matplotlib Normalize object (e.g., LogNorm, PowerNorm). If provided,
+              vmin and vmax are ignored and the norm object handles normalization.
     """
     
-    def __init__(self, colormap, vmin: Optional[float] = None, vmax: Optional[float] = None):
+    def __init__(self, colormap, vmin: Optional[float] = None, vmax: Optional[float] = None, norm=None):
         self.colormap = colormap
         self.vmin = vmin
         self.vmax = vmax
+        self.norm = norm
         self._values = []  # Store values for auto-detection of vmin/vmax
     
     def add_value(self, value: float) -> None:
@@ -247,29 +251,39 @@ class DataColormap:
         Returns:
             Hex color string (e.g., "#ff0000")
         """
-        # Determine vmin and vmax
-        vmin = self.vmin
-        vmax = self.vmax
-        
-        if vmin is None or vmax is None:
-            if self._values:
-                all_values = self._values
-            else:
-                all_values = [value]
-            
-            if vmin is None:
-                vmin = min(all_values)
-            if vmax is None:
-                vmax = max(all_values)
-        
-        # Normalize value to [0, 1] range
-        if vmax == vmin:
-            # If all values are the same, use the middle of the colormap
-            normalized = 0.5
+        if self.norm is not None:
+            # Use matplotlib Normalize object for normalization
+            try:
+                normalized = self.norm(value)
+                # Clamp to [0, 1] range
+                normalized = max(0.0, min(1.0, normalized))
+            except (ValueError, TypeError):
+                # Handle cases where normalization fails (e.g., log of negative values)
+                normalized = 0.5
         else:
-            normalized = (value - vmin) / (vmax - vmin)
-            # Clamp to [0, 1] range
-            normalized = max(0.0, min(1.0, normalized))
+            # Use basic linear normalization
+            vmin = self.vmin
+            vmax = self.vmax
+            
+            if vmin is None or vmax is None:
+                if self._values:
+                    all_values = self._values
+                else:
+                    all_values = [value]
+                
+                if vmin is None:
+                    vmin = min(all_values)
+                if vmax is None:
+                    vmax = max(all_values)
+            
+            # Normalize value to [0, 1] range
+            if vmax == vmin:
+                # If all values are the same, use the middle of the colormap
+                normalized = 0.5
+            else:
+                normalized = (value - vmin) / (vmax - vmin)
+                # Clamp to [0, 1] range
+                normalized = max(0.0, min(1.0, normalized))
         
         # Get color from colormap
         color_rgba = self.colormap(normalized)
@@ -279,7 +293,7 @@ class DataColormap:
         return f"#{r:02x}{g:02x}{b:02x}"
 
 
-def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, height: int = 20) -> str:
+def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, height: int = 20, norm=None) -> str:
     """Generate an SVG color bar for a colormap.
     
     Args:
@@ -288,6 +302,7 @@ def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, 
         vmax: Maximum value for the color bar
         width: Width of the color bar in pixels
         height: Height of the color bar in pixels
+        norm: matplotlib Normalize object (optional)
         
     Returns:
         SVG string for the color bar
@@ -304,8 +319,12 @@ def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, 
     gradient = np.linspace(0, 1, width)
     gradient = np.vstack((gradient, gradient))
     
-    # Display the gradient
-    ax.imshow(gradient, aspect='auto', cmap=colormap, extent=[vmin, vmax, 0, 1])
+    # Display the gradient with optional normalization
+    if norm is not None:
+        ax.imshow(gradient, aspect='auto', cmap=colormap, norm=norm, extent=[vmin, vmax, 0, 1])
+    else:
+        ax.imshow(gradient, aspect='auto', cmap=colormap, extent=[vmin, vmax, 0, 1])
+    
     ax.set_xlim(vmin, vmax)
     ax.set_ylim(0, 1)
     ax.set_xlabel('')
@@ -406,7 +425,7 @@ class FlagMap:
         """
         self._admin_color_sequence = color_sequence
 
-    def DataColormap(self, colormap=None, vmin: Optional[float] = None, vmax: Optional[float] = None) -> None:
+    def DataColormap(self, colormap=None, vmin: Optional[float] = None, vmax: Optional[float] = None, norm=None) -> None:
         """Set the color map for data elements.
         
         Args:
@@ -414,12 +433,17 @@ class FlagMap:
                      If None, uses default yellow-orange-red colormap.
             vmin: Minimum value for normalization (default: None, auto-detect)
             vmax: Maximum value for normalization (default: None, auto-detect)
+            norm: matplotlib Normalize object (e.g., LogNorm, PowerNorm). If provided,
+                  vmin and vmax are ignored and the norm object handles normalization.
             
         Example:
             >>> import matplotlib.pyplot as plt
+            >>> from matplotlib.colors import LogNorm, PowerNorm
             >>> map.DataColormap()  # Uses default yellow-orange-red colormap
             >>> map.DataColormap(plt.cm.viridis)
             >>> map.DataColormap(plt.cm.Reds, vmin=0, vmax=100)
+            >>> map.DataColormap(plt.cm.viridis, norm=LogNorm(vmin=1, vmax=1000))
+            >>> map.DataColormap(plt.cm.plasma, norm=PowerNorm(gamma=0.5))
         """
         if colormap is None:
             from matplotlib.colors import LinearSegmentedColormap
@@ -427,7 +451,7 @@ class FlagMap:
         elif isinstance(colormap, str):
             import matplotlib.pyplot as plt
             colormap = plt.get_cmap(colormap)
-        self._data_colormap = DataColormap(colormap, vmin, vmax)
+        self._data_colormap = DataColormap(colormap, vmin, vmax, norm)
 
     def Data(self, gadm: str, value: float, period: Optional[List[int]] = None, classes: Optional[str] = None, find_in_gadm: Optional[List[str]] = None) -> None:
         """Add a data element to the map.
@@ -896,6 +920,60 @@ class FlagMap:
             return None
             
         return (restricted_start, restricted_end)
+
+    def _serialize_colormap_info(self, all_dataframe_values: List[float]) -> Dict[str, Any]:
+        """Serialize colormap information for frontend rendering.
+        
+        Args:
+            all_dataframe_values: List of all DataFrame values for auto-detection
+            
+        Returns:
+            Dictionary with colormap information for frontend
+        """
+        if self._data_colormap is None:
+            return None
+        
+        # Determine vmin and vmax
+        vmin = self._data_colormap.vmin
+        vmax = self._data_colormap.vmax
+        
+        if vmin is None or vmax is None:
+            if all_dataframe_values:
+                vmin = vmin if vmin is not None else min(all_dataframe_values)
+                vmax = vmax if vmax is not None else max(all_dataframe_values)
+            else:
+                vmin = 0.0
+                vmax = 1.0
+        
+        # Generate color samples for the frontend
+        # For Normalize objects, we need to sample the actual normalized values
+        if self._data_colormap.norm is not None:
+            # Sample values across the range and normalize them
+            sample_values = [vmin + (vmax - vmin) * i / 255.0 for i in range(256)]
+            try:
+                normalized_values = [self._data_colormap.norm(v) for v in sample_values]
+                # Clamp to [0, 1] range
+                normalized_values = [max(0.0, min(1.0, n)) for n in normalized_values]
+            except (ValueError, TypeError):
+                # Fallback to linear normalization if norm fails
+                normalized_values = [i / 255.0 for i in range(256)]
+        else:
+            # Linear normalization
+            normalized_values = [i / 255.0 for i in range(256)]
+        
+        # Generate colors using the colormap
+        colors = []
+        for norm_val in normalized_values:
+            color_rgba = self._data_colormap.colormap(norm_val)
+            colors.append([float(x) for x in color_rgba[:3]])  # RGB only
+        
+        return {
+            "vmin": float(vmin),
+            "vmax": float(vmax),
+            "colors": colors,
+            "has_norm": self._data_colormap.norm is not None,
+            "norm_type": type(self._data_colormap.norm).__name__ if self._data_colormap.norm is not None else None
+        }
 
     def _feature_matches_gid(self, feature: Dict[str, Any], gid: str) -> bool:
         """Check if a GADM feature matches a given GID.
@@ -1535,7 +1613,7 @@ class FlagMap:
                     vmax = max(all_dataframe_values)
                 
                 try:
-                    colormap_svg = generate_colormap_svg(colormap, vmin, vmax)
+                    colormap_svg = generate_colormap_svg(colormap, vmin, vmax, norm=self._data_colormap.norm)
                 except Exception as e:
                     print(f"Warning: Could not generate DataFrame color bar: {e}")
             
@@ -1551,7 +1629,7 @@ class FlagMap:
                     vmax = vmax if vmax is not None else max(all_values)
                 
                 try:
-                    colormap_svg = generate_colormap_svg(self._data_colormap.colormap, vmin, vmax)
+                    colormap_svg = generate_colormap_svg(self._data_colormap.colormap, vmin, vmax, norm=self._data_colormap.norm)
                 except Exception as e:
                     print(f"Warning: Could not generate color bar: {e}")
 
@@ -1571,11 +1649,7 @@ class FlagMap:
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,
             "colormap_svg": colormap_svg,
-                "colormap_info": {
-                    "vmin": float(self._data_colormap.vmin) if (self._data_colormap is not None and self._data_colormap.vmin is not None) else (float(min(all_dataframe_values)) if all_dataframe_values else None),
-                    "vmax": float(self._data_colormap.vmax) if (self._data_colormap is not None and self._data_colormap.vmax is not None) else (float(max(all_dataframe_values)) if all_dataframe_values else None),
-                    "colors": [[float(x) for x in self._data_colormap.colormap(i/255.0)] for i in range(256)] if self._data_colormap is not None else None,
-                } if self._data_colormap is not None else None,
+                "colormap_info": self._serialize_colormap_info(all_dataframe_values) if self._data_colormap is not None else None,
         }
 
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:

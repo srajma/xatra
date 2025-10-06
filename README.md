@@ -34,7 +34,7 @@ Stylistic changes
 - [x] also need flag names to appear at centroid
 - [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
 - [x] color assignment
-- [x] choice of BaseMaps
+- [x] t logachoice of BaseMaps
 - [x] slider shouldn't appear for static maps
 - [x] map.slider()
 - [x] slider play button plus positions of years, start and end year

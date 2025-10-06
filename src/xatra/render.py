@@ -1375,8 +1375,31 @@ HTML_TEMPLATE = Template(
           const vmin = payload.colormap_info.vmin;
           const vmax = payload.colormap_info.vmax;
           
-          // Normalize value to 0-1 range
-          const normalized = Math.min(1, Math.max(0, (value - vmin) / (vmax - vmin)));
+          let normalized;
+          if (payload.colormap_info.has_norm) {
+            // For Normalize objects, we need to use the pre-computed color samples
+            // Find the closest sample value
+            const sampleValues = [];
+            for (let i = 0; i < 256; i++) {
+              sampleValues.push(vmin + (vmax - vmin) * i / 255.0);
+            }
+            
+            // Find closest sample value
+            let closestIndex = 0;
+            let closestDistance = Math.abs(value - sampleValues[0]);
+            for (let i = 1; i < sampleValues.length; i++) {
+              const distance = Math.abs(value - sampleValues[i]);
+              if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = i;
+              }
+            }
+            
+            normalized = closestIndex / 255.0;
+          } else {
+            // Linear normalization
+            normalized = Math.min(1, Math.max(0, (value - vmin) / (vmax - vmin)));
+          }
           
           // Get color from the user's colormap
           const colorIndex = Math.floor(normalized * 255);
