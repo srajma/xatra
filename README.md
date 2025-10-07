@@ -4,7 +4,8 @@ Kanging
 - [ ] copy maps from old xatra (colonies and hsr remaining)
 - [ ] maps of north-west: Panini, Puranas and Greek
 - [ ] full history timeline
-- [ ] GDP per capita map
+- [x] GDP per capita map
+- [ ] admin map
 
 Development
 - [ ] option for different point markers besides pin
@@ -13,9 +14,8 @@ Development
 - [ ] "get current map" similar to matplotlib, to make maps more modular
 - [x] periods for things other than flags
 - [x] xatra.Admin
-- [x] xatra.Data
 - [x] xatra.Flag color groups
-- [x] xatra.Dataframe
+- [x] xatra.Dataframe with notes and DataColormap
 - [x] do we need to redraw everything each frame?
 - [ ] possibly: calculate and keep simplified geometries (check what the main source of slowness is)
 - [ ] possibly: loading geojson from file instead of storing it in html; i.e. with a server
@@ -46,7 +46,7 @@ Libraries
 Bugfixes
 - [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
 - [x] Static Dataframe maps don't work
-- [x] logarithmic/normalized color bars
+- [x] logarithmic/normalized color bars with matplotlib Normalize support
 - [ ] Hover over color bar
 - [x] Make sure color bars are shown correctly regardless of how it is
 - [x] Support a "note" column for Dataframe.
@@ -92,7 +92,7 @@ map.TitleBox("<b>Sample historical map of India</b><br>Classical period, source:
 map.show()
 ```
 
-## Example: A map with everything
+## Example: A map with everything (except dataframes)
 
 And here's a more complex example, of a dynamic map (items can have periods so they only show up at certain time periods), with base tile layers, notes that show up in tooltips, and custom CSS for each object:
 
@@ -110,9 +110,6 @@ map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], n
 map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
-map.Data("IND", 100, period=[-320, -180])  # some data
-map.Data("IND", 150, period=[250, 500])     # some data
-map.Data("IND.31", 75,)  # Chola region data
 map.Admin(gadm="IND.31", level=3)
 map.AdminRivers(sources=["naturalearth", "overpass"], classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
@@ -174,23 +171,60 @@ map.show()
 
 ## Example: Data map
 
-And here's a data map:
+And here's a data map using DataFrames:
 
 ```python
+import pandas as pd
 import xatra
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
-map.Data(gadm = "IND.12", value=100)
-map.Data(gadm = "IND.12", value=100)
-map.Data(gadm = "IND.21", value=300, period=[0, 600])
-map.Data(gadm = "IND.22", value=300, period=[0, 600])
-map.Data(gadm = "IND.21", value=1000, period=[600, 700])
-map.Data(gadm = "IND.22", value=1000, period=[600, 800])
-map.TitleBox("Some random data.")
+
+### STATIC MAP
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'IND.20', 'Z01.14'],
+    'population': [100, 200, 150, 100],
+    # '2021': [100, 200, 150, 100],
+    'note': ['ooga', 'booga', 'kooga', 'mooga'] # optional, shows up in tooltips
+})
+
+df.set_index('GID', inplace=True)
+map.DataColormap(plt.cm.viridis, norm=LogNorm())
+map.Dataframe(df)
+
+map.show()
+```
+
+Or a dynamic map with a time slider: 
+
+```python
+import pandas as pd
+import xatra
+import matplotlib.pyplot as plt
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldImagery")
+map.BaseOption("OpenTopoMap")
+map.BaseOption("Esri.WorldPhysical")
+
+### DYNAMIC MAP
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'Z01.14'],
+    '2020': [100, 200, 100],
+    '2020_note': ['2020_ooga', '2020_booga', '2020_mooga'],
+    '2021': [110, 210, 110],
+    '2021_note': ['2021_ooga', '2021_booga', '2021_mooga'],
+    '2022': [120, 220, 340]
+})
+
+df.set_index('GID', inplace=True)
+map.DataColormap(norm=LogNorm())
+map.Dataframe(df)
 
 map.show()
 ```
@@ -247,7 +281,7 @@ If for whatever reason that doesn't work, you can also specify which countries' 
 The `find_in_gadm` parameter is available for:
 - `map.Admin()` - Administrative regions
 - `map.Flag()` - When using `gadm()` loader
-- `map.Data()` - Data elements
+- `map.Dataframe()` - DataFrame elements
 
 ## API Reference
 
@@ -266,7 +300,6 @@ map = FlagMap()
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
 - **`Flag(label, territory, period=None, note=None, color=None, classes=None)`**: Add a flag (country/kingdom)
-- **`Data(gadm, value, period=None, classes=None)`**: Add a data element with color mapping
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
@@ -282,7 +315,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
 - **`FlagColorSequence(color_sequence, class_name=None)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
-- **`DataColormap(colormap, vmin=None, vmax=None)`**: Set the color map for data elements
+- **`DataColormap(colormap, vmin=None, vmax=None, norm=None)`**: Set the color map for data elements
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
@@ -306,7 +339,7 @@ Every element type automatically receives a default CSS class that you can use f
 | `Point()` | `.point` | Point marker |
 | `Text()` | `.text` | Text label |
 | `Admin()` | `.admin` | Administrative region geometry |
-| `Data()` | `.data` | Data visualization geometry |
+| `Dataframe()` | `.dataframe` | DataFrame visualization geometry |
 | `TitleBox()` | `#title` | The title box container (ID, not class) |
 | `slider()` | `#controls` | The time slider controls (ID, not class) |
 
@@ -325,7 +358,8 @@ map.River(label="Ganga", value=naturalearth("1159122643"), classes="sacred-river
 map.Path(label="Silk Road", value=[[35, 75], [40, 80]], classes="trade-route ancient")
 map.Text(label="Jambudvipa", position=[22, 79], classes="region-name large-text")
 map.Admin(gadm="IND.31", level=3, classes="tamil-nadu-tehsils")
-map.Data(gadm="IND.12", value=100, classes="state-data")
+# DataFrame elements can be styled with CSS classes
+# map.Dataframe(df, classes="state-data")
 ```
 
 **Important:** Flag labels automatically inherit the custom classes from their parent flag. This means if you define:
@@ -515,58 +549,140 @@ map.Flag("Unknown", territory7, classes="unknown-class")  # Uses default colors
 
 Flag labels automatically use a darker, more opaque version of the flag color for better readability.
 
-### Data Mapping
+### Data Visualization with DataFrames
 
-The `Data` method creates data visualizations by mapping numeric values to colors on geographical regions. Data elements automatically get colors from the map's data colormap and display a color scale legend.
+Xatra provides powerful data visualization capabilities through the `Dataframe` method, which creates efficient choropleth maps from pandas DataFrames. This is the primary way to visualize data on maps.
+
+The `Dataframe` method creates efficient choropleth maps from pandas DataFrames where each row represents an administrative division indexed by GID, and columns represent either a single data value or time-series data.
+
+#### Static DataFrames (Single Data Column)
+
+For static maps with a single data value per region:
 
 ```python
-# Basic data mapping with default yellow-orange-red colormap
-map.Data("IND", 100)  # India with value 100
-map.Data("PAK", 50)   # Pakistan with value 50
-map.Data("CHN", 200)  # China with value 200
-
-# Data with time periods for dynamic maps
-map.Data("IND", 100, period=[0, 100])  # India shows value 100 from 0-100 CE
-map.Data("IND", 150, period=[100, 200])  # India shows value 150 from 100-200 CE
-
-# Custom colormap
+import pandas as pd
+import xatra
 import matplotlib.pyplot as plt
-map.DataColormap(plt.cm.viridis, vmin=0, vmax=300)
 
-# Subdivision data (state, district, tehsil level)
-map.Data("IND.31", 85.5, classes="tamil-nadu-data")  # Tamil Nadu state
-map.Data("IND.31.1", 42.3, classes="chennai-data")   # Chennai district
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+
+# Create a static DataFrame
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'IND.20', 'Z01.14'],
+    'population': [1000000, 2000000, 1500000, 500000],
+    'note': ['Coastal state', 'Major state', 'Growing region', 'Disputed territory']
+})
+
+df.set_index('GID', inplace=True)
+
+# Use custom colormap
+map.DataColormap(plt.cm.viridis, vmin=0, vmax=2000000)
+map.Dataframe(df)
+
+map.show()
 ```
 
-**Parameters:**
-- `gadm`: GADM key (e.g., "IND", "IND.31", "IND.31.1")
-- `value`: Numeric value for color mapping
-- `period`: Optional time period as [start_year, end_year] list
-- `classes`: Optional CSS classes for styling
+#### Dynamic DataFrames (Time-Series Data)
 
-**Features:**
-- **Automatic color mapping**: Values are mapped to colors using the data colormap
-- **Default colormap**: Yellow-orange-red gradient if no colormap is set
-- **Custom colormaps**: Use any matplotlib colormap (viridis, Reds, Blues, etc.)
-- **Color scale legend**: Automatically displays the colormap with min/max values
-- **Rich tooltips**: Shows appropriate level name and all GADM properties
-- **Subdivision support**: Works with country, state, district, and tehsil levels
-- **Time support**: Works with dynamic maps and period filtering
-- **Memory efficient**: Shared geometry for multiple data points per region
+For dynamic maps with time-series data:
 
-**Colormap Configuration:**
 ```python
-# Use default yellow-orange-red colormap
+import pandas as pd
+import xatra
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+
+# Create a dynamic DataFrame with year columns
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'IND.20'],
+    '2020': [1000000, 2000000, 1500000],
+    '2021': [1100000, 2100000, 1600000],
+    '2022': [1200000, 2200000, 1700000],
+    '2020_note': ['Base year', 'Major growth', 'Steady increase'],
+    '2021_note': ['Continued growth', 'Peak growth', 'Accelerating'],
+    '2022_note': ['Sustained growth', 'Plateau', 'Strong growth']
+})
+
+df.set_index('GID', inplace=True)
+
+# Use logarithmic colormap for wide-ranging data
+map.DataColormap(plt.cm.plasma, norm=LogNorm(vmin=1000000, vmax=2200000))
+map.Dataframe(df)
+map.slider(2020, 2022)
+
+map.show()
+```
+
+#### DataFrame Structure and Requirements
+
+**Required Structure:**
+- Must be a pandas DataFrame
+- Must have GID as index or as a column named 'GID'
+- GID values must correspond to GADM administrative codes (e.g., 'IND.31', 'PAK.1', 'Z01.14')
+
+**Static Maps:**
+- Single data column containing numeric values
+- Optional `note` column for tooltip information
+- Auto-detected when DataFrame has exactly one data column
+
+**Dynamic Maps:**
+- Multiple columns with year names (e.g., '2020', '2021', '2022')
+- Optional `(year)_note` columns for year-specific tooltip information
+- Auto-detected when DataFrame has multiple numeric columns
+
+**Note Columns:**
+- **Static maps**: Use a column named `note` for general tooltip information
+- **Dynamic maps**: Use columns named `(year)_note` (e.g., `2020_note`, `2021_note`) for year-specific tooltip information
+- Note columns are automatically excluded from data visualization and map type detection
+
+#### Parameters
+
+- `dataframe`: pandas DataFrame with GID-indexed rows and data columns
+- `data_column`: Column name containing the data values (for static maps). If None, auto-detected.
+- `year_columns`: List of year columns for time-series data (for dynamic maps). If None, auto-detected.
+- `classes`: Optional CSS classes for styling
+- `find_in_gadm`: Optional list of country codes to search in if GID is not found in its own file
+
+#### Features
+
+- **Automatic map type detection**: Static vs dynamic based on DataFrame structure
+- **Missing value handling**: NaN values are rendered as fully transparent (blank)
+- **Rich tooltips**: Shows data values, notes, and administrative information
+- **Efficient rendering**: Data processed once during export, not on every render
+- **Color mapping**: Uses the map's DataColormap for visualization
+- **Time support**: Dynamic maps work with time slider and period filtering
+- **Memory optimization**: Shared geometry for multiple data points per region
+
+#### DataColormap Configuration
+
+The `DataColormap` method controls how data values are mapped to colors. It supports both linear and non-linear color mapping:
+
+```python
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm, PowerNorm
+
+# Default colormap (yellow-orange-red)
 map.DataColormap()
 
-# Use matplotlib colormaps
-import matplotlib.pyplot as plt
+# Matplotlib colormaps
 map.DataColormap(plt.cm.viridis)      # Viridis colormap
+map.DataColormap(plt.cm.plasma)       # Plasma colormap
 map.DataColormap(plt.cm.Reds)         # Red colormap
 map.DataColormap(plt.cm.Blues)        # Blue colormap
 
-# Custom colormap with specific value range
-map.DataColormap(plt.cm.viridis, vmin=0, vmax=100)
+# Custom value range
+map.DataColormap(plt.cm.viridis, vmin=0, vmax=1000)
+
+# Logarithmic normalization (great for wide-ranging data)
+map.DataColormap(plt.cm.viridis, norm=LogNorm())
+map.DataColormap(plt.cm.plasma, norm=LogNorm(vmin=100, vmax=1000000))
+
+# Power normalization (custom gamma)
+map.DataColormap(plt.cm.viridis, norm=PowerNorm(gamma=0.5))
 
 # Custom colormap from color list
 from matplotlib.colors import LinearSegmentedColormap
@@ -574,80 +690,17 @@ custom_cmap = LinearSegmentedColormap.from_list("custom", ["#000000", "#ffffff"]
 map.DataColormap(custom_cmap)
 ```
 
-**Tooltip Information:**
-- **Level-appropriate names**: Shows NAME_3, NAME_2, NAME_1, or COUNTRY as most specific
-- **Complete GADM data**: GID_0, COUNTRY, GID_1, NAME_1, VARNAME_1, etc.
-- **Data value**: The numeric value being visualized
-
-### DataFrame-Based Data Mapping
-
-The `Dataframe` method creates efficient choropleth maps from pandas DataFrames where each row represents an administrative division indexed by GID, and columns represent either a single data value or time-series data.
-
-```python
-import pandas as pd
-import xatra
-
-map = xatra.FlagMap()
-map.BaseOption("OpenStreetMap", default=True)
-map.BaseOption("Esri.WorldImagery")
-map.BaseOption("OpenTopoMap")
-map.BaseOption("Esri.WorldPhysical")
-
-### STATIC MAP
-# df = pd.DataFrame({
-#     'GID': ['IND.31', 'IND.12', 'IND.20', 'Z01.14'],
-#     'population': [100, 200, 150, 100]
-# })
-### DYNAMIC MAP
-df = pd.DataFrame({
-    'GID': ['IND.31', 'IND.12', 'Z01.14'],
-    '2020': [100, 200, 100],
-    '2021': [110, 210, 110],
-    '2022': [120, 220, 120]
-})
-
-df.set_index('GID', inplace=True)
-map.Dataframe(df, find_in_gadm=["IND"])
-
-
-map.show(out_json="map_dataframe.json", out_html="map_dataframe.html")
-```
-
 **Parameters:**
-- `dataframe`: pandas DataFrame with GID-indexed rows and data columns
-- `data_column`: Column name containing the data values (for static maps). If None, auto-detected.
-- `year_columns`: List of year columns for time-series data (for dynamic maps). If None, auto-detected.
-- `classes`: Optional CSS classes for styling
-- `find_in_gadm`: Optional list of country codes to search in if GID is not found in its own file
-
-**Auto-detection behavior:**
-- If neither `data_column` nor `year_columns` is specified:
-  - Single data column (besides GID): treated as `data_column` for static map
-  - Multiple data columns (besides GID): treated as `year_columns` for dynamic map
+- `colormap`: matplotlib colormap (e.g., `plt.cm.viridis`, `plt.cm.Reds`)
+- `vmin`: Minimum value for color mapping (optional, auto-detected from data)
+- `vmax`: Maximum value for color mapping (optional, auto-detected from data)
+- `norm`: Normalization object (e.g., `LogNorm()`, `PowerNorm(gamma=0.5)`)
 
 **Features:**
-- **Efficient processing**: DataFrames are processed once and converted to optimized data entries
-- **Static maps**: Single data column creates a static choropleth map
-- **Dynamic maps**: Year columns create time-series data with automatic period detection
-- **Automatic validation**: Validates DataFrame structure and GID indexing
-- **Memory efficient**: Shared geometry for multiple data points per region
-- **Time support**: Works with dynamic maps and period filtering
-- **Color mapping**: Uses the same colormap system as individual Data elements
-- **Rich tooltips**: Shows appropriate level name and all GADM properties
-
-**DataFrame Requirements:**
-- Must be a pandas DataFrame
-- Must have GID as index or as a column named 'GID'
-- For static maps: specify `data_column` with the column containing values
-- For dynamic maps: specify `year_columns` with list of year column names
-- Year columns should contain numeric year values (e.g., '2020', '2021')
-- Missing values (NaN) are automatically skipped
-
-**Performance Benefits:**
-- **No redrawing**: DataFrame data is processed once during export, not on every render
-- **Shared geometry**: Multiple data points per region share the same geometry
-- **Efficient grouping**: Data is grouped by GADM code for optimal rendering
-- **Memory optimization**: Large DataFrames are handled efficiently without memory bloat
+- **Automatic value range detection**: If vmin/vmax not specified, uses data min/max
+- **Non-linear normalization**: Support for LogNorm, PowerNorm, and other matplotlib Normalize objects
+- **Color bar legend**: Automatically displays the colormap with value range
+- **SVG color bar**: High-quality vector color bar for the legend
 
 ### Administrative Regions
 
