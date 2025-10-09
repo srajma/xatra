@@ -29,13 +29,28 @@ To add a new built-in icon:
 - `shadow_anchor`: Optional shadow anchor point `(x, y)`
 - `popup_anchor`: Point from which popups open relative to the icon anchor `(x, y)`
 
-## Example Icons
+## Built-in Icons
 
-This directory can include various icon styles for different map needs:
-- `star.png` - Star marker for important locations
-- `flag-red.png` - Red flag marker
-- `circle-blue.png` - Blue circle marker
-- etc.
+This directory includes several SVG icons for different map needs:
+
+### Historical/Archaeological Icons
+- `city.svg` - Ancient Indian city marker with gavaksha architectural style (semi-circular dome with layered arches)
+- `temple.svg` - Hindu temple with shikhara (spire) and traditional architectural elements
+- `fort.svg` - Fortress or citadel with crenellations and central tower
+
+### General Purpose Icons
+- `star.svg` - Five-pointed star for important or significant locations
+- `important.svg` - Exclamation mark in a circle for urgent/notable places
+- `example.svg` - Simple circular marker with exclamation point
+
+### Adding More Icons
+
+You can add your own icons following these guidelines:
+- Use SVG format for scalability
+- Keep designs simple and recognizable at small sizes (32x32px)
+- Use a circular border or background for consistency
+- Choose colors that work well on both light and dark map backgrounds
+- Test icons at different zoom levels to ensure readability
 
 Icons are automatically converted to base64 data URIs when exported, so the generated HTML files are self-contained.
 

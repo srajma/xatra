@@ -1,0 +1,20 @@
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="16" cy="16" r="15" fill="none" stroke="#2c3e50" stroke-width="2"/>
+  
+  <!-- Temple spire (shikhara) -->
+  <polygon points="16,6 12,14 20,14" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
+  
+  <!-- Temple base -->
+  <rect x="8" y="14" width="16" height="8" fill="#f39c12" stroke="#e67e22" stroke-width="1"/>
+  
+  <!-- Temple door -->
+  <rect x="14" y="16" width="4" height="6" fill="#8b4513" stroke="#654321" stroke-width="0.5"/>
+  
+  <!-- Decorative elements on base -->
+  <rect x="10" y="18" width="2" height="2" fill="#e74c3c"/>
+  <rect x="20" y="18" width="2" height="2" fill="#e74c3c"/>
+  
+  <!-- Kalasha (pot) on top -->
+  <circle cx="16" cy="8" r="1" fill="#f39c12"/>
+</svg>

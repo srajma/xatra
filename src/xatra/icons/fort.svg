@@ -1,0 +1,24 @@
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="16" cy="16" r="15" fill="none" stroke="#2c3e50" stroke-width="2"/>
+  
+  <!-- Fort walls -->
+  <rect x="6" y="12" width="20" height="10" fill="#7f8c8d" stroke="#5d6d7e" stroke-width="1"/>
+  
+  <!-- Crenellations (battlements) -->
+  <rect x="8" y="10" width="2" height="2" fill="#7f8c8d"/>
+  <rect x="11" y="10" width="2" height="2" fill="#7f8c8d"/>
+  <rect x="14" y="10" width="2" height="2" fill="#7f8c8d"/>
+  <rect x="17" y="10" width="2" height="2" fill="#7f8c8d"/>
+  <rect x="20" y="10" width="2" height="2" fill="#7f8c8d"/>
+  
+  <!-- Main gate -->
+  <rect x="14" y="15" width="4" height="7" fill="#8b4513" stroke="#654321" stroke-width="0.5"/>
+  
+  <!-- Gate arch -->
+  <path d="M 14 15 Q 16 13 18 15" fill="none" stroke="#8b4513" stroke-width="1"/>
+  
+  <!-- Central tower -->
+  <rect x="15" y="6" width="2" height="6" fill="#95a5a6" stroke="#7f8c8d" stroke-width="1"/>
+  <polygon points="15,6 16,4 17,6" fill="#e74c3c"/>
+</svg>

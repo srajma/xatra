@@ -1,0 +1,12 @@
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="16" cy="16" r="15" fill="none" stroke="#2c3e50" stroke-width="2"/>
+  
+  <!-- 5-pointed star -->
+  <polygon points="16,6 18.5,12.5 25,12.5 20,17 21.5,23.5 16,19 10.5,23.5 12,17 7,12.5 13.5,12.5" 
+           fill="#f1c40f" stroke="#f39c12" stroke-width="1"/>
+  
+  <!-- Inner star for depth -->
+  <polygon points="16,10 17.5,14 21,14 18.5,16.5 19.5,20 16,17.5 12.5,20 13.5,16.5 11,14 14.5,14" 
+           fill="#f7dc6f"/>
+</svg>
