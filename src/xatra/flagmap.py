@@ -26,6 +26,28 @@ GeometryLike = Union[Territory, Dict[str, Any]]
 
 
 @dataclass
+class MarkerIcon:
+    """Represents a custom marker icon for Point markers.
+    
+    Args:
+        icon_url: URL or path to the icon image
+        shadow_url: URL or path to the shadow image
+        icon_size: Size of the icon as [width, height] in pixels
+        shadow_size: Size of the shadow as [width, height] in pixels
+        icon_anchor: Point of the icon which corresponds to marker's location as [x, y]
+        shadow_anchor: Point of the shadow which corresponds to marker's location as [x, y]
+        popup_anchor: Point from which popup should open relative to icon_anchor as [x, y]
+    """
+    icon_url: str = 'icons/marker-icon.png'
+    shadow_url: str = 'icons/marker-shadow.png'
+    icon_size: Optional[List[int]] = None
+    shadow_size: Optional[List[int]] = None
+    icon_anchor: Optional[List[int]] = None
+    shadow_anchor: Optional[List[int]] = None
+    popup_anchor: Optional[List[int]] = None
+
+
+@dataclass
 class FlagEntry:
     """Represents a flag (country/kingdom) with territory and optional time period.
     
@@ -87,10 +109,12 @@ class PointEntry:
         label: Display name for the point
         position: (latitude, longitude) coordinate tuple
         period: Optional time period as (start_year, end_year) tuple
+        icon: Optional custom marker icon
     """
     label: str
     position: Tuple[float, float]
     period: Optional[Tuple[int, int]] = None
+    icon: Optional[MarkerIcon] = None
 
 
 @dataclass
@@ -691,23 +715,30 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple))
 
-    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None) -> None:
+    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[MarkerIcon] = None) -> None:
         """Add a point of interest to the map.
         
         Args:
             label: Display name for the point
             position: [latitude, longitude] coordinate pair
             period: Optional time period as [start_year, end_year] list
+            icon: Optional custom marker icon
             
         Example:
             >>> map.Point("Delhi", [28.6139, 77.2090], period=[1200, 1800])
+            >>> map.Point("Custom", [28.0, 77.0], icon=MarkerIcon(icon_url="custom.png", icon_size=[30, 40]))
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple))
+        
+        # Use default icon if none provided
+        if icon is None:
+            icon = MarkerIcon()
+        
+        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple, icon=icon))
 
     def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         """Add a text label to the map.
@@ -1171,10 +1202,22 @@ class FlagMap:
             restricted_period = self._apply_limits_to_period(p.period)
             # Include objects with no period (always visible) or valid restricted periods
             if p.period is None or restricted_period is not None:
+                icon_data = None
+                if p.icon:
+                    icon_data = {
+                        "iconUrl": p.icon.icon_url,
+                        "shadowUrl": p.icon.shadow_url,
+                        "iconSize": p.icon.icon_size,
+                        "shadowSize": p.icon.shadow_size,
+                        "iconAnchor": p.icon.icon_anchor,
+                        "shadowAnchor": p.icon.shadow_anchor,
+                        "popupAnchor": p.icon.popup_anchor,
+                    }
                 points_serialized.append({
                     "label": p.label,
                     "position": p.position,
                     "period": list(restricted_period) if restricted_period is not None else None,
+                    "icon": icon_data,
                 })
 
         texts_serialized = []

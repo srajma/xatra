@@ -959,7 +959,26 @@ HTML_TEMPLATE = Template(
       function renderPoints(year = null) {
         const points = year !== null ? filterByPeriod(payload.points, year) : payload.points;
         for (const p of points) {
-          const layer = L.marker([p.position[0], p.position[1]]).addTo(map).bindTooltip(p.label);
+          let markerOptions = {};
+          
+          // Create custom icon if icon data is provided
+          if (p.icon) {
+            const iconOptions = {
+              iconUrl: p.icon.iconUrl,
+              shadowUrl: p.icon.shadowUrl,
+            };
+            
+            // Add optional properties only if they are defined
+            if (p.icon.iconSize) iconOptions.iconSize = p.icon.iconSize;
+            if (p.icon.shadowSize) iconOptions.shadowSize = p.icon.shadowSize;
+            if (p.icon.iconAnchor) iconOptions.iconAnchor = p.icon.iconAnchor;
+            if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
+            if (p.icon.popupAnchor) iconOptions.popupAnchor = p.icon.popupAnchor;
+            
+            markerOptions.icon = L.icon(iconOptions);
+          }
+          
+          const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map).bindTooltip(p.label);
           layers.points.push(layer);
         }
       }
