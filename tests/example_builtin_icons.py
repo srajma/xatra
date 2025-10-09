@@ -33,6 +33,15 @@ temple_icon = Icon.builtin(
 )
 map.Point(label="Sacred Temple", position=[19.0, 73.0], icon=temple_icon)
 
+# Example 2b: pyramidal temple, kinda like gopuram
+gopuram_icon = Icon.builtin(
+    "temple-gopuram.svg",
+    icon_size=(32, 32),
+    icon_anchor=(16, 16),
+    popup_anchor=(0, -16)
+)
+map.Point(label="Gopuram Temple", position=[10.8, 78.7], icon=gopuram_icon)
+
 # Example 3: Fortress or citadel
 fort_icon = Icon.builtin(
     "fort.svg",
