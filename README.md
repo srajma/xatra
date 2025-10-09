@@ -9,6 +9,7 @@ Kanging
 
 Development
 - [ ] option for different point markers besides pin
+- [ ] option for point labels, river labels
 - [ ] grouping of map elements and layer selection
 - [ ] ideally make it so hovering hovers on *all* flags/elements at that point
 - [ ] "get current map" similar to matplotlib, to make maps more modular
