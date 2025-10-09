@@ -11,8 +11,6 @@ from xatra.loaders import gadm
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
-
-# Add a flag for context
 map.Flag(label="India", value=gadm("IND"))
 
 # Example 1: Default marker (no custom icon)
@@ -30,16 +28,16 @@ custom_icon = Icon(
 map.Point(label="Custom Red Marker", position=[19.0, 73.0], icon=custom_icon)
 
 # Example 3: Built-in icon (if available)
-try:
-    builtin_icon = Icon.builtin(
-        "example.svg",
-        icon_size=(32, 32),
-        icon_anchor=(16, 16),
-        popup_anchor=(0, -16)
-    )
-    map.Point(label="Built-in Icon Marker", position=[13.0, 80.2], icon=builtin_icon)
-except FileNotFoundError:
-    print("Built-in icon 'example.svg' not found, skipping...")
+builtin_icon = Icon.builtin(
+    "example.svg",
+    icon_size=(32, 32),
+    icon_anchor=(16, 16),
+    popup_anchor=(0, -16)
+)
+map.Point(label="Built-in Icon Marker", position=[13.0, 80.2], icon=builtin_icon)
+
+# Example 3.5: Checking that Example 3 is really at the right place
+map.Point(label="Built-in Icon Marker", position=[13.0, 80.2])
 
 # Example 4: Another custom icon with different size
 large_icon = Icon(
