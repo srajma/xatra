@@ -34,7 +34,7 @@ To add a new built-in icon:
 This directory includes several SVG icons for different map needs:
 
 ### Historical/Archaeological Icons
-- `city.svg` - Ancient Indian city marker with gavaksha architectural style (semi-circular dome with layered arches)
+- `city.png` - Ancient Indian city marker
 - `temple.svg` - Hindu temple with shikhara (spire) and traditional architectural elements
 - `fort.svg` - Fortress or citadel with crenellations and central tower
 
