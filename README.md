@@ -775,90 +775,77 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 - **Name fields**: Displays name, NAME, NAME_EN, NAME_LOC, NAME_ALT, NAME_OTHER as available
 - **Additional properties**: Scale rank, feature class, min zoom level, etc.
 
-## Custom Marker Icons
+
+### Point Icons
 
 The `Icon` class allows you to customize the appearance of point markers on the map. You can use custom icons from URLs or load built-in icons from the package.
 
-### Icon Class
-
-The `Icon` class provides full control over marker appearance:
-
 ```python
+#!/usr/bin/env python3
+"""
+Example demonstrating custom marker icons with the Point feature.
+"""
+
+import xatra
 from xatra import Icon
+from xatra.loaders import gadm
 
-icon = Icon(
-    icon_url="https://example.com/my-icon.png",
-    shadow_url="https://example.com/my-shadow.png",  # Optional
-    icon_size=(32, 32),           # Size of the icon in pixels
-    shadow_size=(41, 41),         # Size of the shadow in pixels (optional)
-    icon_anchor=(16, 32),         # Point that corresponds to marker location
-    shadow_anchor=(12, 41),       # Point that corresponds to shadow location (optional)
-    popup_anchor=(0, -32)         # Point where popups open relative to icon anchor
-)
+# Create a map
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldImagery")
+map.Flag(label="India", value=gadm("IND"))
 
-map.Point("My Location", [28.6, 77.2], icon=icon)
-```
+# Example 1: Default marker (no custom icon)
+map.Point(label="Default Marker", position=[28.6, 77.2])
 
-### Using Custom Icons from URLs
-
-You can use any publicly accessible image URL as a marker icon:
-
-```python
-from xatra import Icon
-
-# Red marker
-red_icon = Icon(
+# Example 2: Custom icon from URL
+custom_icon = Icon(
     icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-    icon_size=(25, 41),
-    icon_anchor=(12, 41),
-    popup_anchor=(1, -34),
     shadow_url="https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     shadow_size=(41, 41)
 )
+map.Point(label="Custom Red Marker", position=[19.0, 73.0], icon=custom_icon)
 
-map.Point("Important Place", [28.6, 77.2], icon=red_icon)
+# Example 3: Built-in icon (if available)
+builtin_icon = Icon.builtin(
+    "example.svg",
+    icon_size=(32, 32),
+    icon_anchor=(16, 16),
+    popup_anchor=(0, -16)
+)
+map.Point(label="Built-in Icon Marker", position=[13.0, 80.2], icon=builtin_icon)
+
+# Example 3.5: Checking that Example 3 is really at the right place
+map.Point(label="Built-in Icon Marker", position=[13.0, 80.2])
+
+# Example 4: Another custom icon with different size
+large_icon = Icon(
+    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+    icon_size=(30, 49),
+    icon_anchor=(15, 49),
+    popup_anchor=(1, -40),
+    shadow_url="https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    shadow_size=(41, 41)
+)
+map.Point(label="Large Green Marker", position=[23.0, 72.6], icon=large_icon)
+
+# Example 5: Icon without shadow
+no_shadow_icon = Icon(
+    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+    icon_size=(25, 41),
+    icon_anchor=(12, 41),
+    popup_anchor=(1, -34)
+)
+map.Point(label="Blue Marker (No Shadow)", position=[11.0, 77.0], icon=no_shadow_icon)
+
+# Add a title
+map.TitleBox("<b>Custom Marker Icons Example</b><br>Demonstrating different icon styles for Point markers")
+
+# Export the map
+map.show(out_json="tests/map_icons.json", out_html="tests/map_icons.html")
+print("Map with custom icons exported to map_icons.html")
 ```
-
-### Using Built-in Icons
-
-Load icons from the package's `src/xatra/icons/` directory as base64 data URIs:
-
-```python
-from xatra import Icon
-
-# Load a built-in icon
-icon = Icon.builtin("example.svg", icon_size=(32, 32), icon_anchor=(16, 16))
-map.Point("Special Location", [28.6, 77.2], icon=icon)
-```
-
-Built-in icons are automatically converted to base64 data URIs, making the generated HTML files completely self-contained.
-
-### Icon Parameters
-
-- **`icon_url`**: URL or data URI for the icon image (required)
-- **`shadow_url`**: URL or data URI for the shadow image (optional)
-- **`icon_size`**: Size of the icon as `(width, height)` in pixels (default: `(25, 41)`)
-- **`shadow_size`**: Size of the shadow as `(width, height)` in pixels (optional)
-- **`icon_anchor`**: Point of the icon that corresponds to marker's location as `(x, y)` (default: `(12, 41)`)
-- **`shadow_anchor`**: Point of the shadow that corresponds to marker's location as `(x, y)` (optional)
-- **`popup_anchor`**: Point from which popups open relative to `icon_anchor` as `(x, y)` (default: `(1, -34)`)
-
-### Default Behavior
-
-If no icon is specified, points use the default Leaflet marker icon:
-
-```python
-# Uses default blue marker
-map.Point("Default Marker", [28.6, 77.2])
-```
-
-### Adding Custom Built-in Icons
-
-To add your own icons to the built-in collection:
-
-1. Place your image file (PNG, JPG, SVG, etc.) in `src/xatra/icons/`
-2. Load it using `Icon.builtin("your_icon.png")`
-3. The icon will be embedded as a base64 data URI in the exported HTML
 
 ## Performance
 
