@@ -20,6 +20,7 @@ from .territory import Territory
 from .render import export_html
 from .paxmax import paxmax_aggregate
 from .colorseq import ColorSequence, LinearColorSequence
+from .icon_loader import DEFAULT_MARKER_ICON_DATA_URI, DEFAULT_MARKER_SHADOW_DATA_URI
 
 
 GeometryLike = Union[Territory, Dict[str, Any]]
@@ -29,22 +30,32 @@ GeometryLike = Union[Territory, Dict[str, Any]]
 class MarkerIcon:
     """Represents a custom marker icon for Point markers.
     
+    The default icons are loaded from the xatra package installation as data URIs,
+    so they will work regardless of where the HTML file is saved or viewed.
+    
     Args:
-        icon_url: URL or path to the icon image
-        shadow_url: URL or path to the shadow image
+        icon_url: URL, path, or data URI for the icon image
+        shadow_url: URL, path, or data URI for the shadow image
         icon_size: Size of the icon as [width, height] in pixels
         shadow_size: Size of the shadow as [width, height] in pixels
         icon_anchor: Point of the icon which corresponds to marker's location as [x, y]
         shadow_anchor: Point of the shadow which corresponds to marker's location as [x, y]
         popup_anchor: Point from which popup should open relative to icon_anchor as [x, y]
     """
-    icon_url: str = 'icons/marker-icon.png'
-    shadow_url: str = 'icons/marker-shadow.png'
+    icon_url: str = None
+    shadow_url: str = None
     icon_size: Optional[List[int]] = None
     shadow_size: Optional[List[int]] = None
     icon_anchor: Optional[List[int]] = None
     shadow_anchor: Optional[List[int]] = None
     popup_anchor: Optional[List[int]] = None
+    
+    def __post_init__(self):
+        """Set default data URIs if not provided."""
+        if self.icon_url is None:
+            self.icon_url = DEFAULT_MARKER_ICON_DATA_URI
+        if self.shadow_url is None:
+            self.shadow_url = DEFAULT_MARKER_SHADOW_DATA_URI
 
 
 @dataclass

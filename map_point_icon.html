@@ -1,0 +1,1593 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      html, body, #map { height: 100%; margin: 0; padding: 0; }
+      #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
+      #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
+      #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #colormap { position: fixed; top: 80px; right: 20px; background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #layer-selector select { margin-left: 8px; }
+      .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
+      .river { stroke: #0066cc; stroke-width: 1; fill: none; }
+      .path { stroke: #444; stroke-dasharray: 4 2; }
+      .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
+      .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
+      .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
+      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
+      .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
+    .admin-river { stroke: #0066cc; stroke-width: 2; opacity: 0.8; }
+      .data { stroke: #333; stroke-width: 1; }
+      
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="title"></div>
+    <div id="layer-selector">
+      <label for="baseLayer">Base Layer:</label>
+      <select id="baseLayer"></select>
+    </div>
+    <div id="colormap"></div>
+    <div id="controls"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const payload = {"css": "", "flags": {"mode": "static", "flags": []}, "rivers": [], "paths": [], "points": [{"label": "Delhi (Default)", "position": [28.6139, 77.209], "period": null, "icon": {"iconUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYAAADAk4LOAAAFgUlEQVR4Aa1XA5BjWRTN2oW17d3YaZtr2962HUzbDNpjszW24mRt28p47v7zq/bXZtrp/lWnXr337j3nPCe85NcypgSFdugCpW5YoDAMRaIMqRi6aKq5E3YqDQO3qAwjVWrD8Ncq/RBpykd8oZUb/kaJutow8r1aP9II0WmLKLIsJyv1w/kqw9Ch2MYdB++12Onxee/QMwvf4/Dk/Lfp/i4nxTXtOoQ4pW5Aj7wpici1A9erdAN2OH64x8OSP9j3Ft3b7aWkTg/Fm91siTra0f9on5sQr9INejH6CUUUpavjFNq1B+Oadhxmnfa8RfEmN8VNAsQhPqF55xHkMzz3jSmChWU6f7/XZKNH+9+hBLOHYozuKQPxyMPUKkrX/K0uWnfFaJGS1QPRtZsOPtr3NsW0uyh6NNCOkU3Yz+bXbT3I8G3xE5EXLXtCXbbqwCO9zPQYPRTZ5vIDXD7U+w7rFDEoUUf7ibHIR4y6bLVPXrz8JVZEql13trxwue/uDivd3fkWRbS6/IA2bID4uk0UpF1N8qLlbBlXs4Ee7HLTfV1j54APvODnSfOWBqtKVvjgLKzF5YdEk5ewRkGlK0i33Eofffc7HT56jD7/6U+qH3Cx7SBLNntH5YIPvODnyfIXZYRVDPqgHtLs5ABHD3YzLuespb7t79FY34DjMwrVrcTuwlT55YMPvOBnRrJ4VXTdNnYug5ucHLBjEpt30701A3Ts+HEa73u6dT3FNWwflY86eMHPk+Yu+i6pzUpRrW7SNDg5JHR4KapmM5Wv2E8Tfcb1HoqqHMHU+uWDD7zg54mz5/2BSnizi9T1Dg4QQXLToGNCkb6tb1NU+QAlGr1++eADrzhn/u8Q2YZhQVlZ5+CAOtqfbhmaUCS1ezNFVm2imDbPmPng5wmz+gwh+oHDce0eUtQ6OGDIyR0uUhUsoO3vfDmmgOezH0mZN59x7MBi++WDL1g/eEiU3avlidO671bkLfwbw5XV2P8Pzo0ydy4t2/0eu33xYSOMOD8hTf4CrBtGMSoXfPLchX+J0ruSePw3LZeK0juPJbYzrhkH0io7B3k164hiGvawhOKMLkrQLyVpZg8rHFW7E2uHOL888IBPlNZ1FPzstSJM694fWr6RwpvcJK60+0HCILTBzZLFNdtAzJaohze60T8qBzyh5ZuOg5e7uwQppofEmf2++DYvmySqGBuKaicF1blQjhuHdvCIMvp8whTTfZzI7RldpwtSzL+F1+wkdZ2TBOW2gIF88PBTzD/gpeREAMEbxnJcaJHNHrpzji0gQCS6hdkEeYt9DF/2qPcEC8RM28Hwmr3sdNyht00byAut2k3gufWNtgtOEOFGUwcXWNDbdNbpgBGxEvKkOQsxivJx33iow0Vw5S6SVTrpVq11ysA2Rp7gTfPfktc6zhtXBBC+adRLshf6sG2RfHPZ5EAc4sVZ83yCN00Fk/4kggu40ZTvIEm5g24qtU4KjBrx/BTTH8ifVASAG7gKrnWxJDcU7x8X6Ecczhm3o6YicvsLXWfh3Ch1W0k8x0nXF+0fFxgt4phz8QvypiwCCFKMqXCnqXExjq10beH+UUA7+nG6mdG/Pu0f3LgFcGrl2s0kNNjpmoJ9o4B29CMO8dMT4Q5ox8uitF6fqsrJOr8qnwNbRzv6hSnG5wP+64C7h9lp30hKNtKdWjtdkbuPA19nJ7Tz3zR/ibgARbhb4AlhavcBebmTHcFl2fvYEnW0ox9xMxKBS8btJ+KiEbq9zA4RthQXDhPa0T9TEe69gWupwc6uBUphquXgf+/FrIjweHQS4/pduMe5ERUMHUd9xv8ZR98CxkS4F2n3EUrUZ10EYNw7BWm9x1GiPssi3GgiGRDKWRYZfXlON+dfNbM+GgIwYdwAAAAASUVORK5CYII=", "shadowUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACkAAAApCAQAAAACach9AAACMUlEQVR4Ae3ShY7jQBAE0Aoz/f9/HTMzhg1zrdKUrJbdx+Kd2nD8VNudfsL/Th///dyQN2TH6f3y/BGpC379rV+S+qqetBOxImNQXL8JCAr2V4iMQXHGNJxeCfZXhSRBcQMfvkOWUdtfzlLgAENmZDcmo2TVmt8OSM2eXxBp3DjHSMFutqS7SbmemzBiR+xpKCNUIRkdkkYxhAkyGoBvyQFEJEefwSmmvBfJuJ6aKqKWnAkvGZOaZXTUgFqYULWNSHUckZuR1HIIimUExutRxwzOLROIG4vKmCKQt364mIlhSyzAf1m9lHZHJZrlAOMMztRRiKimp/rpdJDc9Awry5xTZCte7FHtuS8wJgeYGrex28xNTd086Dik7vUMscQOa8y4DoGtCCSkAKlNwpgNtphjrC6MIHUkR6YWxxs6Sc5xqn222mmCRFzIt8lEdKx+ikCtg91qS2WpwVfBelJCiQJwvzixfI9cxZQWgiSJelKnwBElKYtDOb2MFbhmUigbReQBV0Cg4+qMXSxXSyGUn4UbF8l+7qdSGnTC0XLCmahIgUHLhLOhpVCtw4CzYXvLQWQbJNmxoCsOKAxSgBJno75avolkRw8iIAFcsdc02e9iyCd8tHwmeSSoKTowIgvscSGZUOA7PuCN5b2BX9mQM7S0wYhMNU74zgsPBj3HU7wguAfnxxjFQGBE6pwN+GjME9zHY7zGp8wVxMShYX9NXvEWD3HbwJf4giO4CFIQxXScH1/TM+04kkBiAAAAAElFTkSuQmCC", "iconSize": null, "shadowSize": null, "iconAnchor": null, "shadowAnchor": null, "popupAnchor": null}}, {"label": "Mumbai (Also Default)", "position": [19.076, 72.8777], "period": null, "icon": {"iconUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYAAADAk4LOAAAFgUlEQVR4Aa1XA5BjWRTN2oW17d3YaZtr2962HUzbDNpjszW24mRt28p47v7zq/bXZtrp/lWnXr337j3nPCe85NcypgSFdugCpW5YoDAMRaIMqRi6aKq5E3YqDQO3qAwjVWrD8Ncq/RBpykd8oZUb/kaJutow8r1aP9II0WmLKLIsJyv1w/kqw9Ch2MYdB++12Onxee/QMwvf4/Dk/Lfp/i4nxTXtOoQ4pW5Aj7wpici1A9erdAN2OH64x8OSP9j3Ft3b7aWkTg/Fm91siTra0f9on5sQr9INejH6CUUUpavjFNq1B+Oadhxmnfa8RfEmN8VNAsQhPqF55xHkMzz3jSmChWU6f7/XZKNH+9+hBLOHYozuKQPxyMPUKkrX/K0uWnfFaJGS1QPRtZsOPtr3NsW0uyh6NNCOkU3Yz+bXbT3I8G3xE5EXLXtCXbbqwCO9zPQYPRTZ5vIDXD7U+w7rFDEoUUf7ibHIR4y6bLVPXrz8JVZEql13trxwue/uDivd3fkWRbS6/IA2bID4uk0UpF1N8qLlbBlXs4Ee7HLTfV1j54APvODnSfOWBqtKVvjgLKzF5YdEk5ewRkGlK0i33Eofffc7HT56jD7/6U+qH3Cx7SBLNntH5YIPvODnyfIXZYRVDPqgHtLs5ABHD3YzLuespb7t79FY34DjMwrVrcTuwlT55YMPvOBnRrJ4VXTdNnYug5ucHLBjEpt30701A3Ts+HEa73u6dT3FNWwflY86eMHPk+Yu+i6pzUpRrW7SNDg5JHR4KapmM5Wv2E8Tfcb1HoqqHMHU+uWDD7zg54mz5/2BSnizi9T1Dg4QQXLToGNCkb6tb1NU+QAlGr1++eADrzhn/u8Q2YZhQVlZ5+CAOtqfbhmaUCS1ezNFVm2imDbPmPng5wmz+gwh+oHDce0eUtQ6OGDIyR0uUhUsoO3vfDmmgOezH0mZN59x7MBi++WDL1g/eEiU3avlidO671bkLfwbw5XV2P8Pzo0ydy4t2/0eu33xYSOMOD8hTf4CrBtGMSoXfPLchX+J0ruSePw3LZeK0juPJbYzrhkH0io7B3k164hiGvawhOKMLkrQLyVpZg8rHFW7E2uHOL888IBPlNZ1FPzstSJM694fWr6RwpvcJK60+0HCILTBzZLFNdtAzJaohze60T8qBzyh5ZuOg5e7uwQppofEmf2++DYvmySqGBuKaicF1blQjhuHdvCIMvp8whTTfZzI7RldpwtSzL+F1+wkdZ2TBOW2gIF88PBTzD/gpeREAMEbxnJcaJHNHrpzji0gQCS6hdkEeYt9DF/2qPcEC8RM28Hwmr3sdNyht00byAut2k3gufWNtgtOEOFGUwcXWNDbdNbpgBGxEvKkOQsxivJx33iow0Vw5S6SVTrpVq11ysA2Rp7gTfPfktc6zhtXBBC+adRLshf6sG2RfHPZ5EAc4sVZ83yCN00Fk/4kggu40ZTvIEm5g24qtU4KjBrx/BTTH8ifVASAG7gKrnWxJDcU7x8X6Ecczhm3o6YicvsLXWfh3Ch1W0k8x0nXF+0fFxgt4phz8QvypiwCCFKMqXCnqXExjq10beH+UUA7+nG6mdG/Pu0f3LgFcGrl2s0kNNjpmoJ9o4B29CMO8dMT4Q5ox8uitF6fqsrJOr8qnwNbRzv6hSnG5wP+64C7h9lp30hKNtKdWjtdkbuPA19nJ7Tz3zR/ibgARbhb4AlhavcBebmTHcFl2fvYEnW0ox9xMxKBS8btJ+KiEbq9zA4RthQXDhPa0T9TEe69gWupwc6uBUphquXgf+/FrIjweHQS4/pduMe5ERUMHUd9xv8ZR98CxkS4F2n3EUrUZ10EYNw7BWm9x1GiPssi3GgiGRDKWRYZfXlON+dfNbM+GgIwYdwAAAAASUVORK5CYII=", "shadowUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACkAAAApCAQAAAACach9AAACMUlEQVR4Ae3ShY7jQBAE0Aoz/f9/HTMzhg1zrdKUrJbdx+Kd2nD8VNudfsL/Th///dyQN2TH6f3y/BGpC379rV+S+qqetBOxImNQXL8JCAr2V4iMQXHGNJxeCfZXhSRBcQMfvkOWUdtfzlLgAENmZDcmo2TVmt8OSM2eXxBp3DjHSMFutqS7SbmemzBiR+xpKCNUIRkdkkYxhAkyGoBvyQFEJEefwSmmvBfJuJ6aKqKWnAkvGZOaZXTUgFqYULWNSHUckZuR1HIIimUExutRxwzOLROIG4vKmCKQt364mIlhSyzAf1m9lHZHJZrlAOMMztRRiKimp/rpdJDc9Awry5xTZCte7FHtuS8wJgeYGrex28xNTd086Dik7vUMscQOa8y4DoGtCCSkAKlNwpgNtphjrC6MIHUkR6YWxxs6Sc5xqn222mmCRFzIt8lEdKx+ikCtg91qS2WpwVfBelJCiQJwvzixfI9cxZQWgiSJelKnwBElKYtDOb2MFbhmUigbReQBV0Cg4+qMXSxXSyGUn4UbF8l+7qdSGnTC0XLCmahIgUHLhLOhpVCtw4CzYXvLQWQbJNmxoCsOKAxSgBJno75avolkRw8iIAFcsdc02e9iyCd8tHwmeSSoKTowIgvscSGZUOA7PuCN5b2BX9mQM7S0wYhMNU74zgsPBj3HU7wguAfnxxjFQGBE6pwN+GjME9zHY7zGp8wVxMShYX9NXvEWD3HbwJf4giO4CFIQxXScH1/TM+04kkBiAAAAAElFTkSuQmCC", "iconSize": null, "shadowSize": null, "iconAnchor": null, "shadowAnchor": null, "popupAnchor": null}}, {"label": "Kolkata (Custom Size)", "position": [22.5726, 88.3639], "period": null, "icon": {"iconUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAApCAYAAADAk4LOAAAFgUlEQVR4Aa1XA5BjWRTN2oW17d3YaZtr2962HUzbDNpjszW24mRt28p47v7zq/bXZtrp/lWnXr337j3nPCe85NcypgSFdugCpW5YoDAMRaIMqRi6aKq5E3YqDQO3qAwjVWrD8Ncq/RBpykd8oZUb/kaJutow8r1aP9II0WmLKLIsJyv1w/kqw9Ch2MYdB++12Onxee/QMwvf4/Dk/Lfp/i4nxTXtOoQ4pW5Aj7wpici1A9erdAN2OH64x8OSP9j3Ft3b7aWkTg/Fm91siTra0f9on5sQr9INejH6CUUUpavjFNq1B+Oadhxmnfa8RfEmN8VNAsQhPqF55xHkMzz3jSmChWU6f7/XZKNH+9+hBLOHYozuKQPxyMPUKkrX/K0uWnfFaJGS1QPRtZsOPtr3NsW0uyh6NNCOkU3Yz+bXbT3I8G3xE5EXLXtCXbbqwCO9zPQYPRTZ5vIDXD7U+w7rFDEoUUf7ibHIR4y6bLVPXrz8JVZEql13trxwue/uDivd3fkWRbS6/IA2bID4uk0UpF1N8qLlbBlXs4Ee7HLTfV1j54APvODnSfOWBqtKVvjgLKzF5YdEk5ewRkGlK0i33Eofffc7HT56jD7/6U+qH3Cx7SBLNntH5YIPvODnyfIXZYRVDPqgHtLs5ABHD3YzLuespb7t79FY34DjMwrVrcTuwlT55YMPvOBnRrJ4VXTdNnYug5ucHLBjEpt30701A3Ts+HEa73u6dT3FNWwflY86eMHPk+Yu+i6pzUpRrW7SNDg5JHR4KapmM5Wv2E8Tfcb1HoqqHMHU+uWDD7zg54mz5/2BSnizi9T1Dg4QQXLToGNCkb6tb1NU+QAlGr1++eADrzhn/u8Q2YZhQVlZ5+CAOtqfbhmaUCS1ezNFVm2imDbPmPng5wmz+gwh+oHDce0eUtQ6OGDIyR0uUhUsoO3vfDmmgOezH0mZN59x7MBi++WDL1g/eEiU3avlidO671bkLfwbw5XV2P8Pzo0ydy4t2/0eu33xYSOMOD8hTf4CrBtGMSoXfPLchX+J0ruSePw3LZeK0juPJbYzrhkH0io7B3k164hiGvawhOKMLkrQLyVpZg8rHFW7E2uHOL888IBPlNZ1FPzstSJM694fWr6RwpvcJK60+0HCILTBzZLFNdtAzJaohze60T8qBzyh5ZuOg5e7uwQppofEmf2++DYvmySqGBuKaicF1blQjhuHdvCIMvp8whTTfZzI7RldpwtSzL+F1+wkdZ2TBOW2gIF88PBTzD/gpeREAMEbxnJcaJHNHrpzji0gQCS6hdkEeYt9DF/2qPcEC8RM28Hwmr3sdNyht00byAut2k3gufWNtgtOEOFGUwcXWNDbdNbpgBGxEvKkOQsxivJx33iow0Vw5S6SVTrpVq11ysA2Rp7gTfPfktc6zhtXBBC+adRLshf6sG2RfHPZ5EAc4sVZ83yCN00Fk/4kggu40ZTvIEm5g24qtU4KjBrx/BTTH8ifVASAG7gKrnWxJDcU7x8X6Ecczhm3o6YicvsLXWfh3Ch1W0k8x0nXF+0fFxgt4phz8QvypiwCCFKMqXCnqXExjq10beH+UUA7+nG6mdG/Pu0f3LgFcGrl2s0kNNjpmoJ9o4B29CMO8dMT4Q5ox8uitF6fqsrJOr8qnwNbRzv6hSnG5wP+64C7h9lp30hKNtKdWjtdkbuPA19nJ7Tz3zR/ibgARbhb4AlhavcBebmTHcFl2fvYEnW0ox9xMxKBS8btJ+KiEbq9zA4RthQXDhPa0T9TEe69gWupwc6uBUphquXgf+/FrIjweHQS4/pduMe5ERUMHUd9xv8ZR98CxkS4F2n3EUrUZ10EYNw7BWm9x1GiPssi3GgiGRDKWRYZfXlON+dfNbM+GgIwYdwAAAAASUVORK5CYII=", "shadowUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACkAAAApCAQAAAACach9AAACMUlEQVR4Ae3ShY7jQBAE0Aoz/f9/HTMzhg1zrdKUrJbdx+Kd2nD8VNudfsL/Th///dyQN2TH6f3y/BGpC379rV+S+qqetBOxImNQXL8JCAr2V4iMQXHGNJxeCfZXhSRBcQMfvkOWUdtfzlLgAENmZDcmo2TVmt8OSM2eXxBp3DjHSMFutqS7SbmemzBiR+xpKCNUIRkdkkYxhAkyGoBvyQFEJEefwSmmvBfJuJ6aKqKWnAkvGZOaZXTUgFqYULWNSHUckZuR1HIIimUExutRxwzOLROIG4vKmCKQt364mIlhSyzAf1m9lHZHJZrlAOMMztRRiKimp/rpdJDc9Awry5xTZCte7FHtuS8wJgeYGrex28xNTd086Dik7vUMscQOa8y4DoGtCCSkAKlNwpgNtphjrC6MIHUkR6YWxxs6Sc5xqn222mmCRFzIt8lEdKx+ikCtg91qS2WpwVfBelJCiQJwvzixfI9cxZQWgiSJelKnwBElKYtDOb2MFbhmUigbReQBV0Cg4+qMXSxXSyGUn4UbF8l+7qdSGnTC0XLCmahIgUHLhLOhpVCtw4CzYXvLQWQbJNmxoCsOKAxSgBJno75avolkRw8iIAFcsdc02e9iyCd8tHwmeSSoKTowIgvscSGZUOA7PuCN5b2BX9mQM7S0wYhMNU74zgsPBj3HU7wguAfnxxjFQGBE6pwN+GjME9zHY7zGp8wVxMShYX9NXvEWD3HbwJf4giO4CFIQxXScH1/TM+04kkBiAAAAAElFTkSuQmCC", "iconSize": [25, 41], "shadowSize": [41, 41], "iconAnchor": [12, 41], "shadowAnchor": [4, 62], "popupAnchor": [1, -34]}}, {"label": "Bangalore (Custom URL)", "position": [12.9716, 77.5946], "period": null, "icon": {"iconUrl": "https://example.com/custom-icon.png", "shadowUrl": "https://example.com/custom-shadow.png", "iconSize": [30, 50], "shadowSize": null, "iconAnchor": [15, 50], "shadowAnchor": null, "popupAnchor": null}}], "texts": [], "title_boxes": [{"html": "<b>Example: Custom Point Markers</b><br>Demonstrating different marker icon configurations", "period": null}, {"html": "<i>made with <a href='https://github.com/srajma/xatra'>xatra</a></i>", "period": null}], "admins": [], "admin_rivers": [], "data": [], "dataframes": [], "base_options": [{"url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", "name": "OpenStreetMap", "default": true}, {"url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", "name": "Esri.WorldImagery", "default": false}], "map_limits": null, "play_speed": 200, "colormap_svg": null, "colormap_info": null};
+      const map = L.map('map').setView([22, 79], 4);
+      
+      // Debug mode - set to true to show centroid markers
+      const DEBUG_CENTROIDS = false;
+      
+      // Performance optimization: cache centroids and label styles
+      const centroidCache = new Map();
+      const labelStyleCache = new Map();
+      
+      // Base layer management
+      const baseLayers = {};
+      let currentBaseLayer = null;
+      
+      // Create base layers
+      for (const option of payload.base_options || []) {
+        const layer = L.tileLayer(option.url, {
+          maxZoom: 18,
+          attribution: '&copy; ' + option.name
+        });
+        baseLayers[option.name] = layer;
+      }
+      
+      // Find default layer - prioritize the one marked as default=True
+      const defaultOption = payload.base_options?.find(opt => opt.default === true);
+      if (defaultOption) {
+        currentBaseLayer = baseLayers[defaultOption.name];
+        currentBaseLayer.addTo(map);
+      }
+
+      const layers = { flags: [], rivers: [], paths: [], points: [], texts: [], title_boxes: [], admins: [], admin_rivers: [], data: [], dataframes: [] };
+      
+      // Layer visibility management for dynamic maps
+      const layerVisibility = new Map(); // Maps layer objects to their visibility state
+      let allLayersCreated = false;
+
+      function addGeoJSON(geojson, options, tooltip) {
+        const layer = L.geoJSON(geojson, options);
+        if (tooltip) {
+          layer.bindTooltip(tooltip, { 
+            direction: 'top',
+            offset: [0, -10],
+            opacity: 0.9,
+            interactive: true,
+            permanent: false,
+            sticky: true
+          });
+        }
+        layer.addTo(map);
+        return layer;
+      }
+
+      function filterByPeriod(items, year) {
+        return items.filter(item => {
+          const period = item.period;
+          if (period === null || period === undefined) {
+            return true; // No period means always visible
+          }
+          const start = period[0];
+          const end = period[1];
+          return year >= start && year < end;
+        });
+      }
+
+      function setLayerVisibility(layer, visible) {
+        if (visible) {
+          if (!map.hasLayer(layer)) {
+            layer.addTo(map);
+          }
+        } else {
+          if (map.hasLayer(layer)) {
+            map.removeLayer(layer);
+          }
+        }
+        layerVisibility.set(layer, visible);
+      }
+
+      function isLayerVisible(layer) {
+        return layerVisibility.get(layer) || false;
+      }
+
+      function getCentroid(geometry) {
+        // Proper geometric centroid calculation
+        if (geometry.type === 'Polygon') {
+          const coords = geometry.coordinates[0]; // Exterior ring
+          if (coords.length < 3) return [0, 0];
+          
+          let area = 0;
+          let cx = 0, cy = 0;
+          
+          for (let i = 0; i < coords.length - 1; i++) {
+            const x1 = coords[i][0];
+            const y1 = coords[i][1];
+            const x2 = coords[i + 1][0];
+            const y2 = coords[i + 1][1];
+            
+            const cross = x1 * y2 - x2 * y1;
+            area += cross;
+            cx += (x1 + x2) * cross;
+            cy += (y1 + y2) * cross;
+          }
+          
+          area *= 0.5;
+          if (Math.abs(area) < 1e-10) return [0, 0];
+          
+          cx /= (6 * area);
+          cy /= (6 * area);
+          
+          return [cy, cx]; // [lat, lng]
+        } else if (geometry.type === 'MultiPolygon') {
+          // Calculate weighted centroid for all polygons
+          let totalArea = 0;
+          let weightedX = 0, weightedY = 0;
+          
+          for (const polygon of geometry.coordinates) {
+            const coords = polygon[0]; // Exterior ring
+            if (coords.length < 3) continue;
+            
+            let area = 0;
+            let cx = 0, cy = 0;
+            
+            for (let i = 0; i < coords.length - 1; i++) {
+              const x1 = coords[i][0];
+              const y1 = coords[i][1];
+              const x2 = coords[i + 1][0];
+              const y2 = coords[i + 1][1];
+              
+              const cross = x1 * y2 - x2 * y1;
+              area += cross;
+              cx += (x1 + x2) * cross;
+              cy += (y1 + y2) * cross;
+            }
+            
+            area *= 0.5;
+            if (Math.abs(area) > 1e-10) {
+              cx /= (6 * area);
+              cy /= (6 * area);
+              
+              weightedX += cx * Math.abs(area);
+              weightedY += cy * Math.abs(area);
+              totalArea += Math.abs(area);
+            }
+          }
+          
+          if (totalArea < 1e-10) return [0, 0];
+          
+          return [weightedY / totalArea, weightedX / totalArea]; // [lat, lng]
+        }
+        return [0, 0]; // Fallback
+      }
+
+      function createAllLayers() {
+        if (allLayersCreated) return;
+        
+        console.log("Creating all layers for dynamic map...");
+        
+        // Create all flag layers from all snapshots
+        const snapshots = payload.flags.snapshots;
+        for (const snapshot of snapshots) {
+          for (const f of snapshot.flags) {
+            if (!f.geometry) continue;
+            
+            let className = 'flag';
+            if (f.classes) className += ' ' + f.classes;
+            const flagStyle = { className: className };
+            if (f.color) {
+              flagStyle.style = {
+                fillColor: f.color,
+                fillOpacity: 0.4,
+                color: f.color,
+                weight: 1
+              };
+            }
+            
+            const layer = L.geoJSON(f.geometry, flagStyle);
+            layer.bindTooltip(`${f.label}${f.note ? ' — ' + f.note : ''}`, { 
+              direction: 'top',
+              offset: [0, -10],
+              opacity: 0.9,
+              interactive: true,
+              permanent: false,
+              sticky: true
+            });
+            
+            if (f.color) {
+              layer.setStyle({
+                fillColor: f.color,
+                fillOpacity: 0.4,
+                color: f.color,
+                weight: 1
+              });
+            }
+            
+            // Add label at centroid
+            const centroid = f.centroid || getCentroid(f.geometry);
+            if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
+              let labelStyle = '';
+              if (f.color) {
+                // Convert hex to HSL and reduce luminosity, increase alpha
+                const hex = f.color.replace('#', '');
+                const r = parseInt(hex.substr(0, 2), 16) / 255;
+                const g = parseInt(hex.substr(2, 2), 16) / 255;
+                const b = parseInt(hex.substr(4, 2), 16) / 255;
+                
+                // Convert RGB to HSL
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                
+                if (max === min) {
+                  h = s = 0; // achromatic
+                } else {
+                  const d = max - min;
+                  s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                  switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                  }
+                  h /= 6;
+                }
+                
+                // Reduce luminosity and set alpha to 0.9
+                l = Math.max(0, l - 0.2);
+                const alpha = 0.9;
+                
+                // Convert back to RGB
+                const hue2rgb = (p, q, t) => {
+                  if (t < 0) t += 1;
+                  if (t > 1) t -= 1;
+                  if (t < 1/6) return p + (q - p) * 6 * t;
+                  if (t < 1/2) return q;
+                  if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                  return p;
+                };
+                
+                let r2, g2, b2;
+                if (s === 0) {
+                  r2 = g2 = b2 = l; // achromatic
+                } else {
+                  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                  const p = 2 * l - q;
+                  r2 = hue2rgb(p, q, h + 1/3);
+                  g2 = hue2rgb(p, q, h);
+                  b2 = hue2rgb(p, q, h - 1/3);
+                }
+                
+                const r3 = Math.round(r2 * 255);
+                const g3 = Math.round(g2 * 255);
+                const b3 = Math.round(b2 * 255);
+                
+                labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
+              }
+              
+              let labelClassName = 'flag-label';
+              if (f.classes) labelClassName += ' ' + f.classes;
+              const labelDiv = L.divIcon({
+                html: `<div class="${labelClassName}" style="${labelStyle}">${f.label}</div>`,
+                className: 'flag-label-container',
+                iconSize: [1, 1],
+                iconAnchor: [0, 0]
+              });
+              const labelLayer = L.marker(centroid, { icon: labelDiv });
+              
+              // Store metadata for visibility management
+              layer._flagData = { label: f.label, snapshot: snapshot.year };
+              labelLayer._flagData = { label: f.label, snapshot: snapshot.year };
+              
+              layers.flags.push(layer, labelLayer);
+            }
+          }
+        }
+        
+        // Create all other layer types
+        createAllRivers();
+        createAllPaths();
+        createAllPoints();
+        createAllTexts();
+        createAllAdmins();
+        createAllAdminRivers();
+        createAllData();
+        createAllDataframes();
+        
+        allLayersCreated = true;
+        console.log("All layers created for dynamic map");
+      }
+
+      function createAllRivers() {
+        for (const r of payload.rivers || []) {
+          if (!r.geometry) continue;
+          let className = 'river';
+          if (r.classes) className += ' ' + r.classes;
+          const layer = L.geoJSON(r.geometry, { style: { className } });
+          layer.bindTooltip(`${r.label}${r.note ? ' — ' + r.note : ''}`, { 
+            direction: 'top',
+            offset: [0, -10],
+            opacity: 0.9,
+            interactive: true,
+            permanent: false,
+            sticky: true
+          });
+          layer._riverData = { period: r.period };
+          layers.rivers.push(layer);
+        }
+      }
+
+      function createAllPaths() {
+        for (const p of payload.paths || []) {
+          const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
+          let className = 'path';
+          if (p.classes) className += ' ' + p.classes;
+          const layer = L.polyline(latlngs, { className });
+          layer.bindTooltip(p.label);
+          layer._pathData = { period: p.period };
+          layers.paths.push(layer);
+        }
+      }
+
+      function createAllPoints() {
+        for (const p of payload.points || []) {
+          const layer = L.marker([p.position[0], p.position[1]]);
+          layer.bindTooltip(p.label);
+          layer._pointData = { period: p.period };
+          layers.points.push(layer);
+        }
+      }
+
+      function createAllTexts() {
+        for (const t of payload.texts || []) {
+          let className = 'text-label';
+          if (t.classes) className += ' ' + t.classes;
+          const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 });
+          layer.bindTooltip(t.label, { 
+            permanent: true, 
+            direction: 'center', 
+            className: className,
+            offset: [0, 0]
+          });
+          layer._textData = { period: t.period };
+          layers.texts.push(layer);
+        }
+      }
+
+      function createAllAdmins() {
+        for (const a of payload.admins || []) {
+          if (!a.geometry) continue;
+          
+          let className = 'admin';
+          if (a.classes) className += ' ' + a.classes;
+          
+          const layer = L.geoJSON(a.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const color = props._color;
+              return {
+                className: className,
+                fillColor: color || '#cccccc',
+                fillOpacity: 0.3,
+                color: color || '#666666',
+                weight: 1
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              let tooltip = '';
+              let topName = '';
+              if (props.NAME_3) topName = props.NAME_3;
+              else if (props.NAME_2) topName = props.NAME_2;
+              else if (props.NAME_1) topName = props.NAME_1;
+              else if (props.COUNTRY) topName = props.COUNTRY;
+              
+              if (topName) tooltip += `<b>${topName}</b><br/>`;
+              
+              if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+              if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+              if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+              if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+              if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+              if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+              if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+              if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+              if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+              if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+              
+              // Add DataFrame value for current year
+              if (props._dataframe_data) {
+                const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+                
+                // Find the closest available year
+                let closestYear = null;
+                let closestDistance = Infinity;
+                
+                for (const year of Object.keys(props._dataframe_data)) {
+                  const distance = Math.abs(parseInt(year) - currentYear);
+                  if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestYear = parseInt(year);
+                  }
+                }
+                
+                if (closestYear !== null) {
+                  const value = props._dataframe_data[closestYear];
+                  tooltip += `Value (${closestYear}): ${value}<br/>`;
+                }
+              }
+              
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer._adminData = { period: a.period };
+          layers.admins.push(layer);
+        }
+      }
+
+      function createAllAdminRivers() {
+        for (const ar of payload.admin_rivers || []) {
+          if (!ar.geometry) continue;
+          
+          let className = 'admin-river';
+          if (ar.classes) className += ' ' + ar.classes;
+          
+          const layer = L.geoJSON(ar.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const source = props._source;
+              let color = '#0066cc';
+              if (source === 'naturalearth') color = '#0066cc';
+              else if (source === 'overpass') color = '#cc6600';
+              
+              return {
+                className: className,
+                color: color,
+                weight: 2,
+                opacity: 0.8
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              let tooltip = '';
+              const source = props._source;
+              if (source === 'naturalearth') {
+                tooltip += `<b>Natural Earth River</b><br/>`;
+                if (props._ne_id) tooltip += `NE ID: ${props._ne_id}<br/>`;
+              } else if (source === 'overpass') {
+                tooltip += `<b>Overpass River</b><br/>`;
+                if (props._filename) tooltip += `File: ${props._filename}<br/>`;
+              }
+              
+              if (props.name) tooltip += `Name: ${props.name}<br/>`;
+              if (props.NAME) tooltip += `NAME: ${props.NAME}<br/>`;
+              if (props.NAME_EN) tooltip += `NAME_EN: ${props.NAME_EN}<br/>`;
+              if (props.NAME_LOC) tooltip += `NAME_LOC: ${props.NAME_LOC}<br/>`;
+              if (props.NAME_ALT) tooltip += `NAME_ALT: ${props.NAME_ALT}<br/>`;
+              if (props.NAME_OTHER) tooltip += `NAME_OTHER: ${props.NAME_OTHER}<br/>`;
+              
+              if (props.scalerank) tooltip += `Scale Rank: ${props.scalerank}<br/>`;
+              if (props.featurecla) tooltip += `Feature Class: ${props.featurecla}<br/>`;
+              if (props.min_zoom) tooltip += `Min Zoom: ${props.min_zoom}<br/>`;
+              
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer._adminRiverData = { period: ar.period };
+          layers.admin_rivers.push(layer);
+        }
+      }
+
+      function createAllData() {
+        for (const d of payload.data || []) {
+          if (!d.geometry) continue;
+          
+          let className = 'data';
+          if (d.classes) className += ' ' + d.classes;
+          
+          const layer = L.geoJSON(d.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const dataIndex = d.data_index || 0;
+              const color = (props._data_colors && props._data_colors[dataIndex]) || d.color || '#cccccc';
+              return {
+                className: className,
+                fillColor: color,
+                fillOpacity: 1.0,
+                color: color,
+                weight: 1
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              const dataIndex = d.data_index || 0;
+              
+              let tooltip = '';
+              let topName = '';
+              if (props.NAME_3) topName = props.NAME_3;
+              else if (props.NAME_2) topName = props.NAME_2;
+              else if (props.NAME_1) topName = props.NAME_1;
+              else if (props.COUNTRY) topName = props.COUNTRY;
+              
+              if (topName) tooltip += `<b>${topName}</b><br/>`;
+              
+              if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+              if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+              if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+              if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+              if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+              if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+              if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+              if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+              if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+              if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+              
+              // Get the specific value for this data element
+              const value = (props._data_values && props._data_values[dataIndex]) || d.value;
+              if (value !== undefined) tooltip += `Value: ${value}<br/>`;
+              
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer._dataData = { period: d.period };
+          layers.data.push(layer);
+        }
+      }
+
+      function createAllDataframes() {
+        for (const df of payload.dataframes || []) {
+          if (df.type === 'static') {
+            // Static DataFrame - create simple data layers
+            createStaticDataframe(df);
+          } else if (df.type === 'dynamic') {
+            // Dynamic DataFrame - create time-series data layers
+            createDynamicDataframe(df);
+          }
+        }
+      }
+
+      function createStaticDataframe(df) {
+        if (!df.geometry) return;
+        
+        let className = 'data';
+        if (df.classes) className += ' ' + df.classes;
+        
+        const layer = L.geoJSON(df.geometry, {
+          style: function(feature) {
+            const props = feature.properties || {};
+            const value = props._dataframe_value;
+            const color = getDataColor(value);
+            return {
+              className: className,
+              fillColor: color,
+              fillOpacity: 1.0,
+              color: color,
+              weight: 1
+            };
+          },
+          onEachFeature: function(feature, layer) {
+            const props = feature.properties || {};
+            
+            let tooltip = '';
+            let topName = '';
+            if (props.NAME_3) topName = props.NAME_3;
+            else if (props.NAME_2) topName = props.NAME_2;
+            else if (props.NAME_1) topName = props.NAME_1;
+            else if (props.COUNTRY) topName = props.COUNTRY;
+            
+            if (topName) tooltip += `<b>${topName}</b><br/>`;
+            
+            // Add GADM properties
+            if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+            if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+            if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+            if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+            if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+            if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+            if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+            if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+            if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+            if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+            if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+            
+            // Add DataFrame value
+            if (props._dataframe_value !== undefined) tooltip += `Value: ${props._dataframe_value}<br/>`;
+            if (props._dataframe_note !== undefined) tooltip += `Note: ${props._dataframe_note}<br/>`;
+            
+            if (tooltip.endsWith('<br/>')) {
+              tooltip = tooltip.slice(0, -5);
+            }
+            
+            if (tooltip) {
+              layer.bindTooltip(tooltip, {
+                direction: 'top',
+                offset: [0, -10],
+                opacity: 0.9,
+                interactive: true,
+                permanent: false,
+                sticky: true
+              });
+            }
+          }
+        });
+        
+        // Ensure static DataFrame layers are actually shown on static maps
+        layer.addTo(map);
+        layer._dataframeType = 'static';
+        layers.dataframes.push(layer);
+      }
+
+      function createDynamicDataframe(df) {
+        if (!df.geometry) return;
+        
+        let className = 'data';
+        if (df.classes) className += ' ' + df.classes;
+        
+        const layer = L.geoJSON(df.geometry, {
+          style: function(feature) {
+            const props = feature.properties || {};
+            const dataframeData = props._dataframe_data;
+            const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+            
+            // Use only exact year; if missing, render fully transparent
+            let value = null;
+            if (dataframeData && (currentYear in dataframeData)) {
+              value = dataframeData[currentYear];
+            }
+            
+            if (value === null || value === undefined) {
+              return {
+                className: className,
+                fillColor: '#000000',
+                fillOpacity: 0.0,
+                color: '#000000',
+                opacity: 0.0,
+                weight: 0
+              };
+            }
+            
+            const color = getDataColor(value);
+            return {
+              className: className,
+              fillColor: color,
+              fillOpacity: 1.0,
+              color: color,
+              opacity: 1.0,
+              weight: 1
+            };
+          },
+          onEachFeature: function(feature, layer) {
+            const props = feature.properties || {};
+            
+            let tooltip = '';
+            let topName = '';
+            if (props.NAME_3) topName = props.NAME_3;
+            else if (props.NAME_2) topName = props.NAME_2;
+            else if (props.NAME_1) topName = props.NAME_1;
+            else if (props.COUNTRY) topName = props.COUNTRY;
+            
+            if (topName) tooltip += `<b>${topName}</b><br/>`;
+            
+            // Add GADM properties
+            if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+            if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+            if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+            if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+            if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+            if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+            if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+            if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+            if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+            if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+            if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+            
+            // Add DataFrame value
+            if (props._dataframe_value !== undefined) tooltip += `Value: ${props._dataframe_value}<br/>`;
+            
+            // Add note for current year if available
+            const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+            const notes = props._dataframe_notes || {};
+            if (notes && (currentYear in notes)) {
+              tooltip += `Note (${currentYear}): ${notes[currentYear]}<br/>`;
+            }
+            
+            if (tooltip.endsWith('<br/>')) {
+              tooltip = tooltip.slice(0, -5);
+            }
+            
+            if (tooltip) {
+              layer.bindTooltip(tooltip, {
+                direction: 'top',
+                offset: [0, -10],
+                opacity: 0.9,
+                interactive: true,
+                permanent: false,
+                sticky: true
+              });
+            }
+          }
+        });
+        
+        layer._dataframeType = 'dynamic';
+        layer._dataframeYears = df.years;
+        layers.dataframes.push(layer);
+      }
+
+      function renderStatic() {
+        const flags = payload.flags.flags;
+        for (const f of flags) {
+          if (!f.geometry) continue;
+          
+          // Create style with flag color
+          let className = 'flag';
+          if (f.classes) className += ' ' + f.classes;
+          const flagStyle = { className: className };
+          if (f.color) {
+            flagStyle.style = {
+              fillColor: f.color,
+              fillOpacity: 0.4,
+              color: f.color,
+              weight: 1
+            };
+          }
+          
+          const layer = addGeoJSON(f.geometry, flagStyle, `${f.label}${f.note ? ' — ' + f.note : ''}`);
+          
+          // Apply color styling after layer creation
+          if (f.color) {
+            layer.setStyle({
+              fillColor: f.color,
+              fillOpacity: 0.4,
+              color: f.color,
+              weight: 1
+            });
+          }
+          
+          layers.flags.push(layer);
+          
+          // Add label at centroid (use pre-computed centroid if available)
+          const centroid = f.centroid || (() => {
+            console.warn(`Centroid fallback calculation for flag: ${f.label}`);
+            return getCentroid(f.geometry);
+          })();
+          if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
+            // Create custom label element with flag color
+            let labelStyle = '';
+            if (f.color) {
+              // Convert hex to HSL and reduce luminosity, increase alpha
+              const hex = f.color.replace('#', '');
+              const r = parseInt(hex.substr(0, 2), 16) / 255;
+              const g = parseInt(hex.substr(2, 2), 16) / 255;
+              const b = parseInt(hex.substr(4, 2), 16) / 255;
+              
+              // Convert RGB to HSL
+              const max = Math.max(r, g, b);
+              const min = Math.min(r, g, b);
+              let h, s, l = (max + min) / 2;
+              
+              if (max === min) {
+                h = s = 0; // achromatic
+              } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                  case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                  case g: h = (b - r) / d + 2; break;
+                  case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+              }
+              
+              // Reduce luminosity and set alpha to 0.9
+              l = Math.max(0, l - 0.2); // Reduce luminosity
+              const alpha = 0.9;
+              
+              // Convert back to RGB
+              const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+              };
+              
+              let r2, g2, b2;
+              if (s === 0) {
+                r2 = g2 = b2 = l; // achromatic
+              } else {
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r2 = hue2rgb(p, q, h + 1/3);
+                g2 = hue2rgb(p, q, h);
+                b2 = hue2rgb(p, q, h - 1/3);
+              }
+              
+              const r3 = Math.round(r2 * 255);
+              const g3 = Math.round(g2 * 255);
+              const b3 = Math.round(b2 * 255);
+              
+              labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
+            }
+            
+            let labelClassName = 'flag-label';
+            if (f.classes) labelClassName += ' ' + f.classes;
+            const labelDiv = L.divIcon({
+              html: `<div class="${labelClassName}" style="${labelStyle}">${f.label}</div>`,
+              className: 'flag-label-container',
+              iconSize: [1, 1],
+              iconAnchor: [0, 0]
+            });
+            const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
+            layers.flags.push(labelLayer);
+            
+            // Debug: Add visible marker for centroid
+            if (DEBUG_CENTROIDS) {
+              const debugMarker = L.circleMarker(centroid, {
+                radius: 8,
+                color: 'red',
+                fillColor: 'yellow',
+                fillOpacity: 0.8,
+                weight: 2
+              }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
+              layers.flags.push(debugMarker);
+            }
+          }
+        }
+      }
+
+      function renderRivers(year = null) {
+        const rivers = year !== null ? filterByPeriod(payload.rivers, year) : payload.rivers;
+        for (const r of rivers) {
+          if (!r.geometry) continue;
+          let className = 'river';
+          if (r.classes) className += ' ' + r.classes;
+          const layer = addGeoJSON(r.geometry, { style: { className } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
+          layers.rivers.push(layer);
+        }
+      }
+
+      function renderPaths(year = null) {
+        const paths = year !== null ? filterByPeriod(payload.paths, year) : payload.paths;
+        for (const p of paths) {
+          const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
+          let className = 'path';
+          if (p.classes) className += ' ' + p.classes;
+          const layer = L.polyline(latlngs, { className }).addTo(map).bindTooltip(p.label);
+          layers.paths.push(layer);
+        }
+      }
+
+      function renderPoints(year = null) {
+        const points = year !== null ? filterByPeriod(payload.points, year) : payload.points;
+        for (const p of points) {
+          let markerOptions = {};
+          
+          // Create custom icon if icon data is provided
+          if (p.icon) {
+            const iconOptions = {
+              iconUrl: p.icon.iconUrl,
+              shadowUrl: p.icon.shadowUrl,
+            };
+            
+            // Add optional properties only if they are defined
+            if (p.icon.iconSize) iconOptions.iconSize = p.icon.iconSize;
+            if (p.icon.shadowSize) iconOptions.shadowSize = p.icon.shadowSize;
+            if (p.icon.iconAnchor) iconOptions.iconAnchor = p.icon.iconAnchor;
+            if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
+            if (p.icon.popupAnchor) iconOptions.popupAnchor = p.icon.popupAnchor;
+            
+            markerOptions.icon = L.icon(iconOptions);
+          }
+          
+          const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map).bindTooltip(p.label);
+          layers.points.push(layer);
+        }
+      }
+
+      function renderTexts(year = null) {
+        const texts = year !== null ? filterByPeriod(payload.texts, year) : payload.texts;
+        for (const t of texts) {
+          let className = 'text-label';
+          if (t.classes) className += ' ' + t.classes;
+          const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { 
+            permanent: true, 
+            direction: 'center', 
+            className: className,
+            offset: [0, 0]
+          });
+          layers.texts.push(layer);
+        }
+      }
+
+      function renderTitleBoxes(year = null) {
+        const titleBoxes = year !== null ? filterByPeriod(payload.title_boxes, year) : payload.title_boxes;
+        const titleDiv = document.getElementById('title');
+        titleDiv.innerHTML = titleBoxes.map(tb => `<div class="title-box">${tb.html}</div>`).join('');
+      }
+
+      function renderAdmins(year = null) {
+        const admins = year !== null ? filterByPeriod(payload.admins, year) : payload.admins;
+        for (const a of admins) {
+          if (!a.geometry) continue;
+          
+          // Create style for admin regions
+          let className = 'admin';
+          if (a.classes) className += ' ' + a.classes;
+          
+          // Add each feature with its own tooltip and color
+          const layer = L.geoJSON(a.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const color = props._color;
+              return {
+                className: className,
+                fillColor: color || '#cccccc',
+                fillOpacity: 0.3,
+                color: color || '#666666',
+                weight: 1
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              // Create tooltip with all GADM properties in specified order
+              let tooltip = '';
+              
+              // Find the highest level name to bold at the top
+              let topName = '';
+              if (props.NAME_3) topName = props.NAME_3;
+              else if (props.NAME_2) topName = props.NAME_2;
+              else if (props.NAME_1) topName = props.NAME_1;
+              else if (props.COUNTRY) topName = props.COUNTRY;
+              
+              if (topName) tooltip += `<b>${topName}</b><br/>`;
+              
+              // Add all fields in the specified order
+              if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+              if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+              if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+              if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+              if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+              if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+              if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+              if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+              if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+              if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+              
+              // Remove trailing <br/> if present
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer.addTo(map);
+          layers.admins.push(layer);
+        }
+      }
+
+      function renderAdminRivers(year = null) {
+        const adminRivers = year !== null ? filterByPeriod(payload.admin_rivers, year) : payload.admin_rivers;
+        for (const ar of adminRivers) {
+          if (!ar.geometry) continue;
+          
+          // Create style for admin rivers
+          let className = 'admin-river';
+          if (ar.classes) className += ' ' + ar.classes;
+          
+          // Add each feature with its own tooltip
+          const layer = L.geoJSON(ar.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const source = props._source;
+              // Different colors for different sources
+              let color = '#0066cc'; // Default blue
+              if (source === 'naturalearth') color = '#0066cc'; // Blue for Natural Earth
+              else if (source === 'overpass') color = '#cc6600'; // Orange for Overpass
+              
+              return {
+                className: className,
+                color: color,
+                weight: 2,
+                opacity: 0.8
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              
+              // Create tooltip with source information and available properties
+              let tooltip = '';
+              
+              // Add source information
+              const source = props._source;
+              if (source === 'naturalearth') {
+                tooltip += `<b>Natural Earth River</b><br/>`;
+                if (props._ne_id) tooltip += `NE ID: ${props._ne_id}<br/>`;
+              } else if (source === 'overpass') {
+                tooltip += `<b>Overpass River</b><br/>`;
+                if (props._filename) tooltip += `File: ${props._filename}<br/>`;
+              }
+              
+              // Add name fields if available
+              if (props.name) tooltip += `Name: ${props.name}<br/>`;
+              if (props.NAME) tooltip += `NAME: ${props.NAME}<br/>`;
+              if (props.NAME_EN) tooltip += `NAME_EN: ${props.NAME_EN}<br/>`;
+              if (props.NAME_LOC) tooltip += `NAME_LOC: ${props.NAME_LOC}<br/>`;
+              if (props.NAME_ALT) tooltip += `NAME_ALT: ${props.NAME_ALT}<br/>`;
+              if (props.NAME_OTHER) tooltip += `NAME_OTHER: ${props.NAME_OTHER}<br/>`;
+              
+              // Add other relevant properties
+              if (props.scalerank) tooltip += `Scale Rank: ${props.scalerank}<br/>`;
+              if (props.featurecla) tooltip += `Feature Class: ${props.featurecla}<br/>`;
+              if (props.min_zoom) tooltip += `Min Zoom: ${props.min_zoom}<br/>`;
+              
+              // Remove trailing <br/> if present
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer.addTo(map);
+          layers.admin_rivers.push(layer);
+        }
+      }
+
+      function renderData(year = null) {
+        const data = year !== null ? filterByPeriod(payload.data, year) : payload.data;
+        for (const d of data) {
+          if (!d.geometry) continue;
+          
+          let className = 'data';
+          if (d.classes) className += ' ' + d.classes;
+          
+          const layer = L.geoJSON(d.geometry, {
+            style: function(feature) {
+              const props = feature.properties || {};
+              const dataIndex = d.data_index || 0;
+              const color = (props._data_colors && props._data_colors[dataIndex]) || d.color || '#cccccc';
+              return {
+                className: className,
+                fillColor: color,
+                fillOpacity: 1.0,
+                color: color,
+                weight: 1
+              };
+            },
+            onEachFeature: function(feature, layer) {
+              const props = feature.properties || {};
+              const dataIndex = d.data_index || 0;
+              
+              let tooltip = '';
+              let topName = '';
+              if (props.NAME_3) topName = props.NAME_3;
+              else if (props.NAME_2) topName = props.NAME_2;
+              else if (props.NAME_1) topName = props.NAME_1;
+              else if (props.COUNTRY) topName = props.COUNTRY;
+              
+              if (topName) tooltip += `<b>${topName}</b><br/>`;
+              
+              if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+              if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+              if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+              if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+              if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+              if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+              if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+              if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+              if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+              if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+              if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+              
+              // Get the specific value for this data element
+              const value = (props._data_values && props._data_values[dataIndex]) || d.value;
+              if (value !== undefined) tooltip += `Value: ${value}<br/>`;
+              
+              if (tooltip.endsWith('<br/>')) {
+                tooltip = tooltip.slice(0, -5);
+              }
+              
+              if (tooltip) {
+                layer.bindTooltip(tooltip, {
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+            }
+          });
+          
+          layer.addTo(map);
+          layers.data.push(layer);
+        }
+      }
+
+      function clearFlagLayers() {
+        for (const l of layers.flags) { map.removeLayer(l); }
+        layers.flags = [];
+      }
+
+      function clearAllLayers() {
+        for (const l of layers.flags) { map.removeLayer(l); }
+        for (const l of layers.rivers) { map.removeLayer(l); }
+        for (const l of layers.paths) { map.removeLayer(l); }
+        for (const l of layers.points) { map.removeLayer(l); }
+        for (const l of layers.texts) { map.removeLayer(l); }
+        for (const l of layers.admins) { map.removeLayer(l); }
+        for (const l of layers.admin_rivers) { map.removeLayer(l); }
+        for (const l of layers.data) { map.removeLayer(l); }
+        for (const l of layers.dataframes) { map.removeLayer(l); }
+        layers.flags = [];
+        layers.rivers = [];
+        layers.paths = [];
+        layers.points = [];
+        layers.texts = [];
+        layers.admins = [];
+        layers.admin_rivers = [];
+        layers.data = [];
+        layers.dataframes = [];
+      }
+
+      function renderDynamic(year) {
+        // Performance optimization: only update if year actually changed
+        if (window.lastRenderedYear === year) return;
+        window.lastRenderedYear = year;
+        
+        // Create all layers on first call
+        createAllLayers();
+        
+        // Find closest snapshot at or before year
+        const snapshots = payload.flags.snapshots;
+        let current = snapshots[0];
+        for (const s of snapshots) {
+          if (s.year <= year) current = s;
+        }
+        
+        // Update flag visibility based on current snapshot
+        for (const layer of layers.flags) {
+          if (layer._flagData) {
+            const shouldShow = layer._flagData.snapshot === current.year;
+            setLayerVisibility(layer, shouldShow);
+          }
+        }
+        
+        // Update other layer types based on period filtering
+        updateLayerVisibility(layers.rivers, year, '_riverData');
+        updateLayerVisibility(layers.paths, year, '_pathData');
+        updateLayerVisibility(layers.points, year, '_pointData');
+        updateLayerVisibility(layers.texts, year, '_textData');
+        updateLayerVisibility(layers.admins, year, '_adminData');
+        updateLayerVisibility(layers.admin_rivers, year, '_adminRiverData');
+        updateLayerVisibility(layers.data, year, '_dataData');
+        updateDataframeLayers(year);
+        
+        // Update title boxes
+        renderTitleBoxes(year);
+      }
+
+      function updateLayerVisibility(layerArray, year, dataProperty) {
+        for (const layer of layerArray) {
+          const data = layer[dataProperty];
+          if (data && data.period) {
+            const [start, end] = data.period;
+            const shouldShow = year >= start && year < end;
+            setLayerVisibility(layer, shouldShow);
+          } else {
+            // No period means always visible
+            setLayerVisibility(layer, true);
+          }
+        }
+      }
+
+      function updateDataframeLayers(year) {
+        window.currentYear = year; // Store current year globally
+        
+        for (const layer of layers.dataframes) {
+          if (layer._dataframeType === 'dynamic') {
+            // Update colors based on current year by re-styling the layer
+            layer.eachLayer(function(feature) {
+              const props = feature.feature.properties || {};
+              const dataframeData = props._dataframe_data;
+              
+              if (!dataframeData) return;
+              
+              // Use only exact year; if missing, render fully transparent
+              let value = null;
+              if (year in dataframeData) {
+                value = dataframeData[year];
+              }
+              
+              if (value === null || value === undefined) {
+                feature.setStyle({
+                  fillColor: '#000000',
+                  fillOpacity: 0.0,
+                  color: '#000000',
+                  opacity: 0.0,
+                  weight: 0
+                });
+              } else {
+                const color = getDataColor(value);
+                feature.setStyle({
+                  fillColor: color,
+                  fillOpacity: 1.0,
+                  color: color,
+                  opacity: 1.0,
+                  weight: 1
+                });
+              }
+              
+              // Update tooltip with current year's data if present
+              if (value !== null && value !== undefined) {
+                let tooltip = '';
+                let topName = '';
+                if (props.NAME_3) topName = props.NAME_3;
+                else if (props.NAME_2) topName = props.NAME_2;
+                else if (props.NAME_1) topName = props.NAME_1;
+                else if (props.COUNTRY) topName = props.COUNTRY;
+                
+                if (topName) tooltip += `<b>${topName}</b><br/>`;
+                
+                // Add GADM properties
+                if (props.GID_0) tooltip += `GID_0: ${props.GID_0}<br/>`;
+                if (props.COUNTRY) tooltip += `COUNTRY: ${props.COUNTRY}<br/>`;
+                if (props.GID_1) tooltip += `GID_1: ${props.GID_1}<br/>`;
+                if (props.NAME_1) tooltip += `NAME_1: ${props.NAME_1}<br/>`;
+                if (props.VARNAME_1 && props.VARNAME_1 !== 'NA') tooltip += `VARNAME_1: ${props.VARNAME_1}<br/>`;
+                if (props.GID_2) tooltip += `GID_2: ${props.GID_2}<br/>`;
+                if (props.NAME_2) tooltip += `NAME_2: ${props.NAME_2}<br/>`;
+                if (props.VARNAME_2 && props.VARNAME_2 !== 'NA') tooltip += `VARNAME_2: ${props.VARNAME_2}<br/>`;
+                if (props.GID_3) tooltip += `GID_3: ${props.GID_3}<br/>`;
+                if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
+                if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
+                
+                // Add current year's data value
+                tooltip += `Value (${year}): ${value}<br/>`;
+                
+                // Add note if available for current year
+                const notes = props._dataframe_notes || {};
+                if (notes && (year in notes)) {
+                  tooltip += `Note (${year}): ${notes[year]}<br/>`;
+                }
+                
+                if (tooltip.endsWith('<br/>')) {
+                  tooltip = tooltip.slice(0, -5);
+                }
+                
+                // Update tooltip
+                feature.setTooltipContent(tooltip);
+              }
+            });
+            
+            setLayerVisibility(layer, true); // DataFrames are always visible
+          }
+        }
+      }
+
+      function getDataColor(value) {
+        // Use colormap info from backend if available
+        if (payload.colormap_info && payload.colormap_info.colors && payload.colormap_info.vmin !== null && payload.colormap_info.vmax !== null) {
+          const vmin = payload.colormap_info.vmin;
+          const vmax = payload.colormap_info.vmax;
+          
+          let colorIndex;
+          if (payload.colormap_info.has_norm && payload.colormap_info.sample_values) {
+            // For Normalize objects, find the closest sample value
+            const sampleValues = payload.colormap_info.sample_values;
+            
+            let closestIndex = 0;
+            let closestDistance = Math.abs(value - sampleValues[0]);
+            for (let i = 1; i < sampleValues.length; i++) {
+              const distance = Math.abs(value - sampleValues[i]);
+              if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = i;
+              }
+            }
+            
+            colorIndex = closestIndex;
+          } else {
+            // Linear normalization
+            const normalized = Math.min(1, Math.max(0, (value - vmin) / (vmax - vmin)));
+            colorIndex = Math.floor(normalized * 255);
+          }
+          
+          // Get color from the user's colormap
+          const color = payload.colormap_info.colors[colorIndex];
+          
+          if (color && color.length >= 3) {
+            const r = Math.round(color[0] * 255);
+            const g = Math.round(color[1] * 255);
+            const b = Math.round(color[2] * 255);
+            return `rgb(${r}, ${g}, ${b})`;
+          }
+        }
+        
+        // Fallback to default yellow-orange-red colormap
+        const normalized = Math.min(1, Math.max(0, value / 300)); // Assume max value of 300
+        
+        if (normalized < 0.5) {
+          // Yellow to orange
+          const t = normalized * 2;
+          const r = Math.round(255 * (1 - t * 0.5));
+          const g = Math.round(255 * (1 - t * 0.2));
+          const b = 0;
+          return `rgb(${r}, ${g}, ${b})`;
+        } else {
+          // Orange to red
+          const t = (normalized - 0.5) * 2;
+          const r = 255;
+          const g = Math.round(255 * (0.8 - t * 0.8));
+          const b = 0;
+          return `rgb(${r}, ${g}, ${b})`;
+        }
+      }
+
+      function setupLayerSelector() {
+        const select = document.getElementById('baseLayer');
+        
+        // Add "None" option
+        const noneOption = document.createElement('option');
+        noneOption.value = 'none';
+        noneOption.textContent = 'None';
+        select.appendChild(noneOption);
+        
+        // Add base layer options
+        let defaultSelected = false;
+        for (const option of payload.base_options || []) {
+          const optionElement = document.createElement('option');
+          optionElement.value = option.name;
+          optionElement.textContent = option.name;
+          if (option.default === true) {
+            optionElement.selected = true;
+            defaultSelected = true;
+          }
+          select.appendChild(optionElement);
+        }
+        
+        // If no default was set, select "None"
+        if (!defaultSelected) {
+          select.selectedIndex = 0; // Select "None"
+        }
+        
+        // Handle layer changes
+        select.addEventListener('change', function() {
+          // Remove current layer
+          if (currentBaseLayer) {
+            map.removeLayer(currentBaseLayer);
+            currentBaseLayer = null;
+          }
+          
+          // Add new layer
+          if (this.value !== 'none' && baseLayers[this.value]) {
+            currentBaseLayer = baseLayers[this.value];
+            currentBaseLayer.addTo(map);
+          }
+        });
+      }
+
+      function setupControls() {
+        const controls = document.getElementById('controls');
+        if (payload.flags.mode === 'dynamic') {
+          // Calculate breakpoints from all object types, not just flags
+          const allPeriods = [];
+          
+          // Add flag periods
+          if (payload.flags.breakpoints) {
+            allPeriods.push(...payload.flags.breakpoints);
+          }
+          
+          // Add periods from other object types
+          for (const obj of [...(payload.rivers || []), ...(payload.paths || []), ...(payload.points || []), ...(payload.texts || []), ...(payload.title_boxes || []), ...(payload.admins || []), ...(payload.admin_rivers || []), ...(payload.data || [])]) {
+            if (obj.period) {
+              allPeriods.push(obj.period[0], obj.period[1]);
+            }
+          }
+          
+          // Add DataFrame years
+          for (const df of payload.dataframes || []) {
+            if (df.type === 'dynamic' && df.years) {
+              allPeriods.push(...df.years);
+            }
+          }
+          
+          if (allPeriods.length > 0) {
+            const uniquePeriods = [...new Set(allPeriods)].sort((a, b) => a - b);
+            let min = uniquePeriods[0];
+            let max = uniquePeriods[uniquePeriods.length - 1];
+            
+            // Use map limits if available (without epsilon for slider range)
+            if (payload.map_limits) {
+              min = payload.map_limits[0];
+              max = payload.map_limits[1];
+            }
+            
+            controls.innerHTML = `
+              <span id="yearLabel">${min}</span>
+              <button id="playPause" style="margin: 0 8px; padding: 4px 8px; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; cursor: pointer;">▶</button>
+              <span id="startYear" style="margin-right: 8px;">${min}</span>
+              <input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" style="flex: 1; margin: 0 8px;" />
+              <span id="endYear" style="margin-left: 8px;">${max}</span>
+            `;
+            const input = document.getElementById('year');
+            const label = document.getElementById('yearLabel');
+            const playPauseBtn = document.getElementById('playPause');
+            const startYearSpan = document.getElementById('startYear');
+            const endYearSpan = document.getElementById('endYear');
+            
+            let isPlaying = false;
+            let playInterval = null;
+            
+            input.addEventListener('input', () => { 
+              label.textContent = input.value; 
+              renderDynamic(parseInt(input.value)); 
+            });
+            
+            playPauseBtn.addEventListener('click', () => {
+              if (isPlaying) {
+                // Pause
+                clearInterval(playInterval);
+                playPauseBtn.textContent = '▶';
+                isPlaying = false;
+              } else {
+                // Play
+                playPauseBtn.textContent = '⏸';
+                isPlaying = true;
+                playInterval = setInterval(() => {
+                  const currentYear = parseInt(input.value);
+                  if (currentYear >= max) {
+                    // Reached end, stop playing
+                    clearInterval(playInterval);
+                    playPauseBtn.textContent = '▶';
+                    isPlaying = false;
+                  } else {
+                    const newYear = currentYear + 1;
+                    input.value = newYear;
+                    label.textContent = newYear;
+                    renderDynamic(newYear);
+                  }
+                }, payload.play_speed || 200); // Use speed from payload or default to 200ms
+              }
+            });
+            
+            renderDynamic(min);
+          }
+        } else {
+          // Hide controls for static maps
+          controls.style.display = 'none';
+        }
+      }
+
+      function setupColormap() {
+        const colormapDiv = document.getElementById('colormap');
+        if (payload.colormap_svg) {
+          colormapDiv.innerHTML = payload.colormap_svg;
+        } else {
+          colormapDiv.style.display = 'none';
+        }
+      }
+
+      if (payload.flags.mode === 'static') {
+        renderStatic();
+        renderRivers();
+        renderPaths();
+        renderPoints();
+        renderTexts();
+        renderTitleBoxes();
+        renderAdmins();
+        renderAdminRivers();
+        renderData();
+        createAllDataframes();
+      } else {
+        // For dynamic maps, create all layers and show initial state
+        createAllLayers();
+        const snapshots = payload.flags.snapshots;
+        if (snapshots && snapshots.length > 0) {
+          renderDynamic(snapshots[0].year);
+        }
+      }
+      setupLayerSelector();
+      setupControls();
+      setupColormap();
+    </script>
+  </body>
+  </html>
+    

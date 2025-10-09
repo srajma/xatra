@@ -36,10 +36,10 @@ print("✓ Test 3 passed: Fully custom icon works")
 
 # Test 4: Create a MarkerIcon object independently
 standalone_icon = MarkerIcon()
-assert standalone_icon.icon_url == 'icons/marker-icon.png'
-assert standalone_icon.shadow_url == 'icons/marker-shadow.png'
+assert standalone_icon.icon_url.startswith('data:image/png;base64,')
+assert standalone_icon.shadow_url.startswith('data:image/png;base64,')
 assert standalone_icon.icon_size is None
-print("✓ Test 4 passed: MarkerIcon class defaults are correct")
+print("✓ Test 4 passed: MarkerIcon class defaults are correct (using data URIs)")
 
 # Test 5: Multiple points with different icons
 map4 = xatra.FlagMap()

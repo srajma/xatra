@@ -496,26 +496,26 @@ Represents geographical regions with set algebra operations.
 
 ### Custom Marker Icons
 
-The `MarkerIcon` class allows you to customize the appearance of point markers on your map. By default, points use the standard Leaflet marker icon, but you can customize icons by creating a `MarkerIcon` object.
+The `MarkerIcon` class allows you to customize the appearance of point markers on your map. By default, points use the standard Leaflet marker icon loaded from the xatra package as embedded data URIs (so they work regardless of where the HTML file is saved or viewed).
 
 #### MarkerIcon Class
 
 ```python
 from xatra import MarkerIcon
 
-# Default icon (uses local icons/marker-icon.png)
+# Default icon (uses data URI from package installation)
 default_icon = MarkerIcon()
 
-# Custom icon with just URLs
-custom_icon = MarkerIcon(
-    icon_url='path/to/icon.png',
-    shadow_url='path/to/shadow.png'
+# Customize size/anchor while keeping default icon images
+sized_icon = MarkerIcon(
+    icon_size=[30, 45],
+    icon_anchor=[15, 45]
 )
 
-# Fully customized icon with all properties
-full_icon = MarkerIcon(
-    icon_url='path/to/icon.png',
-    shadow_url='path/to/shadow.png',
+# Custom icon with external URLs
+custom_icon = MarkerIcon(
+    icon_url='https://example.com/icon.png',
+    shadow_url='https://example.com/shadow.png',
     icon_size=[25, 41],        # Width and height in pixels
     shadow_size=[41, 41],      # Shadow dimensions
     icon_anchor=[12, 41],      # Point that corresponds to marker location
@@ -526,8 +526,8 @@ full_icon = MarkerIcon(
 
 #### Parameters
 
-- `icon_url` (str): URL or path to the icon image (default: 'icons/marker-icon.png')
-- `shadow_url` (str): URL or path to the shadow image (default: 'icons/marker-shadow.png')
+- `icon_url` (str): URL, path, or data URI for the icon image (default: data URI from package)
+- `shadow_url` (str): URL, path, or data URI for the shadow image (default: data URI from package)
 - `icon_size` (List[int]): Size of the icon as [width, height] in pixels (optional)
 - `shadow_size` (List[int]): Size of the shadow as [width, height] in pixels (optional)
 - `icon_anchor` (List[int]): Point of the icon which corresponds to marker's location as [x, y] (optional)
@@ -542,23 +542,25 @@ from xatra import MarkerIcon
 
 map = xatra.FlagMap()
 
-# Default marker
+# Default marker (uses embedded icons from package)
 map.Point("Default Marker", [28.6, 77.2])
 
-# Custom marker with only icon URL
-custom = MarkerIcon(icon_url='custom-icon.png')
-map.Point("Custom Marker", [19.0, 72.8], icon=custom)
+# Customize size but keep default icon image
+custom_size = MarkerIcon(icon_size=[30, 45], icon_anchor=[15, 45])
+map.Point("Bigger Marker", [19.0, 72.8], icon=custom_size)
 
-# Fully customized marker
-fancy = MarkerIcon(
-    icon_url='fancy-icon.png',
-    icon_size=[30, 45],
-    icon_anchor=[15, 45]
+# Use your own custom icon
+custom_icon = MarkerIcon(
+    icon_url='https://example.com/my-icon.png',
+    icon_size=[32, 32],
+    icon_anchor=[16, 32]
 )
-map.Point("Fancy Marker", [22.5, 88.3], icon=fancy)
+map.Point("Custom Icon", [22.5, 88.3], icon=custom_icon)
 
 map.show()
 ```
+
+**Note:** The default icons are automatically loaded from the xatra package installation and embedded as data URIs in the HTML output. This means your maps will work correctly even when viewed offline or from different locations without needing to distribute separate icon files.
 
 ### Color Sequences
 
