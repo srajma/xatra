@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
+import os
 
 from shapely.geometry import mapping
 
@@ -20,42 +21,100 @@ from .territory import Territory
 from .render import export_html
 from .paxmax import paxmax_aggregate
 from .colorseq import ColorSequence, LinearColorSequence
-from .icon_loader import DEFAULT_MARKER_ICON_DATA_URI, DEFAULT_MARKER_SHADOW_DATA_URI
 
 
 GeometryLike = Union[Territory, Dict[str, Any]]
 
 
 @dataclass
-class MarkerIcon:
-    """Represents a custom marker icon for Point markers.
-    
-    The default icons are loaded from the xatra package installation as data URIs,
-    so they will work regardless of where the HTML file is saved or viewed.
+class Icon:
+    """Represents a marker icon for Point elements.
     
     Args:
-        icon_url: URL, path, or data URI for the icon image
-        shadow_url: URL, path, or data URI for the shadow image
-        icon_size: Size of the icon as [width, height] in pixels
-        shadow_size: Size of the shadow as [width, height] in pixels
-        icon_anchor: Point of the icon which corresponds to marker's location as [x, y]
-        shadow_anchor: Point of the shadow which corresponds to marker's location as [x, y]
-        popup_anchor: Point from which popup should open relative to icon_anchor as [x, y]
+        icon_url: Path to the icon image (relative to package icons/ directory or absolute path)
+        shadow_url: Optional path to the shadow image (relative to package icons/ directory or absolute path)
+        icon_size: Size of the icon as [width, height] in pixels (default: [25, 41])
+        shadow_size: Size of the shadow as [width, height] in pixels (default: [41, 41])
+        icon_anchor: Point of the icon which corresponds to marker's location as [x, y] (default: [12, 41])
+        shadow_anchor: Point of the shadow which corresponds to marker's location as [x, y] (default: [12, 41])
+        popup_anchor: Point from which the popup should open relative to iconAnchor as [x, y] (default: [1, -34])
+    
+    Example:
+        >>> # Use built-in icon
+        >>> icon = Icon("marker-icon.png", "marker-shadow.png")
+        
+        >>> # Use custom icon with absolute path
+        >>> icon = Icon("/path/to/custom-icon.png", icon_size=[30, 50])
+        
+        >>> # Use custom icon without shadow
+        >>> icon = Icon("/path/to/custom-icon.png", shadow_url=None, icon_size=[20, 20])
     """
-    icon_url: str = None
-    shadow_url: str = None
-    icon_size: Optional[List[int]] = None
-    shadow_size: Optional[List[int]] = None
-    icon_anchor: Optional[List[int]] = None
-    shadow_anchor: Optional[List[int]] = None
-    popup_anchor: Optional[List[int]] = None
+    icon_url: str
+    shadow_url: Optional[str] = "marker-shadow.png"
+    icon_size: List[int] = None
+    shadow_size: List[int] = None
+    icon_anchor: List[int] = None
+    shadow_anchor: List[int] = None
+    popup_anchor: List[int] = None
     
     def __post_init__(self):
-        """Set default data URIs if not provided."""
-        if self.icon_url is None:
-            self.icon_url = DEFAULT_MARKER_ICON_DATA_URI
-        if self.shadow_url is None:
-            self.shadow_url = DEFAULT_MARKER_SHADOW_DATA_URI
+        # Set defaults
+        if self.icon_size is None:
+            self.icon_size = [25, 41]
+        if self.shadow_size is None:
+            self.shadow_size = [41, 41]
+        if self.icon_anchor is None:
+            self.icon_anchor = [12, 41]
+        if self.shadow_anchor is None:
+            self.shadow_anchor = [12, 41]
+        if self.popup_anchor is None:
+            self.popup_anchor = [1, -34]
+    
+    def _resolve_path(self, path: Optional[str]) -> Optional[str]:
+        """Resolve icon path to absolute path or package-relative path.
+        
+        Args:
+            path: Icon path (filename for built-in icons, or absolute path for custom)
+            
+        Returns:
+            Resolved path string or None
+        """
+        if path is None:
+            return None
+        
+        # If it's an absolute path, return as-is
+        if os.path.isabs(path):
+            return path
+        
+        # If it's a relative path, check if it exists as-is
+        if os.path.exists(path):
+            return os.path.abspath(path)
+        
+        # Otherwise, assume it's a built-in icon in the package icons/ directory
+        package_dir = os.path.dirname(__file__)
+        icon_path = os.path.join(package_dir, "icons", path)
+        
+        if os.path.exists(icon_path):
+            return icon_path
+        
+        # If not found, return the original path (let the browser handle it)
+        return path
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert Icon to dictionary for JSON serialization.
+        
+        Returns:
+            Dictionary with icon properties
+        """
+        return {
+            "iconUrl": self._resolve_path(self.icon_url),
+            "shadowUrl": self._resolve_path(self.shadow_url),
+            "iconSize": self.icon_size,
+            "shadowSize": self.shadow_size,
+            "iconAnchor": self.icon_anchor,
+            "shadowAnchor": self.shadow_anchor,
+            "popupAnchor": self.popup_anchor,
+        }
 
 
 @dataclass
@@ -120,12 +179,12 @@ class PointEntry:
         label: Display name for the point
         position: (latitude, longitude) coordinate tuple
         period: Optional time period as (start_year, end_year) tuple
-        icon: Optional custom marker icon
+        icon: Optional Icon object for custom marker appearance
     """
     label: str
     position: Tuple[float, float]
     period: Optional[Tuple[int, int]] = None
-    icon: Optional[MarkerIcon] = None
+    icon: Optional[Icon] = None
 
 
 @dataclass
@@ -726,29 +785,28 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple))
 
-    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[MarkerIcon] = None) -> None:
+    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Icon] = None) -> None:
         """Add a point of interest to the map.
         
         Args:
             label: Display name for the point
             position: [latitude, longitude] coordinate pair
             period: Optional time period as [start_year, end_year] list
-            icon: Optional custom marker icon
+            icon: Optional Icon object for custom marker appearance
             
         Example:
             >>> map.Point("Delhi", [28.6139, 77.2090], period=[1200, 1800])
-            >>> map.Point("Custom", [28.0, 77.0], icon=MarkerIcon(icon_url="custom.png", icon_size=[30, 40]))
+            >>> 
+            >>> # With custom icon
+            >>> from xatra.flagmap import Icon
+            >>> custom_icon = Icon("marker-icon.png", icon_size=[30, 50])
+            >>> map.Point("Delhi", [28.6139, 77.2090], icon=custom_icon)
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        
-        # Use default icon if none provided
-        if icon is None:
-            icon = MarkerIcon()
-        
         self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple, icon=icon))
 
     def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
@@ -1213,23 +1271,15 @@ class FlagMap:
             restricted_period = self._apply_limits_to_period(p.period)
             # Include objects with no period (always visible) or valid restricted periods
             if p.period is None or restricted_period is not None:
-                icon_data = None
-                if p.icon:
-                    icon_data = {
-                        "iconUrl": p.icon.icon_url,
-                        "shadowUrl": p.icon.shadow_url,
-                        "iconSize": p.icon.icon_size,
-                        "shadowSize": p.icon.shadow_size,
-                        "iconAnchor": p.icon.icon_anchor,
-                        "shadowAnchor": p.icon.shadow_anchor,
-                        "popupAnchor": p.icon.popup_anchor,
-                    }
-                points_serialized.append({
+                point_data = {
                     "label": p.label,
                     "position": p.position,
                     "period": list(restricted_period) if restricted_period is not None else None,
-                    "icon": icon_data,
-                })
+                }
+                # Add icon information if provided
+                if p.icon is not None:
+                    point_data["icon"] = p.icon.to_dict()
+                points_serialized.append(point_data)
 
         texts_serialized = []
         for t in self._texts:

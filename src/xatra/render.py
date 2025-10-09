@@ -383,7 +383,28 @@ HTML_TEMPLATE = Template(
 
       function createAllPoints() {
         for (const p of payload.points || []) {
-          const layer = L.marker([p.position[0], p.position[1]]);
+          const markerOptions = {};
+          
+          // Create custom icon if provided
+          if (p.icon) {
+            const iconConfig = {
+              iconUrl: p.icon.iconUrl,
+              iconSize: p.icon.iconSize,
+              iconAnchor: p.icon.iconAnchor,
+              popupAnchor: p.icon.popupAnchor
+            };
+            
+            // Add shadow if provided
+            if (p.icon.shadowUrl) {
+              iconConfig.shadowUrl = p.icon.shadowUrl;
+              iconConfig.shadowSize = p.icon.shadowSize;
+              iconConfig.shadowAnchor = p.icon.shadowAnchor;
+            }
+            
+            markerOptions.icon = L.icon(iconConfig);
+          }
+          
+          const layer = L.marker([p.position[0], p.position[1]], markerOptions);
           layer.bindTooltip(p.label);
           layer._pointData = { period: p.period };
           layers.points.push(layer);
@@ -959,23 +980,25 @@ HTML_TEMPLATE = Template(
       function renderPoints(year = null) {
         const points = year !== null ? filterByPeriod(payload.points, year) : payload.points;
         for (const p of points) {
-          let markerOptions = {};
+          const markerOptions = {};
           
-          // Create custom icon if icon data is provided
+          // Create custom icon if provided
           if (p.icon) {
-            const iconOptions = {
+            const iconConfig = {
               iconUrl: p.icon.iconUrl,
-              shadowUrl: p.icon.shadowUrl,
+              iconSize: p.icon.iconSize,
+              iconAnchor: p.icon.iconAnchor,
+              popupAnchor: p.icon.popupAnchor
             };
             
-            // Add optional properties only if they are defined
-            if (p.icon.iconSize) iconOptions.iconSize = p.icon.iconSize;
-            if (p.icon.shadowSize) iconOptions.shadowSize = p.icon.shadowSize;
-            if (p.icon.iconAnchor) iconOptions.iconAnchor = p.icon.iconAnchor;
-            if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
-            if (p.icon.popupAnchor) iconOptions.popupAnchor = p.icon.popupAnchor;
+            // Add shadow if provided
+            if (p.icon.shadowUrl) {
+              iconConfig.shadowUrl = p.icon.shadowUrl;
+              iconConfig.shadowSize = p.icon.shadowSize;
+              iconConfig.shadowAnchor = p.icon.shadowAnchor;
+            }
             
-            markerOptions.icon = L.icon(iconOptions);
+            markerOptions.icon = L.icon(iconConfig);
           }
           
           const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map).bindTooltip(p.label);

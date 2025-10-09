@@ -1,42 +1,56 @@
 #!/usr/bin/env python3
+
 """
-Example demonstrating custom marker icons for Points.
+Example demonstrating custom point icons in Xatra.
 """
 
 import xatra
-from xatra import MarkerIcon
+from xatra import Icon
+from xatra.loaders import gadm
 
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
+map.BaseOption("OpenTopoMap")
+map.BaseOption("Esri.WorldPhysical")
 
-# Default marker icon (uses data URI from package)
+# Add a simple flag for context
+map.Flag(label="India", value=gadm("IND"))
+
+# Point with default icon (no icon parameter specified)
 map.Point(label="Delhi (Default)", position=[28.6139, 77.2090])
 
-# Default marker icon but with explicit MarkerIcon() - still uses data URIs
-custom_icon1 = MarkerIcon()
-map.Point(label="Mumbai (Also Default)", position=[19.0760, 72.8777], icon=custom_icon1)
-
-# Custom icon with all size properties but still using default icon images
-custom_icon2 = MarkerIcon(
-    icon_size=[25, 41],
-    shadow_size=[41, 41],
-    icon_anchor=[12, 41],
-    shadow_anchor=[4, 62],
-    popup_anchor=[1, -34]
+# Point with default built-in icon (explicitly specified)
+default_icon = Icon(
+    icon_url="marker-icon.png",
+    shadow_url="marker-shadow.png"
 )
-map.Point(label="Kolkata (Custom Size)", position=[22.5726, 88.3639], icon=custom_icon2)
+map.Point(label="Mumbai (Also Default)", position=[19.0760, 72.8777], icon=default_icon)
 
-# Custom icon with external URL (for your own custom icons)
-custom_icon3 = MarkerIcon(
-    icon_url='https://example.com/custom-icon.png',
-    shadow_url='https://example.com/custom-shadow.png',
+# Point with built-in icon but custom size and positioning
+large_icon = Icon(
+    icon_url="marker-icon.png",
+    shadow_url="marker-shadow.png",
+    icon_size=[25, 41],      # Standard size
+    shadow_size=[41, 41],     # Standard shadow size
+    icon_anchor=[12, 41],     # Point that corresponds to marker location
+    shadow_anchor=[4, 62],    # Point for shadow position
+    popup_anchor=[1, -34]     # Popup offset from icon anchor
+)
+map.Point(label="Kolkata (Custom Size)", position=[22.5726, 88.3639], icon=large_icon)
+
+# Point with custom URL (user could provide their own icon path here)
+# This demonstrates the API - in real use, provide actual file paths
+custom_url_icon = Icon(
+    icon_url="https://example.com/custom-icon.png",  # Replace with real path/URL
+    shadow_url="https://example.com/custom-shadow.png",
     icon_size=[30, 50],
-    icon_anchor=[15, 50]
+    icon_anchor=[15, 50],
+    popup_anchor=[-3, -50]
 )
-map.Point(label="Bangalore (Custom URL)", position=[12.9716, 77.5946], icon=custom_icon3)
+map.Point(label="Bangalore (Custom URL)", position=[12.9716, 77.5946], icon=custom_url_icon)
 
 map.TitleBox("<b>Example: Custom Point Markers</b><br>Demonstrating different marker icon configurations")
 
-map.show(out_json="map_point_icon.json", out_html="map_point_icon.html")
+map.show(out_json="tests/map_point_icon.json", out_html="tests/map_point_icon.html")
 
