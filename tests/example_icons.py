@@ -19,9 +19,6 @@ map.Point(label="Default Marker", position=[28.6, 77.2])
 # Example 2: Custom icon from URL
 custom_icon = Icon(
     icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-    icon_size=(25, 41),
-    icon_anchor=(12, 41),
-    popup_anchor=(1, -34),
     shadow_url="https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     shadow_size=(41, 41)
 )
