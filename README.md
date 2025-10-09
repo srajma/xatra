@@ -5,7 +5,7 @@ Kanging
 - [ ] maps of north-west: Panini, Puranas and Greek
 - [ ] full history timeline
 - [x] GDP per capita map
-- [ ] admin map
+- [x] admin map
 
 Development
 - [ ] option for different point markers besides pin
