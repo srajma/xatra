@@ -22,9 +22,10 @@ Example:
     >>> map.show("map.html")
 """
 
-from .flagmap import FlagMap, Icon
+from .flagmap import FlagMap
 from .territory import Territory
 from .loaders import gadm, naturalearth, overpass
+from .icon import Icon
 
 __version__ = "0.1.0"
-__all__ = ["FlagMap", "Icon", "Territory", "gadm", "naturalearth", "overpass"]
+__all__ = ["FlagMap", "Territory", "gadm", "naturalearth", "overpass", "Icon"]
