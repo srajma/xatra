@@ -36,7 +36,9 @@ This directory includes several SVG icons for different map needs:
 ### Historical/Archaeological Icons
 - `city.png` - Ancient Indian city marker
 - `temple.svg` - Hindu temple with shikhara (spire) and traditional architectural elements
+- `temple-nagara.svg` - Nagara-style temple with shikhara over garbhagriha and separate mandapa with tiered roof
 - `temple-gopuram.svg` - somewhat like Dravidian gopuram
+- `temple-pagoda.svg` - East Asian pagoda-style temple with multiple tiers and upward-curving roofs
 - `fort.svg` - Fortress or citadel with crenellations and central tower
 
 ### General Purpose Icons

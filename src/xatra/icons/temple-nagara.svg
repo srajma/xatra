@@ -1,0 +1,58 @@
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="16" cy="16" r="15" fill="none" stroke="#2c3e50" stroke-width="2"/>
+  
+  <!-- Base platform -->
+  <rect x="4" y="22" width="24" height="4" fill="#8b4513" stroke="#654321" stroke-width="0.5"/>
+  
+  <!-- Mandapa (front hall) - left side with tiered roof -->
+  <rect x="4" y="18" width="8" height="4" fill="#f39c12" stroke="#e67e22" stroke-width="0.5"/>
+  
+  <!-- Mandapa tiered roof (phamsana style) -->
+  <rect x="3" y="16" width="10" height="1" fill="#e74c3c" stroke="#c0392b" stroke-width="0.5"/>
+  <rect x="4" y="15" width="8" height="1" fill="#e74c3c" stroke="#c0392b" stroke-width="0.5"/>
+  <rect x="5" y="14" width="6" height="1" fill="#e74c3c" stroke="#c0392b" stroke-width="0.5"/>
+  <rect x="6" y="13" width="4" height="1" fill="#e74c3c" stroke="#c0392b" stroke-width="0.5"/>
+  <rect x="7" y="12" width="2" height="1" fill="#e74c3c" stroke="#c0392b" stroke-width="0.5"/>
+  
+  <!-- Mandapa columns -->
+  <rect x="5" y="18" width="0.8" height="4" fill="#d2b48c" stroke="#b8860b" stroke-width="0.3"/>
+  <rect x="7" y="18" width="0.8" height="4" fill="#d2b48c" stroke="#b8860b" stroke-width="0.3"/>
+  <rect x="9" y="18" width="0.8" height="4" fill="#d2b48c" stroke="#b8860b" stroke-width="0.3"/>
+  <rect x="11" y="18" width="0.8" height="4" fill="#d2b48c" stroke="#b8860b" stroke-width="0.3"/>
+  
+  <!-- Column capitals -->
+  <rect x="5" y="17" width="0.8" height="0.5" fill="#f1c40f"/>
+  <rect x="7" y="17" width="0.8" height="0.5" fill="#f1c40f"/>
+  <rect x="9" y="17" width="0.8" height="0.5" fill="#f1c40f"/>
+  <rect x="11" y="17" width="0.8" height="0.5" fill="#f1c40f"/>
+  
+  <!-- Garbhagriha (sanctuary) - right side -->
+  <rect x="14" y="18" width="8" height="4" fill="#f39c12" stroke="#e67e22" stroke-width="0.5"/>
+  
+  <!-- Shikhara (curvilinear spire) over garbhagriha only -->
+  <!-- Main shikhara body -->
+  <path d="M 14 18 Q 18 8 22 18" fill="#d35400" stroke="#a04000" stroke-width="1"/>
+  
+  <!-- Shikhara vertical bands (projections) -->
+  <line x1="16" y1="8" x2="16" y2="18" stroke="#a04000" stroke-width="0.5"/>
+  <line x1="18" y1="8" x2="18" y2="18" stroke="#a04000" stroke-width="0.5"/>
+  <line x1="20" y1="8" x2="20" y2="18" stroke="#a04000" stroke-width="0.5"/>
+  
+  <!-- Amalaka (disc-like element) at shikhara top -->
+  <ellipse cx="18" cy="8" rx="2" ry="0.8" fill="#f39c12" stroke="#e67e22" stroke-width="0.5"/>
+  
+  <!-- Kalasha (finial) on top -->
+  <circle cx="18" cy="7" r="0.6" fill="#f1c40f"/>
+  
+  <!-- Decorative elements on garbhagriha -->
+  <rect x="15" y="19" width="1" height="2" fill="#e74c3c"/>
+  <rect x="17" y="19" width="1" height="2" fill="#e74c3c"/>
+  <rect x="19" y="19" width="1" height="2" fill="#e74c3c"/>
+  
+  <!-- Temple entrance (between mandapa and garbhagriha) -->
+  <rect x="12" y="19" width="2" height="3" fill="#8b4513" stroke="#654321" stroke-width="0.5"/>
+  
+  <!-- Entrance arch -->
+  <path d="M 12 19 Q 13 18 14 19" fill="none" stroke="#8b4513" stroke-width="0.5"/>
+</svg>

@@ -19,3 +19,4 @@ old/
 old_xatra/
 tests/*.json
 tests/*.html
+src/xatra/icons/downloaded/

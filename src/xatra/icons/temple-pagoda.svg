@@ -1,0 +1,45 @@
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="16" cy="16" r="15" fill="none" stroke="#2c3e50" stroke-width="2"/>
+  
+  <!-- Scale and position the original pagoda design to fit within the circle -->
+  <g transform="translate(16, 16) scale(0.35, 0.35) translate(-18, -18)">
+    
+    <!-- Pagoda base -->
+    <path fill="#292F33" d="M24 34H12s0-3 3-3h6c3 0 3 3 3 3z"/>
+    
+    <!-- Bottom tier (widest) -->
+    <path fill="#C7521E" d="M28 29v-2l-4-1.938V21l-2-2h-.123s.732-3.967-1.377-5.449V12l-1-1h-3l-1 1v1.551C13.391 15.033 14.123 19 14.123 19H14l-2 2v4.062L8 27v2l-4 2v4l28 .037V31l-4-2z"/>
+    
+    <!-- Second tier -->
+    <path fill="#C7521E" d="M8 27v-2l-4-1.938V19l-2-2h-.123s.732-3.967-1.377-5.449V10l-1-1h-3l-1 1v1.551C-6.609 13.033 -5.877 17 -5.877 17H-6l-2 2v4.062L-12 25v2l-4 2v4l28 .037V29l-4-2z" transform="translate(4, -4)"/>
+    
+    <!-- Third tier -->
+    <path fill="#C7521E" d="M8 27v-2l-4-1.938V19l-2-2h-.123s.732-3.967-1.377-5.449V10l-1-1h-3l-1 1v1.551C-6.609 13.033 -5.877 17 -5.877 17H-6l-2 2v4.062L-12 25v2l-4 2v4l28 .037V29l-4-2z" transform="translate(8, -8)"/>
+    
+    <!-- Fourth tier -->
+    <path fill="#C7521E" d="M8 27v-2l-4-1.938V19l-2-2h-.123s.732-3.967-1.377-5.449V10l-1-1h-3l-1 1v1.551C-6.609 13.033 -5.877 17 -5.877 17H-6l-2 2v4.062L-12 25v2l-4 2v4l28 .037V29l-4-2z" transform="translate(12, -12)"/>
+    
+    <!-- Fifth tier -->
+    <path fill="#C7521E" d="M8 27v-2l-4-1.938V19l-2-2h-.123s.732-3.967-1.377-5.449V10l-1-1h-3l-1 1v1.551C-6.609 13.033 -5.877 17 -5.877 17H-6l-2 2v4.062L-12 25v2l-4 2v4l28 .037V29l-4-2z" transform="translate(16, -16)"/>
+    
+    <!-- Roof edges -->
+    <path fill="#FF8044" d="M15.5 12l1-1h3l1 1zM12 21l2-2h8l2 2zm-4 6l2-2h16l2 2zm-4 4l2-2h24l2 2zm-4 5l2-2h32l2 2z"/>
+    
+    <!-- Central spire -->
+    <path fill="#FF8044" d="M25 2.875L18 2v5.25l7-.875l-2.8-1.75z"/>
+    
+    <!-- Spire base -->
+    <path fill="#662113" d="M17.5 3c0-2 1-2 1 0c0 5 1 9 1 9h-3s1-4 1-9z"/>
+    
+    <!-- Tier connecting elements -->
+    <path fill="#FFA06C" d="M21 27h-6a1 1 0 0 1 0-2h6a1 1 0 0 1 0 2zm1 4h-8a1 1 0 0 1 0-2h8a1 1 0 0 1 0 2zm2 5H12a1 1 0 0 1 0-2h12a1 1 0 0 1 0 2z"/>
+    
+    <!-- Decorative elements on tiers -->
+    <path fill="#662113" d="M19.846 19h-3.692s-.615-5 .615-5h2.462c1.231 0 .615 5 .615 5z"/>
+    
+    <!-- Ground shadow -->
+    <path fill="#C7521E" d="M0 36h36l-2-2H2z"/>
+    
+  </g>
+</svg>
