@@ -466,8 +466,9 @@ HTML_TEMPLATE = Template(
             if (p.classes) innerClassName += ' ' + p.classes;
             
             // Use divIcon instead of tooltip for better control over rotation
+            // Apply rotation first, then translate perpendicular to the path
             const labelDiv = L.divIcon({
-              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg); white-space: nowrap;">${p.label}</div>`,
+              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg) translateY(-8px); white-space: nowrap;">${p.label}</div>`,
               className: labelClassName,
               iconSize: [1, 1],
               iconAnchor: [0, 0]
@@ -1166,8 +1167,9 @@ HTML_TEMPLATE = Template(
             if (p.classes) innerClassName += ' ' + p.classes;
             
             // Use divIcon instead of tooltip for better control over rotation
+            // Apply rotation first, then translate perpendicular to the path
             const labelDiv = L.divIcon({
-              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg); white-space: nowrap;">${p.label}</div>`,
+              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg) translateY(-8px); white-space: nowrap;">${p.label}</div>`,
               className: labelClassName,
               iconSize: [1, 1],
               iconAnchor: [0, 0]

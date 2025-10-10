@@ -893,11 +893,12 @@ map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
 map.show()
 ```
 
-**Label Rotation:** Path labels are intelligently rotated to align with the path direction. The algorithm:
+**Label Rotation and Positioning:** Path labels are intelligently rotated to align with the path direction and offset perpendicular to the path for better readability. The algorithm:
 1. Estimates the label length based on the number of characters
 2. Finds path points within that distance on either side of the midpoint
 3. Calculates the angle between those points
 4. Rotates the label to match, while keeping text readable (never upside down)
+5. Translates the label 8px perpendicular to the path to avoid overlapping with the path line
 
 **Styling Labels:**
 

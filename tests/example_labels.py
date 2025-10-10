@@ -27,7 +27,7 @@ map.Path(label="Coastal Route", value=[[19.0, 73.0], [15.3, 74.1], [13.0, 80.2],
 map.CSS("""
 .coastal.path-label {
   color: rgb(0, 153, 51);
-  background: rgba(0, 153, 51, 0.2); 
+/*  background: rgba(255, 255, 255, 0.7); */
 }
 
 .coastal {
