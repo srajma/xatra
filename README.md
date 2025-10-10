@@ -10,16 +10,17 @@ Kanging
 Development
 - [x] option for different point markers besides pin
 - [x] option for point labels, river labels
-- [ ] grouping of map elements and layer selection
 - [ ] ideally make it so hovering hovers on *all* flags/elements at that point
-- [ ] "get current map" similar to matplotlib, to make maps more modular
+- [x] "get current map" similar to matplotlib, to make maps more modular
+- [ ] Hover over color bar
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [x] xatra.Flag color groups
 - [x] xatra.Dataframe with notes and DataColormap
 - [x] do we need to redraw everything each frame?
-- [ ] possibly: calculate and keep simplified geometries (check what the main source of slowness is)
-- [ ] possibly: loading geojson from file instead of storing it in html; i.e. with a server
+- [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
+- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly
+- [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
 
 Interactive platform
 - [ ] DSL
@@ -48,7 +49,6 @@ Bugfixes
 - [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
 - [x] Static Dataframe maps don't work
 - [x] logarithmic/normalized color bars with matplotlib Normalize support
-- [ ] Hover over color bar
 - [x] Make sure color bars are shown correctly regardless of how it is
 - [x] Support a "note" column for Dataframe.
 - [x] Don't assume missing values
@@ -170,7 +170,7 @@ map.TitleBox("<b>Taluk-level map of the Indian subcontinent.")
 map.show()
 ```
 
-## Example: Data map
+## Example: Dataframe map
 
 And here's a data map using DataFrames:
 
@@ -229,6 +229,7 @@ map.Dataframe(df)
 
 map.show()
 ```
+
 ## Tip on coloring historical maps well
 
 Successive Flags you define are assigned colors based on the map's `FlagColorSequence`, which is a class that determines how the next color is calculated. The default color sequence increments successive colors' hues by the conjugate golden ratio of the hue spectrum (taken from 0 to 1, so 0 is red, 1/3 is green, 2/3 is blue and 1 is red again) mod 1:
@@ -284,6 +285,49 @@ The `find_in_gadm` parameter is available for:
 - `map.Flag()` - When using `gadm()` loader
 - `map.Dataframe()` - DataFrame elements
 
+## Directly doing `xatra.Flag() etc.`
+
+All of the elements of `FlagMap` e.g. `Flag()`, `River()` can also be directly called as methods of `xatra` i.e. `xatra.Flag()` etc. and it will apply to the "current plot". This is useful for modularity, i.e. creating some map as a module that can simply be imported into another map.
+
+```python
+#!/usr/bin/env python3
+"""
+Example demonstrating pyplot-style interface for Xatra.
+
+This example shows how to use xatra.Flag(), xatra.River(), etc. 
+directly without explicitly creating a FlagMap object, similar to
+how matplotlib.pyplot works.
+"""
+
+import xatra
+from xatra.loaders import gadm, naturalearth
+from xatra.territory_library import NORTH_INDIA
+
+# No need to create a map object - just start adding elements!
+# A FlagMap is automatically created on first use.
+
+xatra.BaseOption("OpenStreetMap", default=True)
+xatra.BaseOption("Esri.WorldImagery")
+xatra.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240])
+xatra.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
+xatra.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500])
+xatra.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout")
+xatra.River(label="Ganga", value=naturalearth("1159122643"), classes="major-river")
+xatra.Path(label="Uttarapatha", value=[[28, 77], [30, 90], [40, 120]])
+xatra.Point(label="Indraprastha", position=[28, 77])
+xatra.Text(label="Jambudvipa", position=[22, 79])
+xatra.TitleBox("<b>Pyplot-style Map Example</b><br>Classical period, using xatra.Flag() etc.")
+xatra.CSS("""
+.flag { stroke: #555; fill: rgba(200,0,0,0.4); }
+.major-river { stroke: #0066cc; stroke-width: 3; }
+""")
+
+xatra.slider(-320, 500)
+
+xatra.show(out_json="tests/map_pyplot.json", out_html="tests/map_pyplot.html")
+print("Map exported to tests/map_pyplot.html")
+```
+
 ## API Reference
 
 ### FlagMap
@@ -322,6 +366,46 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 ##### Export
 
 - **`show(out_json="map.json", out_html="map.html")`**: Export map to JSON and HTML files
+
+### Pyplot-Style Functions
+
+For convenience, Xatra provides pyplot-style functions that operate on a global "current map". These functions are available at the top level of the `xatra` module and mirror the `FlagMap` methods.
+
+#### Map Management
+
+- **`get_current_map()`**: Get the current FlagMap instance, creating one if none exists
+- **`set_current_map(map)`**: Set the current FlagMap instance (or None to clear)
+- **`new_map()`**: Create a new FlagMap and set it as current
+
+#### FlagMap methods are xatra methods
+
+All FlagMap methods are available as top-level functions that operate on the current map:
+
+**Adding elements:**
+- **`xatra.Flag(...)`**: Add a flag to the current map
+- **`xatra.River(...)`**: Add a river to the current map
+- **`xatra.Path(...)`**: Add a path to the current map
+- **`xatra.Point(...)`**: Add a point to the current map
+- **`xatra.Text(...)`**: Add a text label to the current map
+- **`xatra.TitleBox(...)`**: Add a title box to the current map
+- **`xatra.Admin(...)`**: Add administrative regions to the current map
+- **`xatra.AdminRivers(...)`**: Add rivers to the current map
+- **`xatra.Dataframe(...)`**: Add DataFrame data to the current map
+
+**Styling and Configuration**
+
+- **`xatra.CSS(...)`**: Add CSS styles to the current map
+- **`xatra.BaseOption(...)`**: Add a base map layer to the current map
+- **`xatra.FlagColorSequence(...)`**: Set flag color sequence for the current map
+- **`xatra.AdminColorSequence(...)`**: Set admin color sequence for the current map
+- **`xatra.DataColormap(...)`**: Set data colormap for the current map
+- **`xatra.slider(...)`**: Set time controls for the current map
+
+**Export**
+
+- **`xatra.show(...)`**: Export the current map to JSON and HTML files
+
+**Note:** All parameters are identical to the corresponding FlagMap methods. The functions simply call the method on the current map instance.
 
 ### CSS Classes and Styling
 
