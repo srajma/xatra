@@ -10,7 +10,7 @@ Kanging
 Development
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels
-- [ ] option to create multiple path, river labels.
+- [x] option to create multiple path, river labels.
 - [x] And maybe calculate river label path using bounding box.
 - [ ] ideally make it so hovering hovers on *all* flags/elements at that point
 - [x] "get current map" similar to matplotlib, to make maps more modular
