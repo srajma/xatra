@@ -43,7 +43,7 @@ HTML_TEMPLATE = Template(
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
-      .path-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
+      .path-label { font-size: 14px; color: #444444; padding: 2px 6px; } /* border-radius: 3px; border: 1px solid #cccccc; background: rgba(255,255,255,0.8); */
       .path-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .point-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }

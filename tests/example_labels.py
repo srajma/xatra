@@ -25,33 +25,13 @@ map.Path(label="Coastal Route", value=[[19.0, 73.0], [15.3, 74.1], [13.0, 80.2],
 
 # Add custom CSS for styling
 map.CSS("""
-/*.point-label {
-  font-size: 13px;
-  font-weight: bold;
-  color: #cc0000;
-  background: rgba(255,255,255,0.85);
-  padding: 3px 7px;
-  border-radius: 4px;
-  border: 1px solid #cc0000;
-}
-
-.path-label {
-  font-size: 14px;
-  color: #0066cc;
-  font-style: italic;
-  background: rgba(255,255,255,0.9);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #0066cc;
-}*/
-
 .coastal.path-label {
-  color: #009933 !important;
-  border-color: #009933;
+  color: rgb(0, 153, 51);
+  background: rgba(0, 153, 51, 0.2); 
 }
 
 .coastal {
-  stroke: #009933;
+  stroke: rgb(0, 153, 51);
   stroke-width: 3;
 }
 """)
