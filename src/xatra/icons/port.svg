@@ -1,0 +1,21 @@
+<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle -->
+  <circle cx="16" cy="16" r="15" fill="none" stroke="#2c3e50" stroke-width="2"/>
+  
+  <!-- Anchor symbol -->
+  <!-- Anchor ring -->
+  <circle cx="16" cy="10" r="2" fill="none" stroke="#34495e" stroke-width="2"/>
+  
+  <!-- Anchor shank (vertical bar) -->
+  <rect x="15" y="12" width="2" height="12" fill="#34495e" stroke="#2c3e50" stroke-width="1"/>
+  
+  <!-- Anchor crown (horizontal bar) -->
+  <rect x="8" y="22" width="16" height="2" fill="#34495e" stroke="#2c3e50" stroke-width="1"/>
+  
+  <!-- Anchor flukes (triangular ends) -->
+  <polygon points="8,22 4,26 8,24" fill="#34495e" stroke="#2c3e50" stroke-width="1"/>
+  <polygon points="24,22 28,26 24,24" fill="#34495e" stroke="#2c3e50" stroke-width="1"/>
+  
+  <!-- Anchor stock (horizontal bar near top) -->
+  <rect x="12" y="15" width="8" height="1.5" fill="#34495e" stroke="#2c3e50" stroke-width="1"/>
+</svg>

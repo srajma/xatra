@@ -39,7 +39,19 @@ This directory includes several SVG icons for different map needs:
 - `temple-nagara.svg` - Nagara-style temple with shikhara over garbhagriha and separate mandapa with tiered roof
 - `temple-gopuram.svg` - somewhat like Dravidian gopuram
 - `temple-pagoda.svg` - East Asian pagoda-style temple with multiple tiers and upward-curving roofs
+- `temple-parthenon.svg` - Classical Greek Parthenon-style temple with columns and pediment
 - `fort.svg` - Fortress or citadel with crenellations and central tower
+
+### Infrastructure Icons
+- `port.svg` - Seaport with ship, dock, cranes, and cargo containers
+
+### Religious Symbols
+- `symbol-om.svg` - Hindu Om symbol (sacred syllable)
+- `symbol-swastika.svg` - Traditional swastika symbol (Hindu/Buddhist)
+- `symbol-crescent-star.svg` - Islamic crescent moon and star
+- `symbol-cross.svg` - Christian cross
+- `symbol-star-david.svg` - Jewish Star of David (Magen David)
+- `symbol-zoroastrian.svg` - Zoroastrian Faravahar symbol
 
 ### General Purpose Icons
 - `star.svg` - Five-pointed star for important or significant locations
