@@ -454,7 +454,7 @@ HTML_TEMPLATE = Template(
             if (startPoint && endPoint) {
               const dx = endPoint[1] - startPoint[1]; // longitude difference
               const dy = endPoint[0] - startPoint[0]; // latitude difference
-              angle = Math.atan2(dy, dx) * 180 / Math.PI;
+              angle = -Math.atan2(dy, dx) * 180 / Math.PI;
               
               // Normalize angle to keep text readable (don't flip upside down)
               if (angle > 90) angle -= 180;
@@ -1154,7 +1154,7 @@ HTML_TEMPLATE = Template(
             if (startPoint && endPoint) {
               const dx = endPoint[1] - startPoint[1]; // longitude difference
               const dy = endPoint[0] - startPoint[0]; // latitude difference
-              angle = Math.atan2(dy, dx) * 180 / Math.PI;
+              angle = -Math.atan2(dy, dx) * 180 / Math.PI;
               
               // Normalize angle to keep text readable (don't flip upside down)
               if (angle > 90) angle -= 180;
