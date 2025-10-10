@@ -851,8 +851,6 @@ print("Map with custom icons exported to map_icons.html")
 
 By default, Points and Paths display their labels in tooltips (on hover). You can optionally display the label directly on the map next to the element using the `show_label` parameter.
 
-#### Point Labels
-
 For Points, setting `show_label=True` displays the label to the right of the point marker:
 
 ```python
@@ -871,8 +869,6 @@ map.Point(label="Delhi", position=[28.6, 77.2], show_label=True)
 
 map.show()
 ```
-
-#### Path Labels
 
 For Paths, setting `show_label=True` calculates the midpoint along the path (by distance, not by index) and displays the label there. The label is automatically rotated to match the direction of the path at that point:
 
