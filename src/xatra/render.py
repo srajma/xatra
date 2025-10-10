@@ -220,7 +220,7 @@ HTML_TEMPLATE = Template(
       }
 
       // Helper function to calculate river label position and rotation
-      function calculateRiverLabelPosition(geometryOrFeature, label) {
+      function calculateRiverLabelPosition(geometryOrFeature, label, fraction = 0.5) {
         // Handle both Feature and raw geometry
         let geometry = geometryOrFeature;
         if (geometryOrFeature.type === 'Feature' && geometryOrFeature.geometry) {
@@ -238,7 +238,7 @@ HTML_TEMPLATE = Template(
           return null; // Unsupported geometry type
         }
         
-        // Calculate bounding box center
+        // Calculate bounding box
         let minLat = Infinity, maxLat = -Infinity;
         let minLon = Infinity, maxLon = -Infinity;
         
@@ -255,8 +255,12 @@ HTML_TEMPLATE = Template(
         
         if (!isFinite(minLat) || !isFinite(maxLat)) return null;
         
-        // Center of bounding box
-        const center = [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
+        // Interpolate center based on fraction (for multiple labels)
+        // fraction=0.5 gives the center, fraction=0.33 gives center-left, etc.
+        const center = [
+          minLat + fraction * (maxLat - minLat),
+          minLon + fraction * (maxLon - maxLon)
+        ];
         
         // Find the nearest point on any LineString to the bounding box center
         let nearestPoint = null;
@@ -537,26 +541,33 @@ HTML_TEMPLATE = Template(
           layer._riverData = { period: r.period };
           layers.rivers.push(layer);
           
-          // Add label if show_label is true
+          // Add labels if show_label is true
           if (r.show_label) {
-            const labelInfo = calculateRiverLabelPosition(r.geometry, r.label);
-            if (labelInfo) {
-              let labelClassName = 'river-label-container';
-              let innerClassName = 'text-label river-label';
-              if (r.classes) innerClassName += ' ' + r.classes;
+            const nLabels = r.n_labels || 1;
+            
+            // Create labels at positions k/(n+1) where k = 1, 2, ..., n
+            for (let k = 1; k <= nLabels; k++) {
+              const fraction = k / (nLabels + 1);
+              const labelInfo = calculateRiverLabelPosition(r.geometry, r.label, fraction);
               
-              // Use divIcon with nested divs for rotation and translation
-              // Outer div: rotation (inline), Inner div: translation (CSS customizable)
-              const labelDiv = L.divIcon({
-                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${r.label}</div></div>`,
-                className: labelClassName,
-                iconSize: [1, 1],
-                iconAnchor: [0, 0]
-              });
-              
-              const labelLayer = L.marker([labelInfo.position[0], labelInfo.position[1]], { icon: labelDiv });
-              labelLayer._riverData = { period: r.period };
-              layers.rivers.push(labelLayer);
+              if (labelInfo) {
+                let labelClassName = 'river-label-container';
+                let innerClassName = 'text-label river-label';
+                if (r.classes) innerClassName += ' ' + r.classes;
+                
+                // Use divIcon with nested divs for rotation and translation
+                // Outer div: rotation (inline), Inner div: translation (CSS customizable)
+                const labelDiv = L.divIcon({
+                  html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${r.label}</div></div>`,
+                  className: labelClassName,
+                  iconSize: [1, 1],
+                  iconAnchor: [0, 0]
+                });
+                
+                const labelLayer = L.marker([labelInfo.position[0], labelInfo.position[1]], { icon: labelDiv });
+                labelLayer._riverData = { period: r.period };
+                layers.rivers.push(labelLayer);
+              }
             }
           }
         }
@@ -574,9 +585,9 @@ HTML_TEMPLATE = Template(
           layer._pathData = { period: p.period };
           layers.paths.push(layer);
           
-          // Add label at midpoint if show_label is true
+          // Add labels if show_label is true
           if (p.show_label && latlngs.length > 0) {
-            // Calculate midpoint along the path (by distance, not by index)
+            // Calculate total distance along the path
             let totalDistance = 0;
             const distances = [0];
             for (let i = 1; i < latlngs.length; i++) {
@@ -588,85 +599,86 @@ HTML_TEMPLATE = Template(
               distances.push(totalDistance);
             }
             
-            const halfDistance = totalDistance / 2;
-            let midpoint = latlngs[0];
-            let midpointSegmentIndex = 0;
+            const nLabels = p.n_labels || 1;
             
-            // Find the segment containing the midpoint
-            for (let i = 1; i < distances.length; i++) {
-              if (distances[i] >= halfDistance) {
-                const segmentStart = distances[i - 1];
-                const segmentEnd = distances[i];
-                const t = (halfDistance - segmentStart) / (segmentEnd - segmentStart);
-                
-                // Interpolate between points
-                midpoint = [
-                  latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
-                  latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
-                ];
-                midpointSegmentIndex = i - 1;
-                break;
+            // Create labels at positions k/(n+1) where k = 1, 2, ..., n
+            for (let k = 1; k <= nLabels; k++) {
+              const targetDistance = (k / (nLabels + 1)) * totalDistance;
+              
+              let labelPoint = latlngs[0];
+              let labelSegmentIndex = 0;
+              
+              // Find the segment containing this position
+              for (let i = 1; i < distances.length; i++) {
+                if (distances[i] >= targetDistance) {
+                  const segmentStart = distances[i - 1];
+                  const segmentEnd = distances[i];
+                  const t = (targetDistance - segmentStart) / (segmentEnd - segmentStart);
+                  
+                  // Interpolate between points
+                  labelPoint = [
+                    latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
+                    latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
+                  ];
+                  labelSegmentIndex = i - 1;
+                  break;
+                }
               }
-            }
-            
-            // Calculate rotation angle based on nearby path segments
-            // Estimate label length (roughly 10 pixels per character at default font size)
-            const estimatedLabelLength = p.label.length * 0.15; // in degrees (rough estimate)
-            
-            // Find points within estimated label length of midpoint
-            let startPoint = null;
-            let endPoint = null;
-            
-            // Search backwards from midpoint
-            let accumulatedDist = 0;
-            for (let i = midpointSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
-              startPoint = latlngs[i];
-              if (i > 0) {
+              
+              // Calculate rotation angle based on nearby path segments
+              const estimatedLabelLength = p.label.length * 0.15;
+              
+              let startPoint = null;
+              let endPoint = null;
+              
+              // Search backwards
+              let accumulatedDist = 0;
+              for (let i = labelSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
+                startPoint = latlngs[i];
+                if (i > 0) {
+                  accumulatedDist += Math.sqrt(
+                    Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                    Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+                  );
+                }
+              }
+              
+              // Search forwards
+              accumulatedDist = 0;
+              for (let i = labelSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
+                endPoint = latlngs[i];
                 accumulatedDist += Math.sqrt(
                   Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
                   Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
                 );
               }
-            }
-            
-            // Search forwards from midpoint
-            accumulatedDist = 0;
-            for (let i = midpointSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
-              endPoint = latlngs[i];
-              accumulatedDist += Math.sqrt(
-                Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
-                Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
-              );
-            }
-            
-            // Calculate angle between start and end points
-            let angle = 0;
-            if (startPoint && endPoint) {
-              const dx = endPoint[1] - startPoint[1]; // longitude difference
-              const dy = endPoint[0] - startPoint[0]; // latitude difference
-              angle = -Math.atan2(dy, dx) * 180 / Math.PI;
               
-              // Normalize angle to keep text readable (don't flip upside down)
-              if (angle > 90) angle -= 180;
-              if (angle < -90) angle += 180;
+              // Calculate angle
+              let angle = 0;
+              if (startPoint && endPoint) {
+                const dx = endPoint[1] - startPoint[1];
+                const dy = endPoint[0] - startPoint[0];
+                angle = -Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                if (angle > 90) angle -= 180;
+                if (angle < -90) angle += 180;
+              }
+              
+              let labelClassName = 'path-label-container';
+              let innerClassName = 'text-label path-label';
+              if (p.classes) innerClassName += ' ' + p.classes;
+              
+              const labelDiv = L.divIcon({
+                html: `<div style="transform: rotate(${angle}deg);"><div class="${innerClassName}" style="transform: translateY(-8px); white-space: nowrap;">${p.label}</div></div>`,
+                className: labelClassName,
+                iconSize: [1, 1],
+                iconAnchor: [0, 0]
+              });
+              
+              const labelLayer = L.marker(labelPoint, { icon: labelDiv });
+              labelLayer._pathData = { period: p.period };
+              layers.paths.push(labelLayer);
             }
-            
-            let labelClassName = 'path-label-container';
-            let innerClassName = 'text-label path-label';
-            if (p.classes) innerClassName += ' ' + p.classes;
-            
-            // Use divIcon with nested divs for rotation and translation
-            // Outer div: rotation (inline), Inner div: translation (CSS customizable)
-            const labelDiv = L.divIcon({
-              html: `<div style="transform: rotate(${angle}deg);"><div class="${innerClassName}" style="transform: translateY(-8px); white-space: nowrap;">${p.label}</div></div>`,
-              className: labelClassName,
-              iconSize: [1, 1],
-              iconAnchor: [0, 0]
-            });
-            
-            const labelLayer = L.marker(midpoint, { icon: labelDiv });
-            labelLayer._pathData = { period: p.period };
-            layers.paths.push(labelLayer);
           }
         }
       }
@@ -1261,25 +1273,32 @@ HTML_TEMPLATE = Template(
           const layer = addGeoJSON(r.geometry, { style: { className } }, r.show_label ? undefined : `${r.label}${r.note ? ' — ' + r.note : ''}`);
           layers.rivers.push(layer);
           
-          // Add label if show_label is true
+          // Add labels if show_label is true
           if (r.show_label) {
-            const labelInfo = calculateRiverLabelPosition(r.geometry, r.label);
-            if (labelInfo) {
-              let labelClassName = 'river-label-container';
-              let innerClassName = 'text-label river-label';
-              if (r.classes) innerClassName += ' ' + r.classes;
+            const nLabels = r.n_labels || 1;
+            
+            // Create labels at positions k/(n+1) where k = 1, 2, ..., n
+            for (let k = 1; k <= nLabels; k++) {
+              const fraction = k / (nLabels + 1);
+              const labelInfo = calculateRiverLabelPosition(r.geometry, r.label, fraction);
               
-              // Use divIcon with nested divs for rotation and translation
-              // Outer div: rotation (inline), Inner div: translation (CSS customizable)
-              const labelDiv = L.divIcon({
-                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${r.label}</div></div>`,
-                className: labelClassName,
-                iconSize: [1, 1],
-                iconAnchor: [0, 0]
-              });
-              
-              const labelLayer = L.marker([labelInfo.position[0], labelInfo.position[1]], { icon: labelDiv }).addTo(map);
-              layers.rivers.push(labelLayer);
+              if (labelInfo) {
+                let labelClassName = 'river-label-container';
+                let innerClassName = 'text-label river-label';
+                if (r.classes) innerClassName += ' ' + r.classes;
+                
+                // Use divIcon with nested divs for rotation and translation
+                // Outer div: rotation (inline), Inner div: translation (CSS customizable)
+                const labelDiv = L.divIcon({
+                  html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${r.label}</div></div>`,
+                  className: labelClassName,
+                  iconSize: [1, 1],
+                  iconAnchor: [0, 0]
+                });
+                
+                const labelLayer = L.marker([labelInfo.position[0], labelInfo.position[1]], { icon: labelDiv }).addTo(map);
+                layers.rivers.push(labelLayer);
+              }
             }
           }
         }
@@ -1297,9 +1316,9 @@ HTML_TEMPLATE = Template(
           }
           layers.paths.push(layer);
           
-          // Add label at midpoint if show_label is true
+          // Add labels if show_label is true
           if (p.show_label && latlngs.length > 0) {
-            // Calculate midpoint along the path (by distance, not by index)
+            // Calculate total distance along the path
             let totalDistance = 0;
             const distances = [0];
             for (let i = 1; i < latlngs.length; i++) {
@@ -1311,84 +1330,85 @@ HTML_TEMPLATE = Template(
               distances.push(totalDistance);
             }
             
-            const halfDistance = totalDistance / 2;
-            let midpoint = latlngs[0];
-            let midpointSegmentIndex = 0;
+            const nLabels = p.n_labels || 1;
             
-            // Find the segment containing the midpoint
-            for (let i = 1; i < distances.length; i++) {
-              if (distances[i] >= halfDistance) {
-                const segmentStart = distances[i - 1];
-                const segmentEnd = distances[i];
-                const t = (halfDistance - segmentStart) / (segmentEnd - segmentStart);
-                
-                // Interpolate between points
-                midpoint = [
-                  latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
-                  latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
-                ];
-                midpointSegmentIndex = i - 1;
-                break;
+            // Create labels at positions k/(n+1) where k = 1, 2, ..., n
+            for (let k = 1; k <= nLabels; k++) {
+              const targetDistance = (k / (nLabels + 1)) * totalDistance;
+              
+              let labelPoint = latlngs[0];
+              let labelSegmentIndex = 0;
+              
+              // Find the segment containing this position
+              for (let i = 1; i < distances.length; i++) {
+                if (distances[i] >= targetDistance) {
+                  const segmentStart = distances[i - 1];
+                  const segmentEnd = distances[i];
+                  const t = (targetDistance - segmentStart) / (segmentEnd - segmentStart);
+                  
+                  // Interpolate between points
+                  labelPoint = [
+                    latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
+                    latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
+                  ];
+                  labelSegmentIndex = i - 1;
+                  break;
+                }
               }
-            }
-            
-            // Calculate rotation angle based on nearby path segments
-            // Estimate label length (roughly 10 pixels per character at default font size)
-            const estimatedLabelLength = p.label.length * 0.15; // in degrees (rough estimate)
-            
-            // Find points within estimated label length of midpoint
-            let startPoint = null;
-            let endPoint = null;
-            
-            // Search backwards from midpoint
-            let accumulatedDist = 0;
-            for (let i = midpointSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
-              startPoint = latlngs[i];
-              if (i > 0) {
+              
+              // Calculate rotation angle based on nearby path segments
+              const estimatedLabelLength = p.label.length * 0.15;
+              
+              let startPoint = null;
+              let endPoint = null;
+              
+              // Search backwards
+              let accumulatedDist = 0;
+              for (let i = labelSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
+                startPoint = latlngs[i];
+                if (i > 0) {
+                  accumulatedDist += Math.sqrt(
+                    Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                    Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+                  );
+                }
+              }
+              
+              // Search forwards
+              accumulatedDist = 0;
+              for (let i = labelSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
+                endPoint = latlngs[i];
                 accumulatedDist += Math.sqrt(
                   Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
                   Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
                 );
               }
-            }
-            
-            // Search forwards from midpoint
-            accumulatedDist = 0;
-            for (let i = midpointSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
-              endPoint = latlngs[i];
-              accumulatedDist += Math.sqrt(
-                Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
-                Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
-              );
-            }
-            
-            // Calculate angle between start and end points
-            let angle = 0;
-            if (startPoint && endPoint) {
-              const dx = endPoint[1] - startPoint[1]; // longitude difference
-              const dy = endPoint[0] - startPoint[0]; // latitude difference
-              angle = -Math.atan2(dy, dx) * 180 / Math.PI;
               
-              // Normalize angle to keep text readable (don't flip upside down)
-              if (angle > 90) angle -= 180;
-              if (angle < -90) angle += 180;
+              // Calculate angle
+              let angle = 0;
+              if (startPoint && endPoint) {
+                const dx = endPoint[1] - startPoint[1];
+                const dy = endPoint[0] - startPoint[0];
+                angle = -Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                if (angle > 90) angle -= 180;
+                if (angle < -90) angle += 180;
+              }
+              
+              let labelClassName = 'path-label-container';
+              let innerClassName = 'text-label path-label';
+              if (p.classes) innerClassName += ' ' + p.classes;
+              
+              const labelDiv = L.divIcon({
+                html: `<div style="transform: rotate(${angle}deg);"><div class="${innerClassName}" style="transform: translateY(-8px); white-space: nowrap;">${p.label}</div></div>`,
+                className: labelClassName,
+                iconSize: [1, 1],
+                iconAnchor: [0, 0]
+              });
+              
+              const labelLayer = L.marker(labelPoint, { icon: labelDiv }).addTo(map);
+              layers.paths.push(labelLayer);
             }
-            
-            let labelClassName = 'path-label-container';
-            let innerClassName = 'text-label path-label';
-            if (p.classes) innerClassName += ' ' + p.classes;
-            
-            // Use divIcon with nested divs for rotation and translation
-            // Outer div: rotation (inline), Inner div: translation (CSS customizable)
-            const labelDiv = L.divIcon({
-              html: `<div style="transform: rotate(${angle}deg);"><div class="${innerClassName}" style="transform: translateY(-8px); white-space: nowrap;">${p.label}</div></div>`,
-              className: labelClassName,
-              iconSize: [1, 1],
-              iconAnchor: [0, 0]
-            });
-            
-            const labelLayer = L.marker(midpoint, { icon: labelDiv }).addTo(map);
-            layers.paths.push(labelLayer);
           }
         }
       }

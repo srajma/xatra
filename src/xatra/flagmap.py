@@ -56,6 +56,7 @@ class RiverEntry:
         classes: Optional CSS classes for styling
         period: Optional time period as (start_year, end_year) tuple
         show_label: If True, display label next to the river instead of in tooltip
+        n_labels: Number of labels to display along the river (default: 1)
     """
     label: str
     geometry: Dict[str, Any]
@@ -63,6 +64,7 @@ class RiverEntry:
     classes: Optional[str] = None
     period: Optional[Tuple[int, int]] = None
     show_label: bool = False
+    n_labels: int = 1
 
 
 @dataclass
@@ -75,12 +77,14 @@ class PathEntry:
         classes: Optional CSS classes for styling
         period: Optional time period as (start_year, end_year) tuple
         show_label: If True, display label next to the path instead of in tooltip
+        n_labels: Number of labels to display along the path (default: 1)
     """
     label: str
     coords: List[Tuple[float, float]]
     classes: Optional[str] = None
     period: Optional[Tuple[int, int]] = None
     show_label: bool = False
+    n_labels: int = 1
 
 
 @dataclass
@@ -659,7 +663,7 @@ class FlagMap:
         
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color, classes=classes))
 
-    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
+    def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1) -> None:
         """Add a river to the map.
         
         Args:
@@ -669,19 +673,21 @@ class FlagMap:
             classes: Optional CSS classes for styling
             period: Optional time period as [start_year, end_year] list
             show_label: If True, display label next to the river instead of in tooltip
+            n_labels: Number of labels to display along the river (default: 1)
             
         Example:
             >>> map.River("Ganges", ganges_geometry, classes="major-river", note="Sacred river")
             >>> map.River("Yamuna", yamuna_geometry, show_label=True)
+            >>> map.River("Nile", nile_geometry, show_label=True, n_labels=3)
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes, period=period_tuple, show_label=show_label))
+        self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels))
 
-    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
+    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1) -> None:
         """Add a path/route to the map.
         
         Args:
@@ -690,10 +696,12 @@ class FlagMap:
             classes: Optional CSS classes for styling
             period: Optional time period as [start_year, end_year] list
             show_label: If True, display label next to the path instead of in tooltip
+            n_labels: Number of labels to display along the path (default: 1)
             
         Example:
             >>> map.Path("Silk Road", [[40.0, 74.0], [35.0, 103.0]], classes="trade-route")
             >>> map.Path("Trade Route", [[40.0, 74.0], [35.0, 103.0]], show_label=True)
+            >>> map.Path("Long Route", [[40.0, 74.0], [35.0, 103.0]], show_label=True, n_labels=3)
         """
         coords = [(float(lat), float(lon)) for lat, lon in value]
         period_tuple: Optional[Tuple[int, int]] = None
@@ -701,7 +709,7 @@ class FlagMap:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple, show_label=show_label))
+        self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels))
 
     def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False) -> None:
         """Add a point of interest to the map.
@@ -1175,6 +1183,7 @@ class FlagMap:
                     "classes": r.classes,
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "show_label": r.show_label,
+                    "n_labels": r.n_labels,
                 })
 
         paths_serialized = []
@@ -1188,6 +1197,7 @@ class FlagMap:
                     "classes": p.classes,
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "show_label": p.show_label,
+                    "n_labels": p.n_labels,
                 })
 
         points_serialized = []
