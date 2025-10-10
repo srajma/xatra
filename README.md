@@ -874,7 +874,7 @@ map.show()
 
 #### Path Labels
 
-For Paths, setting `show_label=True` calculates the midpoint along the path (by distance, not by index) and displays the label there:
+For Paths, setting `show_label=True` calculates the midpoint along the path (by distance, not by index) and displays the label there. The label is automatically rotated to match the direction of the path at that point:
 
 ```python
 import xatra
@@ -887,11 +887,17 @@ map.Flag(label="India", value=gadm("IND"))
 # Default: label appears in tooltip on hover
 map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]])
 
-# With show_label: label appears at the midpoint of the path
+# With show_label: label appears at the midpoint of the path, rotated to match the path direction
 map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
 
 map.show()
 ```
+
+**Label Rotation:** Path labels are intelligently rotated to align with the path direction. The algorithm:
+1. Estimates the label length based on the number of characters
+2. Finds path points within that distance on either side of the midpoint
+3. Calculates the angle between those points
+4. Rotates the label to match, while keeping text readable (never upside down)
 
 **Styling Labels:**
 

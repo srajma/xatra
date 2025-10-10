@@ -43,6 +43,9 @@ HTML_TEMPLATE = Template(
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
+      .path-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
+      .path-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
+      .point-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
       .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
@@ -397,6 +400,7 @@ HTML_TEMPLATE = Template(
             
             const halfDistance = totalDistance / 2;
             let midpoint = latlngs[0];
+            let midpointSegmentIndex = 0;
             
             // Find the segment containing the midpoint
             for (let i = 1; i < distances.length; i++) {
@@ -410,19 +414,66 @@ HTML_TEMPLATE = Template(
                   latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
                   latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
                 ];
+                midpointSegmentIndex = i - 1;
                 break;
               }
             }
             
-            let labelClassName = 'text-label path-label';
-            if (p.classes) labelClassName += ' ' + p.classes;
-            const labelLayer = L.marker(midpoint, { opacity: 0.0 });
-            labelLayer.bindTooltip(p.label, { 
-              permanent: true, 
-              direction: 'center', 
+            // Calculate rotation angle based on nearby path segments
+            // Estimate label length (roughly 10 pixels per character at default font size)
+            const estimatedLabelLength = p.label.length * 0.15; // in degrees (rough estimate)
+            
+            // Find points within estimated label length of midpoint
+            let startPoint = null;
+            let endPoint = null;
+            
+            // Search backwards from midpoint
+            let accumulatedDist = 0;
+            for (let i = midpointSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
+              startPoint = latlngs[i];
+              if (i > 0) {
+                accumulatedDist += Math.sqrt(
+                  Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                  Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+                );
+              }
+            }
+            
+            // Search forwards from midpoint
+            accumulatedDist = 0;
+            for (let i = midpointSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
+              endPoint = latlngs[i];
+              accumulatedDist += Math.sqrt(
+                Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+              );
+            }
+            
+            // Calculate angle between start and end points
+            let angle = 0;
+            if (startPoint && endPoint) {
+              const dx = endPoint[1] - startPoint[1]; // longitude difference
+              const dy = endPoint[0] - startPoint[0]; // latitude difference
+              angle = Math.atan2(dy, dx) * 180 / Math.PI;
+              
+              // Normalize angle to keep text readable (don't flip upside down)
+              if (angle > 90) angle -= 180;
+              if (angle < -90) angle += 180;
+            }
+            
+            let labelClassName = 'path-label-container';
+            let innerClassName = 'text-label path-label';
+            if (p.classes) innerClassName += ' ' + p.classes;
+            
+            // Use divIcon instead of tooltip for better control over rotation
+            const labelDiv = L.divIcon({
+              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg); white-space: nowrap;">${p.label}</div>`,
               className: labelClassName,
-              offset: [0, 0]
+              iconSize: [1, 1],
+              iconAnchor: [0, 0]
             });
+            
+            const labelLayer = L.marker(midpoint, { icon: labelDiv });
             labelLayer._pathData = { period: p.period };
             layers.paths.push(labelLayer);
           }
@@ -1049,6 +1100,7 @@ HTML_TEMPLATE = Template(
             
             const halfDistance = totalDistance / 2;
             let midpoint = latlngs[0];
+            let midpointSegmentIndex = 0;
             
             // Find the segment containing the midpoint
             for (let i = 1; i < distances.length; i++) {
@@ -1062,18 +1114,66 @@ HTML_TEMPLATE = Template(
                   latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
                   latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
                 ];
+                midpointSegmentIndex = i - 1;
                 break;
               }
             }
             
-            let labelClassName = 'text-label path-label';
-            if (p.classes) labelClassName += ' ' + p.classes;
-            const labelLayer = L.marker(midpoint, { opacity: 0.0 }).addTo(map).bindTooltip(p.label, { 
-              permanent: true, 
-              direction: 'center', 
+            // Calculate rotation angle based on nearby path segments
+            // Estimate label length (roughly 10 pixels per character at default font size)
+            const estimatedLabelLength = p.label.length * 0.15; // in degrees (rough estimate)
+            
+            // Find points within estimated label length of midpoint
+            let startPoint = null;
+            let endPoint = null;
+            
+            // Search backwards from midpoint
+            let accumulatedDist = 0;
+            for (let i = midpointSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
+              startPoint = latlngs[i];
+              if (i > 0) {
+                accumulatedDist += Math.sqrt(
+                  Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                  Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+                );
+              }
+            }
+            
+            // Search forwards from midpoint
+            accumulatedDist = 0;
+            for (let i = midpointSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
+              endPoint = latlngs[i];
+              accumulatedDist += Math.sqrt(
+                Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+              );
+            }
+            
+            // Calculate angle between start and end points
+            let angle = 0;
+            if (startPoint && endPoint) {
+              const dx = endPoint[1] - startPoint[1]; // longitude difference
+              const dy = endPoint[0] - startPoint[0]; // latitude difference
+              angle = Math.atan2(dy, dx) * 180 / Math.PI;
+              
+              // Normalize angle to keep text readable (don't flip upside down)
+              if (angle > 90) angle -= 180;
+              if (angle < -90) angle += 180;
+            }
+            
+            let labelClassName = 'path-label-container';
+            let innerClassName = 'text-label path-label';
+            if (p.classes) innerClassName += ' ' + p.classes;
+            
+            // Use divIcon instead of tooltip for better control over rotation
+            const labelDiv = L.divIcon({
+              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg); white-space: nowrap;">${p.label}</div>`,
               className: labelClassName,
-              offset: [0, 0]
+              iconSize: [1, 1],
+              iconAnchor: [0, 0]
             });
+            
+            const labelLayer = L.marker(midpoint, { icon: labelDiv }).addTo(map);
             layers.paths.push(labelLayer);
           }
         }
