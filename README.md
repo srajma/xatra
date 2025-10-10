@@ -929,7 +929,9 @@ This approach works robustly for any river geometry structure, placing the label
 
 **Styling Labels:**
 
-You can style Point, Path, and River labels using CSS. Labels have the classes `point-label`, `path-label`, and `river-label` respectively, in addition to the `text-label` class:
+You can style Point, Path, and River labels using CSS. Labels have the classes `point-label`, `path-label`, and `river-label` respectively, in addition to the `text-label` class.
+
+**Customizing Offset Distance:** The perpendicular offset can be customized via CSS using the `transform: translateY()` property. Default offsets are: Points (10px right), Paths (8px perpendicular), Rivers (16px perpendicular).
 
 ```python
 map.CSS("""
@@ -950,6 +952,8 @@ map.CSS("""
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid #0066cc;
+  /* Customize offset distance (default is -8px) */
+  transform: translateY(-12px);
 }
 
 .river-label {
@@ -960,6 +964,8 @@ map.CSS("""
   padding: 3px 7px;
   border-radius: 3px;
   border: 1px solid #0099cc;
+  /* Customize offset distance (default is -16px) */
+  transform: translateY(-20px);
 }
 
 /* You can also use custom classes */
@@ -971,6 +977,8 @@ map.CSS("""
 .sacred-river .river-label {
   color: #ff6600;
   border-color: #ff6600;
+  /* Increase offset for this specific river */
+  transform: translateY(-24px);
 }
 """)
 

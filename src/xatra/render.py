@@ -539,9 +539,10 @@ HTML_TEMPLATE = Template(
               let innerClassName = 'text-label river-label';
               if (r.classes) innerClassName += ' ' + r.classes;
               
-              // Use divIcon with rotation and perpendicular offset
+              // Use divIcon with nested divs for rotation and translation
+              // Outer div: rotation (inline), Inner div: translation (CSS customizable)
               const labelDiv = L.divIcon({
-                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-16px); white-space: nowrap;">${r.label}</div>`,
+                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-16px); white-space: nowrap;">${r.label}</div></div>`,
                 className: labelClassName,
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
@@ -648,10 +649,10 @@ HTML_TEMPLATE = Template(
             let innerClassName = 'text-label path-label';
             if (p.classes) innerClassName += ' ' + p.classes;
             
-            // Use divIcon instead of tooltip for better control over rotation
-            // Apply rotation first, then translate perpendicular to the path
+            // Use divIcon with nested divs for rotation and translation
+            // Outer div: rotation (inline), Inner div: translation (CSS customizable)
             const labelDiv = L.divIcon({
-              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg) translateY(-8px); white-space: nowrap;">${p.label}</div>`,
+              html: `<div style="transform: rotate(${angle}deg);"><div class="${innerClassName}" style="transform: translateY(-8px); white-space: nowrap;">${p.label}</div></div>`,
               className: labelClassName,
               iconSize: [1, 1],
               iconAnchor: [0, 0]
@@ -1262,9 +1263,10 @@ HTML_TEMPLATE = Template(
               let innerClassName = 'text-label river-label';
               if (r.classes) innerClassName += ' ' + r.classes;
               
-              // Use divIcon with rotation and perpendicular offset
+              // Use divIcon with nested divs for rotation and translation
+              // Outer div: rotation (inline), Inner div: translation (CSS customizable)
               const labelDiv = L.divIcon({
-                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-16px); white-space: nowrap;">${r.label}</div>`,
+                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-16px); white-space: nowrap;">${r.label}</div></div>`,
                 className: labelClassName,
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
@@ -1370,10 +1372,10 @@ HTML_TEMPLATE = Template(
             let innerClassName = 'text-label path-label';
             if (p.classes) innerClassName += ' ' + p.classes;
             
-            // Use divIcon instead of tooltip for better control over rotation
-            // Apply rotation first, then translate perpendicular to the path
+            // Use divIcon with nested divs for rotation and translation
+            // Outer div: rotation (inline), Inner div: translation (CSS customizable)
             const labelDiv = L.divIcon({
-              html: `<div class="${innerClassName}" style="transform: rotate(${angle}deg) translateY(-8px); white-space: nowrap;">${p.label}</div>`,
+              html: `<div style="transform: rotate(${angle}deg);"><div class="${innerClassName}" style="transform: translateY(-8px); white-space: nowrap;">${p.label}</div></div>`,
               className: labelClassName,
               iconSize: [1, 1],
               iconAnchor: [0, 0]
