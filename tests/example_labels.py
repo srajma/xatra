@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example demonstrating the show_label parameter for Points, Paths, and Rivers.
+Example demonstrating the show_label and n_labels parameters for Points, Paths, and Rivers.
 """
 
 import xatra
@@ -13,7 +13,7 @@ map.BaseOption("Esri.WorldImagery")
 map.Flag(label="India", value=gadm("IND"))
 
 # Rivers with and without show_label
-map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, n_labels=3, classes="sacred")
+map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, n_labels=5, classes="sacred")
 
 # Points with and without show_label
 map.Point(label="Mumbai (tooltip only)", position=[19.0, 73.0])
@@ -24,7 +24,7 @@ map.Point(label="Chennai", position=[13.0, 80.2], show_label=True)
 # Paths with and without show_label
 map.Path(label="Northern Route (tooltip)", value=[[28.6, 77.2], [30.3, 78.0], [34.0, 74.8]])
 map.Path(label="Silk Road", value=[[28.6, 77.2], [32.0, 75.0], [35.5, 78.0], [39.0, 76.0]], show_label=True, n_labels=2)
-map.Path(label="Coastal Route", value=[[19.0, 73.0], [15.3, 74.1], [13.0, 80.2], [11.0, 76.0]], show_label=True, classes="coastal")
+map.Path(label="Coastal Route", value=[[19.0, 73.0], [15.3, 74.1], [13.0, 80.2], [11.0, 76.0]], show_label=True, classes="coastal", n_labels=3)
 
 # Add custom CSS for styling
 map.CSS("""
@@ -52,7 +52,7 @@ map.CSS("""
 """)
 
 # Add a title
-map.TitleBox("<b>Point, Path, and River Labels Example</b><br>Demonstrating show_label parameter for Points, Paths, and Rivers")
+map.TitleBox("<b>Point, Path, and River Labels Example</b><br>Demonstrating show_label and n_labels parameters")
 
 # Export the map
 map.show(out_json="tests/map_labels.json", out_html="tests/map_labels.html")

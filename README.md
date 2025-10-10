@@ -350,8 +350,8 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
-- **`River(label, geometry, note=None, classes=None, period=None, show_label=False)`**: Add a river with optional label display
-- **`Path(label, coords, classes=None, period=None, show_label=False)`**: Add a path/route with optional label display
+- **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1)`**: Add a river with optional label display
+- **`Path(label, coords, classes=None, period=None, show_label=False, n_labels=1)`**: Add a path/route with optional label display
 - **`Point(label, position, period=None, icon=None, show_label=False)`**: Add a point of interest with optional custom icon and label display
 - **`Text(label, position, classes=None, period=None)`**: Add a text label
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
@@ -972,15 +972,24 @@ map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]])
 # With show_label: label appears at the midpoint of the path, rotated to match the path direction
 map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
 
+# Multiple labels: display label at multiple evenly-spaced positions
+map.Path(label="Long Trade Route", value=[[28,77],[30,90],[35,100],[40,120]], show_label=True, n_labels=3)
+
 map.show()
 ```
 
 **Label Rotation and Positioning:** Path labels are intelligently rotated to align with the path direction and offset perpendicular to the path for better readability. The algorithm:
 1. Estimates the label length based on the number of characters
-2. Finds path points within that distance on either side of the midpoint
+2. Finds path points within that distance on either side of each label position
 3. Calculates the angle between those points
 4. Rotates the label to match, while keeping text readable (never upside down)
 5. Translates the label 8px perpendicular to the path to avoid overlapping with the path line
+
+**Multiple Labels:** Use `n_labels` parameter to display multiple copies of the label along the path. Labels are placed at positions `k/(n+1)` where `k = 1, 2, ..., n`. For example:
+- `n_labels=1` (default): One label at 1/2 (midpoint)
+- `n_labels=2`: Two labels at 1/3 and 2/3
+- `n_labels=3`: Three labels at 1/4, 2/4, and 3/4
+- `n_labels=5`: Five labels at 1/6, 2/6, 3/6, 4/6, and 5/6
 
 #### River Labels
 
@@ -1000,18 +1009,26 @@ map.River(label="Ganga", value=naturalearth("1159122643"))
 # With show_label: label appears on the river, rotated to match the river direction
 map.River(label="Yamuna", value=naturalearth("1159122644"), show_label=True)
 
+# Multiple labels: useful for long rivers
+map.River(label="Nile", value=naturalearth("1159122999"), show_label=True, n_labels=5)
+
 map.show()
 ```
 
 **River Label Algorithm:** For rivers with complex geometries (including MultiLineString with potentially disconnected segments):
-1. Calculates the center of the river's bounding box (min/max lat/lon)
-2. Finds the nearest point on any of the river's line segments to that bounding box center
+1. For each label position `k/(n+1)`, interpolates within the river's bounding box
+2. Finds the nearest point on any of the river's line segments to that interpolated position
 3. Places the label at that nearest point
 4. Estimates the label length and finds points at that distance on either side along the river
 5. Calculates rotation angle between those distant points (for smooth angle on curvy rivers)
-6. Translates the label 16px perpendicular to the river for better visibility
+6. Translates the label 12px perpendicular to the river for better visibility
 
-This approach is simple, efficient, and works robustly for any river geometry structure, placing the label at a geographically central location on the actual river course.
+This approach is simple, efficient, and works robustly for any river geometry structure, placing labels at geographically distributed locations on the actual river course.
+
+**Multiple Labels:** The `n_labels` parameter works the same as for paths, distributing labels evenly across the river's bounding box:
+- `n_labels=1` (default): One label near the center of the bounding box
+- `n_labels=3`: Three labels distributed across the river extent
+- `n_labels=5`: Five labels for very long rivers like the Nile or Ganges
 
 **Styling Labels:**
 
