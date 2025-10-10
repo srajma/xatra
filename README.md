@@ -304,7 +304,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
-- **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
+- **`River(label, geometry, note=None, classes=None, period=None, show_label=False)`**: Add a river with optional label display
 - **`Path(label, coords, classes=None, period=None, show_label=False)`**: Add a path/route with optional label display
 - **`Point(label, position, period=None, icon=None, show_label=False)`**: Add a point of interest with optional custom icon and label display
 - **`Text(label, position, classes=None, period=None)`**: Add a text label
@@ -847,9 +847,9 @@ map.show(out_json="tests/map_icons.json", out_html="tests/map_icons.html")
 print("Map with custom icons exported to map_icons.html")
 ```
 
-### Point and Path Labels
+### Point, Path, and River Labels
 
-By default, Points and Paths display their labels in tooltips (on hover). You can optionally display the label directly on the map next to the element using the `show_label` parameter.
+By default, Points, Paths, and Rivers display their labels in tooltips (on hover). You can optionally display the label directly on the map next to the element using the `show_label` parameter.
 
 For Points, setting `show_label=True` displays the label to the right of the point marker:
 
@@ -896,9 +896,39 @@ map.show()
 4. Rotates the label to match, while keeping text readable (never upside down)
 5. Translates the label 8px perpendicular to the path to avoid overlapping with the path line
 
+#### River Labels
+
+For Rivers, setting `show_label=True` places the label at an intelligent location on the river. Rivers can be complex MultiLineString geometries with disconnected segments:
+
+```python
+import xatra
+from xatra.loaders import gadm, naturalearth
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Default: label appears in tooltip on hover
+map.River(label="Ganga", value=naturalearth("1159122643"))
+
+# With show_label: label appears on the river, rotated to match the river direction
+map.River(label="Yamuna", value=naturalearth("1159122644"), show_label=True)
+
+map.show()
+```
+
+**River Label Algorithm:** For rivers with complex geometries (including MultiLineString with potentially disconnected segments):
+1. Calculates the geometric centroid of all river coordinates
+2. Finds the nearest point on any of the river's line segments to that centroid
+3. Places the label at that nearest point
+4. Rotates the label to match the local river direction at that segment
+5. Translates the label 8px perpendicular to the river for better visibility
+
+This approach works robustly for any river geometry structure, placing the label at a geometrically central location on the actual river course.
+
 **Styling Labels:**
 
-You can style Point and Path labels using CSS. Labels have the classes `point-label` and `path-label` respectively, in addition to the `text-label` class:
+You can style Point, Path, and River labels using CSS. Labels have the classes `point-label`, `path-label`, and `river-label` respectively, in addition to the `text-label` class:
 
 ```python
 map.CSS("""
@@ -921,14 +951,30 @@ map.CSS("""
   border: 1px solid #0066cc;
 }
 
+.river-label {
+  font-size: 15px;
+  color: #0099cc;
+  font-weight: bold;
+  background: rgba(255,255,255,0.85);
+  padding: 3px 7px;
+  border-radius: 3px;
+  border: 1px solid #0099cc;
+}
+
 /* You can also use custom classes */
 .trade-route .path-label {
   color: #ff9900;
   border-color: #ff9900;
 }
+
+.sacred-river .river-label {
+  color: #ff6600;
+  border-color: #ff6600;
+}
 """)
 
 map.Path(label="Trade Route", value=[[28,77],[30,90],[40,120]], show_label=True, classes="trade-route")
+map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, classes="sacred-river")
 ```
 
 ## Performance

@@ -45,6 +45,8 @@ HTML_TEMPLATE = Template(
       .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
       .path-label { font-size: 14px; color: #444444; padding: 2px 6px; } /* border-radius: 3px; border: 1px solid #cccccc; background: rgba(255,255,255,0.8); */
       .path-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
+      .river-label { font-size: 14px; color: #0066cc; padding: 2px 6px; }
+      .river-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .point-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
@@ -217,6 +219,114 @@ HTML_TEMPLATE = Template(
         return [0, 0]; // Fallback
       }
 
+      // Helper function to calculate river label position and rotation
+      function calculateRiverLabelPosition(geometryOrFeature, label) {
+        // Handle both Feature and raw geometry
+        let geometry = geometryOrFeature;
+        if (geometryOrFeature.type === 'Feature' && geometryOrFeature.geometry) {
+          geometry = geometryOrFeature.geometry;
+        }
+        
+        // Extract all coordinates from the geometry
+        let allCoords = [];
+        
+        if (geometry.type === 'LineString') {
+          allCoords = [geometry.coordinates];
+        } else if (geometry.type === 'MultiLineString') {
+          allCoords = geometry.coordinates;
+        } else {
+          return null; // Unsupported geometry type
+        }
+        
+        // Calculate centroid of all points
+        let totalLat = 0, totalLon = 0, totalPoints = 0;
+        for (const lineString of allCoords) {
+          for (const coord of lineString) {
+            totalLon += coord[0];
+            totalLat += coord[1];
+            totalPoints++;
+          }
+        }
+        
+        if (totalPoints === 0) return null;
+        
+        const centroid = [totalLat / totalPoints, totalLon / totalPoints];
+        
+        // Find the nearest point on any LineString to the centroid
+        let nearestPoint = null;
+        let nearestDistance = Infinity;
+        let nearestSegmentStart = null;
+        let nearestSegmentEnd = null;
+        
+        for (const lineString of allCoords) {
+          for (let i = 0; i < lineString.length - 1; i++) {
+            const p1 = [lineString[i][1], lineString[i][0]]; // [lat, lon]
+            const p2 = [lineString[i+1][1], lineString[i+1][0]]; // [lat, lon]
+            
+            // Find nearest point on segment p1-p2 to centroid
+            const result = nearestPointOnSegment(centroid, p1, p2);
+            
+            if (result.distance < nearestDistance) {
+              nearestDistance = result.distance;
+              nearestPoint = result.point;
+              nearestSegmentStart = p1;
+              nearestSegmentEnd = p2;
+            }
+          }
+        }
+        
+        if (!nearestPoint) return null;
+        
+        // Calculate angle based on the segment containing the nearest point
+        let angle = 0;
+        if (nearestSegmentStart && nearestSegmentEnd) {
+          const dx = nearestSegmentEnd[1] - nearestSegmentStart[1]; // longitude difference
+          const dy = nearestSegmentEnd[0] - nearestSegmentStart[0]; // latitude difference
+          angle = -Math.atan2(dy, dx) * 180 / Math.PI;
+          
+          // Normalize angle to keep text readable
+          if (angle > 90) angle -= 180;
+          if (angle < -90) angle += 180;
+        }
+        
+        return { position: nearestPoint, angle: angle };
+      }
+      
+      function nearestPointOnSegment(point, segmentStart, segmentEnd) {
+        // Calculate nearest point on line segment to a given point
+        const dx = segmentEnd[1] - segmentStart[1];
+        const dy = segmentEnd[0] - segmentStart[0];
+        
+        if (dx === 0 && dy === 0) {
+          // Degenerate segment
+          const dist = Math.sqrt(
+            Math.pow(point[0] - segmentStart[0], 2) +
+            Math.pow(point[1] - segmentStart[1], 2)
+          );
+          return { point: segmentStart, distance: dist };
+        }
+        
+        // Calculate projection parameter t
+        const t = Math.max(0, Math.min(1,
+          ((point[1] - segmentStart[1]) * dx + (point[0] - segmentStart[0]) * dy) /
+          (dx * dx + dy * dy)
+        ));
+        
+        // Calculate nearest point
+        const nearest = [
+          segmentStart[0] + t * dy,
+          segmentStart[1] + t * dx
+        ];
+        
+        // Calculate distance
+        const dist = Math.sqrt(
+          Math.pow(point[0] - nearest[0], 2) +
+          Math.pow(point[1] - nearest[1], 2)
+        );
+        
+        return { point: nearest, distance: dist };
+      }
+
       function createAllLayers() {
         if (allLayersCreated) return;
         
@@ -359,16 +469,40 @@ HTML_TEMPLATE = Template(
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
           const layer = L.geoJSON(r.geometry, { style: { className } });
-          layer.bindTooltip(`${r.label}${r.note ? ' — ' + r.note : ''}`, { 
-            direction: 'top',
-            offset: [0, -10],
-            opacity: 0.9,
-            interactive: true,
-            permanent: false,
-            sticky: true
-          });
+          if (!r.show_label) {
+            layer.bindTooltip(`${r.label}${r.note ? ' — ' + r.note : ''}`, { 
+              direction: 'top',
+              offset: [0, -10],
+              opacity: 0.9,
+              interactive: true,
+              permanent: false,
+              sticky: true
+            });
+          }
           layer._riverData = { period: r.period };
           layers.rivers.push(layer);
+          
+          // Add label if show_label is true
+          if (r.show_label) {
+            const labelInfo = calculateRiverLabelPosition(r.geometry, r.label);
+            if (labelInfo) {
+              let labelClassName = 'river-label-container';
+              let innerClassName = 'text-label river-label';
+              if (r.classes) innerClassName += ' ' + r.classes;
+              
+              // Use divIcon with rotation and perpendicular offset
+              const labelDiv = L.divIcon({
+                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-8px); white-space: nowrap;">${r.label}</div>`,
+                className: labelClassName,
+                iconSize: [1, 1],
+                iconAnchor: [0, 0]
+              });
+              
+              const labelLayer = L.marker([labelInfo.position[0], labelInfo.position[1]], { icon: labelDiv });
+              labelLayer._riverData = { period: r.period };
+              layers.rivers.push(labelLayer);
+            }
+          }
         }
       }
 
@@ -1068,8 +1202,29 @@ HTML_TEMPLATE = Template(
           if (!r.geometry) continue;
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
-          const layer = addGeoJSON(r.geometry, { style: { className } }, `${r.label}${r.note ? ' — ' + r.note : ''}`);
+          const layer = addGeoJSON(r.geometry, { style: { className } }, r.show_label ? undefined : `${r.label}${r.note ? ' — ' + r.note : ''}`);
           layers.rivers.push(layer);
+          
+          // Add label if show_label is true
+          if (r.show_label) {
+            const labelInfo = calculateRiverLabelPosition(r.geometry, r.label);
+            if (labelInfo) {
+              let labelClassName = 'river-label-container';
+              let innerClassName = 'text-label river-label';
+              if (r.classes) innerClassName += ' ' + r.classes;
+              
+              // Use divIcon with rotation and perpendicular offset
+              const labelDiv = L.divIcon({
+                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-8px); white-space: nowrap;">${r.label}</div>`,
+                className: labelClassName,
+                iconSize: [1, 1],
+                iconAnchor: [0, 0]
+              });
+              
+              const labelLayer = L.marker([labelInfo.position[0], labelInfo.position[1]], { icon: labelDiv }).addTo(map);
+              layers.rivers.push(labelLayer);
+            }
+          }
         }
       }
 
