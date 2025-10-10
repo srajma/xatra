@@ -541,7 +541,7 @@ HTML_TEMPLATE = Template(
               
               // Use divIcon with rotation and perpendicular offset
               const labelDiv = L.divIcon({
-                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-8px); white-space: nowrap;">${r.label}</div>`,
+                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-16px); white-space: nowrap;">${r.label}</div>`,
                 className: labelClassName,
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
@@ -1264,7 +1264,7 @@ HTML_TEMPLATE = Template(
               
               // Use divIcon with rotation and perpendicular offset
               const labelDiv = L.divIcon({
-                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-8px); white-space: nowrap;">${r.label}</div>`,
+                html: `<div class="${innerClassName}" style="transform: rotate(${labelInfo.angle}deg) translateY(-16px); white-space: nowrap;">${r.label}</div>`,
                 className: labelClassName,
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
