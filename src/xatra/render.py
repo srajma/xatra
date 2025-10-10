@@ -238,21 +238,27 @@ HTML_TEMPLATE = Template(
           return null; // Unsupported geometry type
         }
         
-        // Calculate centroid of all points
-        let totalLat = 0, totalLon = 0, totalPoints = 0;
+        // Calculate bounding box center
+        let minLat = Infinity, maxLat = -Infinity;
+        let minLon = Infinity, maxLon = -Infinity;
+        
         for (const lineString of allCoords) {
           for (const coord of lineString) {
-            totalLon += coord[0];
-            totalLat += coord[1];
-            totalPoints++;
+            const lon = coord[0];
+            const lat = coord[1];
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lon < minLon) minLon = lon;
+            if (lon > maxLon) maxLon = lon;
           }
         }
         
-        if (totalPoints === 0) return null;
+        if (!isFinite(minLat) || !isFinite(maxLat)) return null;
         
-        const centroid = [totalLat / totalPoints, totalLon / totalPoints];
+        // Center of bounding box
+        const center = [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
         
-        // Find the nearest point on any LineString to the centroid
+        // Find the nearest point on any LineString to the bounding box center
         let nearestPoint = null;
         let nearestDistance = Infinity;
         let nearestLineString = null;
@@ -264,8 +270,8 @@ HTML_TEMPLATE = Template(
             const p1 = [lineString[i][1], lineString[i][0]]; // [lat, lon]
             const p2 = [lineString[i+1][1], lineString[i+1][0]]; // [lat, lon]
             
-            // Find nearest point on segment p1-p2 to centroid
-            const result = nearestPointOnSegment(centroid, p1, p2);
+            // Find nearest point on segment p1-p2 to bounding box center
+            const result = nearestPointOnSegment(center, p1, p2);
             
             if (result.distance < nearestDistance) {
               nearestDistance = result.distance;
@@ -542,7 +548,7 @@ HTML_TEMPLATE = Template(
               // Use divIcon with nested divs for rotation and translation
               // Outer div: rotation (inline), Inner div: translation (CSS customizable)
               const labelDiv = L.divIcon({
-                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-16px); white-space: nowrap;">${r.label}</div></div>`,
+                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${r.label}</div></div>`,
                 className: labelClassName,
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
@@ -1266,7 +1272,7 @@ HTML_TEMPLATE = Template(
               // Use divIcon with nested divs for rotation and translation
               // Outer div: rotation (inline), Inner div: translation (CSS customizable)
               const labelDiv = L.divIcon({
-                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-16px); white-space: nowrap;">${r.label}</div></div>`,
+                html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${r.label}</div></div>`,
                 className: labelClassName,
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]

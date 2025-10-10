@@ -1003,14 +1003,14 @@ map.show()
 ```
 
 **River Label Algorithm:** For rivers with complex geometries (including MultiLineString with potentially disconnected segments):
-1. Calculates the geometric centroid of all river coordinates
-2. Finds the nearest point on any of the river's line segments to that centroid
+1. Calculates the center of the river's bounding box (min/max lat/lon)
+2. Finds the nearest point on any of the river's line segments to that bounding box center
 3. Places the label at that nearest point
 4. Estimates the label length and finds points at that distance on either side along the river
 5. Calculates rotation angle between those distant points (for smooth angle on curvy rivers)
 6. Translates the label 16px perpendicular to the river for better visibility
 
-This approach works robustly for any river geometry structure, placing the label at a geometrically central location on the actual river course.
+This approach is simple, efficient, and works robustly for any river geometry structure, placing the label at a geographically central location on the actual river course.
 
 **Styling Labels:**
 
