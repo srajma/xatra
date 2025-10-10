@@ -72,11 +72,13 @@ class PathEntry:
         coords: List of (latitude, longitude) coordinate tuples
         classes: Optional CSS classes for styling
         period: Optional time period as (start_year, end_year) tuple
+        show_label: If True, display label next to the path instead of in tooltip
     """
     label: str
     coords: List[Tuple[float, float]]
     classes: Optional[str] = None
     period: Optional[Tuple[int, int]] = None
+    show_label: bool = False
 
 
 @dataclass
@@ -88,11 +90,13 @@ class PointEntry:
         position: (latitude, longitude) coordinate tuple
         period: Optional time period as (start_year, end_year) tuple
         icon: Optional custom icon for the marker
+        show_label: If True, display label next to the point instead of in tooltip
     """
     label: str
     position: Tuple[float, float]
     period: Optional[Tuple[int, int]] = None
     icon: Optional[Any] = None  # Icon type imported later to avoid circular imports
+    show_label: bool = False
 
 
 @dataclass
@@ -673,7 +677,7 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes, period=period_tuple))
 
-    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
         """Add a path/route to the map.
         
         Args:
@@ -681,9 +685,11 @@ class FlagMap:
             value: List of [latitude, longitude] coordinate pairs
             classes: Optional CSS classes for styling
             period: Optional time period as [start_year, end_year] list
+            show_label: If True, display label next to the path instead of in tooltip
             
         Example:
             >>> map.Path("Silk Road", [[40.0, 74.0], [35.0, 103.0]], classes="trade-route")
+            >>> map.Path("Trade Route", [[40.0, 74.0], [35.0, 103.0]], show_label=True)
         """
         coords = [(float(lat), float(lon)) for lat, lon in value]
         period_tuple: Optional[Tuple[int, int]] = None
@@ -691,9 +697,9 @@ class FlagMap:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple))
+        self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple, show_label=show_label))
 
-    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Any] = None) -> None:
+    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False) -> None:
         """Add a point of interest to the map.
         
         Args:
@@ -701,6 +707,7 @@ class FlagMap:
             position: [latitude, longitude] coordinate pair
             period: Optional time period as [start_year, end_year] list
             icon: Optional Icon instance for custom marker appearance
+            show_label: If True, display label next to the point instead of in tooltip
             
         Example:
             >>> map.Point("Delhi", [28.6139, 77.2090], period=[1200, 1800])
@@ -709,13 +716,16 @@ class FlagMap:
             >>> from xatra.icon import Icon
             >>> icon = Icon.builtin("star.png", icon_size=(32, 32))
             >>> map.Point("Capital", [28.6, 77.2], icon=icon)
+            >>> 
+            >>> # With label displayed next to the point
+            >>> map.Point("Delhi", [28.6139, 77.2090], show_label=True)
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple, icon=icon))
+        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple, icon=icon, show_label=show_label))
 
     def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         """Add a text label to the map.
@@ -1172,6 +1182,7 @@ class FlagMap:
                     "coords": p.coords,
                     "classes": p.classes,
                     "period": list(restricted_period) if restricted_period is not None else None,
+                    "show_label": p.show_label,
                 })
 
         points_serialized = []
@@ -1183,6 +1194,7 @@ class FlagMap:
                     "label": p.label,
                     "position": p.position,
                     "period": list(restricted_period) if restricted_period is not None else None,
+                    "show_label": p.show_label,
                 }
                 # Add icon data if present
                 if p.icon is not None:

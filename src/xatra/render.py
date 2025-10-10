@@ -375,9 +375,57 @@ HTML_TEMPLATE = Template(
           let className = 'path';
           if (p.classes) className += ' ' + p.classes;
           const layer = L.polyline(latlngs, { className });
-          layer.bindTooltip(p.label);
+          if (!p.show_label) {
+            layer.bindTooltip(p.label);
+          }
           layer._pathData = { period: p.period };
           layers.paths.push(layer);
+          
+          // Add label at midpoint if show_label is true
+          if (p.show_label && latlngs.length > 0) {
+            // Calculate midpoint along the path (by distance, not by index)
+            let totalDistance = 0;
+            const distances = [0];
+            for (let i = 1; i < latlngs.length; i++) {
+              const d = Math.sqrt(
+                Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+              );
+              totalDistance += d;
+              distances.push(totalDistance);
+            }
+            
+            const halfDistance = totalDistance / 2;
+            let midpoint = latlngs[0];
+            
+            // Find the segment containing the midpoint
+            for (let i = 1; i < distances.length; i++) {
+              if (distances[i] >= halfDistance) {
+                const segmentStart = distances[i - 1];
+                const segmentEnd = distances[i];
+                const t = (halfDistance - segmentStart) / (segmentEnd - segmentStart);
+                
+                // Interpolate between points
+                midpoint = [
+                  latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
+                  latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
+                ];
+                break;
+              }
+            }
+            
+            let labelClassName = 'text-label path-label';
+            if (p.classes) labelClassName += ' ' + p.classes;
+            const labelLayer = L.marker(midpoint, { opacity: 0.0 });
+            labelLayer.bindTooltip(p.label, { 
+              permanent: true, 
+              direction: 'center', 
+              className: labelClassName,
+              offset: [0, 0]
+            });
+            labelLayer._pathData = { period: p.period };
+            layers.paths.push(labelLayer);
+          }
         }
       }
 
@@ -397,9 +445,24 @@ HTML_TEMPLATE = Template(
             markerOptions.icon = L.icon(iconOptions);
           }
           const layer = L.marker([p.position[0], p.position[1]], markerOptions);
-          layer.bindTooltip(p.label);
+          if (!p.show_label) {
+            layer.bindTooltip(p.label);
+          }
           layer._pointData = { period: p.period };
           layers.points.push(layer);
+          
+          // Add label next to point if show_label is true
+          if (p.show_label) {
+            const labelLayer = L.marker([p.position[0], p.position[1]], { opacity: 0.0 });
+            labelLayer.bindTooltip(p.label, { 
+              permanent: true, 
+              direction: 'right', 
+              className: 'text-label point-label',
+              offset: [10, 0]
+            });
+            labelLayer._pointData = { period: p.period };
+            layers.points.push(labelLayer);
+          }
         }
       }
 
@@ -964,8 +1027,55 @@ HTML_TEMPLATE = Template(
           const latlngs = p.coords.map(([lat, lon]) => [lat, lon]);
           let className = 'path';
           if (p.classes) className += ' ' + p.classes;
-          const layer = L.polyline(latlngs, { className }).addTo(map).bindTooltip(p.label);
+          const layer = L.polyline(latlngs, { className }).addTo(map);
+          if (!p.show_label) {
+            layer.bindTooltip(p.label);
+          }
           layers.paths.push(layer);
+          
+          // Add label at midpoint if show_label is true
+          if (p.show_label && latlngs.length > 0) {
+            // Calculate midpoint along the path (by distance, not by index)
+            let totalDistance = 0;
+            const distances = [0];
+            for (let i = 1; i < latlngs.length; i++) {
+              const d = Math.sqrt(
+                Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+                Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+              );
+              totalDistance += d;
+              distances.push(totalDistance);
+            }
+            
+            const halfDistance = totalDistance / 2;
+            let midpoint = latlngs[0];
+            
+            // Find the segment containing the midpoint
+            for (let i = 1; i < distances.length; i++) {
+              if (distances[i] >= halfDistance) {
+                const segmentStart = distances[i - 1];
+                const segmentEnd = distances[i];
+                const t = (halfDistance - segmentStart) / (segmentEnd - segmentStart);
+                
+                // Interpolate between points
+                midpoint = [
+                  latlngs[i-1][0] + t * (latlngs[i][0] - latlngs[i-1][0]),
+                  latlngs[i-1][1] + t * (latlngs[i][1] - latlngs[i-1][1])
+                ];
+                break;
+              }
+            }
+            
+            let labelClassName = 'text-label path-label';
+            if (p.classes) labelClassName += ' ' + p.classes;
+            const labelLayer = L.marker(midpoint, { opacity: 0.0 }).addTo(map).bindTooltip(p.label, { 
+              permanent: true, 
+              direction: 'center', 
+              className: labelClassName,
+              offset: [0, 0]
+            });
+            layers.paths.push(labelLayer);
+          }
         }
       }
 
@@ -985,8 +1095,22 @@ HTML_TEMPLATE = Template(
             if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
             markerOptions.icon = L.icon(iconOptions);
           }
-          const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map).bindTooltip(p.label);
+          const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map);
+          if (!p.show_label) {
+            layer.bindTooltip(p.label);
+          }
           layers.points.push(layer);
+          
+          // Add label next to point if show_label is true
+          if (p.show_label) {
+            const labelLayer = L.marker([p.position[0], p.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(p.label, { 
+              permanent: true, 
+              direction: 'right', 
+              className: 'text-label point-label',
+              offset: [10, 0]
+            });
+            layers.points.push(labelLayer);
+          }
         }
       }
 

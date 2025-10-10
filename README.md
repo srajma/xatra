@@ -305,8 +305,8 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
-- **`Path(label, coords, classes=None, period=None)`**: Add a path/route
-- **`Point(label, position, period=None, icon=None)`**: Add a point of interest with optional custom icon
+- **`Path(label, coords, classes=None, period=None, show_label=False)`**: Add a path/route with optional label display
+- **`Point(label, position, period=None, icon=None, show_label=False)`**: Add a point of interest with optional custom icon and label display
 - **`Text(label, position, classes=None, period=None)`**: Add a text label
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
 
@@ -845,6 +845,87 @@ map.TitleBox("<b>Custom Marker Icons Example</b><br>Demonstrating different icon
 # Export the map
 map.show(out_json="tests/map_icons.json", out_html="tests/map_icons.html")
 print("Map with custom icons exported to map_icons.html")
+```
+
+### Point and Path Labels
+
+By default, Points and Paths display their labels in tooltips (on hover). You can optionally display the label directly on the map next to the element using the `show_label` parameter.
+
+#### Point Labels
+
+For Points, setting `show_label=True` displays the label to the right of the point marker:
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Default: label appears in tooltip on hover
+map.Point(label="Mumbai", position=[19.0, 73.0])
+
+# With show_label: label appears next to the point
+map.Point(label="Delhi", position=[28.6, 77.2], show_label=True)
+
+map.show()
+```
+
+#### Path Labels
+
+For Paths, setting `show_label=True` calculates the midpoint along the path (by distance, not by index) and displays the label there:
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Default: label appears in tooltip on hover
+map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]])
+
+# With show_label: label appears at the midpoint of the path
+map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
+
+map.show()
+```
+
+**Styling Labels:**
+
+You can style Point and Path labels using CSS. Labels have the classes `point-label` and `path-label` respectively, in addition to the `text-label` class:
+
+```python
+map.CSS("""
+.point-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #cc0000;
+  background: rgba(255,255,255,0.8);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.path-label {
+  font-size: 16px;
+  color: #0066cc;
+  font-style: italic;
+  background: rgba(255,255,255,0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #0066cc;
+}
+
+/* You can also use custom classes */
+.trade-route .path-label {
+  color: #ff9900;
+  border-color: #ff9900;
+}
+""")
+
+map.Path(label="Trade Route", value=[[28,77],[30,90],[40,120]], show_label=True, classes="trade-route")
 ```
 
 ## Performance
