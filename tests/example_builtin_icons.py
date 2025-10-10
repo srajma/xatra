@@ -105,29 +105,6 @@ om_icon = Icon.builtin(
 )
 map.Point(label="Hindu Temple", position=[27.2, 77.4], icon=om_icon)
 
-crescent_icon = Icon.builtin(
-    "symbol-crescent-star.svg",
-    icon_size=(32, 32),
-    icon_anchor=(16, 16),
-    popup_anchor=(0, -16)
-)
-map.Point(label="Mosque", position=[31.2, 29.9], icon=crescent_icon)
-
-cross_icon = Icon.builtin(
-    "symbol-cross.svg",
-    icon_size=(32, 32),
-    icon_anchor=(16, 16),
-    popup_anchor=(0, -16)
-)
-map.Point(label="Church", position=[41.9, 12.5], icon=cross_icon)
-
-star_david_icon = Icon.builtin(
-    "symbol-star-david.svg",
-    icon_size=(32, 32),
-    icon_anchor=(16, 16),
-    popup_anchor=(0, -16)
-)
-map.Point(label="Synagogue", position=[31.8, 35.2], icon=star_david_icon)
 
 # Example 6: Notable location (exclamation)
 important_icon = Icon.builtin(

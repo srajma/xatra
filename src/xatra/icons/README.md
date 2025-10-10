@@ -33,30 +33,34 @@ To add a new built-in icon:
 
 This directory includes several SVG icons for different map needs:
 
-### Historical/Archaeological Icons
-- `city.png` - Ancient Indian city marker
+### Cities and buildings
+- `city.png` - City in ancient Indian style
 - `temple.svg` - Hindu temple with shikhara (spire) and traditional architectural elements
 - `temple-nagara.svg` - Nagara-style temple with shikhara over garbhagriha and separate mandapa with tiered roof
 - `temple-gopuram.svg` - somewhat like Dravidian gopuram
-- `temple-pagoda.svg` - East Asian pagoda-style temple with multiple tiers and upward-curving roofs
+- `temple-nepali.svg` - somewhat Nepali temple
+- `temple-pagoda.svg` - somewhat pagoda-like temple
 - `temple-parthenon.svg` - Classical Greek Parthenon-style temple with columns and pediment
 - `fort.svg` - Fortress or citadel with crenellations and central tower
-
-### Infrastructure Icons
 - `port.svg` - Seaport with ship, dock, cranes, and cargo containers
 
-### Religious Symbols
-- `symbol-om.svg` - Hindu Om symbol (sacred syllable)
-- `symbol-swastika.svg` - Traditional swastika symbol (Hindu/Buddhist)
-- `symbol-crescent-star.svg` - Islamic crescent moon and star
-- `symbol-cross.svg` - Christian cross
-- `symbol-star-david.svg` - Jewish Star of David (Magen David)
-- `symbol-zoroastrian.svg` - Zoroastrian Faravahar symbol
+
 
 ### General Purpose Icons
 - `star.svg` - Five-pointed star for important or significant locations
 - `important.svg` - Exclamation mark in a circle for urgent/notable places
 - `example.svg` - Simple circular marker with exclamation point
+- `symbol-om.svg` - Hindu Om symbol (sacred syllable)
+
+### Geometric Shape Icons
+Simple geometric markers in dark blue for basic map annotations:
+- `disk.svg` - Filled circle/disk
+- `circle.svg` - Empty circle (outline only)
+- `cross.svg` - X shape (cross)
+- `plus.svg` - + shape (plus sign)
+- `rectangle.svg` - Filled square
+- `diamond.svg` - Filled diamond shape
+- `triangle.svg` - Filled triangle (pointing upward)
 
 ### Adding More Icons
 
