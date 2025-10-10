@@ -62,6 +62,11 @@ Simple geometric markers in dark blue for basic map annotations:
 - `diamond.svg` - Filled diamond shape
 - `triangle.svg` - Filled triangle (pointing upward)
 
+### Religious Symbols
+- `symbol-cross.svg` - Christian cross
+- `symbol-star.svg` - Jewish Star of David (Magen David)
+- `symbol-muslim.svg` - Islamic crescent moon and star
+
 ### Adding More Icons
 
 You can add your own icons following these guidelines:
