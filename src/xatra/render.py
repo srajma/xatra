@@ -255,8 +255,9 @@ HTML_TEMPLATE = Template(
         // Find the nearest point on any LineString to the centroid
         let nearestPoint = null;
         let nearestDistance = Infinity;
-        let nearestSegmentStart = null;
-        let nearestSegmentEnd = null;
+        let nearestLineString = null;
+        let nearestSegmentIndex = -1;
+        let nearestT = 0; // Position along the segment (0 to 1)
         
         for (const lineString of allCoords) {
           for (let i = 0; i < lineString.length - 1; i++) {
@@ -269,19 +270,67 @@ HTML_TEMPLATE = Template(
             if (result.distance < nearestDistance) {
               nearestDistance = result.distance;
               nearestPoint = result.point;
-              nearestSegmentStart = p1;
-              nearestSegmentEnd = p2;
+              nearestLineString = lineString;
+              nearestSegmentIndex = i;
+              nearestT = result.t;
             }
           }
         }
         
-        if (!nearestPoint) return null;
+        if (!nearestPoint || !nearestLineString) return null;
         
-        // Calculate angle based on the segment containing the nearest point
+        // Calculate angle based on points at label-length distance from nearest point
+        // Estimate label length (roughly 10 pixels per character at default font size)
+        const estimatedLabelLength = label.length * 0.15; // in degrees
+        
+        // Convert LineString to lat/lon format
+        const latlngs = nearestLineString.map(coord => [coord[1], coord[0]]);
+        
+        // Calculate position of nearest point along the LineString
+        let distanceToNearest = 0;
+        for (let i = 0; i < nearestSegmentIndex; i++) {
+          distanceToNearest += Math.sqrt(
+            Math.pow(latlngs[i+1][0] - latlngs[i][0], 2) +
+            Math.pow(latlngs[i+1][1] - latlngs[i][1], 2)
+          );
+        }
+        // Add the fractional distance within the nearest segment
+        distanceToNearest += nearestT * Math.sqrt(
+          Math.pow(latlngs[nearestSegmentIndex+1][0] - latlngs[nearestSegmentIndex][0], 2) +
+          Math.pow(latlngs[nearestSegmentIndex+1][1] - latlngs[nearestSegmentIndex][1], 2)
+        );
+        
+        // Find points at estimated label distance on either side
+        let startPoint = null;
+        let endPoint = null;
+        
+        // Search backwards from nearest point
+        let accumulatedDist = 0;
+        for (let i = nearestSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
+          startPoint = latlngs[i];
+          if (i > 0) {
+            accumulatedDist += Math.sqrt(
+              Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+              Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+            );
+          }
+        }
+        
+        // Search forwards from nearest point
+        accumulatedDist = 0;
+        for (let i = nearestSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
+          endPoint = latlngs[i];
+          accumulatedDist += Math.sqrt(
+            Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
+            Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
+          );
+        }
+        
+        // Calculate angle between distant points
         let angle = 0;
-        if (nearestSegmentStart && nearestSegmentEnd) {
-          const dx = nearestSegmentEnd[1] - nearestSegmentStart[1]; // longitude difference
-          const dy = nearestSegmentEnd[0] - nearestSegmentStart[0]; // latitude difference
+        if (startPoint && endPoint) {
+          const dx = endPoint[1] - startPoint[1]; // longitude difference
+          const dy = endPoint[0] - startPoint[0]; // latitude difference
           angle = -Math.atan2(dy, dx) * 180 / Math.PI;
           
           // Normalize angle to keep text readable
@@ -303,7 +352,7 @@ HTML_TEMPLATE = Template(
             Math.pow(point[0] - segmentStart[0], 2) +
             Math.pow(point[1] - segmentStart[1], 2)
           );
-          return { point: segmentStart, distance: dist };
+          return { point: segmentStart, distance: dist, t: 0 };
         }
         
         // Calculate projection parameter t
@@ -324,7 +373,7 @@ HTML_TEMPLATE = Template(
           Math.pow(point[1] - nearest[1], 2)
         );
         
-        return { point: nearest, distance: dist };
+        return { point: nearest, distance: dist, t: t };
       }
 
       function createAllLayers() {
