@@ -9,7 +9,7 @@ Kanging
 
 Development
 - [x] option for different point markers besides pin
-- [ ] option for point labels, river labels
+- [x] option for point labels, river labels
 - [ ] grouping of map elements and layer selection
 - [ ] ideally make it so hovering hovers on *all* flags/elements at that point
 - [ ] "get current map" similar to matplotlib, to make maps more modular
@@ -931,7 +931,18 @@ This approach works robustly for any river geometry structure, placing the label
 
 You can style Point, Path, and River labels using CSS. Labels have the classes `point-label`, `path-label`, and `river-label` respectively, in addition to the `text-label` class.
 
-**Customizing Offset Distance:** The perpendicular offset can be customized via CSS using the `transform: translateY()` property. Default offsets are: Points (10px right), Paths (8px perpendicular), Rivers (16px perpendicular).
+**Customizing Offset Distance:** 
+
+Labels use nested divs to separate rotation (calculated automatically) from translation (customizable via CSS):
+- **Outer div**: Applies rotation based on path/river direction (set via inline style, not customizable)
+- **Inner div**: Applies perpendicular offset using `transform: translateY()` (fully customizable via CSS)
+
+This structure allows you to customize the offset distance without affecting the rotation. Default offsets are:
+- **Points**: 10px to the right
+- **Paths**: 8px perpendicular
+- **Rivers**: 16px perpendicular
+
+To customize the offset, simply override the `transform` property on the label class:
 
 ```python
 map.CSS("""
