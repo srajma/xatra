@@ -18,7 +18,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from shapely.geometry import shape, mapping
 from shapely.ops import unary_union
 
+from .debug_utils import time_debug
 
+
+@time_debug("Compute centroid")
 def _compute_centroid_for_geometry(geometry: Dict[str, Any]) -> Optional[List[float]]:
     """Compute centroid for a GeoJSON geometry.
     
@@ -115,6 +118,7 @@ def _to_shape(geojson):
     return shape(geojson)
 
 
+@time_debug("Paxmax aggregation")
 def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int = None) -> Dict[str, Any]:
     """Aggregate flags using the pax-max method for dynamic maps.
     
@@ -236,6 +240,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
     return {"mode": "dynamic", "breakpoints": breakpoints, "snapshots": snapshots}
 
 
+@time_debug("Filter by period")
 def filter_by_period(items: List[Dict[str, Any]], year: int) -> List[Dict[str, Any]]:
     """Filter items by period for a given year.
     

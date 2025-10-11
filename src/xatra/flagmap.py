@@ -20,6 +20,7 @@ from .territory import Territory
 from .render import export_html
 from .paxmax import paxmax_aggregate
 from .colorseq import ColorSequence, LinearColorSequence
+from .debug_utils import time_debug
 
 
 GeometryLike = Union[Territory, Dict[str, Any]]
@@ -509,6 +510,7 @@ class FlagMap:
         
         self._data.append(DataEntry(gadm=gadm, value=value, period=period_tuple, classes=classes, find_in_gadm=find_in_gadm))
 
+    @time_debug("Add Dataframe")
     def Dataframe(self, dataframe, data_column: Optional[str] = None, year_columns: Optional[List[str]] = None, classes: Optional[str] = None, find_in_gadm: Optional[List[str]] = None) -> None:
         """Add a DataFrame-based data visualization to the map.
         
@@ -618,6 +620,7 @@ class FlagMap:
             find_in_gadm=find_in_gadm
         ))
 
+    @time_debug("Add Flag")
     def Flag(self, label: str, value: Territory, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
@@ -673,6 +676,7 @@ class FlagMap:
         
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color, classes=classes))
 
+    @time_debug("Add River")
     def River(self, label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1, hover_radius: int = 10) -> None:
         """Add a river to the map.
         
@@ -698,6 +702,7 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels, hover_radius=hover_radius))
 
+    @time_debug("Add Path")
     def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1, hover_radius: int = 10) -> None:
         """Add a path/route to the map.
         
@@ -723,6 +728,7 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels, hover_radius=hover_radius))
 
+    @time_debug("Add Point")
     def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20) -> None:
         """Add a point of interest to the map.
         
@@ -752,6 +758,7 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius))
 
+    @time_debug("Add Text")
     def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         """Add a text label to the map.
         
@@ -771,6 +778,7 @@ class FlagMap:
             period_tuple = (int(period[0]), int(period[1]))
         self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), classes=classes, period=period_tuple))
 
+    @time_debug("Add TitleBox")
     def TitleBox(self, html: str, period: Optional[List[int]] = None) -> None:
         """Add a title box with HTML content to the map.
         
@@ -879,6 +887,7 @@ class FlagMap:
         # let's not do this, because it makes it impossible to override the default
         pass
 
+    @time_debug("Add Admin regions")
     def Admin(self, gadm: str, level: int, period: Optional[List[int]] = None, classes: Optional[str] = None, color_by_level: int = 1, find_in_gadm: Optional[List[str]] = None) -> None:
         """Add administrative regions from GADM data.
         
@@ -903,6 +912,7 @@ class FlagMap:
         
         self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes, color_by_level=color_by_level, find_in_gadm=find_in_gadm))
 
+    @time_debug("Add AdminRivers")
     def AdminRivers(self, period: Optional[List[int]] = None, classes: Optional[str] = None, sources: Optional[List[str]] = None, show_label: bool = False, n_labels: int = 1) -> None:
         """Add rivers from specified data sources.
         
@@ -1087,6 +1097,7 @@ class FlagMap:
                    (len(str(feature_gid)) == len(gid) or str(feature_gid)[len(gid)] in ['.', '_']))
 
 
+    @time_debug("Export to JSON")
     def _export_json(self) -> Dict[str, Any]:
         """Export map data to JSON format for rendering.
         
@@ -1734,6 +1745,7 @@ class FlagMap:
                 "colormap_info": self._serialize_colormap_info(all_dataframe_values) if self._data_colormap is not None else None,
         }
 
+    @time_debug("Show (export map)")
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
         """Export the map to JSON and HTML files.
         

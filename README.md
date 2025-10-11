@@ -7,7 +7,7 @@ Kanging
 - [x] GDP per capita map
 - [x] admin map
 
-Development
+Features
 - [x] Orient flag labels in direction of flag
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels
@@ -25,6 +25,10 @@ Development
 - [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
 - [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly
 - [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
+
+Dev
+- [ ] Get it in a publishable state
+- [ ] time debugging
 
 Interactive platform
 - [ ] DSL
@@ -1223,6 +1227,72 @@ Xatra is optimized for large, complex maps with many elements:
 - **Centroid Pre-computation**: Flag centroids are calculated once during export, not on every render
 - **Layer Visibility Toggling**: Dynamic maps use efficient visibility toggling instead of recreating layers
 - **Memory Management**: Use `clear_file_cache()` to free memory when working with very large datasets
+
+### Time Debugging
+
+Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps.
+
+```python
+import xatra
+
+xatra.set_debug_time(True)
+
+# Now create your map - all operations will be timed
+map = xatra.FlagMap()
+map.Flag("India", xatra.gadm("IND"))
+map.show()
+```
+
+When time debugging is enabled, you'll see timing information for:
+
+**Data Loading Operations:**
+- Loading GADM data files
+- Loading Natural Earth features
+- Loading Overpass data
+- Reading JSON files from disk (with cache hits/misses)
+- Converting GeoJSON to Shapely geometries
+
+**Map Element Operations:**
+- Adding Flags, Rivers, Paths, Points, Text, etc.
+- Adding Admin regions
+- Adding DataFrames
+
+**Processing Operations:**
+- Territory geometry conversions
+- Pax-max aggregation for dynamic maps
+- Centroid calculations
+- Period filtering
+
+**Export Operations:**
+- Exporting to JSON format
+- Exporting to HTML format
+
+```
+[14:23:45] → START: Add Flag
+[14:23:45]   args: 'India', <Territory object at 0x...>
+[14:23:45]   → START: Load GADM data
+[14:23:45]     → START: Load GADM-like data
+[14:23:45]       → START: Read JSON file
+[14:23:45]       ✓ FINISH: Read JSON file
+[14:23:45]     ✓ FINISH: Load GADM-like data
+[14:23:45]   ✓ FINISH: Load GADM data
+[14:23:45] ✓ FINISH: Add Flag
+[14:23:46] → START: Show (export map)
+[14:23:46]   → START: Export to JSON
+[14:23:46]     → START: Paxmax aggregation
+[14:23:46]     ✓ FINISH: Paxmax aggregation
+[14:23:47]   ✓ FINISH: Export to JSON
+[14:23:47]   → START: Export to HTML
+[14:23:47]   ✓ FINISH: Export to HTML
+[14:23:47] ✓ FINISH: Show (export map)
+```
+
+To disable Time Debugging:
+
+```python
+# Disable time debugging
+xatra.set_debug_time(False)
+```
 
 ## Data Sources
 

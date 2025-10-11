@@ -22,6 +22,8 @@ from typing import Any, Dict
 
 from jinja2 import Template
 
+from .debug_utils import time_debug
+
 
 HTML_TEMPLATE = Template(
     r"""
@@ -2618,6 +2620,7 @@ HTML_TEMPLATE = Template(
 )
 
 
+@time_debug("Export to HTML")
 def export_html(payload: Dict[str, Any], out_html: str) -> None:
     """Export map data to an interactive HTML file.
     

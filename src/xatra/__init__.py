@@ -33,6 +33,7 @@ from .flagmap import FlagMap
 from .territory import Territory
 from .loaders import gadm, naturalearth, overpass
 from .icon import Icon
+from . import debug_utils
 
 # Import pyplot-style functions
 from .pyplot import (
@@ -57,6 +58,29 @@ from .pyplot import (
     slider,
     show,
 )
+
+
+# Debugging flags
+DEBUG_TIME = False
+
+
+def set_debug_time(enabled: bool):
+    """Enable or disable time debugging throughout xatra.
+    
+    When enabled, all major operations will print timing information
+    showing when activities start and finish with HH:MM:SS timestamps.
+    
+    Args:
+        enabled: True to enable time debugging, False to disable
+        
+    Example:
+        >>> import xatra
+        >>> xatra.set_debug_time(True)
+        >>> xatra.DEBUG_TIME = True  # Alternative way
+    """
+    global DEBUG_TIME
+    DEBUG_TIME = enabled
+    debug_utils.DEBUG_TIME = enabled
 
 __version__ = "0.1.0"
 __all__ = [
@@ -89,4 +113,7 @@ __all__ = [
     "AdminRivers",
     "slider",
     "show",
+    # Debug utilities
+    "DEBUG_TIME",
+    "set_debug_time",
 ]

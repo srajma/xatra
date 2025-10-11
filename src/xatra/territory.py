@@ -18,8 +18,10 @@ from shapely.geometry import shape, mapping
 from shapely.ops import unary_union
 
 from .loaders import load_gadm_like, load_naturalearth_like
+from .debug_utils import time_debug
 
 
+@time_debug("Convert GeoJSON to geometry")
 def _geojson_to_geometry(geojson_obj: Dict[str, Any]):
     """Convert GeoJSON object to Shapely geometry.
     
@@ -103,6 +105,7 @@ class Territory:
             return _geojson_to_geometry(obj)
         return Territory(_geometry_provider=provider)
 
+    @time_debug("Convert territory to geometry")
     def to_geometry(self):
         """Get the Shapely geometry for this territory.
         

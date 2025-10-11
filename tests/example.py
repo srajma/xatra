@@ -6,6 +6,8 @@ from xatra.territory_library import NORTH_INDIA
 from xatra.colorseq import LinearColorSequence
 from matplotlib.colors import LinearSegmentedColormap
 
+xatra.set_debug_time(True)
+
 # Create a test map
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)

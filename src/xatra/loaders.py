@@ -14,6 +14,8 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
+from .debug_utils import time_debug
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 GADM_DIR = os.path.join(DATA_DIR, "gadm")
 DISPUTED_DIR = os.path.join(DATA_DIR, "disputed_territories")
@@ -27,6 +29,7 @@ _disputed_mapping_cache: Optional[Dict[str, Any]] = None
 
 DEBUG_FILE_CACHE = False
 
+@time_debug("Read JSON file")
 def _read_json(path: str):
     """Read JSON file from disk with caching.
     
@@ -52,6 +55,7 @@ def _read_json(path: str):
     return _file_cache[path]
 
 
+@time_debug("Clear file cache")
 def clear_file_cache():
     """Clear the file cache to free memory.
     
@@ -64,6 +68,7 @@ def clear_file_cache():
     _disputed_mapping_cache = None
 
 
+@time_debug("Load disputed mapping")
 def _load_disputed_mapping() -> Optional[Dict[str, Any]]:
     global _disputed_mapping_cache
     if _disputed_mapping_cache is not None:
@@ -107,6 +112,7 @@ def _compute_find_in_gadm_default(key: str) -> Optional[List[str]]:
     return countries or None
 
 
+@time_debug("Load GADM data")
 def gadm(key: str, find_in_gadm: Optional[List[str]] = None):
     """Load GADM administrative boundary as Territory.
     
@@ -121,6 +127,7 @@ def gadm(key: str, find_in_gadm: Optional[List[str]] = None):
     return Territory.from_gadm(key, find_in_gadm)
 
 
+@time_debug("Load Natural Earth feature")
 def naturalearth(ne_id: str) -> Dict[str, Any]:
     """Return GeoJSON Feature for a Natural Earth feature id from a monolithic file.
 
@@ -148,6 +155,7 @@ def naturalearth(ne_id: str) -> Dict[str, Any]:
     raise KeyError(f"ne_id {ne_id} not found in {NE_RIVERS_FILE}")
 
 
+@time_debug("Load Overpass data")
 def overpass(osm_id: str) -> Dict[str, Any]:
     """Return a GeoJSON Feature or FeatureCollection for an Overpass river by id.
 
@@ -211,6 +219,7 @@ def overpass(osm_id: str) -> Dict[str, Any]:
     return {"type": "Feature", "properties": {"source": os.path.basename(path)}, "geometry": geometry}
 
 
+@time_debug("Load GADM-like data")
 def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[str, Any]:
     """Load GADM geometry by key like 'IND' or 'IND.31' or deeper.
 
@@ -285,6 +294,7 @@ def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[s
     raise FileNotFoundError(f"GADM file not found: {path}")
 
 
+@time_debug("Load Natural Earth-like data")
 def load_naturalearth_like(ne_id: str) -> Dict[str, Any]:
     """Load Natural Earth feature as GeoJSON Feature.
     
