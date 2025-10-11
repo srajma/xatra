@@ -8,6 +8,7 @@ Kanging
 - [x] admin map
 
 Development
+- [ ] class-based show labels, etc.
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels
 - [x] option to create multiple path, river labels.
@@ -48,7 +49,8 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] River name rendering position is weird
+- [x] River name rendering position is weird
+- [x] River names don't render for overpass
 - [ ] Orient flag labels in direction of flag
 - [x] color bar hover on correct position
 - [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
