@@ -1367,7 +1367,7 @@ class FlagMap:
                     
                     # Load Natural Earth rivers if requested
                     if "naturalearth" in ar.sources:
-                        ne_rivers_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ne_10m_rivers.geojson")
+                        ne_rivers_file = os.path.join(os.path.dirname(__file__), "data", "ne_10m_rivers.geojson")
                         if os.path.exists(ne_rivers_file):
                             ne_data = _read_json(ne_rivers_file)
                             for feature in ne_data.get("features", []):
@@ -1379,7 +1379,7 @@ class FlagMap:
                     
                     # Load Overpass rivers if requested
                     if "overpass" in ar.sources:
-                        overpass_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "rivers_overpass_india")
+                        overpass_dir = os.path.join(os.path.dirname(__file__), "data", "rivers_overpass_india")
                         if os.path.isdir(overpass_dir):
                             for filename in os.listdir(overpass_dir):
                                 if filename.endswith('.json'):
@@ -1400,18 +1400,22 @@ class FlagMap:
                                         print(f"Warning: Could not load overpass file {filename}: {e}")
                                         continue
                     
-                    # Create a FeatureCollection with all rivers
-                    admin_rivers_geojson = {
-                        "type": "FeatureCollection",
-                        "features": all_rivers
-                    }
-                    
-                    admin_rivers_serialized.append({
-                        "geometry": admin_rivers_geojson,
-                        "classes": ar.classes,
-                        "period": list(restricted_period) if restricted_period is not None else None,
-                        "sources": ar.sources,
-                    })
+                    # Only create AdminRivers entry if we actually found rivers
+                    if all_rivers:
+                        # Create a FeatureCollection with all rivers
+                        admin_rivers_geojson = {
+                            "type": "FeatureCollection",
+                            "features": all_rivers
+                        }
+                        
+                        admin_rivers_serialized.append({
+                            "geometry": admin_rivers_geojson,
+                            "classes": ar.classes,
+                            "period": list(restricted_period) if restricted_period is not None else None,
+                            "sources": ar.sources,
+                        })
+                    else:
+                        print(f"Warning: No rivers found for AdminRivers with sources: {ar.sources}")
                 except Exception as e:
                     # Skip admin rivers that can't be loaded
                     print(f"Warning: Could not load admin rivers: {e}")
