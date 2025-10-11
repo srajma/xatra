@@ -1309,6 +1309,14 @@ HTML_TEMPLATE = Template(
           onEachFeature: function(feature, layer) {
             const props = feature.properties || {};
             
+            // For dynamic DataFrames, get the initial year's value
+            const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
+            const dataframeData = props._dataframe_data;
+            let value = null;
+            if (dataframeData && (currentYear in dataframeData)) {
+              value = dataframeData[currentYear];
+            }
+            
             let tooltip = '';
             let topName = '';
             if (props.NAME_3) topName = props.NAME_3;
@@ -1331,11 +1339,12 @@ HTML_TEMPLATE = Template(
             if (props.NAME_3) tooltip += `NAME_3: ${props.NAME_3}<br/>`;
             if (props.VARNAME_3 && props.VARNAME_3 !== 'NA') tooltip += `VARNAME_3: ${props.VARNAME_3}<br/>`;
             
-            // Add DataFrame value
-            if (props._dataframe_value !== undefined) tooltip += `Value: ${props._dataframe_value}<br/>`;
+            // Add DataFrame value for the initial year
+            if (value !== null && value !== undefined) {
+              tooltip += `Value (${currentYear}): ${value}<br/>`;
+            }
             
             // Add note for current year if available
-            const currentYear = window.currentYear || (df.years && df.years[0]) || 2020;
             const notes = props._dataframe_notes || {};
             if (notes && (currentYear in notes)) {
               tooltip += `Note (${currentYear}): ${notes[currentYear]}<br/>`;
@@ -2112,6 +2121,9 @@ HTML_TEMPLATE = Template(
                 
                 // Update tooltip
                 feature.setTooltipContent(tooltip);
+                
+                // Also update the multi-tooltip registration
+                registerLayerTooltip(feature, 'DataFrame', tooltip);
               }
             });
             
