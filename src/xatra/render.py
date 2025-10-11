@@ -588,19 +588,22 @@ HTML_TEMPLATE = Template(
               };
             }
             
-            const layer = L.geoJSON(f.geometry, flagStyle);
             const flagTooltip = `${f.label}${f.note ? ' — ' + f.note : ''}`;
-            layer.bindTooltip(flagTooltip, { 
-              direction: 'top',
-              offset: [0, -10],
-              opacity: 0.9,
-              interactive: true,
-              permanent: false,
-              sticky: true
+            const layer = L.geoJSON(f.geometry, {
+              ...flagStyle,
+              onEachFeature: function(feature, subLayer) {
+                subLayer.bindTooltip(flagTooltip, { 
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+                // Register with multi-tooltip system
+                registerLayerTooltip(subLayer, 'Flag', flagTooltip);
+              }
             });
-            
-            // Register with multi-tooltip system
-            registerLayerTooltip(layer, 'Flag', flagTooltip);
             
             if (f.color) {
               layer.setStyle({
@@ -710,20 +713,25 @@ HTML_TEMPLATE = Template(
           if (!r.geometry) continue;
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
-          const layer = L.geoJSON(r.geometry, { style: { className } });
           const riverTooltip = `${r.label}${r.note ? ' — ' + r.note : ''}`;
-          if (!r.show_label) {
-            layer.bindTooltip(riverTooltip, { 
-              direction: 'top',
-              offset: [0, -10],
-              opacity: 0.9,
-              interactive: true,
-              permanent: false,
-              sticky: true
-            });
-          }
-          // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'River', riverTooltip);
+          const layer = L.geoJSON(r.geometry, { 
+            style: { className },
+            onEachFeature: function(feature, subLayer) {
+              if (!r.show_label) {
+                subLayer.bindTooltip(riverTooltip, { 
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+              // Register each sublayer with multi-tooltip system
+              registerLayerTooltip(subLayer, 'River', riverTooltip);
+            }
+          });
+          
           layer._riverData = { period: r.period };
           layers.rivers.push(layer);
           
@@ -1399,10 +1407,21 @@ HTML_TEMPLATE = Template(
           }
           
           const flagTooltip = `${f.label}${f.note ? ' — ' + f.note : ''}`;
-          const layer = addGeoJSON(f.geometry, flagStyle, flagTooltip);
-          
-          // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Flag', flagTooltip);
+          const layer = L.geoJSON(f.geometry, {
+            ...flagStyle,
+            onEachFeature: function(feature, subLayer) {
+              subLayer.bindTooltip(flagTooltip, { 
+                direction: 'top',
+                offset: [0, -10],
+                opacity: 0.9,
+                interactive: true,
+                permanent: false,
+                sticky: true
+              });
+              // Register with multi-tooltip system
+              registerLayerTooltip(subLayer, 'Flag', flagTooltip);
+            }
+          }).addTo(map);
           
           // Apply color styling after layer creation
           if (f.color) {
@@ -1514,10 +1533,24 @@ HTML_TEMPLATE = Template(
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
           const riverTooltip = `${r.label}${r.note ? ' — ' + r.note : ''}`;
-          const layer = addGeoJSON(r.geometry, { style: { className } }, r.show_label ? undefined : riverTooltip);
           
-          // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'River', riverTooltip);
+          const layer = L.geoJSON(r.geometry, {
+            style: { className },
+            onEachFeature: function(feature, subLayer) {
+              if (!r.show_label) {
+                subLayer.bindTooltip(riverTooltip, { 
+                  direction: 'top',
+                  offset: [0, -10],
+                  opacity: 0.9,
+                  interactive: true,
+                  permanent: false,
+                  sticky: true
+                });
+              }
+              // Register each sublayer with multi-tooltip system
+              registerLayerTooltip(subLayer, 'River', riverTooltip);
+            }
+          }).addTo(map);
           
           layers.rivers.push(layer);
           
