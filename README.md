@@ -350,9 +350,9 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
-- **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1)`**: Add a river with optional label display
-- **`Path(label, coords, classes=None, period=None, show_label=False, n_labels=1)`**: Add a path/route with optional label display
-- **`Point(label, position, period=None, icon=None, show_label=False)`**: Add a point of interest with optional custom icon and label display
+- **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a river with optional label display and customizable hover detection radius
+- **`Path(label, coords, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional label display and customizable hover detection radius
+- **`Point(label, position, period=None, icon=None, show_label=False, hover_radius=20)`**: Add a point of interest with optional custom icon, label display, and customizable hover detection radius
 - **`Text(label, position, classes=None, period=None)`**: Add a text label
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
 
@@ -953,6 +953,9 @@ map.Point(label="Mumbai", position=[19.0, 73.0])
 # With show_label: label appears next to the point
 map.Point(label="Delhi", position=[28.6, 77.2], show_label=True)
 
+# Custom hover radius: easier to click on small points
+map.Point(label="Small Village", position=[20.5, 75.0], hover_radius=40)
+
 map.show()
 ```
 
@@ -974,6 +977,9 @@ map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
 
 # Multiple labels: display label at multiple evenly-spaced positions
 map.Path(label="Long Trade Route", value=[[28,77],[30,90],[35,100],[40,120]], show_label=True, n_labels=3)
+
+# Custom hover radius: easier to hover over
+map.Path(label="Ancient Trade Route", value=[[25,75],[30,85]], hover_radius=20)
 
 map.show()
 ```
@@ -1011,6 +1017,9 @@ map.River(label="Yamuna", value=naturalearth("1159122644"), show_label=True)
 
 # Multiple labels: useful for long rivers
 map.River(label="Nile", value=naturalearth("1159122999"), show_label=True, n_labels=5)
+
+# Custom hover radius: easier to hover over thin rivers
+map.River(label="Tributary", value=naturalearth("1159122650"), hover_radius=25)
 
 map.show()
 ```
@@ -1098,6 +1107,105 @@ map.CSS("""
 
 map.Path(label="Trade Route", value=[[28,77],[30,90],[40,120]], show_label=True, classes="trade-route")
 map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, classes="sacred-river")
+```
+
+### Multi-Layer Tooltips
+
+Xatra features an intelligent **multi-layer tooltip system** that shows information for **all overlapping elements** at the cursor position, not just the topmost element.
+
+When you hover over any location on the map, the tooltip displays information from all elements under the cursor:
+- **Flags** (countries/kingdoms)
+- **Admin regions** (states, districts, tehsils)
+- **DataFrames** (data values)
+- **Rivers** and **Paths**
+- **Points** (cities, landmarks)
+
+The tooltips are displayed in a clean, organized format with each element type clearly labeled.
+
+**Example:**
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+
+# These elements overlap - hovering over Tamil Nadu will show all tooltips
+map.Flag(label="India", value=gadm("IND"), note="Republic of India")
+map.Flag(label="Tamil Nadu", value=gadm("IND.31"), note="State in southern India")
+map.Admin(gadm="IND.31", level=2)  # Districts
+
+# Point in the overlapping area - hovering near Chennai shows Flag + Admin + Point tooltips
+map.Point(label="Chennai", position=[13.0827, 80.2707])
+
+map.show()
+```
+
+When you hover over Chennai, you'll see tooltips for:
+- The "India" flag
+- The "Tamil Nadu" flag
+- The admin region (Chennai district)
+- The "Chennai" point marker
+
+#### Customizing Hover Detection Radius
+
+For **Point**, **River**, and **Path** elements, you can customize the hover detection radius using the `hover_radius` parameter (in pixels). This controls how close your cursor needs to be to trigger the tooltip.
+
+```python
+# Rivers with larger hover radius for easier selection
+map.River(label="Ganga", value=naturalearth("1159122643"), hover_radius=20)
+
+# Paths with custom hover radius
+map.Path(label="Silk Road", value=[[35, 75], [40, 80]], hover_radius=15)
+
+# Points with larger hover radius for easier clicking
+map.Point(label="Delhi", position=[28.6, 77.2], hover_radius=30)
+```
+
+**Default hover radii:**
+- **Rivers**: 10 pixels
+- **Paths**: 10 pixels  
+- **Points**: 20 pixels
+
+**Note:** The hover radius is specified in screen pixels and automatically scales with map zoom level. A larger hover radius makes elements easier to hover over, especially useful for thin rivers or small points.
+
+#### Customizing Multi-Tooltip Styling
+
+The multi-layer tooltip appearance can be customized using CSS:
+
+```python
+map.CSS("""
+/* Customize the multi-tooltip container */
+#multi-tooltip {
+  background: rgba(255, 255, 255, 0.98);
+  border: 3px solid #0066cc;
+  border-radius: 8px;
+  font-family: 'Georgia', serif;
+  max-width: 500px;
+}
+
+/* Style the element type labels */
+#multi-tooltip .tooltip-type {
+  color: #cc6600;
+  font-weight: bold;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+/* Style the tooltip content */
+#multi-tooltip .tooltip-content {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Style individual tooltip items */
+#multi-tooltip .tooltip-item {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ddd;
+}
+""")
 ```
 
 ## Performance
