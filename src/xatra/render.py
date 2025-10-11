@@ -191,13 +191,18 @@ HTML_TEMPLATE = Template(
         if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
           // For lines, check if point is close to any segment
           const latlngs = layer.getLatLngs();
-          const maxDistanceMeters = 15000; // 15km
+          const maxDistanceMeters = 5000; // 5km (reduced for better precision)
           
-          for (let i = 0; i < latlngs.length - 1; i++) {
-            // Check distance to this line segment
-            const dist = distanceToLineSegmentLatLng(latlng, latlngs[i], latlngs[i + 1]);
-            if (dist < maxDistanceMeters) {
-              return true;
+          // Handle both LineString (flat array) and MultiLineString (array of arrays)
+          const lineStrings = Array.isArray(latlngs[0]) ? latlngs : [latlngs];
+          
+          for (const lineString of lineStrings) {
+            for (let i = 0; i < lineString.length - 1; i++) {
+              // Check distance to this line segment
+              const dist = distanceToLineSegmentLatLng(latlng, lineString[i], lineString[i + 1]);
+              if (dist < maxDistanceMeters) {
+                return true;
+              }
             }
           }
           return false;
@@ -318,7 +323,7 @@ HTML_TEMPLATE = Template(
         for (let i = 0; i < foundLayers.length; i++) {
           const layer = foundLayers[i];
           const tooltipData = layerTooltips.get(layer);
-          if (tooltipData) {
+          if (tooltipData && tooltipData.content) {
             html += '<div class="tooltip-item">';
             html += `<div class="tooltip-type">${tooltipData.type}</div>`;
             html += `<div class="tooltip-content">${tooltipData.content}</div>`;

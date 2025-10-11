@@ -14,7 +14,7 @@ map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
 map.FlagColorSequence(LinearColorSequence())
 map.DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]), 100, 1000)
-map.Data(gadm = "IND.12", value=100)
+# map.Data(gadm = "IND.12", value=100)
 
 map.Data(gadm = "IND.12", value=100)
 map.Data(gadm = "IND.21", value=300, period=[0, 600])
