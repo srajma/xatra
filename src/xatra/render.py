@@ -159,16 +159,36 @@ HTML_TEMPLATE = Template(
       }
 
       // Multi-layer tooltip system
-      // Maps layer objects to their tooltip metadata: { type: string, content: string }
+      // Maps layer objects to their tooltip metadata: { type: string, content: string, hover_radius: number }
       const layerTooltips = new Map();
       const multiTooltipDiv = document.getElementById('multi-tooltip');
       let lastMouseEvent = null;
       
-      // Register a layer with tooltip content
-      function registerLayerTooltip(layer, type, content) {
+      // Register a layer with tooltip content and optional hover radius
+      function registerLayerTooltip(layer, type, content, hoverRadiusPixels) {
         if (content) {
-          layerTooltips.set(layer, { type: type, content: content });
+          layerTooltips.set(layer, { 
+            type: type, 
+            content: content,
+            hover_radius: hoverRadiusPixels // in pixels, will be converted to meters when needed
+          });
         }
+      }
+      
+      // Convert pixel distance to meters at the current map center
+      function pixelsToMeters(pixels) {
+        const zoom = map.getZoom();
+        const centerLat = map.getCenter().lat;
+        
+        // Meters per pixel at this zoom level and latitude
+        // At zoom level 0, there are 256 pixels for the entire world (256 * 256 tile)
+        // At the equator, the circumference is ~40,075,000 meters
+        const metersPerPixelAtEquator = 40075000 / (256 * Math.pow(2, zoom));
+        
+        // Adjust for latitude (Mercator projection)
+        const metersPerPixel = metersPerPixelAtEquator / Math.cos(centerLat * Math.PI / 180);
+        
+        return pixels * metersPerPixel;
       }
       
       // Check if a point is inside a layer's geometry
@@ -179,6 +199,10 @@ HTML_TEMPLATE = Template(
         if (layer.getBounds && !layer.getBounds().contains(latlng)) {
           return false;
         }
+        
+        // Get hover radius from layer metadata (if available)
+        const tooltipData = layerTooltips.get(layer);
+        const hoverRadiusPixels = tooltipData?.hover_radius;
         
         // Handle Polygon/MultiPolygon layers (individual features from GeoJSON)
         if (layer instanceof L.Polygon) {
@@ -191,7 +215,10 @@ HTML_TEMPLATE = Template(
         if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
           // For lines, check if point is close to any segment
           const latlngs = layer.getLatLngs();
-          const maxDistanceMeters = 5000; // 5km (reduced for better precision)
+          
+          // Use custom hover radius if available, otherwise default to 10 pixels
+          const radiusPixels = hoverRadiusPixels !== undefined ? hoverRadiusPixels : 10;
+          const maxDistanceMeters = pixelsToMeters(radiusPixels);
           
           // Handle both LineString (flat array) and MultiLineString (array of arrays)
           const lineStrings = Array.isArray(latlngs[0]) ? latlngs : [latlngs];
@@ -212,7 +239,12 @@ HTML_TEMPLATE = Template(
         if (layer instanceof L.Marker) {
           const markerLatLng = layer.getLatLng();
           const distance = map.distance(latlng, markerLatLng);
-          return distance < 20000; // 20km radius
+          
+          // Use custom hover radius if available, otherwise default to 20 pixels
+          const radiusPixels = hoverRadiusPixels !== undefined ? hoverRadiusPixels : 20;
+          const maxDistanceMeters = pixelsToMeters(radiusPixels);
+          
+          return distance < maxDistanceMeters;
         }
         
         // Handle parent GeoJSON layers (should rarely be called now, but kept for compatibility)
@@ -749,7 +781,7 @@ HTML_TEMPLATE = Template(
                 });
               }
               // Register each sublayer with multi-tooltip system
-              registerLayerTooltip(subLayer, 'River', riverTooltip);
+              registerLayerTooltip(subLayer, 'River', riverTooltip, r.hover_radius);
             }
           });
           
@@ -798,7 +830,7 @@ HTML_TEMPLATE = Template(
             layer.bindTooltip(p.label);
           }
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Path', p.label);
+          registerLayerTooltip(layer, 'Path', p.label, p.hover_radius);
           layer._pathData = { period: p.period };
           layers.paths.push(layer);
           
@@ -920,7 +952,7 @@ HTML_TEMPLATE = Template(
             layer.bindTooltip(p.label);
           }
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Point', p.label);
+          registerLayerTooltip(layer, 'Point', p.label, p.hover_radius);
           layer._pointData = { period: p.period };
           layers.points.push(layer);
           
@@ -1569,7 +1601,7 @@ HTML_TEMPLATE = Template(
                 });
               }
               // Register each sublayer with multi-tooltip system
-              registerLayerTooltip(subLayer, 'River', riverTooltip);
+              registerLayerTooltip(subLayer, 'River', riverTooltip, r.hover_radius);
             }
           }).addTo(map);
           
@@ -1617,7 +1649,7 @@ HTML_TEMPLATE = Template(
             layer.bindTooltip(p.label);
           }
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Path', p.label);
+          registerLayerTooltip(layer, 'Path', p.label, p.hover_radius);
           layers.paths.push(layer);
           
           // Add labels if show_label is true
@@ -1738,7 +1770,7 @@ HTML_TEMPLATE = Template(
             layer.bindTooltip(p.label);
           }
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Point', p.label);
+          registerLayerTooltip(layer, 'Point', p.label, p.hover_radius);
           layers.points.push(layer);
           
           // Add label next to point if show_label is true

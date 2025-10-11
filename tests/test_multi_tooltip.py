@@ -18,8 +18,8 @@ map.Flag(label="India", value=gadm("IND"), note="Republic of India")
 map.Flag(label="Tamil Nadu", value=gadm("IND.31"), note="State in southern India")
 
 # Add points in the overlapping area - these will overlap with the flag regions
-map.Point(label="Chennai", position=[13.0827, 80.2707])
-map.Point(label="Bangalore", position=[12.9716, 77.5946])
+map.Point(label="Chennai", position=[13.0827, 80.2707], hover_radius=20)
+map.Point(label="Bangalore", position=[12.9716, 77.5946], hover_radius=5)
 
 # Add a path that crosses through
 map.Path(label="Historical Trade Route", value=[[12, 75], [13, 80], [14, 82]])
