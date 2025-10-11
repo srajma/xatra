@@ -15,7 +15,7 @@ map.Flag(label="India", value=gadm("IND"))
 # Rivers with and without show_label
 map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, n_labels=5, classes="sacred")
 # map.River(label="Kubha (kabul)", value=overpass("1676476"), show_label=True)
-# map.River(label="Ganga", value=overpass("1236345"), show_label=True)
+# map.River(label="Ganga OP", value=overpass("1236345"), show_label=True, n_labels=3, classes="sacred")
 
 # Points with and without show_label
 map.Point(label="Mumbai (tooltip only)", position=[19.0, 73.0])

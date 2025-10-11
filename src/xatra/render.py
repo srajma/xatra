@@ -514,10 +514,28 @@ HTML_TEMPLATE = Template(
 
       // Helper function to calculate river label position and rotation
       function calculateRiverLabelPosition(geometryOrFeature, label, fraction = 0.5) {
-        // Handle both Feature and raw geometry
+        // Handle Feature, FeatureCollection, and raw geometry
         let geometry = geometryOrFeature;
         if (geometryOrFeature.type === 'Feature' && geometryOrFeature.geometry) {
           geometry = geometryOrFeature.geometry;
+        } else if (geometryOrFeature.type === 'FeatureCollection' && geometryOrFeature.features) {
+          // For FeatureCollection, combine all features' geometries
+          let allCoords = [];
+          for (const feature of geometryOrFeature.features) {
+            if (feature.geometry) {
+              if (feature.geometry.type === 'LineString') {
+                allCoords.push(feature.geometry.coordinates);
+              } else if (feature.geometry.type === 'MultiLineString') {
+                allCoords = allCoords.concat(feature.geometry.coordinates);
+              }
+            }
+          }
+          
+          // If we found coordinates, proceed with the algorithm
+          if (allCoords.length > 0) {
+            return processCoordinates(allCoords, label, fraction);
+          }
+          return null;
         }
         
         // Extract all coordinates from the geometry
@@ -530,6 +548,12 @@ HTML_TEMPLATE = Template(
         } else {
           return null; // Unsupported geometry type
         }
+        
+        return processCoordinates(allCoords, label, fraction);
+      }
+      
+      // Helper function to process coordinates (extracted for reuse)
+      function processCoordinates(allCoords, label, fraction) {
         
         // Collect all points from all LineStrings
         let allPoints = [];
