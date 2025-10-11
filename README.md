@@ -8,7 +8,6 @@ Kanging
 - [x] admin map
 
 Development
-- [ ] class-based show labels, etc.
 - [x] Orient flag labels in direction of flag
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels
@@ -22,6 +21,7 @@ Development
 - [x] xatra.Flag color groups
 - [x] xatra.Dataframe with notes and DataColormap
 - [x] do we need to redraw everything each frame?
+- [ ] MAYBE: class-based show labels, etc. Not that important. Main thing you'd use it for is hiding labels and CSS is enough for that.
 - [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
 - [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly
 - [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
@@ -353,7 +353,7 @@ map = FlagMap()
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
 - **`Flag(label, territory, period=None, note=None, color=None, classes=None)`**: Add a flag (country/kingdom)
-- **`Datagframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
+- **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a river with optional label display and customizable hover detection radius
