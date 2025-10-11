@@ -531,44 +531,71 @@ HTML_TEMPLATE = Template(
           return null; // Unsupported geometry type
         }
         
-        // Calculate bounding box
-        let minLat = Infinity, maxLat = -Infinity;
-        let minLon = Infinity, maxLon = -Infinity;
-        
+        // Collect all points from all LineStrings
+        let allPoints = [];
         for (const lineString of allCoords) {
           for (const coord of lineString) {
-            const lon = coord[0];
-            const lat = coord[1];
-            if (lat < minLat) minLat = lat;
-            if (lat > maxLat) maxLat = lat;
-            if (lon < minLon) minLon = lon;
-            if (lon > maxLon) maxLon = lon;
+            allPoints.push([coord[1], coord[0]]); // Convert to [lat, lon]
           }
         }
         
-        if (!isFinite(minLat) || !isFinite(maxLat)) return null;
+        if (allPoints.length === 0) return null;
         
-        // Interpolate center based on fraction (for multiple labels)
-        // fraction=0.5 gives the center, fraction=0.33 gives center-left, etc.
-        const center = [
-          minLat + fraction * (maxLat - minLat),
-          minLon + fraction * (maxLon - maxLon)
-        ];
+        // For performance, sample points if there are too many
+        const maxSampleSize = 200;
+        let sampledPoints = allPoints;
+        if (allPoints.length > maxSampleSize) {
+          const step = Math.floor(allPoints.length / maxSampleSize);
+          sampledPoints = [];
+          for (let i = 0; i < allPoints.length; i += step) {
+            sampledPoints.push(allPoints[i]);
+          }
+          // Always include the last point
+          if (sampledPoints[sampledPoints.length - 1] !== allPoints[allPoints.length - 1]) {
+            sampledPoints.push(allPoints[allPoints.length - 1]);
+          }
+        }
         
-        // Find the nearest point on any LineString to the bounding box center
+        // Find the two most distant points along the river
+        let maxDistance = 0;
+        let point1 = null;
+        let point2 = null;
+        
+        for (let i = 0; i < sampledPoints.length; i++) {
+          for (let j = i + 1; j < sampledPoints.length; j++) {
+            const dist = Math.sqrt(
+              Math.pow(sampledPoints[j][0] - sampledPoints[i][0], 2) +
+              Math.pow(sampledPoints[j][1] - sampledPoints[i][1], 2)
+            );
+            if (dist > maxDistance) {
+              maxDistance = dist;
+              point1 = sampledPoints[i];
+              point2 = sampledPoints[j];
+            }
+          }
+        }
+        
+        if (!point1 || !point2) return null;
+        
+        // Interpolate position along the line between the two distant points
+        const targetLat = point1[0] + fraction * (point2[0] - point1[0]);
+        const targetLon = point1[1] + fraction * (point2[1] - point1[1]);
+        const targetPoint = [targetLat, targetLon];
+        
+        // Find the nearest point on the actual river geometry to the target point
         let nearestPoint = null;
         let nearestDistance = Infinity;
         let nearestLineString = null;
         let nearestSegmentIndex = -1;
-        let nearestT = 0; // Position along the segment (0 to 1)
+        let nearestT = 0;
         
         for (const lineString of allCoords) {
           for (let i = 0; i < lineString.length - 1; i++) {
             const p1 = [lineString[i][1], lineString[i][0]]; // [lat, lon]
             const p2 = [lineString[i+1][1], lineString[i+1][0]]; // [lat, lon]
             
-            // Find nearest point on segment p1-p2 to bounding box center
-            const result = nearestPointOnSegment(center, p1, p2);
+            // Find nearest point on segment p1-p2 to target point
+            const result = nearestPointOnSegment(targetPoint, p1, p2);
             
             if (result.distance < nearestDistance) {
               nearestDistance = result.distance;
@@ -582,64 +609,14 @@ HTML_TEMPLATE = Template(
         
         if (!nearestPoint || !nearestLineString) return null;
         
-        // Calculate angle based on points at label-length distance from nearest point
-        // Estimate label length (roughly 10 pixels per character at default font size)
-        const estimatedLabelLength = label.length * 0.15; // in degrees
+        // Calculate angle based on the line between the two distant points
+        const dx = point2[1] - point1[1]; // longitude difference
+        const dy = point2[0] - point1[0]; // latitude difference
+        let angle = -Math.atan2(dy, dx) * 180 / Math.PI;
         
-        // Convert LineString to lat/lon format
-        const latlngs = nearestLineString.map(coord => [coord[1], coord[0]]);
-        
-        // Calculate position of nearest point along the LineString
-        let distanceToNearest = 0;
-        for (let i = 0; i < nearestSegmentIndex; i++) {
-          distanceToNearest += Math.sqrt(
-            Math.pow(latlngs[i+1][0] - latlngs[i][0], 2) +
-            Math.pow(latlngs[i+1][1] - latlngs[i][1], 2)
-          );
-        }
-        // Add the fractional distance within the nearest segment
-        distanceToNearest += nearestT * Math.sqrt(
-          Math.pow(latlngs[nearestSegmentIndex+1][0] - latlngs[nearestSegmentIndex][0], 2) +
-          Math.pow(latlngs[nearestSegmentIndex+1][1] - latlngs[nearestSegmentIndex][1], 2)
-        );
-        
-        // Find points at estimated label distance on either side
-        let startPoint = null;
-        let endPoint = null;
-        
-        // Search backwards from nearest point
-        let accumulatedDist = 0;
-        for (let i = nearestSegmentIndex; i >= 0 && accumulatedDist < estimatedLabelLength; i--) {
-          startPoint = latlngs[i];
-          if (i > 0) {
-            accumulatedDist += Math.sqrt(
-              Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
-              Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
-            );
-          }
-        }
-        
-        // Search forwards from nearest point
-        accumulatedDist = 0;
-        for (let i = nearestSegmentIndex + 1; i < latlngs.length && accumulatedDist < estimatedLabelLength; i++) {
-          endPoint = latlngs[i];
-          accumulatedDist += Math.sqrt(
-            Math.pow(latlngs[i][0] - latlngs[i-1][0], 2) +
-            Math.pow(latlngs[i][1] - latlngs[i-1][1], 2)
-          );
-        }
-        
-        // Calculate angle between distant points
-        let angle = 0;
-        if (startPoint && endPoint) {
-          const dx = endPoint[1] - startPoint[1]; // longitude difference
-          const dy = endPoint[0] - startPoint[0]; // latitude difference
-          angle = -Math.atan2(dy, dx) * 180 / Math.PI;
-          
-          // Normalize angle to keep text readable
-          if (angle > 90) angle -= 180;
-          if (angle < -90) angle += 180;
-        }
+        // Normalize angle to keep text readable
+        if (angle > 90) angle -= 180;
+        if (angle < -90) angle += 180;
         
         return { position: nearestPoint, angle: angle };
       }

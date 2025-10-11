@@ -1028,19 +1028,20 @@ map.show()
 ```
 
 **River Label Algorithm:** For rivers with complex geometries (including MultiLineString with potentially disconnected segments):
-1. For each label position `k/(n+1)`, interpolates within the river's bounding box
-2. Finds the nearest point on any of the river's line segments to that interpolated position
-3. Places the label at that nearest point
-4. Estimates the label length and finds points at that distance on either side along the river
-5. Calculates rotation angle between those distant points (for smooth angle on curvy rivers)
-6. Translates the label 12px perpendicular to the river for better visibility
+1. Samples points from all river segments (up to 200 points for performance)
+2. Finds the two most distant points along the river geometry (the pair that maximizes river distance)
+3. For each label position `k/(n+1)`, interpolates along the line between these distant points
+4. Finds the nearest point on the actual river geometry to each interpolated position
+5. Places labels at these nearest points on the river
+6. Calculates rotation angle based on the line between the two distant points
+7. Translates each label 12px perpendicular to the river for better visibility
 
-This approach is simple, efficient, and works robustly for any river geometry structure, placing labels at geographically distributed locations on the actual river course.
+This approach ensures labels are distributed along the actual river course rather than just across a bounding box, providing much better geographic distribution for long, complex rivers.
 
-**Multiple Labels:** The `n_labels` parameter works the same as for paths, distributing labels evenly across the river's bounding box:
-- `n_labels=1` (default): One label near the center of the bounding box
-- `n_labels=3`: Three labels distributed across the river extent
-- `n_labels=5`: Five labels for very long rivers like the Nile or Ganges
+**Multiple Labels:** The `n_labels` parameter distributes labels evenly along the river's longest axis:
+- `n_labels=1` (default): One label at the midpoint along the river's longest dimension
+- `n_labels=3`: Three labels distributed along the river's extent
+- `n_labels=5`: Five labels for very long rivers like the Nile or Ganges, spread from end to end
 
 **Styling Labels:**
 
