@@ -113,18 +113,10 @@ HTML_TEMPLATE = Template(
       const layerVisibility = new Map(); // Maps layer objects to their visibility state
       let allLayersCreated = false;
 
+      // Legacy function - no longer used, kept for compatibility
       function addGeoJSON(geojson, options, tooltip) {
         const layer = L.geoJSON(geojson, options);
-        if (tooltip) {
-          layer.bindTooltip(tooltip, { 
-            direction: 'top',
-            offset: [0, -10],
-            opacity: 0.9,
-            interactive: true,
-            permanent: false,
-            sticky: true
-          });
-        }
+        // Old tooltip system removed - now using multi-layer tooltips
         layer.addTo(map);
         return layer;
       }
@@ -714,14 +706,6 @@ HTML_TEMPLATE = Template(
             const layer = L.geoJSON(f.geometry, {
               ...flagStyle,
               onEachFeature: function(feature, subLayer) {
-                subLayer.bindTooltip(flagTooltip, { 
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
                 // Register with multi-tooltip system
                 registerLayerTooltip(subLayer, 'Flag', flagTooltip);
               }
@@ -839,16 +823,6 @@ HTML_TEMPLATE = Template(
           const layer = L.geoJSON(r.geometry, { 
             style: { className },
             onEachFeature: function(feature, subLayer) {
-              if (!r.show_label) {
-                subLayer.bindTooltip(riverTooltip, { 
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
-              }
               // Register each sublayer with multi-tooltip system
               registerLayerTooltip(subLayer, 'River', riverTooltip, r.hover_radius);
             }
@@ -895,9 +869,6 @@ HTML_TEMPLATE = Template(
           let className = 'path';
           if (p.classes) className += ' ' + p.classes;
           const layer = L.polyline(latlngs, { className });
-          if (!p.show_label) {
-            layer.bindTooltip(p.label);
-          }
           // Register with multi-tooltip system
           registerLayerTooltip(layer, 'Path', p.label, p.hover_radius);
           layer._pathData = { period: p.period };
@@ -1017,9 +988,6 @@ HTML_TEMPLATE = Template(
             markerOptions.icon = L.icon(iconOptions);
           }
           const layer = L.marker([p.position[0], p.position[1]], markerOptions);
-          if (!p.show_label) {
-            layer.bindTooltip(p.label);
-          }
           // Register with multi-tooltip system
           registerLayerTooltip(layer, 'Point', p.label, p.hover_radius);
           layer._pointData = { period: p.period };
@@ -1125,24 +1093,10 @@ HTML_TEMPLATE = Template(
                 tooltip = tooltip.slice(0, -5);
               }
               
+              // Register with multi-tooltip system
               if (tooltip) {
-                layer.bindTooltip(tooltip, {
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
+                registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
-            }
-          });
-          
-          // Register each sub-layer with multi-tooltip system
-          layer.eachLayer(function(subLayer) {
-            if (subLayer.getTooltip && subLayer.getTooltip()) {
-              const tooltipContent = subLayer.getTooltip().getContent();
-              registerLayerTooltip(subLayer, 'Admin Region', tooltipContent);
             }
           });
           
@@ -1201,24 +1155,10 @@ HTML_TEMPLATE = Template(
                 tooltip = tooltip.slice(0, -5);
               }
               
+              // Register with multi-tooltip system (default hover radius for admin rivers)
               if (tooltip) {
-                layer.bindTooltip(tooltip, {
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
+                registerLayerTooltip(layer, 'Admin River', tooltip, 10);
               }
-            }
-          });
-          
-          // Register each sub-layer with multi-tooltip system
-          layer.eachLayer(function(subLayer) {
-            if (subLayer.getTooltip && subLayer.getTooltip()) {
-              const tooltipContent = subLayer.getTooltip().getContent();
-              registerLayerTooltip(subLayer, 'Admin River', tooltipContent);
             }
           });
           
@@ -1280,24 +1220,10 @@ HTML_TEMPLATE = Template(
                 tooltip = tooltip.slice(0, -5);
               }
               
+              // Register with multi-tooltip system
               if (tooltip) {
-                layer.bindTooltip(tooltip, {
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
+                registerLayerTooltip(layer, 'Data', tooltip);
               }
-            }
-          });
-          
-          // Register each sub-layer with multi-tooltip system
-          layer.eachLayer(function(subLayer) {
-            if (subLayer.getTooltip && subLayer.getTooltip()) {
-              const tooltipContent = subLayer.getTooltip().getContent();
-              registerLayerTooltip(subLayer, 'Data', tooltipContent);
             }
           });
           
@@ -1370,24 +1296,10 @@ HTML_TEMPLATE = Template(
               tooltip = tooltip.slice(0, -5);
             }
             
+            // Register with multi-tooltip system
             if (tooltip) {
-              layer.bindTooltip(tooltip, {
-                direction: 'top',
-                offset: [0, -10],
-                opacity: 0.9,
-                interactive: true,
-                permanent: false,
-                sticky: true
-              });
+              registerLayerTooltip(layer, 'DataFrame', tooltip);
             }
-          }
-        });
-        
-        // Register each sub-layer with multi-tooltip system
-        layer.eachLayer(function(subLayer) {
-          if (subLayer.getTooltip && subLayer.getTooltip()) {
-            const tooltipContent = subLayer.getTooltip().getContent();
-            registerLayerTooltip(subLayer, 'DataFrame', tooltipContent);
           }
         });
         
@@ -1484,24 +1396,10 @@ HTML_TEMPLATE = Template(
               tooltip = tooltip.slice(0, -5);
             }
             
+            // Register with multi-tooltip system
             if (tooltip) {
-              layer.bindTooltip(tooltip, {
-                direction: 'top',
-                offset: [0, -10],
-                opacity: 0.9,
-                interactive: true,
-                permanent: false,
-                sticky: true
-              });
+              registerLayerTooltip(layer, 'DataFrame', tooltip);
             }
-          }
-        });
-        
-        // Register each sub-layer with multi-tooltip system
-        layer.eachLayer(function(subLayer) {
-          if (subLayer.getTooltip && subLayer.getTooltip()) {
-            const tooltipContent = subLayer.getTooltip().getContent();
-            registerLayerTooltip(subLayer, 'DataFrame', tooltipContent);
           }
         });
         
@@ -1532,14 +1430,6 @@ HTML_TEMPLATE = Template(
           const layer = L.geoJSON(f.geometry, {
             ...flagStyle,
             onEachFeature: function(feature, subLayer) {
-              subLayer.bindTooltip(flagTooltip, { 
-                direction: 'top',
-                offset: [0, -10],
-                opacity: 0.9,
-                interactive: true,
-                permanent: false,
-                sticky: true
-              });
               // Register with multi-tooltip system
               registerLayerTooltip(subLayer, 'Flag', flagTooltip);
             }
@@ -1659,16 +1549,6 @@ HTML_TEMPLATE = Template(
           const layer = L.geoJSON(r.geometry, {
             style: { className },
             onEachFeature: function(feature, subLayer) {
-              if (!r.show_label) {
-                subLayer.bindTooltip(riverTooltip, { 
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
-              }
               // Register each sublayer with multi-tooltip system
               registerLayerTooltip(subLayer, 'River', riverTooltip, r.hover_radius);
             }
@@ -1714,9 +1594,6 @@ HTML_TEMPLATE = Template(
           let className = 'path';
           if (p.classes) className += ' ' + p.classes;
           const layer = L.polyline(latlngs, { className }).addTo(map);
-          if (!p.show_label) {
-            layer.bindTooltip(p.label);
-          }
           // Register with multi-tooltip system
           registerLayerTooltip(layer, 'Path', p.label, p.hover_radius);
           layers.paths.push(layer);
@@ -1835,9 +1712,6 @@ HTML_TEMPLATE = Template(
             markerOptions.icon = L.icon(iconOptions);
           }
           const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map);
-          if (!p.show_label) {
-            layer.bindTooltip(p.label);
-          }
           // Register with multi-tooltip system
           registerLayerTooltip(layer, 'Point', p.label, p.hover_radius);
           layers.points.push(layer);
@@ -1931,24 +1805,10 @@ HTML_TEMPLATE = Template(
                 tooltip = tooltip.slice(0, -5);
               }
               
+              // Register with multi-tooltip system
               if (tooltip) {
-                layer.bindTooltip(tooltip, {
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
+                registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
-            }
-          });
-          
-          // Register each sub-layer with multi-tooltip system
-          layer.eachLayer(function(subLayer) {
-            if (subLayer.getTooltip && subLayer.getTooltip()) {
-              const tooltipContent = subLayer.getTooltip().getContent();
-              registerLayerTooltip(subLayer, 'Admin Region', tooltipContent);
             }
           });
           
@@ -2017,24 +1877,10 @@ HTML_TEMPLATE = Template(
                 tooltip = tooltip.slice(0, -5);
               }
               
+              // Register with multi-tooltip system (default hover radius for admin rivers)
               if (tooltip) {
-                layer.bindTooltip(tooltip, {
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
+                registerLayerTooltip(layer, 'Admin River', tooltip, 10);
               }
-            }
-          });
-          
-          // Register each sub-layer with multi-tooltip system
-          layer.eachLayer(function(subLayer) {
-            if (subLayer.getTooltip && subLayer.getTooltip()) {
-              const tooltipContent = subLayer.getTooltip().getContent();
-              registerLayerTooltip(subLayer, 'Admin River', tooltipContent);
             }
           });
           
@@ -2097,24 +1943,10 @@ HTML_TEMPLATE = Template(
                 tooltip = tooltip.slice(0, -5);
               }
               
+              // Register with multi-tooltip system
               if (tooltip) {
-                layer.bindTooltip(tooltip, {
-                  direction: 'top',
-                  offset: [0, -10],
-                  opacity: 0.9,
-                  interactive: true,
-                  permanent: false,
-                  sticky: true
-                });
+                registerLayerTooltip(layer, 'Data', tooltip);
               }
-            }
-          });
-          
-          // Register each sub-layer with multi-tooltip system
-          layer.eachLayer(function(subLayer) {
-            if (subLayer.getTooltip && subLayer.getTooltip()) {
-              const tooltipContent = subLayer.getTooltip().getContent();
-              registerLayerTooltip(subLayer, 'Data', tooltipContent);
             }
           });
           
@@ -2274,10 +2106,7 @@ HTML_TEMPLATE = Template(
                   tooltip = tooltip.slice(0, -5);
                 }
                 
-                // Update tooltip
-                feature.setTooltipContent(tooltip);
-                
-                // Also update the multi-tooltip registration
+                // Update the multi-tooltip registration for the current year
                 registerLayerTooltip(feature, 'DataFrame', tooltip);
               }
             });
