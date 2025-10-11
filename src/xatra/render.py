@@ -182,31 +182,22 @@ HTML_TEMPLATE = Template(
         
         // Handle Polygon/MultiPolygon layers (individual features from GeoJSON)
         if (layer instanceof L.Polygon) {
-          // Use Leaflet's built-in point-in-polygon test
-          if (typeof layer._containsPoint === 'function') {
-            const point = map.latLngToContainerPoint(latlng);
-            try {
-              return layer._containsPoint(point);
-            } catch (e) {
-              // Fallback to bounding box if _containsPoint fails
-              return layer.getBounds().contains(latlng);
-            }
-          }
+          // Simple approach: just use bounding box for now
+          // This is less precise but always works regardless of map state
           return layer.getBounds().contains(latlng);
         }
         
         // Handle Path/Polyline layers (rivers, paths, individual line features)
         if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-          const point = map.latLngToContainerPoint(latlng);
-          const maxDistance = 10; // pixels
-          if (layer._parts) {
-            for (const part of layer._parts) {
-              for (let i = 0; i < part.length - 1; i++) {
-                const dist = distanceToSegment(point, part[i], part[i + 1]);
-                if (dist < maxDistance) {
-                  return true;
-                }
-              }
+          // For lines, check if point is close to any segment
+          const latlngs = layer.getLatLngs();
+          const maxDistanceMeters = 15000; // 15km
+          
+          for (let i = 0; i < latlngs.length - 1; i++) {
+            // Check distance to this line segment
+            const dist = distanceToLineSegmentLatLng(latlng, latlngs[i], latlngs[i + 1]);
+            if (dist < maxDistanceMeters) {
+              return true;
             }
           }
           return false;
@@ -215,13 +206,8 @@ HTML_TEMPLATE = Template(
         // Handle Marker layers (points)
         if (layer instanceof L.Marker) {
           const markerLatLng = layer.getLatLng();
-          const markerPoint = map.latLngToContainerPoint(markerLatLng);
-          const mousePoint = map.latLngToContainerPoint(latlng);
-          const distance = Math.sqrt(
-            Math.pow(markerPoint.x - mousePoint.x, 2) + 
-            Math.pow(markerPoint.y - mousePoint.y, 2)
-          );
-          return distance < 20; // 20 pixels radius
+          const distance = map.distance(latlng, markerLatLng);
+          return distance < 20000; // 20km radius
         }
         
         // Handle parent GeoJSON layers (should rarely be called now, but kept for compatibility)
@@ -236,6 +222,36 @@ HTML_TEMPLATE = Template(
         }
         
         return false;
+      }
+      
+      // Distance from point to line segment (in meters)
+      function distanceToLineSegmentLatLng(point, lineStart, lineEnd) {
+        // Project point onto line segment
+        const x0 = point.lat;
+        const y0 = point.lng;
+        const x1 = lineStart.lat;
+        const y1 = lineStart.lng;
+        const x2 = lineEnd.lat;
+        const y2 = lineEnd.lng;
+        
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        
+        if (dx === 0 && dy === 0) {
+          // Line segment is a point
+          return map.distance(point, lineStart);
+        }
+        
+        // Calculate projection parameter
+        const t = Math.max(0, Math.min(1, ((x0 - x1) * dx + (y0 - y1) * dy) / (dx * dx + dy * dy)));
+        
+        // Calculate nearest point on segment
+        const nearestLat = x1 + t * dx;
+        const nearestLng = y1 + t * dy;
+        const nearestPoint = L.latLng(nearestLat, nearestLng);
+        
+        // Return distance in meters
+        return map.distance(point, nearestPoint);
       }
       
       // Distance from point to line segment
