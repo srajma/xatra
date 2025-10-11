@@ -2325,7 +2325,8 @@ HTML_TEMPLATE = Template(
               const svgRect = svg.getBoundingClientRect();
               
               colormapDiv.addEventListener('mouseenter', function() {
-                tooltipDiv.style.display = 'block';
+                // Don't show tooltip on enter - let mousemove handle it
+                // This way it only shows when actually over the gradient
               });
               
               colormapDiv.addEventListener('mouseleave', function() {
@@ -2336,13 +2337,27 @@ HTML_TEMPLATE = Template(
                 const colormapRect = colormapDiv.getBoundingClientRect();
                 const svgRect = svg.getBoundingClientRect();
                 
-                // Calculate relative position within the colormap container
-                // The SVG might be padded within the container, so we need to be careful
-                const relX = e.clientX - svgRect.left;
-                const svgWidth = svgRect.width;
+                // Find the actual gradient element within the SVG
+                const gradientElement = svg.querySelector('image, rect') || svg.querySelector('g');
+                if (!gradientElement) return;
+                
+                const gradientRect = gradientElement.getBoundingClientRect();
+                
+                // Calculate relative position within the actual gradient bar
+                const relX = e.clientX - gradientRect.left;
+                const gradientWidth = gradientRect.width;
+                
+                // Only show tooltip if hovering over the actual gradient
+                if (relX < 0 || relX > gradientWidth) {
+                  tooltipDiv.style.display = 'none';
+                  return;
+                }
+                
+                // Show tooltip when hovering over gradient
+                tooltipDiv.style.display = 'block';
                 
                 // Clamp to valid range
-                const normalizedX = Math.max(0, Math.min(1, relX / svgWidth));
+                const normalizedX = Math.max(0, Math.min(1, relX / gradientWidth));
                 
                 // Calculate value based on position
                 const vmin = payload.colormap_info.vmin;
