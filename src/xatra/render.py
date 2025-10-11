@@ -36,7 +36,9 @@ HTML_TEMPLATE = Template(
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
       #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
-      #colormap { position: fixed; top: 80px; right: 20px; background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
+      #colormap { position: fixed; top: 80px; right: 20px; background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; cursor: crosshair; }
+      #colormap-tooltip { position: fixed; background: rgba(255,255,255,0.98); border: 1px solid #333; padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1001; pointer-events: none; display: none; font-size: 13px; }
+      #colormap-tooltip .color-sample { width: 20px; height: 20px; border: 1px solid #666; display: inline-block; vertical-align: middle; margin-right: 8px; border-radius: 3px; }
       #layer-selector select { margin-left: 8px; }
       .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
@@ -64,6 +66,7 @@ HTML_TEMPLATE = Template(
       <select id="baseLayer"></select>
     </div>
     <div id="colormap"></div>
+    <div id="colormap-tooltip"></div>
     <div id="controls"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -2049,8 +2052,75 @@ HTML_TEMPLATE = Template(
 
       function setupColormap() {
         const colormapDiv = document.getElementById('colormap');
+        const tooltipDiv = document.getElementById('colormap-tooltip');
+        
         if (payload.colormap_svg) {
           colormapDiv.innerHTML = payload.colormap_svg;
+          
+          // Add interactive tooltip if colormap info is available
+          if (payload.colormap_info && payload.colormap_info.vmin !== null && payload.colormap_info.vmax !== null) {
+            const svg = colormapDiv.querySelector('svg');
+            if (svg) {
+              // Find the gradient rect/image in the SVG
+              const svgRect = svg.getBoundingClientRect();
+              
+              colormapDiv.addEventListener('mouseenter', function() {
+                tooltipDiv.style.display = 'block';
+              });
+              
+              colormapDiv.addEventListener('mouseleave', function() {
+                tooltipDiv.style.display = 'none';
+              });
+              
+              colormapDiv.addEventListener('mousemove', function(e) {
+                const colormapRect = colormapDiv.getBoundingClientRect();
+                const svgRect = svg.getBoundingClientRect();
+                
+                // Calculate relative position within the colormap container
+                // The SVG might be padded within the container, so we need to be careful
+                const relX = e.clientX - svgRect.left;
+                const svgWidth = svgRect.width;
+                
+                // Clamp to valid range
+                const normalizedX = Math.max(0, Math.min(1, relX / svgWidth));
+                
+                // Calculate value based on position
+                const vmin = payload.colormap_info.vmin;
+                const vmax = payload.colormap_info.vmax;
+                let value;
+                
+                if (payload.colormap_info.has_norm && payload.colormap_info.sample_values) {
+                  // For normalized colormaps, find the closest sample value
+                  const sampleValues = payload.colormap_info.sample_values;
+                  const sampleIndex = Math.floor(normalizedX * (sampleValues.length - 1));
+                  value = sampleValues[Math.max(0, Math.min(sampleValues.length - 1, sampleIndex))];
+                } else {
+                  // Linear interpolation
+                  value = vmin + normalizedX * (vmax - vmin);
+                }
+                
+                // Get color for this value
+                const color = getDataColor(value);
+                
+                // Format value with appropriate precision
+                let formattedValue;
+                if (Math.abs(value) >= 1000 || (Math.abs(value) < 0.01 && value !== 0)) {
+                  formattedValue = value.toExponential(2);
+                } else if (Math.abs(value) >= 10) {
+                  formattedValue = value.toFixed(1);
+                } else {
+                  formattedValue = value.toFixed(3);
+                }
+                
+                // Update tooltip content
+                tooltipDiv.innerHTML = `<span class="color-sample" style="background-color: ${color};"></span>Value: ${formattedValue}`;
+                
+                // Position tooltip near the cursor
+                tooltipDiv.style.left = (e.clientX + 15) + 'px';
+                tooltipDiv.style.top = (e.clientY + 15) + 'px';
+              });
+            }
+          }
         } else {
           colormapDiv.style.display = 'none';
         }

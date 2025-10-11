@@ -14,7 +14,7 @@ Development
 - [x] And maybe calculate river label path using bounding box.
 - [ ] ideally make it so hovering hovers on *all* flags/elements at that point
 - [x] "get current map" similar to matplotlib, to make maps more modular
-- [ ] Hover over color bar
+- [x] Hover over color bar
 - [x] periods for things other than flags
 - [x] xatra.Admin
 - [x] xatra.Flag color groups
