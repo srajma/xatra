@@ -39,6 +39,11 @@ HTML_TEMPLATE = Template(
       #colormap { position: fixed; top: 80px; right: 20px; background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; cursor: crosshair; }
       #colormap-tooltip { position: fixed; background: rgba(255,255,255,0.98); border: 1px solid #333; padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1001; pointer-events: none; display: none; font-size: 13px; }
       #colormap-tooltip .color-sample { width: 20px; height: 20px; border: 1px solid #666; display: inline-block; vertical-align: middle; margin-right: 8px; border-radius: 3px; }
+      #multi-tooltip { position: fixed; background: rgba(255,255,255,0.95); border: 2px solid #333; padding: 10px 14px; border-radius: 6px; box-shadow: 0 3px 12px rgba(0,0,0,0.4); z-index: 1002; pointer-events: none; display: none; font-size: 13px; max-width: 400px; }
+      #multi-tooltip .tooltip-item { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #ddd; }
+      #multi-tooltip .tooltip-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+      #multi-tooltip .tooltip-type { font-weight: bold; color: #0066cc; font-size: 11px; text-transform: uppercase; margin-bottom: 3px; }
+      #multi-tooltip .tooltip-content { color: #333; }
       #layer-selector select { margin-left: 8px; }
       .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
@@ -67,6 +72,7 @@ HTML_TEMPLATE = Template(
     </div>
     <div id="colormap"></div>
     <div id="colormap-tooltip"></div>
+    <div id="multi-tooltip"></div>
     <div id="controls"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -151,6 +157,174 @@ HTML_TEMPLATE = Template(
       function isLayerVisible(layer) {
         return layerVisibility.get(layer) || false;
       }
+
+      // Multi-layer tooltip system
+      // Maps layer objects to their tooltip metadata: { type: string, content: string }
+      const layerTooltips = new Map();
+      const multiTooltipDiv = document.getElementById('multi-tooltip');
+      let lastMouseEvent = null;
+      
+      // Register a layer with tooltip content
+      function registerLayerTooltip(layer, type, content) {
+        if (content) {
+          layerTooltips.set(layer, { type: type, content: content });
+        }
+      }
+      
+      // Check if a point is inside a layer's geometry
+      function layerContainsPoint(layer, latlng) {
+        if (!layer || !latlng) return false;
+        
+        // Handle GeoJSON layers (flags, admins, data, dataframes, rivers)
+        if (layer instanceof L.GeoJSON) {
+          let contains = false;
+          layer.eachLayer(function(subLayer) {
+            if (subLayer.getBounds && subLayer.getBounds().contains(latlng)) {
+              // For polygons, do a proper point-in-polygon test
+              if (subLayer.feature && subLayer.feature.geometry) {
+                const geom = subLayer.feature.geometry;
+                if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
+                  // Use Leaflet's built-in contains if available
+                  if (typeof subLayer._containsPoint === 'function') {
+                    const point = map.latLngToContainerPoint(latlng);
+                    if (subLayer._containsPoint(point)) {
+                      contains = true;
+                    }
+                  } else {
+                    // Fallback: just check if it's in bounding box
+                    contains = true;
+                  }
+                } else if (geom.type === 'LineString' || geom.type === 'MultiLineString') {
+                  // For lines, check if point is close to the line
+                  const point = map.latLngToContainerPoint(latlng);
+                  const maxDistance = 10; // pixels
+                  if (subLayer._parts) {
+                    for (const part of subLayer._parts) {
+                      for (let i = 0; i < part.length - 1; i++) {
+                        const dist = distanceToSegment(point, part[i], part[i + 1]);
+                        if (dist < maxDistance) {
+                          contains = true;
+                          break;
+                        }
+                      }
+                      if (contains) break;
+                    }
+                  }
+                }
+              }
+            }
+          });
+          return contains;
+        }
+        
+        // Handle Marker layers (points)
+        if (layer instanceof L.Marker) {
+          const markerLatLng = layer.getLatLng();
+          const markerPoint = map.latLngToContainerPoint(markerLatLng);
+          const mousePoint = map.latLngToContainerPoint(latlng);
+          const distance = Math.sqrt(
+            Math.pow(markerPoint.x - mousePoint.x, 2) + 
+            Math.pow(markerPoint.y - mousePoint.y, 2)
+          );
+          return distance < 20; // 20 pixels radius
+        }
+        
+        // Handle Polyline layers (paths)
+        if (layer instanceof L.Polyline) {
+          const point = map.latLngToContainerPoint(latlng);
+          const maxDistance = 10; // pixels
+          if (layer._parts) {
+            for (const part of layer._parts) {
+              for (let i = 0; i < part.length - 1; i++) {
+                const dist = distanceToSegment(point, part[i], part[i + 1]);
+                if (dist < maxDistance) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+        
+        return false;
+      }
+      
+      // Distance from point to line segment
+      function distanceToSegment(p, v, w) {
+        const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2);
+        if (l2 === 0) return Math.sqrt(Math.pow(p.x - v.x, 2) + Math.pow(p.y - v.y, 2));
+        let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        const projX = v.x + t * (w.x - v.x);
+        const projY = v.y + t * (w.y - v.y);
+        return Math.sqrt(Math.pow(p.x - projX, 2) + Math.pow(p.y - projY, 2));
+      }
+      
+      // Find all layers at a given point
+      function getLayersAtPoint(latlng) {
+        const foundLayers = [];
+        
+        // Check all layer types
+        for (const layerType of Object.keys(layers)) {
+          for (const layer of layers[layerType]) {
+            // Skip if layer is not visible
+            if (!map.hasLayer(layer)) continue;
+            
+            // Skip if layer doesn't have tooltip metadata
+            if (!layerTooltips.has(layer)) continue;
+            
+            // Check if point is inside layer
+            if (layerContainsPoint(layer, latlng)) {
+              foundLayers.push(layer);
+            }
+          }
+        }
+        
+        return foundLayers;
+      }
+      
+      // Update multi-tooltip display
+      function updateMultiTooltip(e) {
+        if (!e) return;
+        
+        lastMouseEvent = e;
+        const latlng = e.latlng;
+        const foundLayers = getLayersAtPoint(latlng);
+        
+        if (foundLayers.length === 0) {
+          multiTooltipDiv.style.display = 'none';
+          return;
+        }
+        
+        // Build tooltip HTML
+        let html = '';
+        for (let i = 0; i < foundLayers.length; i++) {
+          const layer = foundLayers[i];
+          const tooltipData = layerTooltips.get(layer);
+          if (tooltipData) {
+            html += '<div class="tooltip-item">';
+            html += `<div class="tooltip-type">${tooltipData.type}</div>`;
+            html += `<div class="tooltip-content">${tooltipData.content}</div>`;
+            html += '</div>';
+          }
+        }
+        
+        if (html) {
+          multiTooltipDiv.innerHTML = html;
+          multiTooltipDiv.style.display = 'block';
+          multiTooltipDiv.style.left = (e.containerPoint.x + 15) + 'px';
+          multiTooltipDiv.style.top = (e.containerPoint.y + 15) + 'px';
+        } else {
+          multiTooltipDiv.style.display = 'none';
+        }
+      }
+      
+      // Hide tooltip when mouse leaves map
+      map.on('mouseout', function() {
+        multiTooltipDiv.style.display = 'none';
+      });
+      
+      // Update tooltip on mousemove
+      map.on('mousemove', updateMultiTooltip);
 
       function getCentroid(geometry) {
         // Proper geometric centroid calculation
@@ -413,7 +587,8 @@ HTML_TEMPLATE = Template(
             }
             
             const layer = L.geoJSON(f.geometry, flagStyle);
-            layer.bindTooltip(`${f.label}${f.note ? ' — ' + f.note : ''}`, { 
+            const flagTooltip = `${f.label}${f.note ? ' — ' + f.note : ''}`;
+            layer.bindTooltip(flagTooltip, { 
               direction: 'top',
               offset: [0, -10],
               opacity: 0.9,
@@ -421,6 +596,9 @@ HTML_TEMPLATE = Template(
               permanent: false,
               sticky: true
             });
+            
+            // Register with multi-tooltip system
+            registerLayerTooltip(layer, 'Flag', flagTooltip);
             
             if (f.color) {
               layer.setStyle({
@@ -531,8 +709,9 @@ HTML_TEMPLATE = Template(
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
           const layer = L.geoJSON(r.geometry, { style: { className } });
+          const riverTooltip = `${r.label}${r.note ? ' — ' + r.note : ''}`;
           if (!r.show_label) {
-            layer.bindTooltip(`${r.label}${r.note ? ' — ' + r.note : ''}`, { 
+            layer.bindTooltip(riverTooltip, { 
               direction: 'top',
               offset: [0, -10],
               opacity: 0.9,
@@ -541,6 +720,8 @@ HTML_TEMPLATE = Template(
               sticky: true
             });
           }
+          // Register with multi-tooltip system
+          registerLayerTooltip(layer, 'River', riverTooltip);
           layer._riverData = { period: r.period };
           layers.rivers.push(layer);
           
@@ -585,6 +766,8 @@ HTML_TEMPLATE = Template(
           if (!p.show_label) {
             layer.bindTooltip(p.label);
           }
+          // Register with multi-tooltip system
+          registerLayerTooltip(layer, 'Path', p.label);
           layer._pathData = { period: p.period };
           layers.paths.push(layer);
           
@@ -705,6 +888,8 @@ HTML_TEMPLATE = Template(
           if (!p.show_label) {
             layer.bindTooltip(p.label);
           }
+          // Register with multi-tooltip system
+          registerLayerTooltip(layer, 'Point', p.label);
           layer._pointData = { period: p.period };
           layers.points.push(layer);
           
@@ -821,6 +1006,14 @@ HTML_TEMPLATE = Template(
             }
           });
           
+          // Register each sub-layer with multi-tooltip system
+          layer.eachLayer(function(subLayer) {
+            if (subLayer.getTooltip && subLayer.getTooltip()) {
+              const tooltipContent = subLayer.getTooltip().getContent();
+              registerLayerTooltip(subLayer, 'Admin Region', tooltipContent);
+            }
+          });
+          
           layer._adminData = { period: a.period };
           layers.admins.push(layer);
         }
@@ -886,6 +1079,14 @@ HTML_TEMPLATE = Template(
                   sticky: true
                 });
               }
+            }
+          });
+          
+          // Register each sub-layer with multi-tooltip system
+          layer.eachLayer(function(subLayer) {
+            if (subLayer.getTooltip && subLayer.getTooltip()) {
+              const tooltipContent = subLayer.getTooltip().getContent();
+              registerLayerTooltip(subLayer, 'Admin River', tooltipContent);
             }
           });
           
@@ -957,6 +1158,14 @@ HTML_TEMPLATE = Template(
                   sticky: true
                 });
               }
+            }
+          });
+          
+          // Register each sub-layer with multi-tooltip system
+          layer.eachLayer(function(subLayer) {
+            if (subLayer.getTooltip && subLayer.getTooltip()) {
+              const tooltipContent = subLayer.getTooltip().getContent();
+              registerLayerTooltip(subLayer, 'Data', tooltipContent);
             }
           });
           
@@ -1039,6 +1248,14 @@ HTML_TEMPLATE = Template(
                 sticky: true
               });
             }
+          }
+        });
+        
+        // Register each sub-layer with multi-tooltip system
+        layer.eachLayer(function(subLayer) {
+          if (subLayer.getTooltip && subLayer.getTooltip()) {
+            const tooltipContent = subLayer.getTooltip().getContent();
+            registerLayerTooltip(subLayer, 'DataFrame', tooltipContent);
           }
         });
         
@@ -1139,6 +1356,14 @@ HTML_TEMPLATE = Template(
           }
         });
         
+        // Register each sub-layer with multi-tooltip system
+        layer.eachLayer(function(subLayer) {
+          if (subLayer.getTooltip && subLayer.getTooltip()) {
+            const tooltipContent = subLayer.getTooltip().getContent();
+            registerLayerTooltip(subLayer, 'DataFrame', tooltipContent);
+          }
+        });
+        
         layer._dataframeType = 'dynamic';
         layer._dataframeYears = df.years;
         layers.dataframes.push(layer);
@@ -1162,7 +1387,11 @@ HTML_TEMPLATE = Template(
             };
           }
           
-          const layer = addGeoJSON(f.geometry, flagStyle, `${f.label}${f.note ? ' — ' + f.note : ''}`);
+          const flagTooltip = `${f.label}${f.note ? ' — ' + f.note : ''}`;
+          const layer = addGeoJSON(f.geometry, flagStyle, flagTooltip);
+          
+          // Register with multi-tooltip system
+          registerLayerTooltip(layer, 'Flag', flagTooltip);
           
           // Apply color styling after layer creation
           if (f.color) {
@@ -1273,7 +1502,12 @@ HTML_TEMPLATE = Template(
           if (!r.geometry) continue;
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
-          const layer = addGeoJSON(r.geometry, { style: { className } }, r.show_label ? undefined : `${r.label}${r.note ? ' — ' + r.note : ''}`);
+          const riverTooltip = `${r.label}${r.note ? ' — ' + r.note : ''}`;
+          const layer = addGeoJSON(r.geometry, { style: { className } }, r.show_label ? undefined : riverTooltip);
+          
+          // Register with multi-tooltip system
+          registerLayerTooltip(layer, 'River', riverTooltip);
+          
           layers.rivers.push(layer);
           
           // Add labels if show_label is true
@@ -1317,6 +1551,8 @@ HTML_TEMPLATE = Template(
           if (!p.show_label) {
             layer.bindTooltip(p.label);
           }
+          // Register with multi-tooltip system
+          registerLayerTooltip(layer, 'Path', p.label);
           layers.paths.push(layer);
           
           // Add labels if show_label is true
@@ -1436,6 +1672,8 @@ HTML_TEMPLATE = Template(
           if (!p.show_label) {
             layer.bindTooltip(p.label);
           }
+          // Register with multi-tooltip system
+          registerLayerTooltip(layer, 'Point', p.label);
           layers.points.push(layer);
           
           // Add label next to point if show_label is true
@@ -1540,6 +1778,14 @@ HTML_TEMPLATE = Template(
             }
           });
           
+          // Register each sub-layer with multi-tooltip system
+          layer.eachLayer(function(subLayer) {
+            if (subLayer.getTooltip && subLayer.getTooltip()) {
+              const tooltipContent = subLayer.getTooltip().getContent();
+              registerLayerTooltip(subLayer, 'Admin Region', tooltipContent);
+            }
+          });
+          
           layer.addTo(map);
           layers.admins.push(layer);
         }
@@ -1618,6 +1864,14 @@ HTML_TEMPLATE = Template(
             }
           });
           
+          // Register each sub-layer with multi-tooltip system
+          layer.eachLayer(function(subLayer) {
+            if (subLayer.getTooltip && subLayer.getTooltip()) {
+              const tooltipContent = subLayer.getTooltip().getContent();
+              registerLayerTooltip(subLayer, 'Admin River', tooltipContent);
+            }
+          });
+          
           layer.addTo(map);
           layers.admin_rivers.push(layer);
         }
@@ -1687,6 +1941,14 @@ HTML_TEMPLATE = Template(
                   sticky: true
                 });
               }
+            }
+          });
+          
+          // Register each sub-layer with multi-tooltip system
+          layer.eachLayer(function(subLayer) {
+            if (subLayer.getTooltip && subLayer.getTooltip()) {
+              const tooltipContent = subLayer.getTooltip().getContent();
+              registerLayerTooltip(subLayer, 'Data', tooltipContent);
             }
           });
           
