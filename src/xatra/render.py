@@ -54,6 +54,8 @@ HTML_TEMPLATE = Template(
       .path-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .river-label { font-size: 14px; color: #0066cc; padding: 2px 6px; }
       .river-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
+      .admin-river-label { font-size: 12px; color: #0066cc; padding: 1px 4px; }
+      .admin-river-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .point-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
@@ -1284,6 +1286,35 @@ HTML_TEMPLATE = Template(
           
           layer._adminRiverData = { period: ar.period };
           layers.admin_rivers.push(layer);
+          
+          // Add labels if requested
+          if (ar.show_label && ar.n_labels > 0) {
+            const nLabels = ar.n_labels || 1;
+            
+            for (let k = 1; k <= nLabels; k++) {
+              const fraction = k / (nLabels + 1);
+              
+              // Calculate label position and rotation for each river feature
+              if (ar.geometry.features) {
+                for (const feature of ar.geometry.features) {
+                  const labelInfo = calculateRiverLabelPosition(feature, feature.properties?.name || 'River', fraction);
+                  if (labelInfo && labelInfo.position) {
+                    const innerClassName = 'admin-river-label';
+                    const labelDiv = L.divIcon({
+                      html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${feature.properties?.name || 'River'}</div></div>`,
+                      className: 'admin-river-label-container',
+                      iconSize: [1, 1],
+                      iconAnchor: [0, 0]
+                    });
+                    
+                    const labelLayer = L.marker(labelInfo.position, { icon: labelDiv });
+                    labelLayer._adminRiverData = { period: ar.period };
+                    layers.admin_rivers.push(labelLayer);
+                  }
+                }
+              }
+            }
+          }
         }
       }
 
@@ -2014,6 +2045,35 @@ HTML_TEMPLATE = Template(
           
           layer.addTo(map);
           layers.admin_rivers.push(layer);
+          
+          // Add labels if requested
+          if (ar.show_label && ar.n_labels > 0) {
+            const nLabels = ar.n_labels || 1;
+            
+            for (let k = 1; k <= nLabels; k++) {
+              const fraction = k / (nLabels + 1);
+              
+              // Calculate label position and rotation for each river feature
+              if (ar.geometry.features) {
+                for (const feature of ar.geometry.features) {
+                  const labelInfo = calculateRiverLabelPosition(feature, feature.properties?.name || 'River', fraction);
+                  if (labelInfo && labelInfo.position) {
+                    const innerClassName = 'admin-river-label';
+                    const labelDiv = L.divIcon({
+                      html: `<div style="transform: rotate(${labelInfo.angle}deg);"><div class="${innerClassName}" style="transform: translateY(-12px); white-space: nowrap;">${feature.properties?.name || 'River'}</div></div>`,
+                      className: 'admin-river-label-container',
+                      iconSize: [1, 1],
+                      iconAnchor: [0, 0]
+                    });
+                    
+                    const labelLayer = L.marker(labelInfo.position, { icon: labelDiv }).addTo(map);
+                    labelLayer._adminRiverData = { period: ar.period };
+                    layers.admin_rivers.push(labelLayer);
+                  }
+                }
+              }
+            }
+          }
         }
       }
 

@@ -167,10 +167,14 @@ class AdminRiversEntry:
         period: Optional time period as (start_year, end_year) tuple
         classes: Optional CSS classes for styling
         sources: List of data sources to include (default: ["naturalearth", "overpass"])
+        show_label: Whether to display labels on the rivers (default: False)
+        n_labels: Number of labels to display along each river (default: 1)
     """
     period: Optional[Tuple[int, int]] = None
     classes: Optional[str] = None
     sources: List[str] = None
+    show_label: bool = False
+    n_labels: int = 1
     
     def __post_init__(self):
         if self.sources is None:
@@ -899,19 +903,22 @@ class FlagMap:
         
         self._admins.append(AdminEntry(gadm_key=gadm, level=level, period=period_tuple, classes=classes, color_by_level=color_by_level, find_in_gadm=find_in_gadm))
 
-    def AdminRivers(self, period: Optional[List[int]] = None, classes: Optional[str] = None, sources: Optional[List[str]] = None) -> None:
+    def AdminRivers(self, period: Optional[List[int]] = None, classes: Optional[str] = None, sources: Optional[List[str]] = None, show_label: bool = False, n_labels: int = 1) -> None:
         """Add rivers from specified data sources.
         
         Args:
             period: Optional time period as [start_year, end_year] list
             classes: Optional CSS classes for styling
             sources: List of data sources to include (default: ["naturalearth", "overpass"])
+            show_label: Whether to display labels on the rivers (default: False)
+            n_labels: Number of labels to display along each river (default: 1)
             
         Example:
             >>> map.AdminRivers()  # Show all rivers from Natural Earth and Overpass data
             >>> map.AdminRivers(sources=["naturalearth"])  # Only Natural Earth rivers
             >>> map.AdminRivers(sources=["overpass"])  # Only Overpass rivers
             >>> map.AdminRivers(classes="all-rivers")  # With custom styling
+            >>> map.AdminRivers(show_label=True, n_labels=3)  # With labels on rivers
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -926,7 +933,7 @@ class FlagMap:
                 if source not in valid_sources:
                     raise ValueError(f"Invalid source '{source}'. Must be one of: {valid_sources}")
         
-        self._admin_rivers.append(AdminRiversEntry(period=period_tuple, classes=classes, sources=sources))
+        self._admin_rivers.append(AdminRiversEntry(period=period_tuple, classes=classes, sources=sources, show_label=show_label, n_labels=n_labels))
 
     def _apply_limits_to_period(self, period: Optional[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
         """Apply map limits to a period with epsilon adjustment.
@@ -1413,6 +1420,8 @@ class FlagMap:
                             "classes": ar.classes,
                             "period": list(restricted_period) if restricted_period is not None else None,
                             "sources": ar.sources,
+                            "show_label": ar.show_label,
+                            "n_labels": ar.n_labels,
                         })
                     else:
                         print(f"Warning: No rivers found for AdminRivers with sources: {ar.sources}")
