@@ -12,7 +12,7 @@ Development
 - [x] option for point labels, path, river labels
 - [x] option to create multiple path, river labels.
 - [x] And maybe calculate river label path using bounding box.
-- [ ] ideally make it so hovering hovers on *all* flags/elements at that point
+- [x] ideally make it so hovering hovers on *all* flags/elements at that point
 - [x] "get current map" similar to matplotlib, to make maps more modular
 - [x] Hover over color bar
 - [x] periods for things other than flags
@@ -48,6 +48,7 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
+- [ ] color bar hover on correct position
 - [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
 - [x] Static Dataframe maps don't work
 - [x] logarithmic/normalized color bars with matplotlib Normalize support
