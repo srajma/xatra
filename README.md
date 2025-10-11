@@ -28,7 +28,7 @@ Features
 
 Dev
 - [ ] Get it in a publishable state
-- [ ] time debugging
+- [x] time debugging
 
 Interactive platform
 - [ ] DSL
