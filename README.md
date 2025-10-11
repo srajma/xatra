@@ -48,7 +48,7 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] color bar hover on correct position
+- [x] color bar hover on correct position
 - [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
 - [x] Static Dataframe maps don't work
 - [x] logarithmic/normalized color bars with matplotlib Normalize support
