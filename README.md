@@ -50,7 +50,7 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] AdminRivers doesn't work.
+- [x] AdminRivers doesn't work.
 - [x] River name rendering position is weird
 - [x] River names don't render for overpass
 - [x] color bar hover on correct position
