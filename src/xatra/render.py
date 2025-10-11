@@ -206,9 +206,9 @@ HTML_TEMPLATE = Template(
         
         // Handle Polygon/MultiPolygon layers (individual features from GeoJSON)
         if (layer instanceof L.Polygon) {
-          // Simple approach: just use bounding box for now
-          // This is less precise but always works regardless of map state
-          return layer.getBounds().contains(latlng);
+          // Use precise point-in-polygon test with ray casting
+          const latlngs = layer.getLatLngs();
+          return pointInPolygon(latlng, latlngs);
         }
         
         // Handle Path/Polyline layers (rivers, paths, individual line features)
@@ -259,6 +259,75 @@ HTML_TEMPLATE = Template(
         }
         
         return false;
+      }
+      
+      // Point-in-polygon test using ray casting algorithm
+      function pointInPolygon(point, polygonLatlngs) {
+        // Handle different polygon structures that Leaflet returns
+        // Simple polygon: [{lat, lng}, {lat, lng}, ...]
+        // Polygon with holes: [[{lat, lng}, ...], [{lat, lng}, ...]]
+        // MultiPolygon: [[[{lat, lng}, ...]], [[{lat, lng}, ...]]]
+        
+        if (!polygonLatlngs || polygonLatlngs.length === 0) return false;
+        
+        // Check if it's a simple array of LatLng objects
+        if (polygonLatlngs[0].lat !== undefined && polygonLatlngs[0].lng !== undefined) {
+          // Simple polygon: [{lat, lng}, {lat, lng}, ...]
+          return raycast(point, polygonLatlngs);
+        }
+        
+        // Check if it's a polygon with holes (array of rings)
+        if (Array.isArray(polygonLatlngs[0])) {
+          if (polygonLatlngs[0].length > 0 && polygonLatlngs[0][0].lat !== undefined) {
+            // Polygon with holes: [[exterior ring], [hole1], [hole2], ...]
+            // Point must be in exterior ring but not in any holes
+            const inExterior = raycast(point, polygonLatlngs[0]);
+            if (!inExterior) return false;
+            
+            // Check holes (if any)
+            for (let i = 1; i < polygonLatlngs.length; i++) {
+              if (raycast(point, polygonLatlngs[i])) {
+                return false; // Point is in a hole
+              }
+            }
+            return true;
+          }
+          
+          // MultiPolygon: [[[{lat, lng}, ...]], [[{lat, lng}, ...]]]
+          if (Array.isArray(polygonLatlngs[0][0])) {
+            for (const polygon of polygonLatlngs) {
+              if (pointInPolygon(point, polygon)) {
+                return true;
+              }
+            }
+            return false;
+          }
+        }
+        
+        return false;
+      }
+      
+      // Ray casting algorithm for point-in-polygon test
+      function raycast(point, ring) {
+        if (!ring || ring.length < 3) return false;
+        
+        let inside = false;
+        const x = point.lng;
+        const y = point.lat;
+        
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const xi = ring[i].lng;
+          const yi = ring[i].lat;
+          const xj = ring[j].lng;
+          const yj = ring[j].lat;
+          
+          const intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+          
+          if (intersect) inside = !inside;
+        }
+        
+        return inside;
       }
       
       // Distance from point to line segment (in meters)
