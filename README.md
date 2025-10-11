@@ -48,6 +48,8 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
+- [ ] River name rendering position is weird
+- [ ] Orient flag labels in direction of flag
 - [x] color bar hover on correct position
 - [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
 - [x] Static Dataframe maps don't work
