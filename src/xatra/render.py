@@ -175,46 +175,41 @@ HTML_TEMPLATE = Template(
       function layerContainsPoint(layer, latlng) {
         if (!layer || !latlng) return false;
         
-        // Handle GeoJSON layers (flags, admins, data, dataframes, rivers)
-        if (layer instanceof L.GeoJSON) {
-          let contains = false;
-          layer.eachLayer(function(subLayer) {
-            if (subLayer.getBounds && subLayer.getBounds().contains(latlng)) {
-              // For polygons, do a proper point-in-polygon test
-              if (subLayer.feature && subLayer.feature.geometry) {
-                const geom = subLayer.feature.geometry;
-                if (geom.type === 'Polygon' || geom.type === 'MultiPolygon') {
-                  // Use Leaflet's built-in contains if available
-                  if (typeof subLayer._containsPoint === 'function') {
-                    const point = map.latLngToContainerPoint(latlng);
-                    if (subLayer._containsPoint(point)) {
-                      contains = true;
-                    }
-                  } else {
-                    // Fallback: just check if it's in bounding box
-                    contains = true;
-                  }
-                } else if (geom.type === 'LineString' || geom.type === 'MultiLineString') {
-                  // For lines, check if point is close to the line
-                  const point = map.latLngToContainerPoint(latlng);
-                  const maxDistance = 10; // pixels
-                  if (subLayer._parts) {
-                    for (const part of subLayer._parts) {
-                      for (let i = 0; i < part.length - 1; i++) {
-                        const dist = distanceToSegment(point, part[i], part[i + 1]);
-                        if (dist < maxDistance) {
-                          contains = true;
-                          break;
-                        }
-                      }
-                      if (contains) break;
-                    }
-                  }
+        // Check bounding box first for performance
+        if (layer.getBounds && !layer.getBounds().contains(latlng)) {
+          return false;
+        }
+        
+        // Handle Polygon/MultiPolygon layers (individual features from GeoJSON)
+        if (layer instanceof L.Polygon) {
+          // Use Leaflet's built-in point-in-polygon test
+          if (typeof layer._containsPoint === 'function') {
+            const point = map.latLngToContainerPoint(latlng);
+            try {
+              return layer._containsPoint(point);
+            } catch (e) {
+              // Fallback to bounding box if _containsPoint fails
+              return layer.getBounds().contains(latlng);
+            }
+          }
+          return layer.getBounds().contains(latlng);
+        }
+        
+        // Handle Path/Polyline layers (rivers, paths, individual line features)
+        if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+          const point = map.latLngToContainerPoint(latlng);
+          const maxDistance = 10; // pixels
+          if (layer._parts) {
+            for (const part of layer._parts) {
+              for (let i = 0; i < part.length - 1; i++) {
+                const dist = distanceToSegment(point, part[i], part[i + 1]);
+                if (dist < maxDistance) {
+                  return true;
                 }
               }
             }
-          });
-          return contains;
+          }
+          return false;
         }
         
         // Handle Marker layers (points)
@@ -229,20 +224,15 @@ HTML_TEMPLATE = Template(
           return distance < 20; // 20 pixels radius
         }
         
-        // Handle Polyline layers (paths)
-        if (layer instanceof L.Polyline) {
-          const point = map.latLngToContainerPoint(latlng);
-          const maxDistance = 10; // pixels
-          if (layer._parts) {
-            for (const part of layer._parts) {
-              for (let i = 0; i < part.length - 1; i++) {
-                const dist = distanceToSegment(point, part[i], part[i + 1]);
-                if (dist < maxDistance) {
-                  return true;
-                }
-              }
+        // Handle parent GeoJSON layers (should rarely be called now, but kept for compatibility)
+        if (layer instanceof L.GeoJSON) {
+          let contains = false;
+          layer.eachLayer(function(subLayer) {
+            if (layerContainsPoint(subLayer, latlng)) {
+              contains = true;
             }
-          }
+          });
+          return contains;
         }
         
         return false;
@@ -269,12 +259,24 @@ HTML_TEMPLATE = Template(
             // Skip if layer is not visible
             if (!map.hasLayer(layer)) continue;
             
-            // Skip if layer doesn't have tooltip metadata
-            if (!layerTooltips.has(layer)) continue;
-            
-            // Check if point is inside layer
-            if (layerContainsPoint(layer, latlng)) {
-              foundLayers.push(layer);
+            // For GeoJSON layers (admins, admin_rivers, data, dataframes), check sublayers
+            if (layer instanceof L.GeoJSON) {
+              layer.eachLayer(function(subLayer) {
+                // Check if this sublayer has tooltip metadata
+                if (layerTooltips.has(subLayer)) {
+                  // Check if point is inside this sublayer
+                  if (layerContainsPoint(subLayer, latlng)) {
+                    foundLayers.push(subLayer);
+                  }
+                }
+              });
+            } else {
+              // For simple layers (flags, rivers, paths, points), check directly
+              if (layerTooltips.has(layer)) {
+                if (layerContainsPoint(layer, latlng)) {
+                  foundLayers.push(layer);
+                }
+              }
             }
           }
         }
