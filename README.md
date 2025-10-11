@@ -9,7 +9,7 @@ Kanging
 
 Development
 - [ ] class-based show labels, etc.
-- [ ] Orient flag labels in direction of flag
+- [x] Orient flag labels in direction of flag
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels
 - [x] option to create multiple path, river labels.

@@ -552,6 +552,117 @@ HTML_TEMPLATE = Template(
         return processCoordinates(allCoords, label, fraction);
       }
       
+      // Helper function to find two most distant points in a geometry
+      function findDistantPoints(geometry) {
+        // Extract all coordinates from the geometry
+        let allCoords = [];
+        
+        if (geometry.type === 'FeatureCollection' && geometry.features) {
+          // Handle FeatureCollection
+          for (const feature of geometry.features) {
+            if (feature.geometry) {
+              allCoords = allCoords.concat(extractCoordinatesFromGeometry(feature.geometry));
+            }
+          }
+        } else if (geometry.type === 'Feature' && geometry.geometry) {
+          // Handle Feature
+          allCoords = extractCoordinatesFromGeometry(geometry.geometry);
+        } else {
+          // Handle raw geometry
+          allCoords = extractCoordinatesFromGeometry(geometry);
+        }
+        
+        if (allCoords.length === 0) return null;
+        
+        // For performance, sample points if there are too many
+        const maxSampleSize = 200;
+        let sampledPoints = allCoords;
+        if (allCoords.length > maxSampleSize) {
+          const step = Math.floor(allCoords.length / maxSampleSize);
+          sampledPoints = [];
+          for (let i = 0; i < allCoords.length; i += step) {
+            sampledPoints.push(allCoords[i]);
+          }
+          // Always include the last point
+          if (sampledPoints[sampledPoints.length - 1] !== allCoords[allCoords.length - 1]) {
+            sampledPoints.push(allCoords[allCoords.length - 1]);
+          }
+        }
+        
+        // Find the two most distant points
+        let maxDistance = 0;
+        let point1 = null;
+        let point2 = null;
+        
+        for (let i = 0; i < sampledPoints.length; i++) {
+          for (let j = i + 1; j < sampledPoints.length; j++) {
+            const dist = Math.sqrt(
+              Math.pow(sampledPoints[j][0] - sampledPoints[i][0], 2) +
+              Math.pow(sampledPoints[j][1] - sampledPoints[i][1], 2)
+            );
+            if (dist > maxDistance) {
+              maxDistance = dist;
+              point1 = sampledPoints[i];
+              point2 = sampledPoints[j];
+            }
+          }
+        }
+        
+        if (!point1 || !point2) return null;
+        
+        // Calculate angle based on the line between the two distant points
+        const dx = point2[1] - point1[1]; // longitude difference
+        const dy = point2[0] - point1[0]; // latitude difference
+        let angle = -Math.atan2(dy, dx) * 180 / Math.PI;
+        
+        // Normalize angle to keep text readable
+        if (angle > 90) angle -= 180;
+        if (angle < -90) angle += 180;
+        
+        return { point1: point1, point2: point2, angle: angle };
+      }
+      
+      // Helper function to extract coordinates from various geometry types
+      function extractCoordinatesFromGeometry(geometry) {
+        let allCoords = [];
+        
+        switch (geometry.type) {
+          case 'Point':
+            allCoords.push([geometry.coordinates[1], geometry.coordinates[0]]); // [lat, lon]
+            break;
+          case 'LineString':
+            for (const coord of geometry.coordinates) {
+              allCoords.push([coord[1], coord[0]]); // Convert to [lat, lon]
+            }
+            break;
+          case 'MultiLineString':
+            for (const lineString of geometry.coordinates) {
+              for (const coord of lineString) {
+                allCoords.push([coord[1], coord[0]]); // Convert to [lat, lon]
+              }
+            }
+            break;
+          case 'Polygon':
+            for (const ring of geometry.coordinates) {
+              for (const coord of ring) {
+                allCoords.push([coord[1], coord[0]]); // Convert to [lat, lon]
+              }
+            }
+            break;
+          case 'MultiPolygon':
+            for (const polygon of geometry.coordinates) {
+              for (const ring of polygon) {
+                for (const coord of ring) {
+                  allCoords.push([coord[1], coord[0]]); // Convert to [lat, lon]
+                }
+              }
+            }
+            break;
+        }
+        
+        return allCoords;
+      }
+      
       // Helper function to process coordinates (extracted for reuse)
       function processCoordinates(allCoords, label, fraction) {
         
@@ -784,8 +895,16 @@ HTML_TEMPLATE = Template(
               
               let labelClassName = 'flag-label';
               if (f.classes) labelClassName += ' ' + f.classes;
+              
+              // Calculate rotation based on distant points in geometry
+              let rotationAngle = 0;
+              const distantPoints = findDistantPoints(f.geometry);
+              if (distantPoints) {
+                rotationAngle = distantPoints.angle;
+              }
+              
               const labelDiv = L.divIcon({
-                html: `<div class="${labelClassName}" style="${labelStyle}">${f.label}</div>`,
+                html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.label}</div></div>`,
                 className: 'flag-label-container',
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
@@ -1515,8 +1634,16 @@ HTML_TEMPLATE = Template(
             
             let labelClassName = 'flag-label';
             if (f.classes) labelClassName += ' ' + f.classes;
+            
+            // Calculate rotation based on distant points in geometry
+            let rotationAngle = 0;
+            const distantPoints = findDistantPoints(f.geometry);
+            if (distantPoints) {
+              rotationAngle = distantPoints.angle;
+            }
+            
             const labelDiv = L.divIcon({
-              html: `<div class="${labelClassName}" style="${labelStyle}">${f.label}</div>`,
+              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.label}</div></div>`,
               className: 'flag-label-container',
               iconSize: [1, 1],
               iconAnchor: [0, 0]
