@@ -4,7 +4,7 @@ src/xatra/data/ne_*
 src/xatra/icons/downloaded/
 scripts/start_server.sh
 
-*/src/xatra/data/src/xatra/data/ne_10m_rivers.geojson
+*src/xatra/data/ne_10m_rivers.geojson
 
 # python
 __pycache__/
