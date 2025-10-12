@@ -1,7 +1,10 @@
 *.log
 src/xatra/data/gadm/
 src/xatra/data/ne_*
+src/xatra/icons/downloaded/
 scripts/start_server.sh
+
+*/src/xatra/data/src/xatra/data/ne_10m_rivers.geojson
 
 # python
 __pycache__/
@@ -19,4 +22,3 @@ old/
 old_xatra/
 tests/*.json
 tests/*.html
-src/xatra/icons/downloaded/
