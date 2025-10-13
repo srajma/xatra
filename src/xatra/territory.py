@@ -114,11 +114,11 @@ class Territory:
             Shapely geometry object or None if invalid
         """
         if self._geom_cache is not None:
-            # print(f"RETRIEVING CACHED GEOMETRY FOR f'{self.strrepr}'")
+            print(f"RETRIEVING CACHED GEOMETRY FOR f'{self.strrepr}'")
             return self._geom_cache
         if self._geometry_provider is None:
             return None
-        # print(f"CALCULATING GEOMETRY FOR f'{self.strrepr}'")
+        print(f"CALCULATING GEOMETRY FOR f'{self.strrepr}'")
         self._geom_cache = self._geometry_provider()
         return self._geom_cache
 

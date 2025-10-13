@@ -55,8 +55,8 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
+- [ ] Efficiency: cache territory geometries by string rep rather than per-object
 - [x] AdminRivers don't work again.
-- [ ] make outline of rivers show on hover too -- need rivers to be grouped for that
 - [x] ~~show bounding boxes of flag paxmaxes when selected~~ instead just show outline on hover
 - [x] AdminRivers doesn't work.
 - [x] River name rendering position is weird
@@ -83,6 +83,8 @@ Bugfixes
 - [x] rename Colormap to Colormap
 - [x] efficiency and documentation
 - [x] [WONTFIX] use approx centroid calc
+- [x] [WONTFIX] make outline of rivers show on hover too -- need rivers to be grouped for that
+
 
 # Xatra: The Matplotlib of Maps
 
