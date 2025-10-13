@@ -59,6 +59,7 @@ class Territory:
 
     _geometry_provider: Optional[callable] = None
     _geom_cache: Optional[Any] = None
+    strrepr: str = None
 
     @staticmethod
     def from_geojson(geojson_obj: Dict[str, Any]) -> "Territory":
@@ -72,7 +73,7 @@ class Territory:
         """
         def provider():
             return _geojson_to_geometry(geojson_obj)
-        return Territory(_geometry_provider=provider)
+        return Territory(_geometry_provider=provider,strrepr="<DIRECT_DICT>")
 
     @staticmethod
     def from_gadm(key: str, find_in_gadm: Optional[List[str]] = None) -> "Territory":
@@ -88,7 +89,7 @@ class Territory:
         def provider():
             obj = load_gadm_like(key, find_in_gadm)
             return _geojson_to_geometry(obj)
-        return Territory(_geometry_provider=provider)
+        return Territory(_geometry_provider=provider, strrepr=f'gadm("{key}")')
 
     @staticmethod
     def from_naturalearth(ne_id: str) -> "Territory":
@@ -103,7 +104,7 @@ class Territory:
         def provider():
             obj = load_naturalearth_like(ne_id)
             return _geojson_to_geometry(obj)
-        return Territory(_geometry_provider=provider)
+        return Territory(_geometry_provider=provider, strrepr=f'naturalearth("{ne_id}")')
 
     @time_debug("Convert territory to geometry")
     def to_geometry(self):
@@ -113,9 +114,11 @@ class Territory:
             Shapely geometry object or None if invalid
         """
         if self._geom_cache is not None:
+            # print(f"RETRIEVING CACHED GEOMETRY FOR f'{self.strrepr}'")
             return self._geom_cache
         if self._geometry_provider is None:
             return None
+        # print(f"CALCULATING GEOMETRY FOR f'{self.strrepr}'")
         self._geom_cache = self._geometry_provider()
         return self._geom_cache
 
@@ -137,7 +140,7 @@ class Territory:
             if b is None:
                 return a
             return unary_union([a, b])
-        return Territory(_geometry_provider=provider)
+        return Territory(_geometry_provider=provider,strrepr=f'({self.strrepr} | {other.strrepr})')
 
     def __sub__(self, other: "Territory") -> "Territory":
         """Difference of two territories (self - other).
@@ -156,4 +159,4 @@ class Territory:
             if b is None:
                 return a
             return a.difference(b)
-        return Territory(_geometry_provider=provider)
+        return Territory(_geometry_provider=provider, strrepr=f'({self.strrepr} - {other.strrepr})')
