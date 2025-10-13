@@ -54,6 +54,9 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
+- [ ] AdminRivers don't work again.
+- [ ] use approx centroid calc
+- [ ] show bounding boxes of flag paxmaxes when selected
 - [x] AdminRivers doesn't work.
 - [x] River name rendering position is weird
 - [x] River names don't render for overpass
