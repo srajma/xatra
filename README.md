@@ -27,7 +27,7 @@ Features
 - [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
 
 Dev
-- [ ] Get it in a publishable state
+- [ ] Get it in a publishable state and publish
 - [x] time debugging
 
 Interactive platform
@@ -55,7 +55,6 @@ Libraries
 
 Bugfixes
 - [x] AdminRivers don't work again.
-- [ ] use approx centroid calc
 - [ ] show bounding boxes of flag paxmaxes when selected
 - [x] AdminRivers doesn't work.
 - [x] River name rendering position is weird
@@ -81,6 +80,7 @@ Bugfixes
 - [x] add color map in html
 - [x] rename Colormap to Colormap
 - [x] efficiency and documentation
+- [x] [WONTFIX] use approx centroid calc
 
 # Xatra: The Matplotlib of Maps
 
