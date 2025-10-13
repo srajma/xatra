@@ -1,7 +1,7 @@
 import pandas as pd
 import xatra
 import matplotlib.pyplot as plt
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")

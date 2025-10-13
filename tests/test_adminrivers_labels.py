@@ -7,7 +7,7 @@ import xatra
 from xatra.loaders import gadm
 
 # Create a map
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 

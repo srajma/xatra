@@ -119,7 +119,7 @@ import xatra
 from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
-map = xatra.FlagMap()
+map = xatra.Map()
 
 # Flags automatically get colors from the default LinearColorSequence
 # Flags with the same label will use the same color
@@ -143,7 +143,7 @@ import xatra
 from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -194,7 +194,7 @@ Here's a taluk-level administrative map of the Indian subcontinent
 ```python
 import xatra
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -221,7 +221,7 @@ import xatra
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -248,7 +248,7 @@ Or a dynamic map with a time slider:
 import pandas as pd
 import xatra
 import matplotlib.pyplot as plt
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -291,7 +291,7 @@ from xatra.loaders import gadm, naturalearth
 from xatra.colorseq import LinearColorSequence, Color
 from matplotlib.colors import LinearSegmentedColormap
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -328,7 +328,7 @@ The `find_in_gadm` parameter is available for:
 
 ## Directly doing `xatra.Flag() etc.`
 
-All of the elements of `FlagMap` e.g. `Flag()`, `River()` can also be directly called as methods of `xatra` i.e. `xatra.Flag()` etc. and it will apply to the "current plot". This is useful for modularity, i.e. creating some map as a module that can simply be imported into another map.
+All of the elements of `Map` e.g. `Flag()`, `River()` can also be directly called as methods of `xatra` i.e. `xatra.Flag()` etc. and it will apply to the "current plot". This is useful for modularity, i.e. creating some map as a module that can simply be imported into another map.
 
 ```python
 #!/usr/bin/env python3
@@ -336,7 +336,7 @@ All of the elements of `FlagMap` e.g. `Flag()`, `River()` can also be directly c
 Example demonstrating pyplot-style interface for Xatra.
 
 This example shows how to use xatra.Flag(), xatra.River(), etc. 
-directly without explicitly creating a FlagMap object, similar to
+directly without explicitly creating a Map object, similar to
 how matplotlib.pyplot works.
 """
 
@@ -345,7 +345,7 @@ from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
 # No need to create a map object - just start adding elements!
-# A FlagMap is automatically created on first use.
+# A Map is automatically created on first use.
 
 xatra.BaseOption("OpenStreetMap", default=True)
 xatra.BaseOption("Esri.WorldImagery")
@@ -371,12 +371,12 @@ print("Map exported to tests/map_pyplot.html")
 
 ## API Reference
 
-### FlagMap
+### Map
 
 The main class for creating maps.
 
 ```python
-map = FlagMap()
+map = Map()
 ```
 
 #### Methods
@@ -410,17 +410,17 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 ### Pyplot-Style Functions
 
-For convenience, Xatra provides pyplot-style functions that operate on a global "current map". These functions are available at the top level of the `xatra` module and mirror the `FlagMap` methods.
+For convenience, Xatra provides pyplot-style functions that operate on a global "current map". These functions are available at the top level of the `xatra` module and mirror the `Map` methods.
 
 #### Map Management
 
-- **`get_current_map()`**: Get the current FlagMap instance, creating one if none exists
-- **`set_current_map(map)`**: Set the current FlagMap instance (or None to clear)
-- **`new_map()`**: Create a new FlagMap and set it as current
+- **`get_current_map()`**: Get the current Map instance, creating one if none exists
+- **`set_current_map(map)`**: Set the current Map instance (or None to clear)
+- **`new_map()`**: Create a new Map and set it as current
 
-#### FlagMap methods are xatra methods
+#### Map methods are xatra methods
 
-All FlagMap methods are available as top-level functions that operate on the current map:
+All Map methods are available as top-level functions that operate on the current map:
 
 **Adding elements:**
 - **`xatra.Flag(...)`**: Add a flag to the current map
@@ -446,7 +446,7 @@ All FlagMap methods are available as top-level functions that operate on the cur
 
 - **`xatra.show(...)`**: Export the current map to JSON and HTML files
 
-**Note:** All parameters are identical to the corresponding FlagMap methods. The functions simply call the method on the current map instance.
+**Note:** All parameters are identical to the corresponding Map methods. The functions simply call the method on the current map instance.
 
 ### CSS Classes and Styling
 
@@ -690,7 +690,7 @@ import pandas as pd
 import xatra
 import matplotlib.pyplot as plt
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 
 # Create a static DataFrame
@@ -719,7 +719,7 @@ import xatra
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 
 # Create a dynamic DataFrame with year columns
@@ -916,7 +916,7 @@ from xatra import Icon
 from xatra.loaders import gadm
 
 # Create a map
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.Flag(label="India", value=gadm("IND"))
@@ -982,7 +982,7 @@ For Points, setting `show_label=True` displays the label to the right of the poi
 import xatra
 from xatra.loaders import gadm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
@@ -1004,7 +1004,7 @@ For Paths, setting `show_label=True` calculates the midpoint along the path (by 
 import xatra
 from xatra.loaders import gadm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
@@ -1044,7 +1044,7 @@ For Rivers, setting `show_label=True` places the label at an intelligent locatio
 import xatra
 from xatra.loaders import gadm, naturalearth
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
@@ -1167,7 +1167,7 @@ The tooltips are displayed in a clean, organized format with each element type c
 import xatra
 from xatra.loaders import gadm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 
 # These elements overlap - hovering over Tamil Nadu will show all tooltips
@@ -1275,7 +1275,7 @@ import xatra
 xatra.set_debug_time(True)
 
 # Now create your map - all operations will be timed
-map = xatra.FlagMap()
+map = xatra.Map()
 map.Flag("India", xatra.gadm("IND"))
 map.show()
 ```

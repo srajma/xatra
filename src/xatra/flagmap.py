@@ -1,7 +1,7 @@
 """
-Xatra FlagMap Module
+Xatra Map Module
 
-This module provides the core FlagMap class for creating interactive historical maps.
+This module provides the core Map class for creating interactive historical maps.
 It supports various map elements including flags (countries/kingdoms), rivers, paths, 
 points, text labels, and title boxes with optional time-based filtering for dynamic maps.
 
@@ -373,23 +373,23 @@ def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, 
     return svg_content
 
 
-class FlagMap:
+class Map:
     """Main class for creating interactive historical maps.
     
-    FlagMap is the core class for creating maps similar to "matplotlib of maps".
+    Map is the core class for creating maps similar to "matplotlib of maps".
     It supports various map elements including flags (countries/kingdoms), rivers,
     paths, points, text labels, and title boxes. Maps can be static or dynamic
     with time-based filtering using the pax-max aggregation method.
     
     Example:
-        >>> map = FlagMap()
+        >>> map = Map()
         >>> map.Flag("Maurya", territory, period=[320, 180])
         >>> map.River("Ganges", river_geometry, classes="major-river")
         >>> map.export("map.html")
     """
     
     def __init__(self) -> None:
-        """Initialize a new FlagMap instance.
+        """Initialize a new Map instance.
         
         Creates an empty map with default base layer options (OpenStreetMap,
         Esri.WorldImagery, OpenTopoMap, Esri.WorldPhysical).

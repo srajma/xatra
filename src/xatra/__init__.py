@@ -14,9 +14,9 @@ Key Features:
 - Customizable styling with CSS
 - Data loaders for GADM, Natural Earth, and Overpass API
 
-Example (explicit FlagMap):
+Example (explicit Map):
     >>> import xatra
-    >>> map = xatra.FlagMap()
+    >>> map = xatra.Map()
     >>> map.Flag("Maurya", territory, period=[320, 180])
     >>> map.River("Ganges", river_geometry, classes="major-river")
     >>> map.show("map.html")
@@ -52,7 +52,7 @@ if not is_data_installed():
         stacklevel=2
     )
 
-from .flagmap import FlagMap
+from .flagmap import Map
 from .territory import Territory
 from .loaders import gadm, naturalearth, overpass
 from .icon import Icon
@@ -128,7 +128,7 @@ def set_debug_time(enabled: bool):
 __version__ = "0.1.0"
 __all__ = [
     # Core classes
-    "FlagMap",
+    "Map",
     "Territory",
     "Icon",
     # Loaders

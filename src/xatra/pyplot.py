@@ -3,7 +3,7 @@ Matplotlib-style pyplot interface for Xatra.
 
 This module provides convenience functions that operate on a global "current map",
 similar to matplotlib.pyplot. Users can call xatra.Flag(), xatra.River(), etc. 
-without explicitly creating a FlagMap object.
+without explicitly creating a Map object.
 
 Example:
     >>> import xatra
@@ -17,54 +17,54 @@ Example:
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
 
-from .flagmap import FlagMap
+from .flagmap import Map
 from .territory import Territory
 from .colorseq import ColorSequence
 
 # Global state for current map
-_current_map: Optional[FlagMap] = None
+_current_map: Optional[Map] = None
 
 
-def get_current_map() -> FlagMap:
+def get_current_map() -> Map:
     """
-    Get the current FlagMap instance, creating one if none exists.
+    Get the current Map instance, creating one if none exists.
     
     This function is similar to matplotlib's get current figure.
-    If no map exists, a new FlagMap is created and set as current.
+    If no map exists, a new Map is created and set as current.
     
     Returns:
-        The current FlagMap instance
+        The current Map instance
     """
     global _current_map
     if _current_map is None:
-        _current_map = FlagMap()
+        _current_map = Map()
     return _current_map
 
 
-def set_current_map(map: Optional[FlagMap]) -> None:
+def set_current_map(map: Optional[Map]) -> None:
     """
-    Set the current FlagMap instance.
+    Set the current Map instance.
     
     Args:
-        map: FlagMap instance to set as current, or None to clear
+        map: Map instance to set as current, or None to clear
     """
     global _current_map
     _current_map = map
 
 
-def new_map() -> FlagMap:
+def new_map() -> Map:
     """
-    Create a new FlagMap and set it as the current map.
+    Create a new Map and set it as the current map.
     
     Returns:
-        The newly created FlagMap instance
+        The newly created Map instance
     """
     global _current_map
-    _current_map = FlagMap()
+    _current_map = Map()
     return _current_map
 
 
-# Wrapper functions for all FlagMap methods
+# Wrapper functions for all Map methods
 
 def FlagColorSequence(color_sequence: ColorSequence, class_name: Optional[str] = None) -> None:
     """Set the color sequence for flags on the current map."""

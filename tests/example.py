@@ -9,7 +9,7 @@ from matplotlib.colors import LinearSegmentedColormap
 xatra.set_debug_time(True)
 
 # Create a test map
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")

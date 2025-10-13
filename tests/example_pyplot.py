@@ -3,7 +3,7 @@
 Example demonstrating pyplot-style interface for Xatra.
 
 This example shows how to use xatra.Flag(), xatra.River(), etc. 
-directly without explicitly creating a FlagMap object, similar to
+directly without explicitly creating a Map object, similar to
 how matplotlib.pyplot works.
 """
 
@@ -12,7 +12,7 @@ from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
 # No need to create a map object - just start adding elements!
-# A FlagMap is automatically created on first use.
+# A Map is automatically created on first use.
 
 xatra.BaseOption("OpenStreetMap", default=True)
 xatra.BaseOption("Esri.WorldImagery")
