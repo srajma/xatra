@@ -89,12 +89,12 @@ Xatra is the matplotlib of maps. You can create historical maps (static or dynam
 ## Installation
 
 ```bash
-pip install xatra # or `uv add xatra` etc. as per your preference
-xatra-install-data # This downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from Hugging Face to `~/.xatra/data/`. The data only needs to be downloaded once.
+pip install xatra
+xatra-install-data
 
 ```
 
-This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from Hugging Face to `~/.xatra/data/`. The data only needs to be downloaded once.
+This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from [Hugging Face](https://huggingface.co/datasets/srajma/xatra-data) to `~/.xatra/data/`. The data only needs to be downloaded once.
 
 Check if data is installed:
 

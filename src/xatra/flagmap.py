@@ -1380,37 +1380,38 @@ class FlagMap:
                     all_rivers = []
                     
                     # Load rivers based on specified sources
-                    from .loaders import _read_json
+                    from .loaders import _read_json, NE_RIVERS_FILE, OVERPASS_DIR
                     import os
                     
                     # Load Natural Earth rivers if requested
                     if "naturalearth" in ar.sources:
-                        ne_rivers_file = os.path.join(os.path.dirname(__file__), "data", "ne_10m_rivers.geojson")
-                        if os.path.exists(ne_rivers_file):
-                            ne_data = _read_json(ne_rivers_file)
+                        if os.path.exists(NE_RIVERS_FILE):
+                            ne_data = _read_json(NE_RIVERS_FILE)
                             for feature in ne_data.get("features", []):
                                 props = feature.get("properties", {}) or {}
                                 # Add source information to properties
+                                feature.setdefault("properties", {})
                                 feature["properties"]["_source"] = "naturalearth"
                                 feature["properties"]["_ne_id"] = props.get("ne_id", "unknown")
                                 all_rivers.append(feature)
                     
                     # Load Overpass rivers if requested
                     if "overpass" in ar.sources:
-                        overpass_dir = os.path.join(os.path.dirname(__file__), "data", "rivers_overpass_india")
-                        if os.path.isdir(overpass_dir):
-                            for filename in os.listdir(overpass_dir):
+                        if os.path.isdir(OVERPASS_DIR):
+                            for filename in os.listdir(OVERPASS_DIR):
                                 if filename.endswith('.json'):
-                                    filepath = os.path.join(overpass_dir, filename)
+                                    filepath = os.path.join(OVERPASS_DIR, filename)
                                     try:
                                         overpass_data = _read_json(filepath)
                                         # Handle both Feature and FeatureCollection
                                         if overpass_data.get("type") == "Feature":
+                                            overpass_data.setdefault("properties", {})
                                             overpass_data["properties"]["_source"] = "overpass"
                                             overpass_data["properties"]["_filename"] = filename
                                             all_rivers.append(overpass_data)
                                         elif overpass_data.get("type") == "FeatureCollection":
                                             for feature in overpass_data.get("features", []):
+                                                feature.setdefault("properties", {})
                                                 feature["properties"]["_source"] = "overpass"
                                                 feature["properties"]["_filename"] = filename
                                                 all_rivers.append(feature)
