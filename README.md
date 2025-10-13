@@ -1257,6 +1257,14 @@ Xatra is optimized for large, complex maps with many elements:
 
 Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps.
 
+#### Enabling Time Debugging
+
+**Method 1: Environment Variable (Recommended)**
+```bash
+DEBUG_TIME=1 python your_script.py
+```
+
+**Method 2: Programmatically**
 ```python
 import xatra
 
@@ -1267,6 +1275,11 @@ map = xatra.FlagMap()
 map.Flag("India", xatra.gadm("IND"))
 map.show()
 ```
+
+**Environment Variable Values:**
+- `DEBUG_TIME=1`, `true`, `yes`, `on` → Enable debugging
+- `DEBUG_TIME=0`, `false`, `no`, `off` → Disable debugging (default)
+- Unset or empty → Disable debugging (default)
 
 When time debugging is enabled, you'll see timing information for:
 
@@ -1312,12 +1325,22 @@ When time debugging is enabled, you'll see timing information for:
 [14:23:47] ✓ FINISH: Show (export map)
 ```
 
-To disable Time Debugging:
+#### Disabling Time Debugging
 
+**Method 1: Environment Variable**
+```bash
+unset DEBUG_TIME
+# or
+export DEBUG_TIME=0
+```
+
+**Method 2: Programmatically**
 ```python
 # Disable time debugging
 xatra.set_debug_time(False)
 ```
+
+**Note:** The programmatic methods override the environment variable setting.
 
 ## Data Sources
 

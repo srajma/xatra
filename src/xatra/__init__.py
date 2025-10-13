@@ -31,6 +31,7 @@ Example (pyplot-style):
 
 import warnings
 import sys
+import os
 
 # Check for data installation
 from .data_installer import is_data_installed, get_data_dir
@@ -82,8 +83,26 @@ from .pyplot import (
 )
 
 
-# Debugging flags
-DEBUG_TIME = False
+# Debugging flags - initialize from environment variable
+def _parse_debug_time_env():
+    """Parse DEBUG_TIME environment variable."""
+    env_value = os.environ.get("DEBUG_TIME", "").lower()
+    if env_value in ("1", "true", "yes", "on"):
+        return True
+    elif env_value in ("0", "false", "no", "off", ""):
+        return False
+    else:
+        # Invalid value - warn and default to False
+        warnings.warn(
+            f"Invalid DEBUG_TIME environment variable value: '{os.environ.get('DEBUG_TIME')}'. "
+            f"Expected one of: 1, 0, true, false, yes, no, on, off. Defaulting to False.",
+            UserWarning,
+            stacklevel=3
+        )
+        return False
+
+DEBUG_TIME = _parse_debug_time_env()
+debug_utils.DEBUG_TIME = DEBUG_TIME
 
 
 def set_debug_time(enabled: bool):
@@ -92,13 +111,15 @@ def set_debug_time(enabled: bool):
     When enabled, all major operations will print timing information
     showing when activities start and finish with HH:MM:SS timestamps.
     
+    This function overrides the DEBUG_TIME environment variable setting.
+    
     Args:
         enabled: True to enable time debugging, False to disable
         
     Example:
         >>> import xatra
-        >>> xatra.set_debug_time(True)
-        >>> xatra.DEBUG_TIME = True  # Alternative way
+        >>> xatra.set_debug_time(True)  # Overrides environment variable
+        >>> xatra.DEBUG_TIME = True     # Alternative way (also overrides env)
     """
     global DEBUG_TIME
     DEBUG_TIME = enabled
