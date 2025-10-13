@@ -70,11 +70,24 @@ def download_from_huggingface(repo_id: str, target_dir: Path, force: bool = Fals
             local_dir_use_symlinks=False,
         )
         
-        # Move data directory contents to target
-        data_source = Path(snapshot_dir) / "data"
-        if data_source.exists():
-            # Move contents from data/ subdirectory
-            for item in data_source.iterdir():
+        tmp_root = Path(snapshot_dir)
+        data_source = tmp_root / "data"
+        if not data_source.exists():
+            # Many datasets keep files at repo root; support that layout
+            data_source = tmp_root
+        
+        moved_any = False
+        expected_items = [
+            "gadm",
+            "disputed_territories",
+            "rivers_overpass_india",
+            "ne_10m_rivers.geojson",
+        ]
+        
+        # First try to move only expected items if they exist
+        for name in expected_items:
+            item = data_source / name
+            if item.exists():
                 dest = target_dir / item.name
                 if dest.exists():
                     if dest.is_dir():
@@ -82,13 +95,34 @@ def download_from_huggingface(repo_id: str, target_dir: Path, force: bool = Fals
                     else:
                         dest.unlink()
                 shutil.move(str(item), str(dest))
-            
-            # Clean up temporary download directory
+                moved_any = True
+        
+        # If nothing was moved yet, move everything (except hidden/HF internals)
+        if not moved_any:
+            for item in data_source.iterdir():
+                if item.name in {".gitattributes", ".gitignore", "README.md", "README", ".huggingface"}:
+                    continue
+                dest = target_dir / item.name
+                if dest.exists():
+                    if dest.is_dir():
+                        shutil.rmtree(dest)
+                    else:
+                        dest.unlink()
+                shutil.move(str(item), str(dest))
+                moved_any = True
+        
+        # Clean up temporary download directory
+        try:
             shutil.rmtree(target_dir / "tmp_download")
-        else:
-            print(f"ERROR: Downloaded data does not contain 'data/' subdirectory")
+        except Exception:
+            pass
+        
+        if not moved_any:
+            print("ERROR: Download finished but no expected data files were found to move.")
+            print(f"Checked in: {data_source}")
+            print("Please verify the dataset contents on Hugging Face.")
             sys.exit(1)
-            
+        
         print(f"✓ Data successfully downloaded to {target_dir}")
         
     except Exception as e:
