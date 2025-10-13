@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: xatra
 Version: 2.0.0
-Summary: Add your description here
+Summary: The matplotlib of maps - create beautiful historical, administrative, and data maps
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
 Requires-Dist: overpy>=0.7
@@ -11,8 +11,46 @@ Requires-Dist: geojson>=3.1.0
 Requires-Dist: jinja2>=3.1.4
 Requires-Dist: matplotlib>=3.10.6
 Requires-Dist: pandas>=2.3.2
+Requires-Dist: huggingface-hub>=0.20.0
 
 # TODO
+
+Kanging
+- [ ] copy maps from old xatra (colonies and hsr remaining)
+- [ ] maps of north-west: Panini, Puranas and Greek
+- [ ] full history timeline
+- [x] GDP per capita map
+- [x] admin map
+
+Features
+- [x] Orient flag labels in direction of flag
+- [x] option for different point markers besides pin
+- [x] option for point labels, path, river labels
+- [x] option to create multiple path, river labels.
+- [x] And maybe calculate river label path using bounding box.
+- [x] ideally make it so hovering hovers on *all* flags/elements at that point
+- [x] "get current map" similar to matplotlib, to make maps more modular
+- [x] Hover over color bar
+- [x] periods for things other than flags
+- [x] xatra.Admin
+- [x] xatra.Flag color groups
+- [x] xatra.Dataframe with notes and DataColormap
+- [x] do we need to redraw everything each frame?
+- [ ] MAYBE: class-based show labels, etc. Not that important. Main thing you'd use it for is hiding labels and CSS is enough for that.
+- [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
+- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly
+- [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
+
+Dev
+- [ ] Get it in a publishable state
+- [x] time debugging
+
+Interactive platform
+- [ ] DSL
+- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
+- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
+- [ ] ideally we want a crud type of thing for real-time updating
+
 Stylistic changes
 - [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
@@ -21,17 +59,27 @@ Stylistic changes
 - [x] also need flag names to appear at centroid
 - [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
 - [x] color assignment
-- [x] choice of BaseMaps
+- [x] t logachoice of BaseMaps
 - [x] slider shouldn't appear for static maps
 - [x] map.slider()
 - [x] slider play button plus positions of years, start and end year
-- [ ] watermark
+- [x] watermark
 
 Libraries
 - [x] copy matchers from old xatra
-- [ ] copy maps from old xatra
 
 Bugfixes
+- [x] AdminRivers doesn't work.
+- [x] River name rendering position is weird
+- [x] River names don't render for overpass
+- [x] color bar hover on correct position
+- [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
+- [x] Static Dataframe maps don't work
+- [x] logarithmic/normalized color bars with matplotlib Normalize support
+- [x] Make sure color bars are shown correctly regardless of how it is
+- [x] Support a "note" column for Dataframe.
+- [x] Don't assume missing values
+- [x] classes attribute not being passed on
 - [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
 - [x] disputed areas admin map
 - [x] fix issue with disputed areas
@@ -46,24 +94,31 @@ Bugfixes
 - [x] rename Colormap to Colormap
 - [x] efficiency and documentation
 
-Development
-- [x] periods for things other than flags
-- [x] xatra.Admin
-- [x] xatra.Data
-- [x] xatra.Flag color groups
-- [x] xatra.Dataframe
-- [x] do we need to redraw everything each frame?
-- [ ] possibly calculate and keep simplified geometries
-- [ ] loading geojson from file instead of storing it in html; i.e. with a server
-
-Interactive platform
-- [ ] DSL
-- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
-- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
-
 # Xatra: The Matplotlib of Maps
 
 Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever.
+
+## Installation
+
+```bash
+pip install xatra # or `uv add xatra` etc. as per your preference
+xatra-install-data # This downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from Hugging Face to `~/.xatra/data/`. The data only needs to be downloaded once.
+
+```
+
+This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from Hugging Face to `~/.xatra/data/`. The data only needs to be downloaded once.
+
+Check if data is installed:
+
+```bash
+xatra-install-data --check
+```
+
+If you need to re-download the data:
+
+```bash
+xatra-install-data --force
+```
 
 ## Example: Historical map
 
@@ -87,7 +142,7 @@ map.TitleBox("<b>Sample historical map of India</b><br>Classical period, source:
 map.show()
 ```
 
-## Example: A map with everything
+## Example: A map with everything (except dataframes)
 
 And here's a more complex example, of a dynamic map (items can have periods so they only show up at certain time periods), with base tile layers, notes that show up in tooltips, and custom CSS for each object:
 
@@ -105,9 +160,6 @@ map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], n
 map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
-map.Data("IND", 100, period=[-320, -180])  # some data
-map.Data("IND", 150, period=[250, 500])     # some data
-map.Data("IND.31", 75,)  # Chola region data
 map.Admin(gadm="IND.31", level=3)
 map.AdminRivers(sources=["naturalearth", "overpass"], classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
@@ -167,28 +219,66 @@ map.TitleBox("<b>Taluk-level map of the Indian subcontinent.")
 map.show()
 ```
 
-## Example: Data map
+## Example: Dataframe map
 
-And here's a data map:
+And here's a data map using DataFrames:
 
 ```python
+import pandas as pd
 import xatra
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 map = xatra.FlagMap()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
-map.Data(gadm = "IND.12", value=100)
-map.Data(gadm = "IND.12", value=100)
-map.Data(gadm = "IND.21", value=300, period=[0, 600])
-map.Data(gadm = "IND.22", value=300, period=[0, 600])
-map.Data(gadm = "IND.21", value=1000, period=[600, 700])
-map.Data(gadm = "IND.22", value=1000, period=[600, 800])
-map.TitleBox("Some random data.")
+
+### STATIC MAP
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'IND.20', 'Z01.14'],
+    'population': [100, 200, 150, 100],
+    # '2021': [100, 200, 150, 100],
+    'note': ['ooga', 'booga', 'kooga', 'mooga'] # optional, shows up in tooltips
+})
+
+df.set_index('GID', inplace=True)
+map.DataColormap(plt.cm.viridis, norm=LogNorm())
+map.Dataframe(df)
 
 map.show()
 ```
+
+Or a dynamic map with a time slider: 
+
+```python
+import pandas as pd
+import xatra
+import matplotlib.pyplot as plt
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldImagery")
+map.BaseOption("OpenTopoMap")
+map.BaseOption("Esri.WorldPhysical")
+
+### DYNAMIC MAP
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'Z01.14'],
+    '2020': [100, 200, 100],
+    '2020_note': ['2020_ooga', '2020_booga', '2020_mooga'],
+    '2021': [110, 210, 110],
+    '2021_note': ['2021_ooga', '2021_booga', '2021_mooga'],
+    '2022': [120, 220, 340]
+})
+
+df.set_index('GID', inplace=True)
+map.DataColormap(norm=LogNorm())
+map.Dataframe(df)
+
+map.show()
+```
+
 ## Tip on coloring historical maps well
 
 Successive Flags you define are assigned colors based on the map's `FlagColorSequence`, which is a class that determines how the next color is calculated. The default color sequence increments successive colors' hues by the conjugate golden ratio of the hue spectrum (taken from 0 to 1, so 0 is red, 1/3 is green, 2/3 is blue and 1 is red again) mod 1:
@@ -242,7 +332,50 @@ If for whatever reason that doesn't work, you can also specify which countries' 
 The `find_in_gadm` parameter is available for:
 - `map.Admin()` - Administrative regions
 - `map.Flag()` - When using `gadm()` loader
-- `map.Data()` - Data elements
+- `map.Dataframe()` - DataFrame elements
+
+## Directly doing `xatra.Flag() etc.`
+
+All of the elements of `FlagMap` e.g. `Flag()`, `River()` can also be directly called as methods of `xatra` i.e. `xatra.Flag()` etc. and it will apply to the "current plot". This is useful for modularity, i.e. creating some map as a module that can simply be imported into another map.
+
+```python
+#!/usr/bin/env python3
+"""
+Example demonstrating pyplot-style interface for Xatra.
+
+This example shows how to use xatra.Flag(), xatra.River(), etc. 
+directly without explicitly creating a FlagMap object, similar to
+how matplotlib.pyplot works.
+"""
+
+import xatra
+from xatra.loaders import gadm, naturalearth
+from xatra.territory_library import NORTH_INDIA
+
+# No need to create a map object - just start adding elements!
+# A FlagMap is automatically created on first use.
+
+xatra.BaseOption("OpenStreetMap", default=True)
+xatra.BaseOption("Esri.WorldImagery")
+xatra.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240])
+xatra.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
+xatra.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500])
+xatra.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout")
+xatra.River(label="Ganga", value=naturalearth("1159122643"), classes="major-river")
+xatra.Path(label="Uttarapatha", value=[[28, 77], [30, 90], [40, 120]])
+xatra.Point(label="Indraprastha", position=[28, 77])
+xatra.Text(label="Jambudvipa", position=[22, 79])
+xatra.TitleBox("<b>Pyplot-style Map Example</b><br>Classical period, using xatra.Flag() etc.")
+xatra.CSS("""
+.flag { stroke: #555; fill: rgba(200,0,0,0.4); }
+.major-river { stroke: #0066cc; stroke-width: 3; }
+""")
+
+xatra.slider(-320, 500)
+
+xatra.show(out_json="tests/map_pyplot.json", out_html="tests/map_pyplot.html")
+print("Map exported to tests/map_pyplot.html")
+```
 
 ## API Reference
 
@@ -261,13 +394,12 @@ map = FlagMap()
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
 - **`Flag(label, territory, period=None, note=None, color=None, classes=None)`**: Add a flag (country/kingdom)
-- **`Data(gadm, value, period=None, classes=None)`**: Add a data element with color mapping
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
-- **`River(label, geometry, note=None, classes=None, period=None)`**: Add a river
-- **`Path(label, coords, classes=None, period=None)`**: Add a path/route
-- **`Point(label, position, period=None)`**: Add a point of interest
+- **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a river with optional label display and customizable hover detection radius
+- **`Path(label, coords, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional label display and customizable hover detection radius
+- **`Point(label, position, period=None, icon=None, show_label=False, hover_radius=20)`**: Add a point of interest with optional custom icon, label display, and customizable hover detection radius
 - **`Text(label, position, classes=None, period=None)`**: Add a text label
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
 
@@ -277,12 +409,202 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
 - **`FlagColorSequence(color_sequence, class_name=None)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
-- **`DataColormap(colormap, vmin=None, vmax=None)`**: Set the color map for data elements
+- **`DataColormap(colormap, vmin=None, vmax=None, norm=None)`**: Set the color map for data elements
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
 
 - **`show(out_json="map.json", out_html="map.html")`**: Export map to JSON and HTML files
+
+### Pyplot-Style Functions
+
+For convenience, Xatra provides pyplot-style functions that operate on a global "current map". These functions are available at the top level of the `xatra` module and mirror the `FlagMap` methods.
+
+#### Map Management
+
+- **`get_current_map()`**: Get the current FlagMap instance, creating one if none exists
+- **`set_current_map(map)`**: Set the current FlagMap instance (or None to clear)
+- **`new_map()`**: Create a new FlagMap and set it as current
+
+#### FlagMap methods are xatra methods
+
+All FlagMap methods are available as top-level functions that operate on the current map:
+
+**Adding elements:**
+- **`xatra.Flag(...)`**: Add a flag to the current map
+- **`xatra.River(...)`**: Add a river to the current map
+- **`xatra.Path(...)`**: Add a path to the current map
+- **`xatra.Point(...)`**: Add a point to the current map
+- **`xatra.Text(...)`**: Add a text label to the current map
+- **`xatra.TitleBox(...)`**: Add a title box to the current map
+- **`xatra.Admin(...)`**: Add administrative regions to the current map
+- **`xatra.AdminRivers(...)`**: Add rivers to the current map
+- **`xatra.Dataframe(...)`**: Add DataFrame data to the current map
+
+**Styling and Configuration**
+
+- **`xatra.CSS(...)`**: Add CSS styles to the current map
+- **`xatra.BaseOption(...)`**: Add a base map layer to the current map
+- **`xatra.FlagColorSequence(...)`**: Set flag color sequence for the current map
+- **`xatra.AdminColorSequence(...)`**: Set admin color sequence for the current map
+- **`xatra.DataColormap(...)`**: Set data colormap for the current map
+- **`xatra.slider(...)`**: Set time controls for the current map
+
+**Export**
+
+- **`xatra.show(...)`**: Export the current map to JSON and HTML files
+
+**Note:** All parameters are identical to the corresponding FlagMap methods. The functions simply call the method on the current map instance.
+
+### CSS Classes and Styling
+
+Xatra provides powerful CSS-based styling for all map elements. Each element type receives default CSS classes, and you can add custom classes for fine-grained control.
+
+#### Default CSS Classes
+
+Every element type automatically receives a default CSS class that you can use for styling:
+
+| Element Type | Default Class | Element |
+|--------------|---------------|---------|
+| `Flag()` | `.flag` | The flag geometry (polygon/path) |
+| Flag labels | `.flag-label` | The text label that appears at the flag's centroid |
+| `River()` | `.river` | River line geometry |
+| `Path()` | `.path` | Path line geometry |
+| `Point()` | `.point` | Point marker |
+| `Text()` | `.text` | Text label |
+| `Admin()` | `.admin` | Administrative region geometry |
+| `Dataframe()` | `.dataframe` | DataFrame visualization geometry |
+| `TitleBox()` | `#title` | The title box container (ID, not class) |
+| `slider()` | `#controls` | The time slider controls (ID, not class) |
+
+#### Custom CSS Classes
+
+You can add custom classes to most elements for individual styling. Custom classes are added using the `classes` parameter:
+
+```python
+# Add custom classes to flags
+map.Flag(label="Maurya", value=gadm("IND"), classes="empire hindu")
+map.Flag(label="Chola", value=gadm("IND.31"), classes="kingdom hindu")
+map.Flag(label="Mughal", value=gadm("IND.25"), classes="empire muslim")
+
+# Add custom classes to other elements
+map.River(label="Ganga", value=naturalearth("1159122643"), classes="sacred-river major-river")
+map.Path(label="Silk Road", value=[[35, 75], [40, 80]], classes="trade-route ancient")
+map.Text(label="Jambudvipa", position=[22, 79], classes="region-name large-text")
+map.Admin(gadm="IND.31", level=3, classes="tamil-nadu-tehsils")
+# DataFrame elements can be styled with CSS classes
+# map.Dataframe(df, classes="state-data")
+```
+
+**Important:** Flag labels automatically inherit the custom classes from their parent flag. This means if you define:
+
+```python
+map.Flag(label="Maurya", value=gadm("IND"), classes="empire hindu")
+```
+
+Both the flag geometry and its label will receive the classes `empire` and `hindu`, in addition to their default classes (`.flag` and `.flag-label` respectively).
+
+#### Styling with CSS
+
+Use the `CSS()` method to add custom styles. You can target default classes, custom classes, or both:
+
+```python
+map.CSS("""
+/* Style all flags */
+.flag {
+  stroke: #333;
+  stroke-width: 1;
+  fill-opacity: 0.4;
+}
+
+/* Style all flag labels */
+.flag-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #666;
+}
+
+/* Style specific custom classes */
+.empire {
+  stroke-width: 3;
+  stroke: #ff0000;
+}
+
+.kingdom {
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+}
+
+.hindu {
+  fill: rgba(255, 200, 100, 0.4);
+}
+
+.muslim {
+  fill: rgba(100, 200, 255, 0.4);
+}
+
+/* Style flag labels with custom classes */
+.flag-label.empire {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.flag-label.kingdom {
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Style rivers */
+.river {
+  stroke: #0066cc;
+  stroke-width: 2;
+}
+
+.sacred-river {
+  stroke: #ff6600;
+  stroke-width: 4;
+}
+
+/* Style paths */
+.path {
+  stroke: #8B4513;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+
+.trade-route {
+  stroke: #FFD700;
+  stroke-width: 3;
+}
+
+/* Style text labels */
+.text {
+  font-size: 16px;
+  color: #666;
+}
+
+.region-name {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Style the title box */
+#title {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  max-width: 400px;
+}
+
+/* Style the time controls */
+#controls {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+  border-radius: 5px;
+}
+""")
+```
 
 ### Territory Class
 
@@ -361,58 +683,140 @@ map.Flag("Unknown", territory7, classes="unknown-class")  # Uses default colors
 
 Flag labels automatically use a darker, more opaque version of the flag color for better readability.
 
-### Data Mapping
+### Data Visualization with DataFrames
 
-The `Data` method creates data visualizations by mapping numeric values to colors on geographical regions. Data elements automatically get colors from the map's data colormap and display a color scale legend.
+Xatra provides powerful data visualization capabilities through the `Dataframe` method, which creates efficient choropleth maps from pandas DataFrames. This is the primary way to visualize data on maps.
+
+The `Dataframe` method creates efficient choropleth maps from pandas DataFrames where each row represents an administrative division indexed by GID, and columns represent either a single data value or time-series data.
+
+#### Static DataFrames (Single Data Column)
+
+For static maps with a single data value per region:
 
 ```python
-# Basic data mapping with default yellow-orange-red colormap
-map.Data("IND", 100)  # India with value 100
-map.Data("PAK", 50)   # Pakistan with value 50
-map.Data("CHN", 200)  # China with value 200
-
-# Data with time periods for dynamic maps
-map.Data("IND", 100, period=[0, 100])  # India shows value 100 from 0-100 CE
-map.Data("IND", 150, period=[100, 200])  # India shows value 150 from 100-200 CE
-
-# Custom colormap
+import pandas as pd
+import xatra
 import matplotlib.pyplot as plt
-map.DataColormap(plt.cm.viridis, vmin=0, vmax=300)
 
-# Subdivision data (state, district, tehsil level)
-map.Data("IND.31", 85.5, classes="tamil-nadu-data")  # Tamil Nadu state
-map.Data("IND.31.1", 42.3, classes="chennai-data")   # Chennai district
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+
+# Create a static DataFrame
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'IND.20', 'Z01.14'],
+    'population': [1000000, 2000000, 1500000, 500000],
+    'note': ['Coastal state', 'Major state', 'Growing region', 'Disputed territory']
+})
+
+df.set_index('GID', inplace=True)
+
+# Use custom colormap
+map.DataColormap(plt.cm.viridis, vmin=0, vmax=2000000)
+map.Dataframe(df)
+
+map.show()
 ```
 
-**Parameters:**
-- `gadm`: GADM key (e.g., "IND", "IND.31", "IND.31.1")
-- `value`: Numeric value for color mapping
-- `period`: Optional time period as [start_year, end_year] list
-- `classes`: Optional CSS classes for styling
+#### Dynamic DataFrames (Time-Series Data)
 
-**Features:**
-- **Automatic color mapping**: Values are mapped to colors using the data colormap
-- **Default colormap**: Yellow-orange-red gradient if no colormap is set
-- **Custom colormaps**: Use any matplotlib colormap (viridis, Reds, Blues, etc.)
-- **Color scale legend**: Automatically displays the colormap with min/max values
-- **Rich tooltips**: Shows appropriate level name and all GADM properties
-- **Subdivision support**: Works with country, state, district, and tehsil levels
-- **Time support**: Works with dynamic maps and period filtering
-- **Memory efficient**: Shared geometry for multiple data points per region
+For dynamic maps with time-series data:
 
-**Colormap Configuration:**
 ```python
-# Use default yellow-orange-red colormap
+import pandas as pd
+import xatra
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+
+# Create a dynamic DataFrame with year columns
+df = pd.DataFrame({
+    'GID': ['IND.31', 'IND.12', 'IND.20'],
+    '2020': [1000000, 2000000, 1500000],
+    '2021': [1100000, 2100000, 1600000],
+    '2022': [1200000, 2200000, 1700000],
+    '2020_note': ['Base year', 'Major growth', 'Steady increase'],
+    '2021_note': ['Continued growth', 'Peak growth', 'Accelerating'],
+    '2022_note': ['Sustained growth', 'Plateau', 'Strong growth']
+})
+
+df.set_index('GID', inplace=True)
+
+# Use logarithmic colormap for wide-ranging data
+map.DataColormap(plt.cm.plasma, norm=LogNorm(vmin=1000000, vmax=2200000))
+map.Dataframe(df)
+map.slider(2020, 2022)
+
+map.show()
+```
+
+#### DataFrame Structure and Requirements
+
+**Required Structure:**
+- Must be a pandas DataFrame
+- Must have GID as index or as a column named 'GID'
+- GID values must correspond to GADM administrative codes (e.g., 'IND.31', 'PAK.1', 'Z01.14')
+
+**Static Maps:**
+- Single data column containing numeric values
+- Optional `note` column for tooltip information
+- Auto-detected when DataFrame has exactly one data column
+
+**Dynamic Maps:**
+- Multiple columns with year names (e.g., '2020', '2021', '2022')
+- Optional `(year)_note` columns for year-specific tooltip information
+- Auto-detected when DataFrame has multiple numeric columns
+
+**Note Columns:**
+- **Static maps**: Use a column named `note` for general tooltip information
+- **Dynamic maps**: Use columns named `(year)_note` (e.g., `2020_note`, `2021_note`) for year-specific tooltip information
+- Note columns are automatically excluded from data visualization and map type detection
+
+#### Parameters
+
+- `dataframe`: pandas DataFrame with GID-indexed rows and data columns
+- `data_column`: Column name containing the data values (for static maps). If None, auto-detected.
+- `year_columns`: List of year columns for time-series data (for dynamic maps). If None, auto-detected.
+- `classes`: Optional CSS classes for styling
+- `find_in_gadm`: Optional list of country codes to search in if GID is not found in its own file
+
+#### Features
+
+- **Automatic map type detection**: Static vs dynamic based on DataFrame structure
+- **Missing value handling**: NaN values are rendered as fully transparent (blank)
+- **Rich tooltips**: Shows data values, notes, and administrative information
+- **Efficient rendering**: Data processed once during export, not on every render
+- **Color mapping**: Uses the map's DataColormap for visualization
+- **Time support**: Dynamic maps work with time slider and period filtering
+- **Memory optimization**: Shared geometry for multiple data points per region
+
+#### DataColormap Configuration
+
+The `DataColormap` method controls how data values are mapped to colors. It supports both linear and non-linear color mapping:
+
+```python
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm, PowerNorm
+
+# Default colormap (yellow-orange-red)
 map.DataColormap()
 
-# Use matplotlib colormaps
-import matplotlib.pyplot as plt
+# Matplotlib colormaps
 map.DataColormap(plt.cm.viridis)      # Viridis colormap
+map.DataColormap(plt.cm.plasma)       # Plasma colormap
 map.DataColormap(plt.cm.Reds)         # Red colormap
 map.DataColormap(plt.cm.Blues)        # Blue colormap
 
-# Custom colormap with specific value range
-map.DataColormap(plt.cm.viridis, vmin=0, vmax=100)
+# Custom value range
+map.DataColormap(plt.cm.viridis, vmin=0, vmax=1000)
+
+# Logarithmic normalization (great for wide-ranging data)
+map.DataColormap(plt.cm.viridis, norm=LogNorm())
+map.DataColormap(plt.cm.plasma, norm=LogNorm(vmin=100, vmax=1000000))
+
+# Power normalization (custom gamma)
+map.DataColormap(plt.cm.viridis, norm=PowerNorm(gamma=0.5))
 
 # Custom colormap from color list
 from matplotlib.colors import LinearSegmentedColormap
@@ -420,80 +824,17 @@ custom_cmap = LinearSegmentedColormap.from_list("custom", ["#000000", "#ffffff"]
 map.DataColormap(custom_cmap)
 ```
 
-**Tooltip Information:**
-- **Level-appropriate names**: Shows NAME_3, NAME_2, NAME_1, or COUNTRY as most specific
-- **Complete GADM data**: GID_0, COUNTRY, GID_1, NAME_1, VARNAME_1, etc.
-- **Data value**: The numeric value being visualized
-
-### DataFrame-Based Data Mapping
-
-The `Dataframe` method creates efficient choropleth maps from pandas DataFrames where each row represents an administrative division indexed by GID, and columns represent either a single data value or time-series data.
-
-```python
-import pandas as pd
-import xatra
-
-map = xatra.FlagMap()
-map.BaseOption("OpenStreetMap", default=True)
-map.BaseOption("Esri.WorldImagery")
-map.BaseOption("OpenTopoMap")
-map.BaseOption("Esri.WorldPhysical")
-
-### STATIC MAP
-# df = pd.DataFrame({
-#     'GID': ['IND.31', 'IND.12', 'IND.20', 'Z01.14'],
-#     'population': [100, 200, 150, 100]
-# })
-### DYNAMIC MAP
-df = pd.DataFrame({
-    'GID': ['IND.31', 'IND.12', 'Z01.14'],
-    '2020': [100, 200, 100],
-    '2021': [110, 210, 110],
-    '2022': [120, 220, 120]
-})
-
-df.set_index('GID', inplace=True)
-map.Dataframe(df, find_in_gadm=["IND"])
-
-
-map.show(out_json="map_dataframe.json", out_html="map_dataframe.html")
-```
-
 **Parameters:**
-- `dataframe`: pandas DataFrame with GID-indexed rows and data columns
-- `data_column`: Column name containing the data values (for static maps). If None, auto-detected.
-- `year_columns`: List of year columns for time-series data (for dynamic maps). If None, auto-detected.
-- `classes`: Optional CSS classes for styling
-- `find_in_gadm`: Optional list of country codes to search in if GID is not found in its own file
-
-**Auto-detection behavior:**
-- If neither `data_column` nor `year_columns` is specified:
-  - Single data column (besides GID): treated as `data_column` for static map
-  - Multiple data columns (besides GID): treated as `year_columns` for dynamic map
+- `colormap`: matplotlib colormap (e.g., `plt.cm.viridis`, `plt.cm.Reds`)
+- `vmin`: Minimum value for color mapping (optional, auto-detected from data)
+- `vmax`: Maximum value for color mapping (optional, auto-detected from data)
+- `norm`: Normalization object (e.g., `LogNorm()`, `PowerNorm(gamma=0.5)`)
 
 **Features:**
-- **Efficient processing**: DataFrames are processed once and converted to optimized data entries
-- **Static maps**: Single data column creates a static choropleth map
-- **Dynamic maps**: Year columns create time-series data with automatic period detection
-- **Automatic validation**: Validates DataFrame structure and GID indexing
-- **Memory efficient**: Shared geometry for multiple data points per region
-- **Time support**: Works with dynamic maps and period filtering
-- **Color mapping**: Uses the same colormap system as individual Data elements
-- **Rich tooltips**: Shows appropriate level name and all GADM properties
-
-**DataFrame Requirements:**
-- Must be a pandas DataFrame
-- Must have GID as index or as a column named 'GID'
-- For static maps: specify `data_column` with the column containing values
-- For dynamic maps: specify `year_columns` with list of year column names
-- Year columns should contain numeric year values (e.g., '2020', '2021')
-- Missing values (NaN) are automatically skipped
-
-**Performance Benefits:**
-- **No redrawing**: DataFrame data is processed once during export, not on every render
-- **Shared geometry**: Multiple data points per region share the same geometry
-- **Efficient grouping**: Data is grouped by GADM code for optimal rendering
-- **Memory optimization**: Large DataFrames are handled efficiently without memory bloat
+- **Automatic value range detection**: If vmin/vmax not specified, uses data min/max
+- **Non-linear normalization**: Support for LogNorm, PowerNorm, and other matplotlib Normalize objects
+- **Color bar legend**: Automatically displays the colormap with value range
+- **SVG color bar**: High-quality vector color bar for the legend
 
 ### Administrative Regions
 
@@ -567,6 +908,354 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 - **Name fields**: Displays name, NAME, NAME_EN, NAME_LOC, NAME_ALT, NAME_OTHER as available
 - **Additional properties**: Scale rank, feature class, min zoom level, etc.
 
+
+### Point Icons
+
+The `Icon` class allows you to customize the appearance of point markers on the map. You can use custom icons from URLs or load built-in icons from the package.
+
+```python
+#!/usr/bin/env python3
+"""
+Example demonstrating custom marker icons with the Point feature.
+"""
+
+import xatra
+from xatra import Icon
+from xatra.loaders import gadm
+
+# Create a map
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldImagery")
+map.Flag(label="India", value=gadm("IND"))
+
+# Example 1: Default marker (no custom icon)
+map.Point(label="Default Marker", position=[28.6, 77.2])
+
+# Example 2: Custom icon from URL
+custom_icon = Icon(
+    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+    shadow_url="https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    shadow_size=(41, 41)
+)
+map.Point(label="Custom Red Marker", position=[19.0, 73.0], icon=custom_icon)
+
+# Example 3: Built-in icon (if available)
+builtin_icon = Icon.builtin(
+    "example.svg",
+    icon_size=(32, 32),
+    icon_anchor=(16, 16),
+    popup_anchor=(0, -16)
+)
+map.Point(label="Built-in Icon Marker", position=[13.0, 80.2], icon=builtin_icon)
+
+# Example 3.5: Checking that Example 3 is really at the right place
+map.Point(label="Built-in Icon Marker", position=[13.0, 80.2])
+
+# Example 4: Another custom icon with different size
+large_icon = Icon(
+    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+    icon_size=(30, 49),
+    icon_anchor=(15, 49),
+    popup_anchor=(1, -40),
+    shadow_url="https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    shadow_size=(41, 41)
+)
+map.Point(label="Large Green Marker", position=[23.0, 72.6], icon=large_icon)
+
+# Example 5: Icon without shadow
+no_shadow_icon = Icon(
+    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+    icon_size=(25, 41),
+    icon_anchor=(12, 41),
+    popup_anchor=(1, -34)
+)
+map.Point(label="Blue Marker (No Shadow)", position=[11.0, 77.0], icon=no_shadow_icon)
+
+# Add a title
+map.TitleBox("<b>Custom Marker Icons Example</b><br>Demonstrating different icon styles for Point markers")
+
+# Export the map
+map.show(out_json="tests/map_icons.json", out_html="tests/map_icons.html")
+print("Map with custom icons exported to map_icons.html")
+```
+
+### Point, Path, and River Labels
+
+By default, Points, Paths, and Rivers display their labels in tooltips (on hover). You can optionally display the label directly on the map next to the element using the `show_label` parameter.
+
+For Points, setting `show_label=True` displays the label to the right of the point marker:
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Default: label appears in tooltip on hover
+map.Point(label="Mumbai", position=[19.0, 73.0])
+
+# With show_label: label appears next to the point
+map.Point(label="Delhi", position=[28.6, 77.2], show_label=True)
+
+# Custom hover radius: easier to click on small points
+map.Point(label="Small Village", position=[20.5, 75.0], hover_radius=40)
+
+map.show()
+```
+
+For Paths, setting `show_label=True` calculates the midpoint along the path (by distance, not by index) and displays the label there. The label is automatically rotated to match the direction of the path at that point:
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Default: label appears in tooltip on hover
+map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]])
+
+# With show_label: label appears at the midpoint of the path, rotated to match the path direction
+map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
+
+# Multiple labels: display label at multiple evenly-spaced positions
+map.Path(label="Long Trade Route", value=[[28,77],[30,90],[35,100],[40,120]], show_label=True, n_labels=3)
+
+# Custom hover radius: easier to hover over
+map.Path(label="Ancient Trade Route", value=[[25,75],[30,85]], hover_radius=20)
+
+map.show()
+```
+
+**Label Rotation and Positioning:** Path labels are intelligently rotated to align with the path direction and offset perpendicular to the path for better readability. The algorithm:
+1. Estimates the label length based on the number of characters
+2. Finds path points within that distance on either side of each label position
+3. Calculates the angle between those points
+4. Rotates the label to match, while keeping text readable (never upside down)
+5. Translates the label 8px perpendicular to the path to avoid overlapping with the path line
+
+**Multiple Labels:** Use `n_labels` parameter to display multiple copies of the label along the path. Labels are placed at positions `k/(n+1)` where `k = 1, 2, ..., n`. For example:
+- `n_labels=1` (default): One label at 1/2 (midpoint)
+- `n_labels=2`: Two labels at 1/3 and 2/3
+- `n_labels=3`: Three labels at 1/4, 2/4, and 3/4
+- `n_labels=5`: Five labels at 1/6, 2/6, 3/6, 4/6, and 5/6
+
+#### River Labels
+
+For Rivers, setting `show_label=True` places the label at an intelligent location on the river. Rivers can be complex MultiLineString geometries with disconnected segments:
+
+```python
+import xatra
+from xatra.loaders import gadm, naturalearth
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Default: label appears in tooltip on hover
+map.River(label="Ganga", value=naturalearth("1159122643"))
+
+# With show_label: label appears on the river, rotated to match the river direction
+map.River(label="Yamuna", value=naturalearth("1159122644"), show_label=True)
+
+# Multiple labels: useful for long rivers
+map.River(label="Nile", value=naturalearth("1159122999"), show_label=True, n_labels=5)
+
+# Custom hover radius: easier to hover over thin rivers
+map.River(label="Tributary", value=naturalearth("1159122650"), hover_radius=25)
+
+map.show()
+```
+
+**River Label Algorithm:** For rivers with complex geometries (including MultiLineString with potentially disconnected segments):
+1. Samples points from all river segments (up to 200 points for performance)
+2. Finds the two most distant points along the river geometry (the pair that maximizes river distance)
+3. For each label position `k/(n+1)`, interpolates along the line between these distant points
+4. Finds the nearest point on the actual river geometry to each interpolated position
+5. Places labels at these nearest points on the river
+6. Calculates rotation angle based on the line between the two distant points
+7. Translates each label 12px perpendicular to the river for better visibility
+
+This approach ensures labels are distributed along the actual river course rather than just across a bounding box, providing much better geographic distribution for long, complex rivers.
+
+**Multiple Labels:** The `n_labels` parameter distributes labels evenly along the river's longest axis:
+- `n_labels=1` (default): One label at the midpoint along the river's longest dimension
+- `n_labels=3`: Three labels distributed along the river's extent
+- `n_labels=5`: Five labels for very long rivers like the Nile or Ganges, spread from end to end
+
+**Styling Labels:**
+
+You can style Point, Path, and River labels using CSS. Labels have the classes `point-label`, `path-label`, and `river-label` respectively, in addition to the `text-label` class.
+
+**Customizing Offset Distance:** 
+
+Labels use nested divs to separate rotation (calculated automatically) from translation (customizable via CSS):
+- **Outer div**: Applies rotation based on path/river direction (set via inline style, not customizable)
+- **Inner div**: Applies perpendicular offset using `transform: translateY()` (fully customizable via CSS)
+
+This structure allows you to customize the offset distance without affecting the rotation. Default offsets are:
+- **Points**: 10px to the right
+- **Paths**: 8px perpendicular
+- **Rivers**: 16px perpendicular
+
+To customize the offset, simply override the `transform` property on the label class:
+
+```python
+map.CSS("""
+.point-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #cc0000;
+  background: rgba(255,255,255,0.8);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.path-label {
+  font-size: 16px;
+  color: #0066cc;
+  font-style: italic;
+  background: rgba(255,255,255,0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #0066cc;
+  /* Customize offset distance (default is -8px) */
+  transform: translateY(-12px);
+}
+
+.river-label {
+  font-size: 15px;
+  color: #0099cc;
+  font-weight: bold;
+  background: rgba(255,255,255,0.85);
+  padding: 3px 7px;
+  border-radius: 3px;
+  border: 1px solid #0099cc;
+  /* Customize offset distance (default is -16px) */
+  transform: translateY(-20px);
+}
+
+/* You can also use custom classes */
+.trade-route .path-label {
+  color: #ff9900;
+  border-color: #ff9900;
+}
+
+.sacred-river .river-label {
+  color: #ff6600;
+  border-color: #ff6600;
+  /* Increase offset for this specific river */
+  transform: translateY(-24px);
+}
+""")
+
+map.Path(label="Trade Route", value=[[28,77],[30,90],[40,120]], show_label=True, classes="trade-route")
+map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, classes="sacred-river")
+```
+
+### Multi-Layer Tooltips
+
+Xatra features an intelligent **multi-layer tooltip system** that shows information for **all overlapping elements** at the cursor position, not just the topmost element.
+
+When you hover over any location on the map, the tooltip displays information from all elements under the cursor:
+- **Flags** (countries/kingdoms)
+- **Admin regions** (states, districts, tehsils)
+- **DataFrames** (data values)
+- **Rivers** and **Paths**
+- **Points** (cities, landmarks)
+
+The tooltips are displayed in a clean, organized format with each element type clearly labeled.
+
+**Example:**
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.FlagMap()
+map.BaseOption("OpenStreetMap", default=True)
+
+# These elements overlap - hovering over Tamil Nadu will show all tooltips
+map.Flag(label="India", value=gadm("IND"), note="Republic of India")
+map.Flag(label="Tamil Nadu", value=gadm("IND.31"), note="State in southern India")
+map.Admin(gadm="IND.31", level=2)  # Districts
+
+# Point in the overlapping area - hovering near Chennai shows Flag + Admin + Point tooltips
+map.Point(label="Chennai", position=[13.0827, 80.2707])
+
+map.show()
+```
+
+When you hover over Chennai, you'll see tooltips for:
+- The "India" flag
+- The "Tamil Nadu" flag
+- The admin region (Chennai district)
+- The "Chennai" point marker
+
+#### Customizing Hover Detection Radius
+
+For **Point**, **River**, and **Path** elements, you can customize the hover detection radius using the `hover_radius` parameter (in pixels). This controls how close your cursor needs to be to trigger the tooltip.
+
+```python
+# Rivers with larger hover radius for easier selection
+map.River(label="Ganga", value=naturalearth("1159122643"), hover_radius=20)
+
+# Paths with custom hover radius
+map.Path(label="Silk Road", value=[[35, 75], [40, 80]], hover_radius=15)
+
+# Points with larger hover radius for easier clicking
+map.Point(label="Delhi", position=[28.6, 77.2], hover_radius=30)
+```
+
+**Default hover radii:**
+- **Rivers**: 10 pixels
+- **Paths**: 10 pixels  
+- **Points**: 20 pixels
+
+**Note:** The hover radius is specified in screen pixels and automatically scales with map zoom level. A larger hover radius makes elements easier to hover over, especially useful for thin rivers or small points.
+
+#### Customizing Multi-Tooltip Styling
+
+The multi-layer tooltip appearance can be customized using CSS:
+
+```python
+map.CSS("""
+/* Customize the multi-tooltip container */
+#multi-tooltip {
+  background: rgba(255, 255, 255, 0.98);
+  border: 3px solid #0066cc;
+  border-radius: 8px;
+  font-family: 'Georgia', serif;
+  max-width: 500px;
+}
+
+/* Style the element type labels */
+#multi-tooltip .tooltip-type {
+  color: #cc6600;
+  font-weight: bold;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+/* Style the tooltip content */
+#multi-tooltip .tooltip-content {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Style individual tooltip items */
+#multi-tooltip .tooltip-item {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ddd;
+}
+""")
+```
+
 ## Performance
 
 Xatra is optimized for large, complex maps with many elements:
@@ -575,6 +1264,72 @@ Xatra is optimized for large, complex maps with many elements:
 - **Centroid Pre-computation**: Flag centroids are calculated once during export, not on every render
 - **Layer Visibility Toggling**: Dynamic maps use efficient visibility toggling instead of recreating layers
 - **Memory Management**: Use `clear_file_cache()` to free memory when working with very large datasets
+
+### Time Debugging
+
+Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps.
+
+```python
+import xatra
+
+xatra.set_debug_time(True)
+
+# Now create your map - all operations will be timed
+map = xatra.FlagMap()
+map.Flag("India", xatra.gadm("IND"))
+map.show()
+```
+
+When time debugging is enabled, you'll see timing information for:
+
+**Data Loading Operations:**
+- Loading GADM data files
+- Loading Natural Earth features
+- Loading Overpass data
+- Reading JSON files from disk (with cache hits/misses)
+- Converting GeoJSON to Shapely geometries
+
+**Map Element Operations:**
+- Adding Flags, Rivers, Paths, Points, Text, etc.
+- Adding Admin regions
+- Adding DataFrames
+
+**Processing Operations:**
+- Territory geometry conversions
+- Pax-max aggregation for dynamic maps
+- Centroid calculations
+- Period filtering
+
+**Export Operations:**
+- Exporting to JSON format
+- Exporting to HTML format
+
+```
+[14:23:45] → START: Add Flag
+[14:23:45]   args: 'India', <Territory object at 0x...>
+[14:23:45]   → START: Load GADM data
+[14:23:45]     → START: Load GADM-like data
+[14:23:45]       → START: Read JSON file
+[14:23:45]       ✓ FINISH: Read JSON file
+[14:23:45]     ✓ FINISH: Load GADM-like data
+[14:23:45]   ✓ FINISH: Load GADM data
+[14:23:45] ✓ FINISH: Add Flag
+[14:23:46] → START: Show (export map)
+[14:23:46]   → START: Export to JSON
+[14:23:46]     → START: Paxmax aggregation
+[14:23:46]     ✓ FINISH: Paxmax aggregation
+[14:23:47]   ✓ FINISH: Export to JSON
+[14:23:47]   → START: Export to HTML
+[14:23:47]   ✓ FINISH: Export to HTML
+[14:23:47] ✓ FINISH: Show (export map)
+```
+
+To disable Time Debugging:
+
+```python
+# Disable time debugging
+xatra.set_debug_time(False)
+```
 
 ## Data Sources
 

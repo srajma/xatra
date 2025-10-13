@@ -1,24 +1,63 @@
-*.log
-src/xatra/data/gadm/
-src/xatra/data/ne_*
-src/xatra/icons/downloaded/
-scripts/start_server.sh
-
-!src/xatra/data/ne_10m_rivers.geojson
-
-# python
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.pyw
-*.pyz
+*.py[codwz]
 *.pywz
 *.pyzw
 *.pyzwz
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# temp
+# Virtual environments
+venv/
+env/
+ENV/
+test_env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (too large for git)
+src/xatra/data/
+*.geojson
+
+# Old
+scripts/start_server.sh
 old/
 old_xatra/
 tests/*.json
 tests/*.html
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Build
+*.whl
+*.tar.gz

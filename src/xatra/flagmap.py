@@ -1281,13 +1281,13 @@ class FlagMap:
             # Include objects with no period (always visible) or valid restricted periods
             if a.period is None or restricted_period is not None:
                 try:
-                    from .loaders import _read_json, _compute_find_in_gadm_default
+                    from .loaders import _read_json, _compute_find_in_gadm_default, GADM_DIR
                     import os
                     
                     # Load the appropriate level file directly
                     parts = a.gadm_key.split('.')
                     iso3 = parts[0]
-                    gadm_dir = os.path.join(os.path.dirname(__file__), "data", "gadm")
+                    gadm_dir = GADM_DIR
                     level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_{a.level}.json")
                     
                     # Try to load the level file, with fallback to find_in_gadm (explicit or computed) if needed

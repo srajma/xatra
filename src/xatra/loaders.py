@@ -16,7 +16,14 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .debug_utils import time_debug
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+# Get data directory from data_installer
+try:
+    from .data_installer import get_data_dir
+    DATA_DIR = str(get_data_dir())
+except ImportError:
+    # Fallback to package directory if data_installer not available
+    DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
 GADM_DIR = os.path.join(DATA_DIR, "gadm")
 DISPUTED_DIR = os.path.join(DATA_DIR, "disputed_territories")
 DISPUTED_MAPPING_JSON = os.path.join(DISPUTED_DIR, "disputed_mapping.json")

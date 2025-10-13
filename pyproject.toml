@@ -1,7 +1,7 @@
 [project]
 name = "xatra"
 version = "2.0.0"
-description = "Add your description here"
+description = "The matplotlib of maps - create beautiful historical, administrative, and data maps"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,10 +12,19 @@ dependencies = [
     "jinja2>=3.1.4",
     "matplotlib>=3.10.6",
     "pandas>=2.3.2",
+    "huggingface-hub>=0.20.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.scripts]
+xatra-install-data = "xatra.data_installer:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["xatra"]
+package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-xatra = ["data/**/*"]
+xatra = ["icons/**/*", "*.html"]

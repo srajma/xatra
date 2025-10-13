@@ -1,0 +1,26 @@
+# Include documentation
+include README.md
+include PACKAGING_GUIDE.md
+include HUGGINGFACE_UPLOAD.md
+include LICENSE
+
+# Include icon files
+recursive-include src/xatra/icons *
+
+# Exclude large data files (will be downloaded separately)
+recursive-exclude src/xatra/data *.json
+recursive-exclude src/xatra/data *.geojson
+recursive-exclude src/xatra/data/gadm *
+recursive-exclude src/xatra/data/rivers_overpass_india *
+recursive-exclude src/xatra/data/ne_*_rivers_lake_centerlines *
+
+# Keep only disputed territories metadata (small files)
+include src/xatra/data/disputed_territories/*.json
+include src/xatra/data/disputed_territories/*.csv
+include src/xatra/data/disputed_territories/*.md
+
+# Exclude Python cache and build artifacts
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude .DS_Store
+
