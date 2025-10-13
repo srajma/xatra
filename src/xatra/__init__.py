@@ -58,9 +58,6 @@ from .loaders import gadm, naturalearth, overpass
 from .icon import Icon
 from . import debug_utils
 
-# Import timing analysis functions
-from .debug_utils import get_timing_stats, clear_timing_stats, generate_timing_chart, print_timing_summary
-
 # Import pyplot-style functions
 from .pyplot import (
     get_current_map,
@@ -162,8 +159,4 @@ __all__ = [
     # Debug utilities
     "DEBUG_TIME",
     "set_debug_time",
-    "get_timing_stats",
-    "clear_timing_stats", 
-    "generate_timing_chart",
-    "print_timing_summary",
 ]
