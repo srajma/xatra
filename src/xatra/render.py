@@ -48,6 +48,7 @@ HTML_TEMPLATE = Template(
       #multi-tooltip .tooltip-content { color: #333; }
       #layer-selector select { margin-left: 8px; }
       .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
+      .flag:hover { stroke-width: 0.7; }
       .river { stroke: #0066cc; stroke-width: 1; fill: none; }
       .path { stroke: #444; stroke-dasharray: 4 2; }
       .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
