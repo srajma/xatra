@@ -1342,6 +1342,70 @@ xatra.set_debug_time(False)
 
 **Note:** The programmatic methods override the environment variable setting.
 
+#### Timing Statistics and Visualization
+
+When time debugging is enabled, xatra automatically tracks timing statistics for all monitored functions. **By default, timing statistics are automatically printed and a plot is saved when your program exits.**
+
+You can also manually view and visualize these statistics:
+
+```python
+import xatra
+
+# Enable timing
+xatra.set_debug_time(True)
+
+# Create your map
+map = xatra.FlagMap()
+map.Flag("India", xatra.gadm("IND"))
+map.show()
+
+# View timing statistics
+xatra.print_timing_stats()
+
+# Generate a bar chart
+xatra.plot_timing_stats(save_path="timing_analysis.png")
+
+# Get raw statistics data
+stats = xatra.get_timing_stats()
+print(f"Total functions tracked: {len(stats)}")
+
+# Clear statistics for a fresh start
+xatra.clear_timing_stats()
+```
+
+**Available Functions:**
+- `xatra.print_timing_stats()` - Print a formatted table of timing statistics
+- `xatra.plot_timing_stats(save_path=None, show_plot=True, top_n=None)` - Generate bar charts
+- `xatra.get_timing_stats()` - Get raw timing data as a dictionary
+- `xatra.clear_timing_stats()` - Clear all timing statistics
+- `xatra.configure_auto_stats(auto_print=True, auto_save_plot=True, plot_path="xatra_timing_analysis.png")` - Configure automatic stats
+
+**Automatic Features (enabled by default):**
+- **Auto-print stats**: Timing statistics are printed automatically when your program exits
+- **Auto-save plot**: A timing analysis plot is saved to `xatra_timing_analysis.png` automatically
+- **Configurable**: Use `configure_auto_stats()` to disable auto-printing or change the plot path
+
+**Chart Features:**
+- **Dual charts**: Total time and average time per call
+- **Color coding**: Bar colors indicate call frequency (dark = many calls, light = few calls)
+- **Call annotations**: Shows number of calls for each function
+- **Export support**: Save as PNG/PDF for reports and analysis
+- **Top N filtering**: Focus on the slowest functions
+
+**Example Output:**
+```
+================================================================================
+XATRA TIMING STATISTICS
+================================================================================
+Function Name                           Calls    Total (s)    Avg (s)      Min (s)      Max (s)
+--------------------------------------------------------------------------------
+Load GADM Data                          5        2.3456       0.4691       0.2345       0.7891
+Export To JSON                          1        1.2345       1.2345       1.2345       1.2345
+Add Flag                               3        0.4567       0.1522       0.1234       0.1789
+Add River                              2        0.2345       0.1172       0.0987       0.1358
+================================================================================
+```
+
 ## Data Sources
 
 ### GADM (Global Administrative Areas)

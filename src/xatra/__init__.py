@@ -125,6 +125,16 @@ def set_debug_time(enabled: bool):
     DEBUG_TIME = enabled
     debug_utils.DEBUG_TIME = enabled
 
+
+# Import timing statistics functions
+from .debug_utils import (
+    get_timing_stats,
+    print_timing_stats, 
+    plot_timing_stats,
+    clear_timing_stats,
+    configure_auto_stats
+)
+
 __version__ = "0.1.0"
 __all__ = [
     # Core classes
@@ -159,4 +169,9 @@ __all__ = [
     # Debug utilities
     "DEBUG_TIME",
     "set_debug_time",
+    "get_timing_stats",
+    "print_timing_stats",
+    "plot_timing_stats",
+    "clear_timing_stats",
+    "configure_auto_stats",
 ]
