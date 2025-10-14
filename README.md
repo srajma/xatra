@@ -56,7 +56,7 @@ Libraries
 
 Bugfixes
 - [x] Efficiency: cache territory geometries by string rep rather than per-object
-- [ ] use approx centroid calc
+- [ ] optimize centroid calculation etc.
 - [x] AdminRivers don't work again.
 - [x] ~~show bounding boxes of flag paxmaxes when selected~~ instead just show outline on hover
 - [x] AdminRivers doesn't work.
@@ -1252,10 +1252,32 @@ map.CSS("""
 
 Xatra is optimized for large, complex maps with many elements:
 
+- **Geometry Caching**: Territory geometries are cached globally by string representation, with both in-memory and on-disk persistence. Identical territory expressions (e.g., `gadm("IND") | gadm("PAK")`) are computed only once and reused across all instances.
 - **File Caching**: Data files (GADM, Natural Earth) are cached in memory to avoid repeated disk reads
 - **Centroid Pre-computation**: Flag centroids are calculated once during export, not on every render
 - **Layer Visibility Toggling**: Dynamic maps use efficient visibility toggling instead of recreating layers
 - **Memory Management**: Use `clear_file_cache()` to free memory when working with very large datasets
+
+### Geometry Cache Management
+
+The global geometry cache can be managed programmatically:
+
+```python
+import xatra
+
+# Clear cache
+xatra.clear_cache()                    # Clear both memory and disk
+xatra.clear_cache(memory_only=True)    # Clear only memory
+xatra.clear_cache(disk_only=True)      # Clear only disk
+
+# Get cache statistics
+stats = xatra.cache_stats()
+print(f"Hit rate: {stats['hit_rate']:.1%}")
+print(f"Memory cache: {stats['memory_cache_size']} items")
+print(f"Disk cache: {stats['disk_cache_size']} files")
+```
+
+Cache files are stored in `~/.xatra/cache/` and persist across program runs for maximum performance.
 
 ### Time Debugging
 
