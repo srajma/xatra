@@ -23,7 +23,7 @@ Features
 - [x] do we need to redraw everything each frame?
 - [ ] MAYBE: class-based show labels, etc. Not that important. Main thing you'd use it for is hiding labels and CSS is enough for that.
 - [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
-- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly
+- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly -- use mapshaper
 - [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
 
 Dev
