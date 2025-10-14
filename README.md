@@ -28,6 +28,7 @@ Features
 
 Dev
 - [x] Get it in a publishable state
+- [ ] why not just upload my cache. Need to change the HF repository to have a data and a cache folder
 - [ ] Publish it
 - [x] time debugging
 
