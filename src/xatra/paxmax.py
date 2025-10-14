@@ -15,10 +15,11 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
-from shapely.geometry import shape
+from shapely.geometry import shape, mapping
 from shapely.ops import unary_union
 
 from .debug_utils import time_debug
+from .territory import Territory
 
 
 @time_debug("Shapely shape conversion")
@@ -155,7 +156,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
     but not its end year)
     
     Args:
-        flags_serialized: List of flag dictionaries with geometry and period info
+        flags_serialized: List of flag dictionaries with territory or geometry and period info
         earliest_start: Optional earliest start year to ensure initial snapshot
         
     Returns:
@@ -173,14 +174,28 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
         # Simple union per label
         out = []
         for label, items in by_label.items():
-            geoms = [_to_shape(it.get("geometry")) for it in items if it.get("geometry") is not None]
-            geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
+            # Check if we have territories or geometries
+            territories = [it.get("territory") for it in items if it.get("territory") is not None]
+            geometries = [it.get("geometry") for it in items if it.get("geometry") is not None]
+            
+            if territories:
+                # Use territory union (more efficient with caching)
+                union_territory = Territory.union_territories(territories)
+                geom = union_territory.to_geometry()
+                geom_dict = mapping(geom) if geom is not None else None
+                centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
+            elif geometries:
+                # Fallback to geometry union (legacy support)
+                geoms = [_to_shape(geom) for geom in geometries]
+                geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
+                geom_dict = _mapping_wrapper(geom) if geom is not None else None
+                centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
+            else:
+                geom_dict = None
+                centroid = None
+            
             # Preserve color from the first item (they should all have the same color for the same label)
             color = items[0].get("color") if items else None
-            # Recompute centroid for the unioned geometry
-            centroid = None
-            if geom is not None:
-                centroid = _compute_centroid_for_geometry(_mapping_wrapper(geom))
             # Collect all unique classes from items with the same label
             all_classes = []
             for it in items:
@@ -190,7 +205,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             
             out.append({
                 "label": label,
-                "geometry": _mapping_wrapper(geom) if geom is not None else None,
+                "geometry": geom_dict,
                 "centroid": centroid,
                 "note": "; ".join([it.get("note") for it in items if it.get("note")]) or None,
                 "color": color,
@@ -232,14 +247,29 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                             notes.append(it.get("note"))
             if not active:
                 continue
-            geoms = [_to_shape(a.get("geometry")) for a in active if a.get("geometry") is not None]
-            geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
+            
+            # Check if we have territories or geometries
+            territories = [a.get("territory") for a in active if a.get("territory") is not None]
+            geometries = [a.get("geometry") for a in active if a.get("geometry") is not None]
+            
+            if territories:
+                # Use territory union (more efficient with caching)
+                union_territory = Territory.union_territories(territories)
+                geom = union_territory.to_geometry()
+                geom_dict = mapping(geom) if geom is not None else None
+                centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
+            elif geometries:
+                # Fallback to geometry union (legacy support)
+                geoms = [_to_shape(geom) for geom in geometries]
+                geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
+                geom_dict = _mapping_wrapper(geom) if geom is not None else None
+                centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
+            else:
+                geom_dict = None
+                centroid = None
+            
             # Preserve color from the first active item
             color = active[0].get("color") if active else None
-            # Recompute centroid for the unioned geometry
-            centroid = None
-            if geom is not None:
-                centroid = _compute_centroid_for_geometry(_mapping_wrapper(geom))
             # Collect all unique classes from active items
             all_classes = []
             for it in active:
@@ -249,7 +279,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             
             snapshot_flags.append({
                 "label": label,
-                "geometry": _mapping_wrapper(geom) if geom is not None else None,
+                "geometry": geom_dict,
                 "centroid": centroid,
                 "note": "; ".join(notes) or None,
                 "color": color,

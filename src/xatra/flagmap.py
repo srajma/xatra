@@ -14,7 +14,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from shapely.geometry import mapping
 
 from .territory import Territory
 from .render import export_html
@@ -1107,18 +1106,15 @@ class Map:
         Returns:
             Dictionary containing all map data including flags, rivers, paths, etc.
         """
-        # Resolve territories to GeoJSON shapes and apply limits
+        # Prepare flags for paxmax aggregation (keep territories for efficient union)
         flags_serialized: List[Dict[str, Any]] = []
         for fl in self._flags:
             restricted_period = self._apply_limits_to_period(fl.period)
             # Include objects with no period (always visible) or valid restricted periods
             if fl.period is None or restricted_period is not None:
-                geom = fl.territory.to_geometry()
-                geom_dict = mapping(geom) if geom is not None else None
-                
                 flags_serialized.append({
                     "label": fl.label,
-                    "geometry": geom_dict,
+                    "territory": fl.territory,  # Pass territory object for efficient union
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "note": fl.note,
                     "color": fl.color,

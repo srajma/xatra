@@ -179,3 +179,43 @@ class Territory:
                 return a
             return a.difference(b)
         return Territory(_geometry_provider=provider, strrepr=f'({self.strrepr} - {other.strrepr})')
+
+    @staticmethod
+    def union_territories(territories: List["Territory"]) -> "Territory":
+        """Create a union of multiple territories.
+        
+        This is more efficient than chaining multiple __or__ operations
+        when unioning many territories, as it creates a single cached
+        territory instead of intermediate cached territories.
+        
+        Args:
+            territories: List of Territory objects to union
+            
+        Returns:
+            New Territory representing the union of all territories
+        """
+        if not territories:
+            return Territory(_geometry_provider=lambda: None, strrepr="<EMPTY>")
+        
+        if len(territories) == 1:
+            return territories[0]
+        
+        # Create a string representation for caching
+        strreprs = [t.strrepr for t in territories]
+        union_strrepr = f"({' | '.join(strreprs)})"
+        
+        def provider():
+            geoms = []
+            for territory in territories:
+                geom = territory.to_geometry()
+                if geom is not None:
+                    geoms.append(geom)
+            
+            if not geoms:
+                return None
+            if len(geoms) == 1:
+                return geoms[0]
+            
+            return unary_union(geoms)
+        
+        return Territory(_geometry_provider=provider, strrepr=union_strrepr)
