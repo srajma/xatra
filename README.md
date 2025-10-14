@@ -1,6 +1,6 @@
 # Xatra: The Matplotlib of Maps
 
-Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever.
+Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever. Example maps produced with `xatra` can be seen [here](https://srajma.github.io/maps/).
 
 ## Installation
 
