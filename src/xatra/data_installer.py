@@ -16,9 +16,15 @@ from typing import Optional
 HUGGINGFACE_REPO = "srajma/xatra-data"  
 
 # Local data directory
-XATRA_DATA_DIR = Path.home() / ".xatra" / "data"
+XATRA_DATA_DIR = Path.home() / ".xatra"
 
-
+REQUIRED_PATHS = [
+    XATRA_DATA_DIR / "data" / "gadm",
+    XATRA_DATA_DIR / "data" / "disputed_territories",
+    XATRA_DATA_DIR / "data" / "ne_10m_rivers.geojson",
+    XATRA_DATA_DIR / "data" / "rivers_overpass_india",
+    XATRA_DATA_DIR / "cache",
+]
 def get_data_dir() -> Path:
     """Get the Xatra data directory path."""
     return XATRA_DATA_DIR
@@ -32,13 +38,7 @@ def ensure_data_dir() -> Path:
 
 def is_data_installed() -> bool:
     """Check if data is already installed."""
-    required_paths = [
-        XATRA_DATA_DIR / "gadm",
-        XATRA_DATA_DIR / "disputed_territories",
-        XATRA_DATA_DIR / "ne_10m_rivers.geojson",
-        XATRA_DATA_DIR / "rivers_overpass_india",
-    ]
-    return all(p.exists() for p in required_paths)
+    return all(p.exists() for p in REQUIRED_PATHS)
 
 
 def download_from_huggingface(repo_id: str, target_dir: Path, force: bool = False):
@@ -66,64 +66,14 @@ def download_from_huggingface(repo_id: str, target_dir: Path, force: bool = Fals
         snapshot_dir = snapshot_download(
             repo_id=repo_id,
             repo_type="dataset",
-            local_dir=target_dir / "tmp_download",
+            local_dir=target_dir,
             local_dir_use_symlinks=False,
         )
         
-        tmp_root = Path(snapshot_dir)
-        data_source = tmp_root / "data"
-        if not data_source.exists():
-            # Many datasets keep files at repo root; support that layout
-            data_source = tmp_root
-        
-        moved_any = False
-        expected_items = [
-            "gadm",
-            "disputed_territories",
-            "rivers_overpass_india",
-            "ne_10m_rivers.geojson",
-        ]
-        
-        # First try to move only expected items if they exist
-        for name in expected_items:
-            item = data_source / name
-            if item.exists():
-                dest = target_dir / item.name
-                if dest.exists():
-                    if dest.is_dir():
-                        shutil.rmtree(dest)
-                    else:
-                        dest.unlink()
-                shutil.move(str(item), str(dest))
-                moved_any = True
-        
-        # If nothing was moved yet, move everything (except hidden/HF internals)
-        if not moved_any:
-            for item in data_source.iterdir():
-                if item.name in {".gitattributes", ".gitignore", "README.md", "README", ".huggingface"}:
-                    continue
-                dest = target_dir / item.name
-                if dest.exists():
-                    if dest.is_dir():
-                        shutil.rmtree(dest)
-                    else:
-                        dest.unlink()
-                shutil.move(str(item), str(dest))
-                moved_any = True
-        
-        # Clean up temporary download directory
-        try:
-            shutil.rmtree(target_dir / "tmp_download")
-        except Exception:
-            pass
-        
-        if not moved_any:
-            print("ERROR: Download finished but no expected data files were found to move.")
-            print(f"Checked in: {data_source}")
-            print("Please verify the dataset contents on Hugging Face.")
-            sys.exit(1)
-        
-        print(f"✓ Data successfully downloaded to {target_dir}")
+        print(f"✓ Following files were downloaded to {target_dir}:")
+        print(f"Contents of {target_dir}:")
+        for item in target_dir.iterdir():
+            print(f"  - {item.name}{'/' if item.is_dir() else ''}")
         
     except Exception as e:
         print(f"ERROR: Failed to download data from Hugging Face: {e}")
@@ -136,43 +86,27 @@ def download_from_huggingface(repo_id: str, target_dir: Path, force: bool = Fals
 def verify_data_integrity() -> bool:
     """Verify that all required data files are present and valid."""
     print("Verifying data integrity...")
-    
-    required_files = [
-        "disputed_territories/disputed_mapping.json",
-        "ne_10m_rivers.geojson",
-    ]
-    
-    required_dirs = [
-        "gadm",
-        "disputed_territories",
-        "rivers_overpass_india",
-    ]
+
     
     all_valid = True
     
-    for file_path in required_files:
-        full_path = XATRA_DATA_DIR / file_path
-        if not full_path.exists():
-            print(f"  ✗ Missing file: {file_path}")
+    for file_path in REQUIRED_PATHS:
+        if not file_path.exists():
+            print(f"  ✗ Missing {'file' if file_path.is_file() else 'directory'}: {file_path}")
             all_valid = False
-        elif full_path.stat().st_size == 0:
+        
+        elif file_path.is_file() and file_path.stat().st_size == 0:
             print(f"  ✗ Empty file: {file_path}")
             all_valid = False
-        else:
+        elif file_path.is_dir() and not any(file_path.iterdir()):
+            print(f"  ✗ Empty directory: {file_path}")
+            all_valid = False
+        elif file_path.is_file():
             print(f"  ✓ Found: {file_path}")
-    
-    for dir_path in required_dirs:
-        full_path = XATRA_DATA_DIR / dir_path
-        if not full_path.exists():
-            print(f"  ✗ Missing directory: {dir_path}")
-            all_valid = False
-        elif not any(full_path.iterdir()):
-            print(f"  ✗ Empty directory: {dir_path}")
-            all_valid = False
-        else:
+        elif file_path.is_dir():
             # Count files
-            file_count = sum(1 for _ in full_path.rglob("*") if _.is_file())
-            print(f"  ✓ Found: {dir_path}/ ({file_count} files)")
+            file_count = sum(1 for _ in file_path.rglob("*") if _.is_file())
+            print(f"  ✓ Found: {file_path}/ ({file_count} files)")
     
     return all_valid
 
