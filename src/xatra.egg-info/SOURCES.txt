@@ -1,5 +1,4 @@
 MANIFEST.in
-PACKAGING_GUIDE.md
 README.md
 pyproject.toml
 setup.py
@@ -8,6 +7,7 @@ src/xatra/colorseq.py
 src/xatra/data_installer.py
 src/xatra/debug_utils.py
 src/xatra/flagmap.py
+src/xatra/geometry_cache.py
 src/xatra/icon.py
 src/xatra/loaders.py
 src/xatra/paxmax.py

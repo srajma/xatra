@@ -23,6 +23,7 @@ If you need to re-download the data:
 ```bash
 xatra-install-data --force
 ```
+[Old alpha version of xatra](https://github.com/srajma/xatra1)
 
 ## Example: Historical map
 

@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: xatra
-Version: 2.0.0
+Version: 2.1.0
 Summary: The matplotlib of maps - create beautiful historical, administrative, and data maps
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
@@ -13,87 +13,6 @@ Requires-Dist: matplotlib>=3.10.6
 Requires-Dist: pandas>=2.3.2
 Requires-Dist: huggingface-hub>=0.20.0
 
-# TODO
-
-Kanging
-- [ ] copy maps from old xatra (colonies and hsr remaining)
-- [ ] maps of north-west: Panini, Puranas and Greek
-- [ ] full history timeline
-- [x] GDP per capita map
-- [x] admin map
-
-Features
-- [x] Orient flag labels in direction of flag
-- [x] option for different point markers besides pin
-- [x] option for point labels, path, river labels
-- [x] option to create multiple path, river labels.
-- [x] And maybe calculate river label path using bounding box.
-- [x] ideally make it so hovering hovers on *all* flags/elements at that point
-- [x] "get current map" similar to matplotlib, to make maps more modular
-- [x] Hover over color bar
-- [x] periods for things other than flags
-- [x] xatra.Admin
-- [x] xatra.Flag color groups
-- [x] xatra.Dataframe with notes and DataColormap
-- [x] do we need to redraw everything each frame?
-- [ ] MAYBE: class-based show labels, etc. Not that important. Main thing you'd use it for is hiding labels and CSS is enough for that.
-- [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
-- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly
-- [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
-
-Dev
-- [ ] Get it in a publishable state
-- [x] time debugging
-
-Interactive platform
-- [ ] DSL
-- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
-- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
-- [ ] ideally we want a crud type of thing for real-time updating
-
-Stylistic changes
-- [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
-- [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
-- [x] custom IDs and classes for styling
-- [x] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
-- [x] also need flag names to appear at centroid
-- [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
-- [x] color assignment
-- [x] t logachoice of BaseMaps
-- [x] slider shouldn't appear for static maps
-- [x] map.slider()
-- [x] slider play button plus positions of years, start and end year
-- [x] watermark
-
-Libraries
-- [x] copy matchers from old xatra
-
-Bugfixes
-- [x] AdminRivers doesn't work.
-- [x] River name rendering position is weird
-- [x] River names don't render for overpass
-- [x] color bar hover on correct position
-- [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
-- [x] Static Dataframe maps don't work
-- [x] logarithmic/normalized color bars with matplotlib Normalize support
-- [x] Make sure color bars are shown correctly regardless of how it is
-- [x] Support a "note" column for Dataframe.
-- [x] Don't assume missing values
-- [x] classes attribute not being passed on
-- [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
-- [x] disputed areas admin map
-- [x] fix issue with disputed areas
-- [x] top-level disputed areas
-- [x] debug slowness
-- [x] xatra.Data issue with colors of data in dynamic maps and exact range
-- [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
-- [x] Mark map as dynamic if any element as period
-- [x] why country name appears on Data tooltip?
-- [x] default color scheme
-- [x] add color map in html
-- [x] rename Colormap to Colormap
-- [x] efficiency and documentation
-
 # Xatra: The Matplotlib of Maps
 
 Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever.
@@ -101,12 +20,12 @@ Xatra is the matplotlib of maps. You can create historical maps (static or dynam
 ## Installation
 
 ```bash
-pip install xatra # or `uv add xatra` etc. as per your preference
-xatra-install-data # This downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from Hugging Face to `~/.xatra/data/`. The data only needs to be downloaded once.
+pip install xatra
+xatra-install-data
 
 ```
 
-This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from Hugging Face to `~/.xatra/data/`. The data only needs to be downloaded once.
+This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from [Hugging Face](https://huggingface.co/datasets/srajma/xatra-data) to `~/.xatra/data/`. The data only needs to be downloaded once.
 
 Check if data is installed:
 
@@ -127,7 +46,7 @@ import xatra
 from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
-map = xatra.FlagMap()
+map = xatra.Map()
 
 # Flags automatically get colors from the default LinearColorSequence
 # Flags with the same label will use the same color
@@ -151,7 +70,7 @@ import xatra
 from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -202,7 +121,7 @@ Here's a taluk-level administrative map of the Indian subcontinent
 ```python
 import xatra
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -229,7 +148,7 @@ import xatra
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -256,7 +175,7 @@ Or a dynamic map with a time slider:
 import pandas as pd
 import xatra
 import matplotlib.pyplot as plt
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -299,7 +218,7 @@ from xatra.loaders import gadm, naturalearth
 from xatra.colorseq import LinearColorSequence, Color
 from matplotlib.colors import LinearSegmentedColormap
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
@@ -336,7 +255,7 @@ The `find_in_gadm` parameter is available for:
 
 ## Directly doing `xatra.Flag() etc.`
 
-All of the elements of `FlagMap` e.g. `Flag()`, `River()` can also be directly called as methods of `xatra` i.e. `xatra.Flag()` etc. and it will apply to the "current plot". This is useful for modularity, i.e. creating some map as a module that can simply be imported into another map.
+All of the elements of `Map` e.g. `Flag()`, `River()` can also be directly called as methods of `xatra` i.e. `xatra.Flag()` etc. and it will apply to the "current plot". This is useful for modularity, i.e. creating some map as a module that can simply be imported into another map.
 
 ```python
 #!/usr/bin/env python3
@@ -344,7 +263,7 @@ All of the elements of `FlagMap` e.g. `Flag()`, `River()` can also be directly c
 Example demonstrating pyplot-style interface for Xatra.
 
 This example shows how to use xatra.Flag(), xatra.River(), etc. 
-directly without explicitly creating a FlagMap object, similar to
+directly without explicitly creating a Map object, similar to
 how matplotlib.pyplot works.
 """
 
@@ -353,7 +272,7 @@ from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
 # No need to create a map object - just start adding elements!
-# A FlagMap is automatically created on first use.
+# A Map is automatically created on first use.
 
 xatra.BaseOption("OpenStreetMap", default=True)
 xatra.BaseOption("Esri.WorldImagery")
@@ -379,12 +298,12 @@ print("Map exported to tests/map_pyplot.html")
 
 ## API Reference
 
-### FlagMap
+### Map
 
 The main class for creating maps.
 
 ```python
-map = FlagMap()
+map = Map()
 ```
 
 #### Methods
@@ -418,17 +337,17 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 
 ### Pyplot-Style Functions
 
-For convenience, Xatra provides pyplot-style functions that operate on a global "current map". These functions are available at the top level of the `xatra` module and mirror the `FlagMap` methods.
+For convenience, Xatra provides pyplot-style functions that operate on a global "current map". These functions are available at the top level of the `xatra` module and mirror the `Map` methods.
 
 #### Map Management
 
-- **`get_current_map()`**: Get the current FlagMap instance, creating one if none exists
-- **`set_current_map(map)`**: Set the current FlagMap instance (or None to clear)
-- **`new_map()`**: Create a new FlagMap and set it as current
+- **`get_current_map()`**: Get the current Map instance, creating one if none exists
+- **`set_current_map(map)`**: Set the current Map instance (or None to clear)
+- **`new_map()`**: Create a new Map and set it as current
 
-#### FlagMap methods are xatra methods
+#### Map methods are xatra methods
 
-All FlagMap methods are available as top-level functions that operate on the current map:
+All Map methods are available as top-level functions that operate on the current map:
 
 **Adding elements:**
 - **`xatra.Flag(...)`**: Add a flag to the current map
@@ -454,7 +373,7 @@ All FlagMap methods are available as top-level functions that operate on the cur
 
 - **`xatra.show(...)`**: Export the current map to JSON and HTML files
 
-**Note:** All parameters are identical to the corresponding FlagMap methods. The functions simply call the method on the current map instance.
+**Note:** All parameters are identical to the corresponding Map methods. The functions simply call the method on the current map instance.
 
 ### CSS Classes and Styling
 
@@ -698,7 +617,7 @@ import pandas as pd
 import xatra
 import matplotlib.pyplot as plt
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 
 # Create a static DataFrame
@@ -727,7 +646,7 @@ import xatra
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 
 # Create a dynamic DataFrame with year columns
@@ -924,7 +843,7 @@ from xatra import Icon
 from xatra.loaders import gadm
 
 # Create a map
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.Flag(label="India", value=gadm("IND"))
@@ -990,7 +909,7 @@ For Points, setting `show_label=True` displays the label to the right of the poi
 import xatra
 from xatra.loaders import gadm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
@@ -1012,7 +931,7 @@ For Paths, setting `show_label=True` calculates the midpoint along the path (by 
 import xatra
 from xatra.loaders import gadm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
@@ -1052,7 +971,7 @@ For Rivers, setting `show_label=True` places the label at an intelligent locatio
 import xatra
 from xatra.loaders import gadm, naturalearth
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
@@ -1175,7 +1094,7 @@ The tooltips are displayed in a clean, organized format with each element type c
 import xatra
 from xatra.loaders import gadm
 
-map = xatra.FlagMap()
+map = xatra.Map()
 map.BaseOption("OpenStreetMap", default=True)
 
 # These elements overlap - hovering over Tamil Nadu will show all tooltips
@@ -1260,25 +1179,60 @@ map.CSS("""
 
 Xatra is optimized for large, complex maps with many elements:
 
+- **Geometry Caching**: Territory geometries are cached globally by string representation, with both in-memory and on-disk persistence. Identical territory expressions (e.g., `gadm("IND") | gadm("PAK")`) are computed only once and reused across all instances.
 - **File Caching**: Data files (GADM, Natural Earth) are cached in memory to avoid repeated disk reads
 - **Centroid Pre-computation**: Flag centroids are calculated once during export, not on every render
 - **Layer Visibility Toggling**: Dynamic maps use efficient visibility toggling instead of recreating layers
 - **Memory Management**: Use `clear_file_cache()` to free memory when working with very large datasets
 
+### Geometry Cache Management
+
+The global geometry cache can be managed programmatically:
+
+```python
+import xatra
+
+# Clear cache
+xatra.clear_cache()                    # Clear both memory and disk
+xatra.clear_cache(memory_only=True)    # Clear only memory
+xatra.clear_cache(disk_only=True)      # Clear only disk
+
+# Get cache statistics
+stats = xatra.cache_stats()
+print(f"Hit rate: {stats['hit_rate']:.1%}")
+print(f"Memory cache: {stats['memory_cache_size']} items")
+print(f"Disk cache: {stats['disk_cache_size']} files")
+```
+
+Cache files are stored in `~/.xatra/cache/` and persist across program runs for maximum performance.
+
 ### Time Debugging
 
-Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps.
+Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps and tracks **exclusive time** (time spent in each function excluding time spent in other tracked functions called from it).
 
+#### Enabling Time Debugging
+
+**Method 1: Environment Variable (Recommended)**
+```bash
+DEBUG_TIME=1 python your_script.py
+```
+
+**Method 2: Programmatically**
 ```python
 import xatra
 
 xatra.set_debug_time(True)
 
 # Now create your map - all operations will be timed
-map = xatra.FlagMap()
+map = xatra.Map()
 map.Flag("India", xatra.gadm("IND"))
 map.show()
 ```
+
+**Environment Variable Values:**
+- `DEBUG_TIME=1`, `true`, `yes`, `on` → Enable debugging
+- `DEBUG_TIME=0`, `false`, `no`, `off` → Disable debugging (default)
+- Unset or empty → Disable debugging (default)
 
 When time debugging is enabled, you'll see timing information for:
 
@@ -1304,6 +1258,15 @@ When time debugging is enabled, you'll see timing information for:
 - Exporting to JSON format
 - Exporting to HTML format
 
+#### Exclusive Time Tracking
+
+The time debugging system tracks two types of time for each function:
+
+- **Total Time**: The complete time spent in the function, including time spent in other tracked functions called from it
+- **Exclusive Time**: The time spent in the function itself, excluding time spent in other tracked functions called from it
+
+This helps identify which functions are doing the most actual work versus just calling other functions.
+
 ```
 [14:23:45] → START: Add Flag
 [14:23:45]   args: 'India', <Territory object at 0x...>
@@ -1324,12 +1287,75 @@ When time debugging is enabled, you'll see timing information for:
 [14:23:47] ✓ FINISH: Show (export map)
 ```
 
-To disable Time Debugging:
+#### Disabling Time Debugging
 
+**Method 1: Environment Variable**
+```bash
+unset DEBUG_TIME
+# or
+export DEBUG_TIME=0
+```
+
+**Method 2: Programmatically**
 ```python
 # Disable time debugging
 xatra.set_debug_time(False)
 ```
+
+**Note:** The programmatic methods override the environment variable setting.
+
+#### Automatic Timing Display
+
+When time debugging is enabled, timing statistics and charts are **automatically displayed** when your program exits. This means you don't need to manually call any functions - the performance analysis appears automatically!
+
+#### Manual Timing Analysis
+
+You can also manually analyze the timing data if needed:
+
+**Print Timing Summary:**
+```python
+import xatra
+
+# Print a formatted table of timing statistics
+xatra.print_timing_summary()
+```
+
+**Get Raw Timing Data:**
+```python
+# Get timing statistics as a dictionary
+stats = xatra.get_timing_stats()
+print(f"Functions tracked: {len(stats['exclusive_times'])}")
+print(f"Total function calls: {sum(stats['call_counts'].values())}")
+```
+
+**Create Timing Charts:**
+```python
+# Display an interactive timing chart (requires matplotlib)
+xatra.show_timing_chart()
+
+# Save timing chart to file
+xatra.plot_timing_chart(save_path="timing_analysis.png")
+
+# Get chart without displaying it
+fig = xatra.plot_timing_chart(show_chart=False)
+```
+
+**Reset Timing Statistics:**
+```python
+# Clear all timing data
+xatra.reset_timing_stats()
+```
+
+The timing chart shows:
+- **Top chart**: Horizontal bar chart of exclusive times for the top 15 functions
+- **Bottom chart**: Side-by-side comparison of exclusive vs total times
+- **Summary statistics**: Total times, function counts, and call counts
+
+**Automatic Display Features:**
+- Timing statistics are automatically printed when the program exits
+- Charts are automatically displayed (if matplotlib is available)
+- No manual intervention required - just enable debug time and run your code
+- Works with both environment variable (`DEBUG_TIME=1`) and programmatic (`xatra.set_debug_time(True)`) methods
 
 ## Data Sources
 
@@ -1345,3 +1371,91 @@ xatra.set_debug_time(False)
 ### Overpass API
 - Rivers: `data/rivers_overpass_india/`
 - Features identified by OSM ID in filename
+
+## TODO
+
+Kanging
+- [ ] copy maps from old xatra (colonies and hsr remaining)
+- [ ] maps of north-west: Panini, Puranas and Greek
+- [ ] full history timeline
+- [x] GDP per capita map
+- [x] admin map
+
+Features
+- [x] Orient flag labels in direction of flag
+- [x] option for different point markers besides pin
+- [x] option for point labels, path, river labels
+- [x] option to create multiple path, river labels.
+- [x] And maybe calculate river label path using bounding box.
+- [x] ideally make it so hovering hovers on *all* flags/elements at that point
+- [x] "get current map" similar to matplotlib, to make maps more modular
+- [x] Hover over color bar
+- [x] periods for things other than flags
+- [x] xatra.Admin
+- [x] xatra.Flag color groups
+- [x] xatra.Dataframe with notes and DataColormap
+- [x] do we need to redraw everything each frame?
+- [ ] MAYBE: class-based show labels, etc. Not that important. Main thing you'd use it for is hiding labels and CSS is enough for that.
+- [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
+- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly -- use mapshaper
+- [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
+
+Dev
+- [x] Get it in a publishable state
+- [x] why not just upload my cache. Need to change the HF repository to have a data and a cache folder
+- [ ] Publish it
+- [x] time debugging
+
+Interactive platform
+- [ ] DSL
+- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
+- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
+- [ ] ideally we want a crud type of thing for real-time updating
+
+Stylistic changes
+- [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
+- [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
+- [x] custom IDs and classes for styling
+- [x] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
+- [x] also need flag names to appear at centroid
+- [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
+- [x] color assignment
+- [x] t logachoice of BaseMaps
+- [x] slider shouldn't appear for static maps
+- [x] map.slider()
+- [x] slider play button plus positions of years, start and end year
+- [x] watermark
+
+Libraries
+- [x] copy matchers from old xatra
+
+Bugfixes
+- [x] Efficiency: cache territory geometries by string rep rather than per-object
+- [x] optimize paxmax aggregation
+- [x] AdminRivers don't work again.
+- [x] ~~show bounding boxes of flag paxmaxes when selected~~ instead just show outline on hover
+- [x] AdminRivers doesn't work.
+- [x] River name rendering position is weird
+- [x] River names don't render for overpass
+- [x] color bar hover on correct position
+- [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
+- [x] Static Dataframe maps don't work
+- [x] logarithmic/normalized color bars with matplotlib Normalize support
+- [x] Make sure color bars are shown correctly regardless of how it is
+- [x] Support a "note" column for Dataframe.
+- [x] Don't assume missing values
+- [x] classes attribute not being passed on
+- [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
+- [x] disputed areas admin map
+- [x] fix issue with disputed areas
+- [x] top-level disputed areas
+- [x] debug slowness
+- [x] xatra.Data issue with colors of data in dynamic maps and exact range
+- [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
+- [x] Mark map as dynamic if any element as period
+- [x] why country name appears on Data tooltip?
+- [x] default color scheme
+- [x] add color map in html
+- [x] rename Colormap to Colormap
+- [x] efficiency and documentation
+- [x] [WONTFIX] make outline of rivers show on hover too -- need rivers to be grouped for that
