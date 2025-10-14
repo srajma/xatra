@@ -55,7 +55,8 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] Efficiency: cache territory geometries by string rep rather than per-object
+- [x] Efficiency: cache territory geometries by string rep rather than per-object
+- [ ] use approx centroid calc
 - [x] AdminRivers don't work again.
 - [x] ~~show bounding boxes of flag paxmaxes when selected~~ instead just show outline on hover
 - [x] AdminRivers doesn't work.
@@ -82,7 +83,6 @@ Bugfixes
 - [x] add color map in html
 - [x] rename Colormap to Colormap
 - [x] efficiency and documentation
-- [x] [WONTFIX] use approx centroid calc
 - [x] [WONTFIX] make outline of rivers show on hover too -- need rivers to be grouped for that
 
 
