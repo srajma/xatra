@@ -14,11 +14,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from shapely.geometry import shape, mapping
+from shapely.geometry import shape
 from shapely.ops import unary_union
 
 from .loaders import load_gadm_like, load_naturalearth_like
 from .debug_utils import time_debug
+from .geometry_cache import get_global_cache
 
 
 @time_debug("Convert GeoJSON to geometry")
@@ -49,7 +50,7 @@ class Territory:
     
     Territory objects support lazy loading from various data sources and can be
     combined using set algebra operations (union, difference). Geometries are
-    cached after first access for performance.
+    cached globally after first access for performance.
     
     Example:
         >>> india = Territory.from_gadm("IND")
@@ -58,7 +59,6 @@ class Territory:
     """
 
     _geometry_provider: Optional[callable] = None
-    _geom_cache: Optional[Any] = None
     strrepr: str = None
 
     @staticmethod
@@ -110,17 +110,36 @@ class Territory:
     def to_geometry(self):
         """Get the Shapely geometry for this territory.
         
+        Uses global caching system for performance optimization.
+        
         Returns:
             Shapely geometry object or None if invalid
         """
-        if self._geom_cache is not None:
-            print(f"RETRIEVING CACHED GEOMETRY FOR f'{self.strrepr}'")
-            return self._geom_cache
+        # Skip caching for territories created from GeoJSON objects
+        if self.strrepr == "<DIRECT_DICT>":
+            if self._geometry_provider is None:
+                return None
+            return self._geometry_provider()
+        
+        # Use global cache for all other territories
+        cache = get_global_cache()
+        
+        # Try to get from cache first
+        cached_geometry = cache.get(self.strrepr)
+        if cached_geometry is not None:
+            print(f"RETRIEVING CACHED GEOMETRY FOR '{self.strrepr}'")
+            return cached_geometry
+        
+        # Not in cache, compute and store
         if self._geometry_provider is None:
             return None
-        print(f"CALCULATING GEOMETRY FOR f'{self.strrepr}'")
-        self._geom_cache = self._geometry_provider()
-        return self._geom_cache
+        
+        print(f"CALCULATING GEOMETRY FOR '{self.strrepr}'")
+        geometry = self._geometry_provider()
+        if geometry is not None:
+            cache.put(self.strrepr, geometry)
+        
+        return geometry
 
     # Set algebra
     def __or__(self, other: "Territory") -> "Territory":

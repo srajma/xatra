@@ -57,6 +57,7 @@ from .territory import Territory
 from .loaders import gadm, naturalearth, overpass
 from .icon import Icon
 from . import debug_utils
+from .geometry_cache import clear_geometry_cache, get_geometry_cache_stats
 
 # Import pyplot-style functions
 from .pyplot import (
@@ -125,6 +126,40 @@ def set_debug_time(enabled: bool):
     DEBUG_TIME = enabled
     debug_utils.DEBUG_TIME = enabled
 
+
+def clear_cache(memory_only: bool = False, disk_only: bool = False):
+    """Clear the global geometry cache.
+    
+    This can improve memory usage or force fresh geometry calculations.
+    
+    Args:
+        memory_only: If True, only clear in-memory cache
+        disk_only: If True, only clear on-disk cache
+        
+    Example:
+        >>> import xatra
+        >>> xatra.clear_cache()  # Clear both memory and disk cache
+        >>> xatra.clear_cache(memory_only=True)  # Clear only memory cache
+        >>> xatra.clear_cache(disk_only=True)  # Clear only disk cache
+    """
+    clear_geometry_cache(memory_only=memory_only, disk_only=disk_only)
+
+
+def cache_stats():
+    """Get statistics for the global geometry cache.
+    
+    Returns:
+        Dictionary with cache statistics including hit rates and sizes
+        
+    Example:
+        >>> import xatra
+        >>> stats = xatra.cache_stats()
+        >>> print(f"Hit rate: {stats['hit_rate']:.2%}")
+        >>> print(f"Memory cache size: {stats['memory_cache_size']} items")
+        >>> print(f"Disk cache size: {stats['disk_cache_size']} files")
+    """
+    return get_geometry_cache_stats()
+
 __version__ = "0.1.0"
 __all__ = [
     # Core classes
@@ -159,4 +194,7 @@ __all__ = [
     # Debug utilities
     "DEBUG_TIME",
     "set_debug_time",
+    # Cache management
+    "clear_cache",
+    "cache_stats",
 ]
