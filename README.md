@@ -56,7 +56,7 @@ Libraries
 
 Bugfixes
 - [x] Efficiency: cache territory geometries by string rep rather than per-object
-- [ ] optimize paxmax aggregation
+- [x] optimize paxmax aggregation
 - [x] AdminRivers don't work again.
 - [x] ~~show bounding boxes of flag paxmaxes when selected~~ instead just show outline on hover
 - [x] AdminRivers doesn't work.
