@@ -1281,7 +1281,7 @@ Cache files are stored in `~/.xatra/cache/` and persist across program runs for 
 
 ### Time Debugging
 
-Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps.
+Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps and tracks **exclusive time** (time spent in each function excluding time spent in other tracked functions called from it).
 
 #### Enabling Time Debugging
 
@@ -1331,6 +1331,15 @@ When time debugging is enabled, you'll see timing information for:
 - Exporting to JSON format
 - Exporting to HTML format
 
+#### Exclusive Time Tracking
+
+The time debugging system tracks two types of time for each function:
+
+- **Total Time**: The complete time spent in the function, including time spent in other tracked functions called from it
+- **Exclusive Time**: The time spent in the function itself, excluding time spent in other tracked functions called from it
+
+This helps identify which functions are doing the most actual work versus just calling other functions.
+
 ```
 [14:23:45] → START: Add Flag
 [14:23:45]   args: 'India', <Territory object at 0x...>
@@ -1367,6 +1376,49 @@ xatra.set_debug_time(False)
 ```
 
 **Note:** The programmatic methods override the environment variable setting.
+
+#### Timing Statistics and Visualization
+
+After running your code with time debugging enabled, you can analyze the timing data:
+
+**Print Timing Summary:**
+```python
+import xatra
+
+# Print a formatted table of timing statistics
+xatra.print_timing_summary()
+```
+
+**Get Raw Timing Data:**
+```python
+# Get timing statistics as a dictionary
+stats = xatra.get_timing_stats()
+print(f"Functions tracked: {len(stats['exclusive_times'])}")
+print(f"Total function calls: {sum(stats['call_counts'].values())}")
+```
+
+**Create Timing Charts:**
+```python
+# Display an interactive timing chart (requires matplotlib)
+xatra.show_timing_chart()
+
+# Save timing chart to file
+xatra.plot_timing_chart(save_path="timing_analysis.png")
+
+# Get chart without displaying it
+fig = xatra.plot_timing_chart(show_chart=False)
+```
+
+**Reset Timing Statistics:**
+```python
+# Clear all timing data
+xatra.reset_timing_stats()
+```
+
+The timing chart shows:
+- **Top chart**: Horizontal bar chart of exclusive times for the top 15 functions
+- **Bottom chart**: Side-by-side comparison of exclusive vs total times
+- **Summary statistics**: Total times, function counts, and call counts
 
 ## Data Sources
 

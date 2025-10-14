@@ -59,6 +59,15 @@ from .icon import Icon
 from . import debug_utils
 from .geometry_cache import clear_geometry_cache, get_geometry_cache_stats
 
+# Import timing debugging functions
+from .debug_utils import (
+    reset_timing_stats,
+    get_timing_stats, 
+    print_timing_summary,
+    plot_timing_chart,
+    show_timing_chart
+)
+
 # Import pyplot-style functions
 from .pyplot import (
     get_current_map,
