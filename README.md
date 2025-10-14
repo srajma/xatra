@@ -1,92 +1,3 @@
-# TODO
-
-Kanging
-- [ ] copy maps from old xatra (colonies and hsr remaining)
-- [ ] maps of north-west: Panini, Puranas and Greek
-- [ ] full history timeline
-- [x] GDP per capita map
-- [x] admin map
-
-Features
-- [x] Orient flag labels in direction of flag
-- [x] option for different point markers besides pin
-- [x] option for point labels, path, river labels
-- [x] option to create multiple path, river labels.
-- [x] And maybe calculate river label path using bounding box.
-- [x] ideally make it so hovering hovers on *all* flags/elements at that point
-- [x] "get current map" similar to matplotlib, to make maps more modular
-- [x] Hover over color bar
-- [x] periods for things other than flags
-- [x] xatra.Admin
-- [x] xatra.Flag color groups
-- [x] xatra.Dataframe with notes and DataColormap
-- [x] do we need to redraw everything each frame?
-- [ ] MAYBE: class-based show labels, etc. Not that important. Main thing you'd use it for is hiding labels and CSS is enough for that.
-- [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
-- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly -- use mapshaper
-- [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
-
-Dev
-- [x] Get it in a publishable state
-- [ ] why not just upload my cache. Need to change the HF repository to have a data and a cache folder
-- [ ] Publish it
-- [x] time debugging
-
-Interactive platform
-- [ ] DSL
-- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
-- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
-- [ ] ideally we want a crud type of thing for real-time updating
-
-Stylistic changes
-- [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
-- [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
-- [x] custom IDs and classes for styling
-- [x] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
-- [x] also need flag names to appear at centroid
-- [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
-- [x] color assignment
-- [x] t logachoice of BaseMaps
-- [x] slider shouldn't appear for static maps
-- [x] map.slider()
-- [x] slider play button plus positions of years, start and end year
-- [x] watermark
-
-Libraries
-- [x] copy matchers from old xatra
-
-Bugfixes
-- [x] Efficiency: cache territory geometries by string rep rather than per-object
-- [x] optimize paxmax aggregation
-- [x] AdminRivers don't work again.
-- [x] ~~show bounding boxes of flag paxmaxes when selected~~ instead just show outline on hover
-- [x] AdminRivers doesn't work.
-- [x] River name rendering position is weird
-- [x] River names don't render for overpass
-- [x] color bar hover on correct position
-- [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
-- [x] Static Dataframe maps don't work
-- [x] logarithmic/normalized color bars with matplotlib Normalize support
-- [x] Make sure color bars are shown correctly regardless of how it is
-- [x] Support a "note" column for Dataframe.
-- [x] Don't assume missing values
-- [x] classes attribute not being passed on
-- [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
-- [x] disputed areas admin map
-- [x] fix issue with disputed areas
-- [x] top-level disputed areas
-- [x] debug slowness
-- [x] xatra.Data issue with colors of data in dynamic maps and exact range
-- [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
-- [x] Mark map as dynamic if any element as period
-- [x] why country name appears on Data tooltip?
-- [x] default color scheme
-- [x] add color map in html
-- [x] rename Colormap to Colormap
-- [x] efficiency and documentation
-- [x] [WONTFIX] make outline of rivers show on hover too -- need rivers to be grouped for that
-
-
 # Xatra: The Matplotlib of Maps
 
 Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever.
@@ -1445,3 +1356,91 @@ The timing chart shows:
 ### Overpass API
 - Rivers: `data/rivers_overpass_india/`
 - Features identified by OSM ID in filename
+
+## TODO
+
+Kanging
+- [ ] copy maps from old xatra (colonies and hsr remaining)
+- [ ] maps of north-west: Panini, Puranas and Greek
+- [ ] full history timeline
+- [x] GDP per capita map
+- [x] admin map
+
+Features
+- [x] Orient flag labels in direction of flag
+- [x] option for different point markers besides pin
+- [x] option for point labels, path, river labels
+- [x] option to create multiple path, river labels.
+- [x] And maybe calculate river label path using bounding box.
+- [x] ideally make it so hovering hovers on *all* flags/elements at that point
+- [x] "get current map" similar to matplotlib, to make maps more modular
+- [x] Hover over color bar
+- [x] periods for things other than flags
+- [x] xatra.Admin
+- [x] xatra.Flag color groups
+- [x] xatra.Dataframe with notes and DataColormap
+- [x] do we need to redraw everything each frame?
+- [ ] MAYBE: class-based show labels, etc. Not that important. Main thing you'd use it for is hiding labels and CSS is enough for that.
+- [ ] MAYBE: grouping of map elements and layer selection. PROBLEM: this is hard.
+- [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly -- use mapshaper
+- [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
+
+Dev
+- [x] Get it in a publishable state
+- [x] why not just upload my cache. Need to change the HF repository to have a data and a cache folder
+- [ ] Publish it
+- [x] time debugging
+
+Interactive platform
+- [ ] DSL
+- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
+- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
+- [ ] ideally we want a crud type of thing for real-time updating
+
+Stylistic changes
+- [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
+- [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
+- [x] custom IDs and classes for styling
+- [x] The tooltip that appears upon hovering over a flag should appear at the point of my cursor, and move with my cursor. I thought this is how default Leaflet tooltips appear? Why does it appear at a fixed point in our implementation?
+- [x] also need flag names to appear at centroid
+- [x] map.Text labels should by default just be plain text, without the border box and all that. Its default style could be different maybe "font-size: 16px; font-weight: bold; color: #666666"
+- [x] color assignment
+- [x] t logachoice of BaseMaps
+- [x] slider shouldn't appear for static maps
+- [x] map.slider()
+- [x] slider play button plus positions of years, start and end year
+- [x] watermark
+
+Libraries
+- [x] copy matchers from old xatra
+
+Bugfixes
+- [x] Efficiency: cache territory geometries by string rep rather than per-object
+- [x] optimize paxmax aggregation
+- [x] AdminRivers don't work again.
+- [x] ~~show bounding boxes of flag paxmaxes when selected~~ instead just show outline on hover
+- [x] AdminRivers doesn't work.
+- [x] River name rendering position is weird
+- [x] River names don't render for overpass
+- [x] color bar hover on correct position
+- [x] Dataframe should not work the stupid way it does. It should be a simple chloropleth, not creating new geometries for each year.
+- [x] Static Dataframe maps don't work
+- [x] logarithmic/normalized color bars with matplotlib Normalize support
+- [x] Make sure color bars are shown correctly regardless of how it is
+- [x] Support a "note" column for Dataframe.
+- [x] Don't assume missing values
+- [x] classes attribute not being passed on
+- [x] disputed areas -- should show up for Admin, and more importantly should be able to specify source file
+- [x] disputed areas admin map
+- [x] fix issue with disputed areas
+- [x] top-level disputed areas
+- [x] debug slowness
+- [x] xatra.Data issue with colors of data in dynamic maps and exact range
+- [x] sub-regions -- use boundary-aware starts matching, same as elsewhere
+- [x] Mark map as dynamic if any element as period
+- [x] why country name appears on Data tooltip?
+- [x] default color scheme
+- [x] add color map in html
+- [x] rename Colormap to Colormap
+- [x] efficiency and documentation
+- [x] [WONTFIX] make outline of rivers show on hover too -- need rivers to be grouped for that
