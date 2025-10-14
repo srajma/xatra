@@ -13,12 +13,31 @@ creates stable periods where the territory remains constant.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from shapely.geometry import shape, mapping
+from shapely.geometry import shape
 from shapely.ops import unary_union
 
 from .debug_utils import time_debug
+
+
+@time_debug("Shapely shape conversion")
+def _shape_wrapper(geojson_geometry):
+    """Wrapper for shapely.geometry.shape with time debugging."""
+    return shape(geojson_geometry)
+
+
+@time_debug("Shapely mapping conversion")
+def _mapping_wrapper(geometry):
+    """Wrapper for shapely.geometry.mapping with time debugging."""
+    from shapely.geometry import mapping
+    return mapping(geometry)
+
+
+@time_debug("Shapely unary union")
+def _unary_union_wrapper(geometries):
+    """Wrapper for shapely.ops.unary_union with time debugging."""
+    return unary_union(geometries)
 
 
 @time_debug("Compute centroid")
@@ -98,6 +117,7 @@ def _compute_centroid_for_geometry(geometry: Dict[str, Any]) -> Optional[List[fl
     return None
 
 
+@time_debug("Convert GeoJSON to Shapely geometry")
 def _to_shape(geojson):
     """Convert GeoJSON to Shapely geometry.
     
@@ -111,11 +131,11 @@ def _to_shape(geojson):
         return None
     t = geojson.get("type")
     if t == "Feature":
-        return shape(geojson["geometry"]) if geojson.get("geometry") else None
+        return _shape_wrapper(geojson["geometry"]) if geojson.get("geometry") else None
     if t == "FeatureCollection":
-        geoms = [shape(f["geometry"]) for f in geojson.get("features", []) if f.get("geometry")]
-        return unary_union(geoms) if geoms else None
-    return shape(geojson)
+        geoms = [_shape_wrapper(f["geometry"]) for f in geojson.get("features", []) if f.get("geometry")]
+        return _unary_union_wrapper(geoms) if geoms else None
+    return _shape_wrapper(geojson)
 
 
 @time_debug("Paxmax aggregation")
@@ -154,13 +174,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
         out = []
         for label, items in by_label.items():
             geoms = [_to_shape(it.get("geometry")) for it in items if it.get("geometry") is not None]
-            geom = unary_union([g for g in geoms if g is not None]) if geoms else None
+            geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
             # Preserve color from the first item (they should all have the same color for the same label)
             color = items[0].get("color") if items else None
             # Recompute centroid for the unioned geometry
             centroid = None
             if geom is not None:
-                centroid = _compute_centroid_for_geometry(mapping(geom))
+                centroid = _compute_centroid_for_geometry(_mapping_wrapper(geom))
             # Collect all unique classes from items with the same label
             all_classes = []
             for it in items:
@@ -170,7 +190,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             
             out.append({
                 "label": label,
-                "geometry": mapping(geom) if geom is not None else None,
+                "geometry": _mapping_wrapper(geom) if geom is not None else None,
                 "centroid": centroid,
                 "note": "; ".join([it.get("note") for it in items if it.get("note")]) or None,
                 "color": color,
@@ -213,13 +233,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             if not active:
                 continue
             geoms = [_to_shape(a.get("geometry")) for a in active if a.get("geometry") is not None]
-            geom = unary_union([g for g in geoms if g is not None]) if geoms else None
+            geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
             # Preserve color from the first active item
             color = active[0].get("color") if active else None
             # Recompute centroid for the unioned geometry
             centroid = None
             if geom is not None:
-                centroid = _compute_centroid_for_geometry(mapping(geom))
+                centroid = _compute_centroid_for_geometry(_mapping_wrapper(geom))
             # Collect all unique classes from active items
             all_classes = []
             for it in active:
@@ -229,7 +249,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             
             snapshot_flags.append({
                 "label": label,
-                "geometry": mapping(geom) if geom is not None else None,
+                "geometry": _mapping_wrapper(geom) if geom is not None else None,
                 "centroid": centroid,
                 "note": "; ".join(notes) or None,
                 "color": color,
