@@ -65,7 +65,8 @@ from .debug_utils import (
     get_timing_stats, 
     print_timing_summary,
     plot_timing_chart,
-    show_timing_chart
+    show_timing_chart,
+    _auto_display_timing_stats
 )
 
 # Import pyplot-style functions
@@ -114,12 +115,19 @@ def _parse_debug_time_env():
 DEBUG_TIME = _parse_debug_time_env()
 debug_utils.DEBUG_TIME = DEBUG_TIME
 
+# Register automatic display of timing stats if debug time is enabled via environment
+if DEBUG_TIME:
+    import atexit
+    atexit.register(_auto_display_timing_stats)
+
 
 def set_debug_time(enabled: bool):
     """Enable or disable time debugging throughout xatra.
     
     When enabled, all major operations will print timing information
     showing when activities start and finish with HH:MM:SS timestamps.
+    Additionally, timing statistics and charts are automatically displayed
+    when the program exits.
     
     This function overrides the DEBUG_TIME environment variable setting.
     
@@ -134,6 +142,11 @@ def set_debug_time(enabled: bool):
     global DEBUG_TIME
     DEBUG_TIME = enabled
     debug_utils.DEBUG_TIME = enabled
+    
+    # Register automatic display of timing stats on program exit
+    if enabled:
+        import atexit
+        atexit.register(_auto_display_timing_stats)
 
 
 def clear_cache(memory_only: bool = False, disk_only: bool = False):

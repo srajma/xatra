@@ -388,3 +388,39 @@ def show_timing_chart():
     """Convenience function to display the timing chart."""
     return plot_timing_chart(show_chart=True)
 
+
+def _auto_display_timing_stats():
+    """Automatically display timing statistics when debug time is enabled.
+    
+    This function is registered to run at program exit when DEBUG_TIME is True.
+    It displays both the text summary and the chart if timing data exists.
+    """
+    if not DEBUG_TIME:
+        return
+    
+    stats = get_timing_stats()
+    
+    # Only display if we have timing data
+    if not stats['exclusive_times']:
+        return
+    
+    print("\n" + "="*80)
+    print("AUTOMATIC TIMING SUMMARY")
+    print("="*80)
+    print("Time debugging was enabled. Here's the performance analysis:")
+    
+    # Print the timing summary
+    print_timing_summary()
+    
+    # Try to show the chart
+    print("\nGenerating timing visualization chart...")
+    try:
+        plot_timing_chart(show_chart=True)
+    except ImportError:
+        print("Note: matplotlib not available for chart display. Install with: pip install matplotlib")
+    except Exception as e:
+        print(f"Note: Could not display chart: {e}")
+    
+    print("\nTo disable automatic timing display, use: xatra.set_debug_time(False)")
+    print("="*80)
+

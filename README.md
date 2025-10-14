@@ -1377,9 +1377,13 @@ xatra.set_debug_time(False)
 
 **Note:** The programmatic methods override the environment variable setting.
 
-#### Timing Statistics and Visualization
+#### Automatic Timing Display
 
-After running your code with time debugging enabled, you can analyze the timing data:
+When time debugging is enabled, timing statistics and charts are **automatically displayed** when your program exits. This means you don't need to manually call any functions - the performance analysis appears automatically!
+
+#### Manual Timing Analysis
+
+You can also manually analyze the timing data if needed:
 
 **Print Timing Summary:**
 ```python
@@ -1419,6 +1423,12 @@ The timing chart shows:
 - **Top chart**: Horizontal bar chart of exclusive times for the top 15 functions
 - **Bottom chart**: Side-by-side comparison of exclusive vs total times
 - **Summary statistics**: Total times, function counts, and call counts
+
+**Automatic Display Features:**
+- Timing statistics are automatically printed when the program exits
+- Charts are automatically displayed (if matplotlib is available)
+- No manual intervention required - just enable debug time and run your code
+- Works with both environment variable (`DEBUG_TIME=1`) and programmatic (`xatra.set_debug_time(True)`) methods
 
 ## Data Sources
 
