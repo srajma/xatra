@@ -1146,6 +1146,11 @@ HTML_TEMPLATE = Template(
             className: className,
             offset: [0, 0]
           });
+          // Register with multi-tooltip system if note is present
+          if (t.note) {
+            const textTooltip = `${t.label} — ${t.note}`;
+            registerLayerTooltip(layer, 'Text', textTooltip);
+          }
           layer._textData = { period: t.period };
           layers.texts.push(layer);
         }
@@ -1906,6 +1911,11 @@ HTML_TEMPLATE = Template(
             className: className,
             offset: [0, 0]
           });
+          // Register with multi-tooltip system if note is present
+          if (t.note) {
+            const textTooltip = `${t.label} — ${t.note}`;
+            registerLayerTooltip(layer, 'Text', textTooltip);
+          }
           layers.texts.push(layer);
         }
       }

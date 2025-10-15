@@ -42,7 +42,7 @@ map.Flag(label="Gupta", value=NORTH_INDIA)
 map.River(label="Ganga", value=naturalearth("1159122643"))
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], note="Ancient northern trade route")
 map.Point(label="Indraprastha", position=[28,77], note="Ancient capital of the Pandavas")
-map.Text(label="Jambudvipa", position=[22,79])
+map.Text(label="Jambudvipa", position=[22,79], note="Ancient name for the Indian subcontinent")
 map.TitleBox("<b>Sample historical map of India</b><br>Classical period, source: Majumdar.")
 map.show()
 ```
@@ -73,8 +73,8 @@ map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttara
 map.Path(label="Silk Road", value=[[35.0, 75.0], [40.0, 80.0], [45.0, 85.0]], period=[-200, 600])
 map.Point(label="Indraprastha", position=[28,77])
 map.Point(label="Delhi", position=[28.6, 77.2], period=[400, 800])
-map.Text(label="Jambudvipa", position=[22,79], classes="jambudvipa-text")
-map.Text(label="Aryavarta", position=[22,79], period=[0, 600])
+map.Text(label="Jambudvipa", position=[22,79], classes="jambudvipa-text", note="Ancient name for the Indian subcontinent")
+map.Text(label="Aryavarta", position=[22,79], period=[0, 600], note="Land of the Aryans")
 map.TitleBox("<b>Map of major Indian empires</b><br>Classical period, source: Majumdar.")
 map.TitleBox("<h2>Ancient Period (-500 to 0)</h2><p>This title appears only in ancient times</p>", period=[-500, 0])
 map.TitleBox("<h2>Classical Period (-100 to 400)</h2><p>This title appears only in classical times</p>", period=[-100, 400])
@@ -269,7 +269,7 @@ xatra.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout
 xatra.River(label="Ganga", value=naturalearth("1159122643"), classes="major-river")
 xatra.Path(label="Uttarapatha", value=[[28, 77], [30, 90], [40, 120]])
 xatra.Point(label="Indraprastha", position=[28, 77])
-xatra.Text(label="Jambudvipa", position=[22, 79])
+xatra.Text(label="Jambudvipa", position=[22, 79], note="Ancient name for the Indian subcontinent")
 xatra.TitleBox("<b>Pyplot-style Map Example</b><br>Classical period, using xatra.Flag() etc.")
 xatra.CSS("""
 .flag { stroke: #555; fill: rgba(200,0,0,0.4); }
@@ -305,7 +305,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a river with optional label display and customizable hover detection radius
 - **`Path(label, coords, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional tooltip note, label display, and customizable hover detection radius
 - **`Point(label, position, note=None, period=None, icon=None, show_label=False, hover_radius=20)`**: Add a point of interest with optional tooltip note, custom icon, label display, and customizable hover detection radius
-- **`Text(label, position, classes=None, period=None)`**: Add a text label
+- **`Text(label, position, note=None, classes=None, period=None)`**: Add a text label with optional tooltip note
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
 
 ##### Styling and Configuration
@@ -395,7 +395,7 @@ map.Flag(label="Mughal", value=gadm("IND.25"), classes="empire muslim")
 # Add custom classes to other elements
 map.River(label="Ganga", value=naturalearth("1159122643"), classes="sacred-river major-river")
 map.Path(label="Silk Road", value=[[35, 75], [40, 80]], classes="trade-route ancient")
-map.Text(label="Jambudvipa", position=[22, 79], classes="region-name large-text")
+map.Text(label="Jambudvipa", position=[22, 79], classes="region-name large-text", note="Ancient name for the Indian subcontinent")
 map.Admin(gadm="IND.31", level=3, classes="tamil-nadu-tehsils")
 # DataFrame elements can be styled with CSS classes
 # map.Dataframe(df, classes="state-data")
@@ -948,7 +948,7 @@ map.show()
 
 ### Tooltip Notes
 
-The `note` parameter allows you to add additional information that appears in hover tooltips for Flag, River, Path, and Point objects. Notes are displayed in the format "Label — Note" in the tooltip and do not appear in map labels.
+The `note` parameter allows you to add additional information that appears in hover tooltips for Flag, River, Path, Point, and Text objects. Notes are displayed in the format "Label — Note" in the tooltip and do not appear in map labels.
 
 ```python
 import xatra
@@ -970,9 +970,15 @@ map.Path(label="Silk Road", value=[[40,74],[35,103]], note="Ancient trade route 
 # Point with note
 map.Point(label="Delhi", position=[28.6, 77.2], note="Capital of India since 1911")
 
+# Text with note
+map.Text(label="Ancient City", position=[28.6139, 77.2090], note="Founded in 736 CE")
+
 # Note appears in tooltip but not in map labels
 map.Point(label="Mumbai", position=[19.0, 73.0], note="Financial capital", show_label=True)
 # The label "Mumbai" appears on the map, but the note only appears when hovering
+
+map.Text(label="Sacred Site", position=[27.1751, 78.0421], note="Built in 1631-1653", classes="historical-text")
+# The text "Sacred Site" appears permanently on the map, but the note only appears when hovering
 
 map.show()
 ```
@@ -1453,7 +1459,8 @@ Bugfixes
 - [ ] Better documentation for icons
 - [ ] classes for Points that affect their labels
 - [ ] center map at center; and allow setting zoom
-- [ ] how to do refs?
+- [x] notes for Points
+- [x] tooltips and notes for Texts
 - [x] Efficiency: cache territory geometries by string rep rather than per-object
 - [x] optimize paxmax aggregation
 - [x] AdminRivers don't work again.

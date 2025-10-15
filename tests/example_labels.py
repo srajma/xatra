@@ -29,6 +29,11 @@ map.Path(label="Northern Route (tooltip)", value=[[28.6, 77.2], [30.3, 78.0], [3
 map.Path(label="Silk Road", value=[[28.6, 77.2], [32.0, 75.0], [35.5, 78.0], [39.0, 76.0]], show_label=True, n_labels=2)
 map.Path(label="Coastal Route", value=[[19.0, 73.0], [15.3, 74.1], [13.0, 80.2], [11.0, 76.0]], show_label=True, classes="coastal", n_labels=3)
 
+# Text
+map.Text(label="OOGA", note="booga", position = [5.0, 80.0])
+map.Text(label="TOGA", position = [0.0, 80.0])
+map.Text(label="ROGA", note="klooga", position = [15.0, 80.0])
+
 # Add custom CSS for styling
 map.CSS("""
 .coastal.path-label {

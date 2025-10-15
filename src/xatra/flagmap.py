@@ -122,11 +122,13 @@ class TextEntry:
     Args:
         label: Text content to display
         position: (latitude, longitude) coordinate tuple
+        note: Optional tooltip text for the text label
         classes: Optional CSS classes for styling
         period: Optional time period as (start_year, end_year) tuple
     """
     label: str
     position: Tuple[float, float]
+    note: Optional[str] = None
     classes: Optional[str] = None
     period: Optional[Tuple[int, int]] = None
 
@@ -768,24 +770,26 @@ class Map:
         self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), note=note, period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius))
 
     @time_debug("Add Text")
-    def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+    def Text(self, label: str, position: List[float], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
         """Add a text label to the map.
         
         Args:
             label: Text content to display
             position: [latitude, longitude] coordinate pair
+            note: Optional tooltip text for the text label
             classes: Optional CSS classes for styling
             period: Optional time period as [start_year, end_year] list
             
         Example:
             >>> map.Text("Ancient City", [28.6139, 77.2090], classes="city-label")
+            >>> map.Text("Important Location", [28.6139, 77.2090], note="Founded in 1200 BCE")
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), classes=classes, period=period_tuple))
+        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), note=note, classes=classes, period=period_tuple))
 
     @time_debug("Add TitleBox")
     def TitleBox(self, html: str, period: Optional[List[int]] = None) -> None:
@@ -1262,6 +1266,7 @@ class Map:
                 texts_serialized.append({
                     "label": t.label,
                     "position": t.position,
+                    "note": t.note,
                     "classes": t.classes,
                     "period": list(restricted_period) if restricted_period is not None else None,
                 })
