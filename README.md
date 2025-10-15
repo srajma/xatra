@@ -1416,6 +1416,11 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
+- [ ] Point labels should align to icon anchor
+- [ ] Better documentation for icons
+- [ ] classes for Points that affect their labels
+- [ ] center map at center; and allow setting zoom
+- [ ] how to do refs?
 - [x] Efficiency: cache territory geometries by string rep rather than per-object
 - [x] optimize paxmax aggregation
 - [x] AdminRivers don't work again.
