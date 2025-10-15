@@ -1455,7 +1455,7 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] Point labels should align to icon anchor
+- [ ] Point labels should align to exact position
 - [ ] Better documentation for icons
 - [ ] classes for Points that affect their labels
 - [ ] center map at center; and allow setting zoom
