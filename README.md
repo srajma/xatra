@@ -23,7 +23,7 @@ If you need to re-download the data:
 ```bash
 xatra-install-data --force
 ```
-[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.1 or later.
+[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.2 or later.
 
 ## Example: Historical map
 

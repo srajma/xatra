@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: xatra
-Version: 2.1.0
+Version: 2.2.0
 Summary: The matplotlib of maps - create beautiful historical, administrative, and data maps
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
@@ -38,7 +38,7 @@ If you need to re-download the data:
 ```bash
 xatra-install-data --force
 ```
-[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.1 or later.
+[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.2 or later.
 
 ## Example: Historical map
 

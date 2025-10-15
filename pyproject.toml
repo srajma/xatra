@@ -1,6 +1,6 @@
 [project]
 name = "xatra"
-version = "2.1.0"
+version = "2.2.0"
 description = "The matplotlib of maps - create beautiful historical, administrative, and data maps"
 readme = "README.md"
 requires-python = ">=3.12"
