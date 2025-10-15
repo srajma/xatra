@@ -1113,6 +1113,12 @@ HTML_TEMPLATE = Template(
             if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
             markerOptions.icon = L.icon(iconOptions);
           }
+          
+          // Apply classes to marker if present
+          let className = 'point';
+          if (p.classes) className += ' ' + p.classes;
+          markerOptions.className = className;
+          
           const layer = L.marker([p.position[0], p.position[1]], markerOptions);
           // Register with multi-tooltip system
           const pointTooltip = `${p.label}${p.note ? ' — ' + p.note : ''}`;
@@ -1123,10 +1129,15 @@ HTML_TEMPLATE = Template(
           // Add label next to point if show_label is true
           if (p.show_label) {
             const labelLayer = L.marker([p.position[0], p.position[1]], { opacity: 0.0 });
+            
+            // Apply classes to label if present
+            let labelClassName = 'text-label point-label';
+            if (p.classes) labelClassName += ' ' + p.classes;
+            
             labelLayer.bindTooltip(p.label, { 
               permanent: true, 
               direction: 'right', 
-              className: 'text-label point-label',
+              className: labelClassName,
               offset: [10, 0]
             });
             labelLayer._pointData = { period: p.period };
@@ -1881,6 +1892,12 @@ HTML_TEMPLATE = Template(
             if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
             markerOptions.icon = L.icon(iconOptions);
           }
+          
+          // Apply classes to marker if present
+          let className = 'point';
+          if (p.classes) className += ' ' + p.classes;
+          markerOptions.className = className;
+          
           const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map);
           // Register with multi-tooltip system
           const pointTooltip = `${p.label}${p.note ? ' — ' + p.note : ''}`;
@@ -1889,10 +1906,16 @@ HTML_TEMPLATE = Template(
           
           // Add label next to point if show_label is true
           if (p.show_label) {
-            const labelLayer = L.marker([p.position[0], p.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(p.label, { 
+            const labelLayer = L.marker([p.position[0], p.position[1]], { opacity: 0.0 }).addTo(map);
+            
+            // Apply classes to label if present
+            let labelClassName = 'text-label point-label';
+            if (p.classes) labelClassName += ' ' + p.classes;
+            
+            labelLayer.bindTooltip(p.label, { 
               permanent: true, 
               direction: 'right', 
-              className: 'text-label point-label',
+              className: labelClassName,
               offset: [10, 0]
             });
             layers.points.push(labelLayer);

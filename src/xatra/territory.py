@@ -127,14 +127,14 @@ class Territory:
         # Try to get from cache first
         cached_geometry = cache.get(self.strrepr)
         if cached_geometry is not None:
-            print(f"RETRIEVING CACHED GEOMETRY FOR '{self.strrepr}'")
+            # print(f"RETRIEVING CACHED GEOMETRY FOR '{self.strrepr}'")
             return cached_geometry
         
         # Not in cache, compute and store
         if self._geometry_provider is None:
             return None
         
-        print(f"CALCULATING GEOMETRY FOR '{self.strrepr}'")
+        # print(f"CALCULATING GEOMETRY FOR '{self.strrepr}'")
         geometry = self._geometry_provider()
         if geometry is not None:
             cache.put(self.strrepr, geometry)

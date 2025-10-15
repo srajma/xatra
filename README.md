@@ -304,7 +304,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a river with optional label display and customizable hover detection radius
 - **`Path(label, coords, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional tooltip note, label display, and customizable hover detection radius
-- **`Point(label, position, note=None, period=None, icon=None, show_label=False, hover_radius=20)`**: Add a point of interest with optional tooltip note, custom icon, label display, and customizable hover detection radius
+- **`Point(label, position, note=None, period=None, icon=None, show_label=False, hover_radius=20, classes=None)`**: Add a point of interest with optional tooltip note, custom icon, label display, customizable hover detection radius, and CSS classes
 - **`Text(label, position, note=None, classes=None, period=None)`**: Add a text label with optional tooltip note
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
 
@@ -908,6 +908,9 @@ map.Point(label="Delhi", position=[28.6, 77.2], note="Capital of India", show_la
 # Custom hover radius: easier to click on small points
 map.Point(label="Small Village", position=[20.5, 75.0], hover_radius=40)
 
+# Custom CSS classes: applied to both marker and label
+map.Point(label="Important City", position=[15.5, 78.0], classes="important-point large-marker", show_label=True)
+
 map.show()
 ```
 
@@ -969,6 +972,9 @@ map.Path(label="Silk Road", value=[[40,74],[35,103]], note="Ancient trade route 
 
 # Point with note
 map.Point(label="Delhi", position=[28.6, 77.2], note="Capital of India since 1911")
+
+# Point with note and custom classes
+map.Point(label="Mumbai", position=[19.0, 73.0], note="Financial capital of India", classes="important-city")
 
 # Text with note
 map.Text(label="Ancient City", position=[28.6139, 77.2090], note="Founded in 736 CE")
@@ -1457,7 +1463,7 @@ Libraries
 Bugfixes
 - [ ] Point labels should align to exact position
 - [ ] Better documentation for icons
-- [ ] classes for Points that affect their labels
+- [x] classes for Points that affect their labels
 - [ ] center map at center; and allow setting zoom
 - [x] notes for Points
 - [x] tooltips and notes for Texts

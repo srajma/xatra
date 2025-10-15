@@ -105,6 +105,7 @@ class PointEntry:
         icon: Optional custom icon for the marker
         show_label: If True, display label next to the point instead of in tooltip
         hover_radius: Hover detection radius in pixels (default: 20)
+        classes: Optional CSS classes for styling the point marker and label
     """
     label: str
     position: Tuple[float, float]
@@ -113,6 +114,7 @@ class PointEntry:
     icon: Optional[Any] = None  # Icon type imported later to avoid circular imports
     show_label: bool = False
     hover_radius: int = 20
+    classes: Optional[str] = None
 
 
 @dataclass
@@ -736,7 +738,7 @@ class Map:
         self._paths.append(PathEntry(label=label, coords=coords, note=note, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels, hover_radius=hover_radius))
 
     @time_debug("Add Point")
-    def Point(self, label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20) -> None:
+    def Point(self, label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20, classes: Optional[str] = None) -> None:
         """Add a point of interest to the map.
         
         Args:
@@ -747,6 +749,7 @@ class Map:
             icon: Optional Icon instance for custom marker appearance
             show_label: If True, display label next to the point instead of in tooltip
             hover_radius: Hover detection radius in pixels (default: 20)
+            classes: Optional CSS classes for styling the point marker and label
             
         Example:
             >>> map.Point("Delhi", [28.6139, 77.2090], period=[1200, 1800])
@@ -761,13 +764,16 @@ class Map:
             >>> 
             >>> # With tooltip note
             >>> map.Point("Ancient City", [28.6139, 77.2090], note="Founded in 736 CE")
+            >>> 
+            >>> # With custom CSS classes
+            >>> map.Point("Important City", [28.6139, 77.2090], classes="important-point large-marker")
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), note=note, period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius))
+        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), note=note, period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius, classes=classes))
 
     @time_debug("Add Text")
     def Text(self, label: str, position: List[float], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
@@ -1252,6 +1258,7 @@ class Map:
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "show_label": p.show_label,
                     "hover_radius": p.hover_radius,
+                    "classes": p.classes,
                 }
                 # Add icon data if present
                 if p.icon is not None:
