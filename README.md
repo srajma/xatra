@@ -1461,7 +1461,6 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] Point labels should align to exact position
 - [ ] Better documentation for icons
 - [x] classes for Points that affect their labels
 - [ ] center map at center; and allow setting zoom
@@ -1496,3 +1495,4 @@ Bugfixes
 - [x] rename Colormap to Colormap
 - [x] efficiency and documentation
 - [x] [WONTFIX] make outline of rivers show on hover too -- need rivers to be grouped for that
+- [x] [WONTFIX] Point labels should align to exact position. It's OK, just set margins
