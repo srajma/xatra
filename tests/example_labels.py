@@ -13,14 +13,15 @@ map.BaseOption("Esri.WorldImagery")
 map.Flag(label="India", value=gadm("IND"))
 
 # Rivers with and without show_label
-map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, n_labels=5, classes="sacred")
+map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, n_labels=5, classes="sacred", note="naturalearth river")
 # map.River(label="Kubha (kabul)", value=overpass("1676476"), show_label=True)
 # map.River(label="Ganga OP", value=overpass("1236345"), show_label=True, n_labels=3, classes="sacred")
 
 # Points with and without show_label
 map.Point(label="Mumbai (tooltip only)", position=[19.0, 73.0])
+map.Point(label="Bangalore", position = [13.0, 77.0], note="you are here")
 map.Point(label="Delhi", position=[28.6, 77.2], show_label=True)
-map.Point(label="Kolkata", position=[22.5, 88.3], show_label=True)
+map.Point(label="Kolkata", position=[22.5, 88.3], show_label=True, note = "Bengal must be liberated from TMC/Bangladesh or nothing else matters")
 map.Point(label="Chennai", position=[13.0, 80.2], show_label=True)
 
 # Paths with and without show_label

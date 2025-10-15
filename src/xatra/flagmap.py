@@ -76,6 +76,7 @@ class PathEntry:
     Args:
         label: Display name for the path
         coords: List of (latitude, longitude) coordinate tuples
+        note: Optional tooltip text for the path
         classes: Optional CSS classes for styling
         period: Optional time period as (start_year, end_year) tuple
         show_label: If True, display label next to the path instead of in tooltip
@@ -84,6 +85,7 @@ class PathEntry:
     """
     label: str
     coords: List[Tuple[float, float]]
+    note: Optional[str] = None
     classes: Optional[str] = None
     period: Optional[Tuple[int, int]] = None
     show_label: bool = False
@@ -98,6 +100,7 @@ class PointEntry:
     Args:
         label: Display name for the point
         position: (latitude, longitude) coordinate tuple
+        note: Optional tooltip text for the point
         period: Optional time period as (start_year, end_year) tuple
         icon: Optional custom icon for the marker
         show_label: If True, display label next to the point instead of in tooltip
@@ -105,6 +108,7 @@ class PointEntry:
     """
     label: str
     position: Tuple[float, float]
+    note: Optional[str] = None
     period: Optional[Tuple[int, int]] = None
     icon: Optional[Any] = None  # Icon type imported later to avoid circular imports
     show_label: bool = False
@@ -702,12 +706,13 @@ class Map:
         self._rivers.append(RiverEntry(label=label, geometry=value, note=note, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels, hover_radius=hover_radius))
 
     @time_debug("Add Path")
-    def Path(self, label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1, hover_radius: int = 10) -> None:
+    def Path(self, label: str, value: List[List[float]], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1, hover_radius: int = 10) -> None:
         """Add a path/route to the map.
         
         Args:
             label: Display name for the path
             value: List of [latitude, longitude] coordinate pairs
+            note: Optional tooltip text for the path
             classes: Optional CSS classes for styling
             period: Optional time period as [start_year, end_year] list
             show_label: If True, display label next to the path instead of in tooltip
@@ -718,6 +723,7 @@ class Map:
             >>> map.Path("Silk Road", [[40.0, 74.0], [35.0, 103.0]], classes="trade-route")
             >>> map.Path("Trade Route", [[40.0, 74.0], [35.0, 103.0]], show_label=True)
             >>> map.Path("Long Route", [[40.0, 74.0], [35.0, 103.0]], show_label=True, n_labels=3, hover_radius=15)
+            >>> map.Path("Ancient Route", [[40.0, 74.0], [35.0, 103.0]], note="Used by traders for centuries")
         """
         coords = [(float(lat), float(lon)) for lat, lon in value]
         period_tuple: Optional[Tuple[int, int]] = None
@@ -725,15 +731,16 @@ class Map:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._paths.append(PathEntry(label=label, coords=coords, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels, hover_radius=hover_radius))
+        self._paths.append(PathEntry(label=label, coords=coords, note=note, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels, hover_radius=hover_radius))
 
     @time_debug("Add Point")
-    def Point(self, label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20) -> None:
+    def Point(self, label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20) -> None:
         """Add a point of interest to the map.
         
         Args:
             label: Display name for the point
             position: [latitude, longitude] coordinate pair
+            note: Optional tooltip text for the point
             period: Optional time period as [start_year, end_year] list
             icon: Optional Icon instance for custom marker appearance
             show_label: If True, display label next to the point instead of in tooltip
@@ -749,13 +756,16 @@ class Map:
             >>> 
             >>> # With label displayed next to the point
             >>> map.Point("Delhi", [28.6139, 77.2090], show_label=True, hover_radius=30)
+            >>> 
+            >>> # With tooltip note
+            >>> map.Point("Ancient City", [28.6139, 77.2090], note="Founded in 736 CE")
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius))
+        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), note=note, period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius))
 
     @time_debug("Add Text")
     def Text(self, label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
@@ -1218,6 +1228,7 @@ class Map:
                 paths_serialized.append({
                     "label": p.label,
                     "coords": p.coords,
+                    "note": p.note,
                     "classes": p.classes,
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "show_label": p.show_label,
@@ -1233,6 +1244,7 @@ class Map:
                 point_data = {
                     "label": p.label,
                     "position": p.position,
+                    "note": p.note,
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "show_label": p.show_label,
                     "hover_radius": p.hover_radius,

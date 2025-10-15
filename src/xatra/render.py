@@ -995,7 +995,8 @@ HTML_TEMPLATE = Template(
           if (p.classes) className += ' ' + p.classes;
           const layer = L.polyline(latlngs, { className });
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Path', p.label, p.hover_radius);
+          const pathTooltip = `${p.label}${p.note ? ' — ' + p.note : ''}`;
+          registerLayerTooltip(layer, 'Path', pathTooltip, p.hover_radius);
           layer._pathData = { period: p.period };
           layers.paths.push(layer);
           
@@ -1114,7 +1115,8 @@ HTML_TEMPLATE = Template(
           }
           const layer = L.marker([p.position[0], p.position[1]], markerOptions);
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Point', p.label, p.hover_radius);
+          const pointTooltip = `${p.label}${p.note ? ' — ' + p.note : ''}`;
+          registerLayerTooltip(layer, 'Point', pointTooltip, p.hover_radius);
           layer._pointData = { period: p.period };
           layers.points.push(layer);
           
@@ -1757,7 +1759,8 @@ HTML_TEMPLATE = Template(
           if (p.classes) className += ' ' + p.classes;
           const layer = L.polyline(latlngs, { className }).addTo(map);
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Path', p.label, p.hover_radius);
+          const pathTooltip = `${p.label}${p.note ? ' — ' + p.note : ''}`;
+          registerLayerTooltip(layer, 'Path', pathTooltip, p.hover_radius);
           layers.paths.push(layer);
           
           // Add labels if show_label is true
@@ -1875,7 +1878,8 @@ HTML_TEMPLATE = Template(
           }
           const layer = L.marker([p.position[0], p.position[1]], markerOptions).addTo(map);
           // Register with multi-tooltip system
-          registerLayerTooltip(layer, 'Point', p.label, p.hover_radius);
+          const pointTooltip = `${p.label}${p.note ? ' — ' + p.note : ''}`;
+          registerLayerTooltip(layer, 'Point', pointTooltip, p.hover_radius);
           layers.points.push(layer);
           
           // Add label next to point if show_label is true

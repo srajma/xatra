@@ -40,8 +40,8 @@ map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"))
 map.Flag(label="Chola", value=gadm("IND.31") | gadm("IND.17") - gadm("IND.17.5"))
 map.Flag(label="Gupta", value=NORTH_INDIA)
 map.River(label="Ganga", value=naturalearth("1159122643"))
-map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]])
-map.Point(label="Indraprastha", position=[28,77])
+map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], note="Ancient northern trade route")
+map.Point(label="Indraprastha", position=[28,77], note="Ancient capital of the Pandavas")
 map.Text(label="Jambudvipa", position=[22,79])
 map.TitleBox("<b>Sample historical map of India</b><br>Classical period, source: Majumdar.")
 map.show()
@@ -303,8 +303,8 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a river with optional label display and customizable hover detection radius
-- **`Path(label, coords, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional label display and customizable hover detection radius
-- **`Point(label, position, period=None, icon=None, show_label=False, hover_radius=20)`**: Add a point of interest with optional custom icon, label display, and customizable hover detection radius
+- **`Path(label, coords, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional tooltip note, label display, and customizable hover detection radius
+- **`Point(label, position, note=None, period=None, icon=None, show_label=False, hover_radius=20)`**: Add a point of interest with optional tooltip note, custom icon, label display, and customizable hover detection radius
 - **`Text(label, position, classes=None, period=None)`**: Add a text label
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
 
@@ -900,10 +900,10 @@ map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Default: label appears in tooltip on hover
-map.Point(label="Mumbai", position=[19.0, 73.0])
+map.Point(label="Mumbai", position=[19.0, 73.0], note="Financial capital of India")
 
-# With show_label: label appears next to the point
-map.Point(label="Delhi", position=[28.6, 77.2], show_label=True)
+# With show_label: label appears next to the point (note still appears in tooltip)
+map.Point(label="Delhi", position=[28.6, 77.2], note="Capital of India", show_label=True)
 
 # Custom hover radius: easier to click on small points
 map.Point(label="Small Village", position=[20.5, 75.0], hover_radius=40)
@@ -922,10 +922,10 @@ map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Default: label appears in tooltip on hover
-map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]])
+map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]], note="Ancient trade route through northern India")
 
-# With show_label: label appears at the midpoint of the path, rotated to match the path direction
-map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
+# With show_label: label appears at the midpoint of the path, rotated to match the path direction (note still appears in tooltip)
+map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], note="Famous trade route connecting East and West", show_label=True)
 
 # Multiple labels: display label at multiple evenly-spaced positions
 map.Path(label="Long Trade Route", value=[[28,77],[30,90],[35,100],[40,120]], show_label=True, n_labels=3)
@@ -945,6 +945,39 @@ map.show()
 
 **Multiple Labels:** Use `n_labels` parameter to display multiple copies of the label along the path. Labels are placed at positions `k/(n+1)` where `k = 1, 2, ..., n`. For example:
 - `n_labels=1` (default): One label at 1/2 (midpoint)
+
+### Tooltip Notes
+
+The `note` parameter allows you to add additional information that appears in hover tooltips for Flag, River, Path, and Point objects. Notes are displayed in the format "Label — Note" in the tooltip and do not appear in map labels.
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.Map()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Flag with note
+map.Flag(label="Maurya Empire", value=gadm("IND"), note="Largest empire in ancient India")
+
+# River with note
+map.River(label="Ganges", value=river_geometry, note="Sacred river of Hinduism")
+
+# Path with note
+map.Path(label="Silk Road", value=[[40,74],[35,103]], note="Ancient trade route connecting East and West")
+
+# Point with note
+map.Point(label="Delhi", position=[28.6, 77.2], note="Capital of India since 1911")
+
+# Note appears in tooltip but not in map labels
+map.Point(label="Mumbai", position=[19.0, 73.0], note="Financial capital", show_label=True)
+# The label "Mumbai" appears on the map, but the note only appears when hovering
+
+map.show()
+```
+
+**Important:** Notes only appear in hover tooltips and are never displayed as map labels, ensuring clean map appearance while providing additional context on demand.
 - `n_labels=2`: Two labels at 1/3 and 2/3
 - `n_labels=3`: Three labels at 1/4, 2/4, and 3/4
 - `n_labels=5`: Five labels at 1/6, 2/6, 3/6, 4/6, and 5/6
