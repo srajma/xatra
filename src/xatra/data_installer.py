@@ -25,12 +25,16 @@ REQUIRED_PATHS = [
     XATRA_DATA_DIR / "data" / "rivers_overpass_india",
     XATRA_DATA_DIR / "cache",
 ]
-def get_data_dir() -> Path:
+def get_xatra_dir() -> Path:
     """Get the Xatra data directory path."""
     return XATRA_DATA_DIR
 
+def get_data_dir() -> Path:
+    """Get ~/.xatra/data"""
+    return XATRA_DATA_DIR / "data"
 
-def ensure_data_dir() -> Path:
+
+def ensure_xatra_dir() -> Path:
     """Ensure the data directory exists."""
     XATRA_DATA_DIR.mkdir(parents=True, exist_ok=True)
     return XATRA_DATA_DIR
@@ -137,7 +141,7 @@ def install_data(force: bool = False, skip_verify: bool = False):
             return
     
     # Ensure directory exists
-    ensure_data_dir()
+    ensure_xatra_dir()
     
     # Download from Hugging Face
     download_from_huggingface(HUGGINGFACE_REPO, XATRA_DATA_DIR, force=force)

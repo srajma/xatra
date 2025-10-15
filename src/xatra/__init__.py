@@ -34,15 +34,15 @@ import sys
 import os
 
 # Check for data installation
-from .data_installer import is_data_installed, get_data_dir
+from .data_installer import is_data_installed, get_xatra_dir
 
 if not is_data_installed():
-    data_dir = get_data_dir()
+    xatra_dir = get_xatra_dir()
     warnings.warn(
         f"\n{'='*70}\n"
         f"XATRA DATA NOT FOUND\n"
         f"{'='*70}\n"
-        f"Xatra requires data files to be installed at: {data_dir}\n\n"
+        f"Xatra requires data files to be installed at: {xatra_dir}\n\n"
         f"To install the data, run:\n"
         f"    xatra-install-data\n\n"
         f"This will download ~500MB-1GB of geographical data from Hugging Face.\n"

@@ -15,7 +15,7 @@ Requires-Dist: huggingface-hub>=0.20.0
 
 # Xatra: The Matplotlib of Maps
 
-Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever.
+Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever. Example maps produced with `xatra` can be seen [here](https://srajma.github.io/maps/).
 
 ## Installation
 
@@ -38,6 +38,7 @@ If you need to re-download the data:
 ```bash
 xatra-install-data --force
 ```
+[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.1 or later.
 
 ## Example: Historical map
 
@@ -1403,7 +1404,7 @@ Features
 Dev
 - [x] Get it in a publishable state
 - [x] why not just upload my cache. Need to change the HF repository to have a data and a cache folder
-- [ ] Publish it
+- [x] Publish it
 - [x] time debugging
 
 Interactive platform
