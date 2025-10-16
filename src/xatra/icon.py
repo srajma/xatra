@@ -343,6 +343,7 @@ class Icon:
             border_color: Optional border color (CSS color string)
             border_width: Optional border width in pixels (default: 0)
             **kwargs: Additional Icon parameters (icon_size, icon_anchor, etc.)
+                     Single integers for icon_size and icon_anchor will be converted to tuples
         
         Returns:
             Icon instance with the geometric shape as a data URI
@@ -369,6 +370,10 @@ class Icon:
             >>> # Create a green triangle
             >>> triangle_icon = Icon.geometric("triangle", color="#00ff00", size=28)
             >>> map.Point("Triangle Marker", [13.0, 80.2], icon=triangle_icon)
+            
+            >>> # Single integers for icon_size and icon_anchor are converted to tuples
+            >>> city_icon = Icon.geometric("circle", color="blue", icon_size=12, icon_anchor=6)
+            >>> map.Point("City", [28.6, 77.2], icon=city_icon)
         """
         # Convert string to ShapeType if needed
         if isinstance(shape, str):
@@ -392,12 +397,20 @@ class Icon:
         # Convert to data URI
         data_uri = _create_svg_data_uri(shape_svg)
         
-        # Set default icon_size if not provided
-        if 'icon_size' not in kwargs:
+        # Handle icon_size - convert single int to tuple if needed
+        if 'icon_size' in kwargs:
+            icon_size = kwargs['icon_size']
+            if isinstance(icon_size, int):
+                kwargs['icon_size'] = (icon_size, icon_size)
+        else:
             kwargs['icon_size'] = (size, size)
         
-        # Set default icon_anchor if not provided (center the icon)
-        if 'icon_anchor' not in kwargs:
+        # Handle icon_anchor - convert single int to tuple if needed
+        if 'icon_anchor' in kwargs:
+            icon_anchor = kwargs['icon_anchor']
+            if isinstance(icon_anchor, int):
+                kwargs['icon_anchor'] = (icon_anchor, icon_anchor)
+        else:
             kwargs['icon_anchor'] = (size // 2, size // 2)
         
         return cls(icon_url=data_uri, **kwargs)

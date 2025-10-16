@@ -937,6 +937,12 @@ map.Point(label="Large Cross", position=[37.9, 23.7], icon=large_cross)
 
 # Available shapes: circle, square, triangle, diamond, cross, plus, star, hexagon, pentagon, octagon
 
+# Example 5: Using single integers (converted to tuples automatically)
+city_icon = Icon.geometric("circle", color="navy", icon_size=12, icon_anchor=6)
+port_icon = Icon.geometric("square", color="teal", icon_size=12, icon_anchor=6)
+map.Point(label="City", position=[39.9, 116.4], icon=city_icon)
+map.Point(label="Port", position=[35.0, 136.0], icon=port_icon)
+
 # Export the map
 map.show(out_json="tests/geometric_icons.json", out_html="tests/geometric_icons.html")
 print("Map with geometric icons exported to geometric_icons.html")
