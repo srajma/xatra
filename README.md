@@ -315,6 +315,8 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`FlagColorSequence(color_sequence, class_name=None)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
 - **`DataColormap(colormap, vmin=None, vmax=None, norm=None)`**: Set the color map for data elements
+- **`zoom(level: int)`**: Set the zoom level. Defaults to 5.
+- **`focus(latitude: float, longitude: float)`**: set where the map is initially focused at. Defaults to the center of the bounding box of all elements on the map.
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
@@ -1463,7 +1465,7 @@ Libraries
 Bugfixes
 - [ ] Better documentation for icons
 - [x] classes for Points that affect their labels
-- [ ] center map at center; and allow setting zoom
+- [x] center map at center; and allow setting zoom
 - [x] notes for Points
 - [x] tooltips and notes for Texts
 - [x] Efficiency: cache territory geometries by string rep rather than per-object
