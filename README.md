@@ -887,6 +887,61 @@ map.show(out_json="tests/map_icons.json", out_html="tests/map_icons.html")
 print("Map with custom icons exported to map_icons.html")
 ```
 
+### Geometric Shape Icons
+
+Xatra also supports creating lightweight geometric shape icons using pure SVG instead of image files. These shapes are generated dynamically and provide scalable, customizable markers.
+
+```python
+import xatra
+from xatra import Icon, ShapeType
+from xatra.loaders import gadm
+
+# Create a map
+map = xatra.Map()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Example 1: Basic geometric shapes
+circle_icon = Icon.geometric("circle", color="red", size=24)
+map.Point(label="Red Circle", position=[28.6, 77.2], icon=circle_icon)
+
+square_icon = Icon.geometric("square", color="blue", size=24)
+map.Point(label="Blue Square", position=[19.0, 73.0], icon=square_icon)
+
+triangle_icon = Icon.geometric("triangle", color="green", size=24)
+map.Point(label="Green Triangle", position=[12.3, 76.6], icon=triangle_icon)
+
+# Example 2: Using ShapeType enum
+diamond_icon = Icon.geometric(ShapeType.DIAMOND, color="purple", size=24)
+map.Point(label="Purple Diamond", position=[10.8, 78.7], icon=diamond_icon)
+
+# Example 3: Shapes with borders
+star_icon = Icon.geometric(
+    "star", 
+    color="yellow", 
+    size=28,
+    border_color="black", 
+    border_width=2
+)
+map.Point(label="Star with Border", position=[25.0, 121.5], icon=star_icon)
+
+# Example 4: Custom sizes and anchors
+large_cross = Icon.geometric(
+    "cross",
+    color="orange",
+    size=32,
+    icon_size=(32, 32),
+    icon_anchor=(16, 16)
+)
+map.Point(label="Large Cross", position=[37.9, 23.7], icon=large_cross)
+
+# Available shapes: circle, square, triangle, diamond, cross, plus, star, hexagon, pentagon, octagon
+
+# Export the map
+map.show(out_json="tests/geometric_icons.json", out_html="tests/geometric_icons.html")
+print("Map with geometric icons exported to geometric_icons.html")
+```
+
 ### Point, Path, and River Labels
 
 By default, Points, Paths, and Rivers display their labels in tooltips (on hover). You can optionally display the label directly on the map next to the element using the `show_label` parameter.
