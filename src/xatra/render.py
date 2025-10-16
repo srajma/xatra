@@ -83,7 +83,9 @@ HTML_TEMPLATE = Template(
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
       const payload = {{ payload | safe }};
-      const map = L.map('map').setView([22, 79], 4);
+      const initialFocus = payload.initial_focus || [22, 79];
+      const initialZoom = payload.initial_zoom || 4;
+      const map = L.map('map').setView(initialFocus, initialZoom);
       
       // Debug mode - set to true to show centroid markers
       const DEBUG_CENTROIDS = false;

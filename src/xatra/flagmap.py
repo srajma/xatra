@@ -422,6 +422,8 @@ class Map:
         self._admin_index: int = 0
         self._admin_colors: Dict[str, str] = {}  # Track colors by admin grouping key
         self._data_colormap: Optional[DataColormap] = None
+        self._initial_zoom: Optional[int] = None
+        self._initial_focus: Optional[Tuple[float, float]] = None
         
         # Add default base options
         self._add_default_base_options()
@@ -893,6 +895,159 @@ class Map:
         elif "nationalmap" in url:
             return "USGS"
         return "Custom Layer"
+
+    def zoom(self, level: int) -> None:
+        """Set the initial zoom level for the map.
+        
+        Args:
+            level: Zoom level (0-18, where 0 is world view and higher numbers zoom in more)
+            
+        Example:
+            >>> map.zoom(6)  # Set zoom level to 6
+        """
+        if not isinstance(level, int) or level < 0 or level > 18:
+            raise ValueError("Zoom level must be an integer between 0 and 18")
+        self._initial_zoom = level
+
+    def focus(self, latitude: float, longitude: float) -> None:
+        """Set the initial focus position (center) for the map.
+        
+        Args:
+            latitude: Latitude coordinate (-90 to 90)
+            longitude: Longitude coordinate (-180 to 180)
+            
+        Example:
+            >>> map.focus(28.6, 77.2)  # Focus on Delhi
+            >>> map.focus(40.7, -74.0)  # Focus on New York
+        """
+        if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+            raise ValueError("Latitude and longitude must be numbers")
+        if latitude < -90 or latitude > 90:
+            raise ValueError("Latitude must be between -90 and 90")
+        if longitude < -180 or longitude > 180:
+            raise ValueError("Longitude must be between -180 and 180")
+        self._initial_focus = (float(latitude), float(longitude))
+
+    def _calculate_auto_focus(self) -> Tuple[float, float]:
+        """Calculate the center of the bounding box for all map elements.
+        
+        Returns:
+            Tuple of (latitude, longitude) for the center of all elements.
+            Returns (22, 79) (India) as default if no elements are present.
+        """
+        all_lats = []
+        all_lngs = []
+        
+        # Collect coordinates from all element types
+        self._collect_coordinates_from_flags(all_lats, all_lngs)
+        self._collect_coordinates_from_rivers(all_lats, all_lngs)
+        self._collect_coordinates_from_paths(all_lats, all_lngs)
+        self._collect_coordinates_from_points(all_lats, all_lngs)
+        self._collect_coordinates_from_texts(all_lats, all_lngs)
+        self._collect_coordinates_from_admins(all_lats, all_lngs)
+        self._collect_coordinates_from_data(all_lats, all_lngs)
+        self._collect_coordinates_from_dataframes(all_lats, all_lngs)
+        
+        if all_lats and all_lngs:
+            center_lat = (min(all_lats) + max(all_lats)) / 2
+            center_lng = (min(all_lngs) + max(all_lngs)) / 2
+            return (center_lat, center_lng)
+        else:
+            # Default to India if no elements
+            return (22.0, 79.0)
+
+    def _collect_coordinates_from_flags(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from flag territories."""
+        for flag in self._flags:
+            if flag.territory:
+                # Get the Shapely geometry from the territory
+                shapely_geometry = flag.territory.to_geometry()
+                if shapely_geometry is not None:
+                    # Convert Shapely geometry to GeoJSON format for coordinate extraction
+                    try:
+                        import json
+                        from shapely.geometry import mapping
+                        geojson_geometry = mapping(shapely_geometry)
+                        self._extract_coordinates_from_geometry(geojson_geometry, all_lats, all_lngs)
+                    except Exception:
+                        # If conversion fails, skip this territory
+                        pass
+
+    def _collect_coordinates_from_rivers(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from river geometries."""
+        for river in self._rivers:
+            if river.geometry:
+                self._extract_coordinates_from_geometry(river.geometry, all_lats, all_lngs)
+
+    def _collect_coordinates_from_paths(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from path coordinates."""
+        for path in self._paths:
+            for coord in path.coords:
+                all_lats.append(coord[0])
+                all_lngs.append(coord[1])
+
+    def _collect_coordinates_from_points(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from point positions."""
+        for point in self._points:
+            all_lats.append(point.position[0])
+            all_lngs.append(point.position[1])
+
+    def _collect_coordinates_from_texts(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from text positions."""
+        for text in self._texts:
+            all_lats.append(text.position[0])
+            all_lngs.append(text.position[1])
+
+    def _collect_coordinates_from_admins(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from admin geometries.
+        
+        Note: Admin geometries are loaded during export, so we can't collect coordinates
+        from them here. This is a limitation of the auto-focus calculation.
+        """
+        # Admin geometries are loaded during export, so we can't access them here
+        pass
+
+    def _collect_coordinates_from_data(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from data geometries.
+        
+        Note: Data geometries are loaded during export, so we can't collect coordinates
+        from them here. This is a limitation of the auto-focus calculation.
+        """
+        # Data geometries are loaded during export, so we can't access them here
+        pass
+
+    def _collect_coordinates_from_dataframes(self, all_lats: List[float], all_lngs: List[float]) -> None:
+        """Collect coordinates from dataframe geometries.
+        
+        Note: DataFrame geometries are loaded during export, so we can't collect coordinates
+        from them here. This is a limitation of the auto-focus calculation.
+        """
+        # DataFrame geometries are loaded during export, so we can't access them here
+        pass
+
+    def _extract_coordinates_from_geometry(self, geometry: Dict[str, Any], all_lats: List[float], all_lngs: List[float]) -> None:
+        """Extract coordinates from a GeoJSON geometry and add them to the lists."""
+        def extract_coords(obj):
+            if isinstance(obj, list):
+                if len(obj) == 2 and isinstance(obj[0], (int, float)) and isinstance(obj[1], (int, float)):
+                    # This is a coordinate pair [lng, lat]
+                    all_lngs.append(obj[0])
+                    all_lats.append(obj[1])
+                else:
+                    # This is a list of coordinates or nested structure
+                    for item in obj:
+                        extract_coords(item)
+        
+        if geometry.get("type") == "FeatureCollection":
+            for feature in geometry.get("features", []):
+                if feature.get("geometry"):
+                    extract_coords(feature["geometry"].get("coordinates", []))
+        elif geometry.get("type") == "Feature":
+            if geometry.get("geometry"):
+                extract_coords(geometry["geometry"].get("coordinates", []))
+        else:
+            # Direct geometry
+            extract_coords(geometry.get("coordinates", []))
 
     def _add_default_base_options(self) -> None:
         """Add default base layer options.
@@ -1747,6 +1902,14 @@ class Map:
                 except Exception as e:
                     print(f"Warning: Could not generate color bar: {e}")
 
+        # Calculate automatic focus if not set by user
+        initial_focus = self._initial_focus
+        if initial_focus is None:
+            initial_focus = self._calculate_auto_focus()
+        
+        # Use default zoom if not set by user
+        initial_zoom = self._initial_zoom if self._initial_zoom is not None else 5
+        
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -1763,7 +1926,9 @@ class Map:
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,
             "colormap_svg": colormap_svg,
-                "colormap_info": self._serialize_colormap_info(all_dataframe_values) if self._data_colormap is not None else None,
+            "colormap_info": self._serialize_colormap_info(all_dataframe_values) if self._data_colormap is not None else None,
+            "initial_focus": initial_focus,
+            "initial_zoom": initial_zoom,
         }
 
     @time_debug("Show (export map)")
