@@ -270,7 +270,7 @@ class Icon:
         them to base64 data URIs that can be embedded directly in the HTML output.
         
         Args:
-            filename: Name of the icon file (e.g., "star.png", "marker-red.png")
+            filename: Name of the icon file (e.g., "star.svg", "temple.svg")
             **kwargs: Additional Icon parameters (icon_size, icon_anchor, etc.)
         
         Returns:
@@ -279,10 +279,55 @@ class Icon:
         Raises:
             FileNotFoundError: If the specified icon file doesn't exist
         
+        Available Built-in Icons:
+        
+        Cities and Buildings:
+            - city.png - Ancient Indian style city
+            - temple.svg - Hindu temple with shikhara
+            - temple-nagara.svg - Nagara-style temple
+            - temple-gopuram.svg - Dravidian gopuram style
+            - temple-nepali.svg - Nepali temple style
+            - temple-pagoda.svg - Pagoda-style temple
+            - temple-parthenon.svg - Classical Greek Parthenon
+            - fort.svg - Fortress or citadel
+            - port.svg - Seaport with ships and cranes
+            - oilrig.svg - Oil rig platform
+        
+        General Purpose:
+            - star.svg - Five-pointed star for important locations
+            - important.svg - Exclamation mark in circle
+            - example.svg - Simple circular marker with exclamation
+        
+        Geometric Shapes:
+            - circle.svg - Empty circle outline
+            - disk.svg - Filled circle/disk
+            - square.svg - Filled square
+            - rectangle.svg - Filled rectangle
+            - triangle.svg - Filled triangle (pointing up)
+            - diamond.svg - Filled diamond shape
+            - cross.svg - X-shaped cross
+            - plus.svg - Plus sign (+)
+        
+        Religious Symbols:
+            - symbol-om.svg - Hindu Om symbol
+            - symbol-cross.svg - Christian cross
+            - symbol-star.svg - Jewish Star of David
+            - symbol-muslim.svg - Islamic crescent and star
+            - symbol-zoro.svg - Zoroastrian faravahar
+        
+        Leaflet Markers:
+            - marker-icon.png - Default blue marker
+            - marker-icon-red.png - Red marker
+            - marker-icon-green.png - Green marker
+            - marker-icon-2x.png - High-res blue marker
+            - marker-icon-2x-red.png - High-res red marker
+            - marker-icon-2x-green.png - High-res green marker
+            - marker-shadow.png - Default marker shadow
+        
         Example:
-            >>> # Load a built-in star icon with custom size
-            >>> icon = Icon.builtin("star.png", icon_size=(32, 32), icon_anchor=(16, 16))
-            >>> map.Point("Capital", [28.6, 77.2], icon=icon)
+            >>> # Load a built-in temple icon with custom size
+            >>> icon = Icon.builtin("temple.svg", icon_size=(32, 32), icon_anchor=(16, 16))
+            >>> map.Point("Sacred Temple", [28.6, 77.2], icon=icon)
         """
         try:
             # Try to use importlib.resources (Python 3.9+)
