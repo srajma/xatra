@@ -36,7 +36,7 @@ HTML_TEMPLATE = Template(
     <style>
       html, body, #map { height: 100%; margin: 0; padding: 0; }
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
-      #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+      #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: move; user-select: none; }
       #layer-selector { margin-top: 12px; }
       #colormap { margin-top: 12px; cursor: crosshair; }
       #colormap-tooltip { position: fixed; background: rgba(255,255,255,0.98); border: 1px solid #333; padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1001; pointer-events: none; display: none; font-size: 13px; }
@@ -2497,6 +2497,87 @@ HTML_TEMPLATE = Template(
         });
       }
 
+      function setupDragFunctionality() {
+        const titleDiv = document.getElementById('title');
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        // Get initial position from CSS
+        const computedStyle = window.getComputedStyle(titleDiv);
+        const initialTop = parseInt(computedStyle.top) || 20;
+        const initialLeft = parseInt(computedStyle.left) || 20;
+        xOffset = initialLeft;
+        yOffset = initialTop;
+
+        function dragStart(e) {
+          if (e.type === "touchstart") {
+            initialX = e.touches[0].clientX - xOffset;
+            initialY = e.touches[0].clientY - yOffset;
+          } else {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+          }
+
+          if (e.target === titleDiv || titleDiv.contains(e.target)) {
+            isDragging = true;
+            titleDiv.style.opacity = '0.8';
+          }
+        }
+
+        function dragEnd(e) {
+          initialX = currentX;
+          initialY = currentY;
+          isDragging = false;
+          titleDiv.style.opacity = '1';
+        }
+
+        function drag(e) {
+          if (isDragging) {
+            e.preventDefault();
+
+            if (e.type === "touchmove") {
+              currentX = e.touches[0].clientX - initialX;
+              currentY = e.touches[0].clientY - initialY;
+            } else {
+              currentX = e.clientX - initialX;
+              currentY = e.clientY - initialY;
+            }
+
+            xOffset = currentX;
+            yOffset = currentY;
+
+            // Constrain to viewport
+            const maxX = window.innerWidth - titleDiv.offsetWidth;
+            const maxY = window.innerHeight - titleDiv.offsetHeight;
+            
+            xOffset = Math.max(0, Math.min(xOffset, maxX));
+            yOffset = Math.max(0, Math.min(yOffset, maxY));
+
+            titleDiv.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+          }
+        }
+
+        // Mouse events
+        titleDiv.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        // Touch events for mobile
+        titleDiv.addEventListener('touchstart', dragStart, { passive: false });
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+
+        // Prevent default drag behavior on images and other elements
+        titleDiv.addEventListener('dragstart', function(e) {
+          e.preventDefault();
+        });
+      }
+
       function setupControls() {
         const controls = document.getElementById('controls');
         if (payload.flags.mode === 'dynamic') {
@@ -2700,6 +2781,7 @@ HTML_TEMPLATE = Template(
         }
       }
       setupControls();
+      setupDragFunctionality();
     </script>
   </body>
   </html>
