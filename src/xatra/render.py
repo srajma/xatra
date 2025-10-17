@@ -36,9 +36,9 @@ HTML_TEMPLATE = Template(
     <style>
       html, body, #map { height: 100%; margin: 0; padding: 0; }
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
-      #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; }
-      #layer-selector { position: fixed; top: 20px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; }
-      #colormap { position: fixed; top: 80px; right: 20px; background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; cursor: crosshair; }
+      #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+      #layer-selector { margin-top: 12px; }
+      #colormap { margin-top: 12px; cursor: crosshair; }
       #colormap-tooltip { position: fixed; background: rgba(255,255,255,0.98); border: 1px solid #333; padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1001; pointer-events: none; display: none; font-size: 13px; }
       #colormap-tooltip .color-sample { width: 20px; height: 20px; border: 1px solid #666; display: inline-block; vertical-align: middle; margin-right: 8px; border-radius: 3px; }
       #multi-tooltip { position: fixed; background: rgba(255,255,255,0.95); border: 2px solid #333; padding: 10px 14px; border-radius: 6px; box-shadow: 0 3px 12px rgba(0,0,0,0.4); z-index: 1002; pointer-events: none; display: none; font-size: 13px; max-width: 400px; }
@@ -72,12 +72,13 @@ HTML_TEMPLATE = Template(
   </head>
   <body>
     <div id="map"></div>
-    <div id="title"></div>
-    <div id="layer-selector">
-      <label for="baseLayer">Base Layer:</label>
-      <select id="baseLayer"></select>
+    <div id="title">
+      <div id="layer-selector">
+        <label for="baseLayer">Base Layer:</label>
+        <select id="baseLayer"></select>
+      </div>
+      <div id="colormap"></div>
     </div>
-    <div id="colormap"></div>
     <div id="colormap-tooltip"></div>
     <div id="multi-tooltip"></div>
     <div id="controls"></div>
@@ -1971,7 +1972,32 @@ HTML_TEMPLATE = Template(
       function renderTitleBoxes(year = null) {
         const titleBoxes = year !== null ? filterByPeriod(payload.title_boxes, year) : payload.title_boxes;
         const titleDiv = document.getElementById('title');
-        titleDiv.innerHTML = titleBoxes.map(tb => `<div class="title-box">${tb.html}</div>`).join('');
+        
+        // Create the content structure
+        let content = '';
+        
+        // Add title boxes first
+        content += titleBoxes.map(tb => `<div class="title-box">${tb.html}</div>`).join('');
+        
+        // Add layer selector if there are base options
+        if (payload.base_options && payload.base_options.length > 0) {
+          content += '<div id="layer-selector"><label for="baseLayer">Base Layer:</label><select id="baseLayer"></select></div>';
+        }
+        
+        // Add colormap if available
+        if (payload.colormap_svg) {
+          content += '<div id="colormap"></div>';
+        }
+        
+        titleDiv.innerHTML = content;
+        
+        // Re-setup the layer selector and colormap after updating HTML
+        if (payload.base_options && payload.base_options.length > 0) {
+          setupLayerSelector();
+        }
+        if (payload.colormap_svg) {
+          setupColormap();
+        }
       }
 
       function renderAdmins(year = null) {
@@ -2673,9 +2699,7 @@ HTML_TEMPLATE = Template(
           renderDynamic(snapshots[0].year);
         }
       }
-      setupLayerSelector();
       setupControls();
-      setupColormap();
     </script>
   </body>
   </html>
