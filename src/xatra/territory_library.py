@@ -598,7 +598,7 @@ PUADH = (
     | gadm("IND.28.17")
     | gadm("IND.6.1")
 )
-JANGALA_PJ = gadm("IND.28") - (TRIGARTA_PJ | PUADH)
+JANGALA_PJ = gadm("IND.28") - (TRIGARTA_PJ | PUADH | DOAB_RS_N)
 JANGALA_RJ = (
     gadm("IND.29.8")
     | gadm("IND.29.11")
