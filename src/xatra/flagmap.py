@@ -106,6 +106,7 @@ class PointEntry:
         show_label: If True, display label next to the point instead of in tooltip
         hover_radius: Hover detection radius in pixels (default: 20)
         classes: Optional CSS classes for styling the point marker and label
+        rotation: Optional rotation angle in degrees for the label (default: 0)
     """
     label: str
     position: Tuple[float, float]
@@ -115,6 +116,7 @@ class PointEntry:
     show_label: bool = False
     hover_radius: int = 20
     classes: Optional[str] = None
+    rotation: Optional[float] = None
 
 
 @dataclass
@@ -127,12 +129,14 @@ class TextEntry:
         note: Optional tooltip text for the text label
         classes: Optional CSS classes for styling
         period: Optional time period as (start_year, end_year) tuple
+        rotation: Optional rotation angle in degrees for the label (default: 0)
     """
     label: str
     position: Tuple[float, float]
     note: Optional[str] = None
     classes: Optional[str] = None
     period: Optional[Tuple[int, int]] = None
+    rotation: Optional[float] = None
 
 
 @dataclass
@@ -740,7 +744,7 @@ class Map:
         self._paths.append(PathEntry(label=label, coords=coords, note=note, classes=classes, period=period_tuple, show_label=show_label, n_labels=n_labels, hover_radius=hover_radius))
 
     @time_debug("Add Point")
-    def Point(self, label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20, classes: Optional[str] = None) -> None:
+    def Point(self, label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20, classes: Optional[str] = None, rotation: Optional[float] = None) -> None:
         """Add a point of interest to the map.
         
         Args:
@@ -752,6 +756,7 @@ class Map:
             show_label: If True, display label next to the point instead of in tooltip
             hover_radius: Hover detection radius in pixels (default: 20)
             classes: Optional CSS classes for styling the point marker and label
+            rotation: Optional rotation angle in degrees for the label (default: 0)
             
         Example:
             >>> map.Point("Delhi", [28.6139, 77.2090], period=[1200, 1800])
@@ -769,16 +774,19 @@ class Map:
             >>> 
             >>> # With custom CSS classes
             >>> map.Point("Important City", [28.6139, 77.2090], classes="important-point large-marker")
+            >>> 
+            >>> # With rotated label
+            >>> map.Point("Rotated Label", [28.6139, 77.2090], show_label=True, rotation=45)
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), note=note, period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius, classes=classes))
+        self._points.append(PointEntry(label=label, position=(float(position[0]), float(position[1])), note=note, period=period_tuple, icon=icon, show_label=show_label, hover_radius=hover_radius, classes=classes, rotation=rotation))
 
     @time_debug("Add Text")
-    def Text(self, label: str, position: List[float], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+    def Text(self, label: str, position: List[float], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, rotation: Optional[float] = None) -> None:
         """Add a text label to the map.
         
         Args:
@@ -787,17 +795,19 @@ class Map:
             note: Optional tooltip text for the text label
             classes: Optional CSS classes for styling
             period: Optional time period as [start_year, end_year] list
+            rotation: Optional rotation angle in degrees for the label (default: 0)
             
         Example:
             >>> map.Text("Ancient City", [28.6139, 77.2090], classes="city-label")
             >>> map.Text("Important Location", [28.6139, 77.2090], note="Founded in 1200 BCE")
+            >>> map.Text("Rotated Text", [28.6139, 77.2090], rotation=45)
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), note=note, classes=classes, period=period_tuple))
+        self._texts.append(TextEntry(label=label, position=(float(position[0]), float(position[1])), note=note, classes=classes, period=period_tuple, rotation=rotation))
 
     @time_debug("Add TitleBox")
     def TitleBox(self, html: str, period: Optional[List[int]] = None) -> None:

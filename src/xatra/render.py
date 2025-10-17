@@ -60,6 +60,8 @@ HTML_TEMPLATE = Template(
       .admin-river-label { font-size: 12px; color: #0066cc; padding: 1px 4px; }
       .admin-river-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .point-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
+      .point-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
+      .text-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
       .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
@@ -1130,18 +1132,22 @@ HTML_TEMPLATE = Template(
           
           // Add label next to point if show_label is true
           if (p.show_label) {
-            const labelLayer = L.marker([p.position[0], p.position[1]], { opacity: 0.0 });
-            
             // Apply classes to label if present
-            let labelClassName = 'text-label point-label';
-            if (p.classes) labelClassName += ' ' + p.classes;
+            let labelClassName = 'point-label-container';
+            let innerClassName = 'text-label point-label';
+            if (p.classes) innerClassName += ' ' + p.classes;
             
-            labelLayer.bindTooltip(p.label, { 
-              permanent: true, 
-              direction: 'right', 
+            // Use divIcon with nested divs for rotation and translation
+            // Outer div: rotation (inline, can be customized), Inner div: translation (CSS customizable)
+            const rotationAngle = p.rotation || 0; // Default to 0 degrees if no rotation specified
+            const labelDiv = L.divIcon({
+              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateX(10px); white-space: nowrap;">${p.label}</div></div>`,
               className: labelClassName,
-              offset: [10, 0]
+              iconSize: [1, 1],
+              iconAnchor: [0, 0]
             });
+            
+            const labelLayer = L.marker([p.position[0], p.position[1]], { icon: labelDiv });
             labelLayer._pointData = { period: p.period };
             layers.points.push(labelLayer);
           }
@@ -1150,15 +1156,21 @@ HTML_TEMPLATE = Template(
 
       function createAllTexts() {
         for (const t of payload.texts || []) {
-          let className = 'text-label';
-          if (t.classes) className += ' ' + t.classes;
-          const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 });
-          layer.bindTooltip(t.label, { 
-            permanent: true, 
-            direction: 'center', 
-            className: className,
-            offset: [0, 0]
+          let labelClassName = 'text-label-container';
+          let innerClassName = 'text-label';
+          if (t.classes) innerClassName += ' ' + t.classes;
+          
+          // Use divIcon with nested divs for rotation and translation
+          // Outer div: rotation (inline, can be customized), Inner div: translation (CSS customizable)
+          const rotationAngle = t.rotation || 0; // Default to 0 degrees if no rotation specified
+          const labelDiv = L.divIcon({
+            html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateY(0px); white-space: nowrap;">${t.label}</div></div>`,
+            className: labelClassName,
+            iconSize: [1, 1],
+            iconAnchor: [0, 0]
           });
+          
+          const layer = L.marker([t.position[0], t.position[1]], { icon: labelDiv });
           // Register with multi-tooltip system if note is present
           if (t.note) {
             const textTooltip = `${t.label} — ${t.note}`;
@@ -1908,18 +1920,22 @@ HTML_TEMPLATE = Template(
           
           // Add label next to point if show_label is true
           if (p.show_label) {
-            const labelLayer = L.marker([p.position[0], p.position[1]], { opacity: 0.0 }).addTo(map);
-            
             // Apply classes to label if present
-            let labelClassName = 'text-label point-label';
-            if (p.classes) labelClassName += ' ' + p.classes;
+            let labelClassName = 'point-label-container';
+            let innerClassName = 'text-label point-label';
+            if (p.classes) innerClassName += ' ' + p.classes;
             
-            labelLayer.bindTooltip(p.label, { 
-              permanent: true, 
-              direction: 'right', 
+            // Use divIcon with nested divs for rotation and translation
+            // Outer div: rotation (inline, can be customized), Inner div: translation (CSS customizable)
+            const rotationAngle = p.rotation || 0; // Default to 0 degrees if no rotation specified
+            const labelDiv = L.divIcon({
+              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateX(10px); white-space: nowrap;">${p.label}</div></div>`,
               className: labelClassName,
-              offset: [10, 0]
+              iconSize: [1, 1],
+              iconAnchor: [0, 0]
             });
+            
+            const labelLayer = L.marker([p.position[0], p.position[1]], { icon: labelDiv }).addTo(map);
             layers.points.push(labelLayer);
           }
         }
@@ -1928,14 +1944,21 @@ HTML_TEMPLATE = Template(
       function renderTexts(year = null) {
         const texts = year !== null ? filterByPeriod(payload.texts, year) : payload.texts;
         for (const t of texts) {
-          let className = 'text-label';
-          if (t.classes) className += ' ' + t.classes;
-          const layer = L.marker([t.position[0], t.position[1]], { opacity: 0.0 }).addTo(map).bindTooltip(t.label, { 
-            permanent: true, 
-            direction: 'center', 
-            className: className,
-            offset: [0, 0]
+          let labelClassName = 'text-label-container';
+          let innerClassName = 'text-label';
+          if (t.classes) innerClassName += ' ' + t.classes;
+          
+          // Use divIcon with nested divs for rotation and translation
+          // Outer div: rotation (inline, can be customized), Inner div: translation (CSS customizable)
+          const rotationAngle = t.rotation || 0; // Default to 0 degrees if no rotation specified
+          const labelDiv = L.divIcon({
+            html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateY(0px); white-space: nowrap;">${t.label}</div></div>`,
+            className: labelClassName,
+            iconSize: [1, 1],
+            iconAnchor: [0, 0]
           });
+          
+          const layer = L.marker([t.position[0], t.position[1]], { icon: labelDiv }).addTo(map);
           // Register with multi-tooltip system if note is present
           if (t.note) {
             const textTooltip = `${t.label} — ${t.note}`;
