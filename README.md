@@ -1612,7 +1612,7 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
-- [ ] Better documentation for icons
+- [x] Better documentation for icons
 - [x] classes for Points that affect their labels
 - [x] center map at center; and allow setting zoom
 - [x] notes for Points
