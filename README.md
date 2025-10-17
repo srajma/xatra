@@ -21,7 +21,7 @@ xatra-install-data
 
 This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from [Hugging Face](https://huggingface.co/datasets/srajma/xatra-data) to `~/.xatra/data/`. The data only needs to be downloaded once.
 
-[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.4 or later.
+[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.5 or later.
 
 ## Example: Historical map
 

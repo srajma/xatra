@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: xatra
-Version: 2.4.0
+Version: 2.5.0
 Summary: The matplotlib of maps - create beautiful historical, administrative, and data maps
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
@@ -17,6 +17,15 @@ Requires-Dist: huggingface-hub>=0.20.0
 
 Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever. Example maps produced with `xatra` can be seen [here](https://srajma.github.io/maps/).
 
+![](examples/nations_indosphere.png)
+
+![](examples/sea.png)
+
+![](examples/suvarnabhumi.png)
+
+![](examples/admin_india_3.png)
+
+
 ## Installation
 
 ```bash
@@ -27,18 +36,7 @@ xatra-install-data
 
 This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from [Hugging Face](https://huggingface.co/datasets/srajma/xatra-data) to `~/.xatra/data/`. The data only needs to be downloaded once.
 
-Check if data is installed:
-
-```bash
-xatra-install-data --check
-```
-
-If you need to re-download the data:
-
-```bash
-xatra-install-data --force
-```
-[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.4 or later.
+[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.5 or later.
 
 ## Example: Historical map
 
@@ -1574,7 +1572,8 @@ The timing chart shows:
 ## TODO
 
 Kanging
-- [ ] copy maps from old xatra (colonies and hsr remaining)
+- [x] copy maps from old xatra (colonies and hsr remaining)
+- [x] redirect old map links
 - [ ] maps of north-west: Panini, Puranas and Greek
 - [ ] full history timeline
 - [x] GDP per capita map
