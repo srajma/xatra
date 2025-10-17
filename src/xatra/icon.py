@@ -484,3 +484,43 @@ class Icon:
         
         return result
 
+    def to_html(
+        self,
+        *,
+        alt: str = "",
+        classes: Optional[str] = None,
+        style: Optional[str] = None,
+        attrs: Optional[dict] = None,
+    ) -> str:
+        """Return the HTML string for this icon as rendered in the final HTML.
+        
+        This returns an <img> element that mirrors how the icon image is embedded
+        on the map, using the current `icon_url` and `icon_size`. This is useful
+        for building legends or custom UI outside the map canvas.
+        
+        Args:
+            alt: Alt text for the image tag
+            classes: Optional space-separated class names to add to the <img>
+            style: Optional inline CSS to add to the <img>
+            attrs: Optional dict of additional HTML attributes to include
+        
+        Returns:
+            HTML string (an <img> tag) that can be embedded in legends/labels
+        """
+        width, height = self.icon_size
+        attributes: list[str] = [
+            f'src="{self.icon_url}"',
+            f'width="{width}"',
+            f'height="{height}"',
+            f'alt="{alt}"',
+        ]
+        if classes:
+            attributes.append(f'class="{classes}"')
+        if style:
+            attributes.append(f'style="{style}"')
+        if attrs:
+            for key, value in attrs.items():
+                # Basic attribute serialization; assumes keys/values are safe strings
+                attributes.append(f'{key}="{value}"')
+        return f"<img {' '.join(attributes)} />"
+

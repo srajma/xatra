@@ -820,6 +820,8 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 
 The `Icon` class provides three ways to create custom marker icons: external URLs, built-in icons, and geometric shapes.
 
+Use `Icon.to_html()` to get the exact `<img>` element as rendered, handy for legends.
+
 #### External URL Icons
 
 Use custom icons from any web URL:
