@@ -1548,7 +1548,8 @@ The timing chart shows:
 ## TODO
 
 Kanging
-- [ ] copy maps from old xatra (colonies and hsr remaining)
+- [x] copy maps from old xatra (colonies and hsr remaining)
+- [x] redirect old map links
 - [ ] maps of north-west: Panini, Puranas and Greek
 - [ ] full history timeline
 - [x] GDP per capita map
