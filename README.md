@@ -2,6 +2,15 @@
 
 Xatra is the matplotlib of maps. You can create historical maps (static or dynamic, i.e. with a time slider), data maps, maps of administrative regions, whatever. Example maps produced with `xatra` can be seen [here](https://srajma.github.io/maps/).
 
+![](examples/nations_indosphere.png)
+
+![](examples/sea.png)
+
+![](examples/suvarnabhumi.png)
+
+![](examples/admin_india_3.png)
+
+
 ## Installation
 
 ```bash
