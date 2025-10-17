@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: xatra
-Version: 2.2.0
+Version: 2.3.0
 Summary: The matplotlib of maps - create beautiful historical, administrative, and data maps
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
@@ -38,7 +38,7 @@ If you need to re-download the data:
 ```bash
 xatra-install-data --force
 ```
-[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.2 or later.
+[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.3 or later.
 
 ## Example: Historical map
 
@@ -55,9 +55,9 @@ map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"))
 map.Flag(label="Chola", value=gadm("IND.31") | gadm("IND.17") - gadm("IND.17.5"))
 map.Flag(label="Gupta", value=NORTH_INDIA)
 map.River(label="Ganga", value=naturalearth("1159122643"))
-map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]])
-map.Point(label="Indraprastha", position=[28,77])
-map.Text(label="Jambudvipa", position=[22,79])
+map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], note="Ancient northern trade route")
+map.Point(label="Indraprastha", position=[28,77], note="Ancient capital of the Pandavas")
+map.Text(label="Jambudvipa", position=[22,79], note="Ancient name for the Indian subcontinent")
 map.TitleBox("<b>Sample historical map of India</b><br>Classical period, source: Majumdar.")
 map.show()
 ```
@@ -88,8 +88,8 @@ map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttara
 map.Path(label="Silk Road", value=[[35.0, 75.0], [40.0, 80.0], [45.0, 85.0]], period=[-200, 600])
 map.Point(label="Indraprastha", position=[28,77])
 map.Point(label="Delhi", position=[28.6, 77.2], period=[400, 800])
-map.Text(label="Jambudvipa", position=[22,79], classes="jambudvipa-text")
-map.Text(label="Aryavarta", position=[22,79], period=[0, 600])
+map.Text(label="Jambudvipa", position=[22,79], classes="jambudvipa-text", note="Ancient name for the Indian subcontinent")
+map.Text(label="Aryavarta", position=[22,79], period=[0, 600], note="Land of the Aryans")
 map.TitleBox("<b>Map of major Indian empires</b><br>Classical period, source: Majumdar.")
 map.TitleBox("<h2>Ancient Period (-500 to 0)</h2><p>This title appears only in ancient times</p>", period=[-500, 0])
 map.TitleBox("<h2>Classical Period (-100 to 400)</h2><p>This title appears only in classical times</p>", period=[-100, 400])
@@ -284,7 +284,7 @@ xatra.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout
 xatra.River(label="Ganga", value=naturalearth("1159122643"), classes="major-river")
 xatra.Path(label="Uttarapatha", value=[[28, 77], [30, 90], [40, 120]])
 xatra.Point(label="Indraprastha", position=[28, 77])
-xatra.Text(label="Jambudvipa", position=[22, 79])
+xatra.Text(label="Jambudvipa", position=[22, 79], note="Ancient name for the Indian subcontinent")
 xatra.TitleBox("<b>Pyplot-style Map Example</b><br>Classical period, using xatra.Flag() etc.")
 xatra.CSS("""
 .flag { stroke: #555; fill: rgba(200,0,0,0.4); }
@@ -318,9 +318,9 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
 - **`River(label, geometry, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a river with optional label display and customizable hover detection radius
-- **`Path(label, coords, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional label display and customizable hover detection radius
-- **`Point(label, position, period=None, icon=None, show_label=False, hover_radius=20)`**: Add a point of interest with optional custom icon, label display, and customizable hover detection radius
-- **`Text(label, position, classes=None, period=None)`**: Add a text label
+- **`Path(label, coords, note=None, classes=None, period=None, show_label=False, n_labels=1, hover_radius=10)`**: Add a path/route with optional tooltip note, label display, and customizable hover detection radius
+- **`Point(label, position, note=None, period=None, icon=None, show_label=False, hover_radius=20, classes=None)`**: Add a point of interest with optional tooltip note, custom icon, label display, customizable hover detection radius, and CSS classes
+- **`Text(label, position, note=None, classes=None, period=None)`**: Add a text label with optional tooltip note
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
 
 ##### Styling and Configuration
@@ -330,6 +330,8 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`FlagColorSequence(color_sequence, class_name=None)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
 - **`DataColormap(colormap, vmin=None, vmax=None, norm=None)`**: Set the color map for data elements
+- **`zoom(level: int)`**: Set the zoom level. Defaults to 5.
+- **`focus(latitude: float, longitude: float)`**: set where the map is initially focused at. Defaults to the center of the bounding box of all elements on the map.
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
@@ -410,7 +412,7 @@ map.Flag(label="Mughal", value=gadm("IND.25"), classes="empire muslim")
 # Add custom classes to other elements
 map.River(label="Ganga", value=naturalearth("1159122643"), classes="sacred-river major-river")
 map.Path(label="Silk Road", value=[[35, 75], [40, 80]], classes="trade-route ancient")
-map.Text(label="Jambudvipa", position=[22, 79], classes="region-name large-text")
+map.Text(label="Jambudvipa", position=[22, 79], classes="region-name large-text", note="Ancient name for the Indian subcontinent")
 map.Admin(gadm="IND.31", level=3, classes="tamil-nadu-tehsils")
 # DataFrame elements can be styled with CSS classes
 # map.Dataframe(df, classes="state-data")
@@ -831,73 +833,207 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 
 ### Point Icons
 
-The `Icon` class allows you to customize the appearance of point markers on the map. You can use custom icons from URLs or load built-in icons from the package.
+The `Icon` class provides three ways to create custom marker icons: external URLs, built-in icons, and geometric shapes.
+
+Use `Icon.to_html()` to get the exact `<img>` element as rendered, handy for legends.
+
+#### External URL Icons
+
+Use custom icons from any web URL:
 
 ```python
-#!/usr/bin/env python3
-"""
-Example demonstrating custom marker icons with the Point feature.
-"""
-
 import xatra
 from xatra import Icon
-from xatra.loaders import gadm
 
-# Create a map
-map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
-map.BaseOption("Esri.WorldImagery")
-map.Flag(label="India", value=gadm("IND"))
-
-# Example 1: Default marker (no custom icon)
-map.Point(label="Default Marker", position=[28.6, 77.2])
-
-# Example 2: Custom icon from URL
+# Custom icon from URL
 custom_icon = Icon(
     icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
     shadow_url="https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     shadow_size=(41, 41)
 )
 map.Point(label="Custom Red Marker", position=[19.0, 73.0], icon=custom_icon)
+```
 
-# Example 3: Built-in icon (if available)
-builtin_icon = Icon.builtin(
-    "example.svg",
-    icon_size=(32, 32),
-    icon_anchor=(16, 16),
-    popup_anchor=(0, -16)
+#### Built-in Icons
+
+Xatra includes many built-in icons organized by category:
+
+**Cities and Buildings:**
+- `city.png` - Ancient Indian style city
+- `temple.svg` - Hindu temple with shikhara
+- `temple-nagara.svg` - Nagara-style temple
+- `temple-gopuram.svg` - Dravidian gopuram style
+- `temple-nepali.svg` - Nepali temple style
+- `temple-pagoda.svg` - Pagoda-style temple
+- `temple-parthenon.svg` - Classical Greek Parthenon
+- `fort.svg` - Fortress or citadel
+- `port.svg` - Seaport with ships and cranes
+- `oilrig.svg` - Oil rig platform
+
+**General Purpose:**
+- `star.svg` - Five-pointed star for important locations
+- `important.svg` - Exclamation mark in circle
+- `example.svg` - Simple circular marker with exclamation
+
+**Geometric Shapes:**
+- `circle.svg` - Empty circle outline
+- `disk.svg` - Filled circle/disk
+- `square.svg` - Filled square
+- `rectangle.svg` - Filled rectangle
+- `triangle.svg` - Filled triangle (pointing up)
+- `diamond.svg` - Filled diamond shape
+- `cross.svg` - X-shaped cross
+- `plus.svg` - Plus sign (+)
+
+**Religious Symbols:**
+- `symbol-om.svg` - Hindu Om symbol
+- `symbol-cross.svg` - Christian cross
+- `symbol-star.svg` - Jewish Star of David
+- `symbol-muslim.svg` - Islamic crescent and star
+- `symbol-zoro.svg` - Zoroastrian faravahar
+
+**Leaflet Markers:**
+- `marker-icon.png` - Default blue marker
+- `marker-icon-red.png` - Red marker
+- `marker-icon-green.png` - Green marker
+- `marker-icon-2x.png` - High-res blue marker
+- `marker-icon-2x-red.png` - High-res red marker
+- `marker-icon-2x-green.png` - High-res green marker
+- `marker-shadow.png` - Default marker shadow
+
+```python
+# Built-in temple icons
+temple_icon = Icon.builtin("temple.svg", icon_size=(32, 32), icon_anchor=(16, 16))
+map.Point(label="Sacred Temple", position=[13.0, 80.2], icon=temple_icon)
+
+fort_icon = Icon.builtin("fort.svg", icon_size=(28, 28), icon_anchor=(14, 14))
+map.Point(label="Ancient Fort", position=[23.0, 72.6], icon=fort_icon)
+
+# Religious symbols
+om_icon = Icon.builtin("symbol-om.svg", icon_size=(30, 30), icon_anchor=(15, 15))
+map.Point(label="Sacred Site", position=[12.3, 76.6], icon=om_icon)
+```
+
+#### Geometric Shape Icons
+
+Create lightweight geometric shape icons using pure SVG instead of image files. These shapes are generated dynamically and provide scalable, customizable markers.
+
+**Available Shapes:**
+- `circle` - Perfect circle
+- `square` - Square shape
+- `triangle` - Triangle pointing up
+- `diamond` - Diamond/rhombus shape
+- `cross` - X-shaped cross
+- `plus` - Plus sign (+)
+- `star` - 5-pointed star
+- `hexagon` - Regular hexagon
+- `pentagon` - Regular pentagon
+- `octagon` - Regular octagon
+
+```python
+import xatra
+from xatra import Icon, ShapeType
+from xatra.loaders import gadm
+
+# Create a map
+map = xatra.Map()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Example 1: Basic geometric shapes
+circle_icon = Icon.geometric("circle", color="red", size=24)
+map.Point(label="Red Circle", position=[28.6, 77.2], icon=circle_icon)
+
+square_icon = Icon.geometric("square", color="blue", size=24)
+map.Point(label="Blue Square", position=[19.0, 73.0], icon=square_icon)
+
+triangle_icon = Icon.geometric("triangle", color="green", size=24)
+map.Point(label="Green Triangle", position=[12.3, 76.6], icon=triangle_icon)
+
+# Example 2: Using ShapeType enum
+diamond_icon = Icon.geometric(ShapeType.DIAMOND, color="purple", size=24)
+map.Point(label="Purple Diamond", position=[10.8, 78.7], icon=diamond_icon)
+
+# Example 3: Shapes with borders
+star_icon = Icon.geometric(
+    "star", 
+    color="yellow", 
+    size=28,
+    border_color="black", 
+    border_width=2
 )
-map.Point(label="Built-in Icon Marker", position=[13.0, 80.2], icon=builtin_icon)
+map.Point(label="Star with Border", position=[25.0, 121.5], icon=star_icon)
 
-# Example 3.5: Checking that Example 3 is really at the right place
-map.Point(label="Built-in Icon Marker", position=[13.0, 80.2])
+# Example 4: Custom sizes and anchors
+large_cross = Icon.geometric(
+    "cross",
+    color="orange",
+    size=32,
+    icon_size=(32, 32),
+    icon_anchor=(16, 16)
+)
+map.Point(label="Large Cross", position=[37.9, 23.7], icon=large_cross)
 
-# Example 4: Another custom icon with different size
-large_icon = Icon(
-    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
-    icon_size=(30, 49),
-    icon_anchor=(15, 49),
-    popup_anchor=(1, -40),
+# Available shapes: circle, square, triangle, diamond, cross, plus, star, hexagon, pentagon, octagon
+
+# Example 5: Using single integers (converted to tuples automatically)
+city_icon = Icon.geometric("circle", color="navy", icon_size=12, icon_anchor=6)
+port_icon = Icon.geometric("square", color="teal", icon_size=12, icon_anchor=6)
+map.Point(label="City", position=[39.9, 116.4], icon=city_icon)
+map.Point(label="Port", position=[35.0, 136.0], icon=port_icon)
+
+# Export the map
+map.show(out_json="tests/geometric_icons.json", out_html="tests/geometric_icons.html")
+print("Map with geometric icons exported to geometric_icons.html")
+```
+
+#### Complete Icon Example
+
+Here's a comprehensive example showing all three types of icons together:
+
+```python
+import xatra
+from xatra import Icon, ShapeType
+from xatra.loaders import gadm
+
+# Create a map
+map = xatra.Map()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# 1. External URL icons
+red_marker = Icon(
+    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
     shadow_url="https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     shadow_size=(41, 41)
 )
-map.Point(label="Large Green Marker", position=[23.0, 72.6], icon=large_icon)
+map.Point(label="Custom Red Marker", position=[19.0, 73.0], icon=red_marker)
 
-# Example 5: Icon without shadow
-no_shadow_icon = Icon(
-    icon_url="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
-    icon_size=(25, 41),
-    icon_anchor=(12, 41),
-    popup_anchor=(1, -34)
-)
-map.Point(label="Blue Marker (No Shadow)", position=[11.0, 77.0], icon=no_shadow_icon)
+# 2. Built-in icons
+temple = Icon.builtin("temple.svg", icon_size=(32, 32), icon_anchor=(16, 16))
+map.Point(label="Sacred Temple", position=[13.0, 80.2], icon=temple)
 
-# Add a title
-map.TitleBox("<b>Custom Marker Icons Example</b><br>Demonstrating different icon styles for Point markers")
+fort = Icon.builtin("fort.svg", icon_size=(28, 28), icon_anchor=(14, 14))
+map.Point(label="Ancient Fort", position=[23.0, 72.6], icon=fort)
 
-# Export the map
-map.show(out_json="tests/map_icons.json", out_html="tests/map_icons.html")
-print("Map with custom icons exported to map_icons.html")
+city = Icon.builtin("city.png", icon_size=(24, 24), icon_anchor=(12, 12))
+map.Point(label="Ancient City", position=[28.6, 77.2], icon=city)
+
+# 3. Geometric shape icons
+circle = Icon.geometric("circle", color="blue", size=24)
+map.Point(label="Blue Circle", position=[12.3, 76.6], icon=circle)
+
+star = Icon.geometric("star", color="gold", size=28, border_color="black", border_width=2)
+map.Point(label="Gold Star", position=[25.0, 121.5], icon=star)
+
+# Using single integers (converted to tuples automatically)
+diamond = Icon.geometric("diamond", color="purple", icon_size=20, icon_anchor=10)
+map.Point(label="Purple Diamond", position=[10.8, 78.7], icon=diamond)
+
+map.TitleBox("<b>Complete Icon Example</b><br>External URLs, built-in icons, and geometric shapes")
+
+map.show(out_json="tests/complete_icons.json", out_html="tests/complete_icons.html")
+print("Complete icon example exported to complete_icons.html")
 ```
 
 ### Point, Path, and River Labels
@@ -915,13 +1051,16 @@ map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Default: label appears in tooltip on hover
-map.Point(label="Mumbai", position=[19.0, 73.0])
+map.Point(label="Mumbai", position=[19.0, 73.0], note="Financial capital of India")
 
-# With show_label: label appears next to the point
-map.Point(label="Delhi", position=[28.6, 77.2], show_label=True)
+# With show_label: label appears next to the point (note still appears in tooltip)
+map.Point(label="Delhi", position=[28.6, 77.2], note="Capital of India", show_label=True)
 
 # Custom hover radius: easier to click on small points
 map.Point(label="Small Village", position=[20.5, 75.0], hover_radius=40)
+
+# Custom CSS classes: applied to both marker and label
+map.Point(label="Important City", position=[15.5, 78.0], classes="important-point large-marker", show_label=True)
 
 map.show()
 ```
@@ -937,10 +1076,10 @@ map.BaseOption("OpenStreetMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Default: label appears in tooltip on hover
-map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]])
+map.Path(label="Northern Route", value=[[28,77],[30,90],[35,100]], note="Ancient trade route through northern India")
 
-# With show_label: label appears at the midpoint of the path, rotated to match the path direction
-map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], show_label=True)
+# With show_label: label appears at the midpoint of the path, rotated to match the path direction (note still appears in tooltip)
+map.Path(label="Silk Road", value=[[28,77],[30,90],[40,120]], note="Famous trade route connecting East and West", show_label=True)
 
 # Multiple labels: display label at multiple evenly-spaced positions
 map.Path(label="Long Trade Route", value=[[28,77],[30,90],[35,100],[40,120]], show_label=True, n_labels=3)
@@ -960,6 +1099,48 @@ map.show()
 
 **Multiple Labels:** Use `n_labels` parameter to display multiple copies of the label along the path. Labels are placed at positions `k/(n+1)` where `k = 1, 2, ..., n`. For example:
 - `n_labels=1` (default): One label at 1/2 (midpoint)
+
+### Tooltip Notes
+
+The `note` parameter allows you to add additional information that appears in hover tooltips for Flag, River, Path, Point, and Text objects. Notes are displayed in the format "Label — Note" in the tooltip and do not appear in map labels.
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.Map()
+map.BaseOption("OpenStreetMap", default=True)
+map.Flag(label="India", value=gadm("IND"))
+
+# Flag with note
+map.Flag(label="Maurya Empire", value=gadm("IND"), note="Largest empire in ancient India")
+
+# River with note
+map.River(label="Ganges", value=river_geometry, note="Sacred river of Hinduism")
+
+# Path with note
+map.Path(label="Silk Road", value=[[40,74],[35,103]], note="Ancient trade route connecting East and West")
+
+# Point with note
+map.Point(label="Delhi", position=[28.6, 77.2], note="Capital of India since 1911")
+
+# Point with note and custom classes
+map.Point(label="Mumbai", position=[19.0, 73.0], note="Financial capital of India", classes="important-city")
+
+# Text with note
+map.Text(label="Ancient City", position=[28.6139, 77.2090], note="Founded in 736 CE")
+
+# Note appears in tooltip but not in map labels
+map.Point(label="Mumbai", position=[19.0, 73.0], note="Financial capital", show_label=True)
+# The label "Mumbai" appears on the map, but the note only appears when hovering
+
+map.Text(label="Sacred Site", position=[27.1751, 78.0421], note="Built in 1631-1653", classes="historical-text")
+# The text "Sacred Site" appears permanently on the map, but the note only appears when hovering
+
+map.show()
+```
+
+**Important:** Notes only appear in hover tooltips and are never displayed as map labels, ensuring clean map appearance while providing additional context on demand.
 - `n_labels=2`: Two labels at 1/3 and 2/3
 - `n_labels=3`: Three labels at 1/4, 2/4, and 3/4
 - `n_labels=5`: Five labels at 1/6, 2/6, 3/6, 4/6, and 5/6
@@ -1075,6 +1256,23 @@ map.CSS("""
 
 map.Path(label="Trade Route", value=[[28,77],[30,90],[40,120]], show_label=True, classes="trade-route")
 map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, classes="sacred-river")
+```
+
+**Label Rotation:**
+
+Point and Text labels support rotation via the `rotation` parameter or CSS:
+
+```python
+# Rotate labels via API
+map.Point("City", [28.6, 77.2], show_label=True, rotation=45)
+map.Text("Label", [28.6, 77.2], rotation=30)
+
+# Or via CSS (rotation and positioning are separated)
+map.CSS("""
+.rotated-label .point-label {
+  transform: translateX(10px) rotate(15deg) !important;
+}
+""")
 ```
 
 ### Multi-Layer Tooltips
@@ -1431,6 +1629,11 @@ Libraries
 - [x] copy matchers from old xatra
 
 Bugfixes
+- [x] Better documentation for icons
+- [x] classes for Points that affect their labels
+- [x] center map at center; and allow setting zoom
+- [x] notes for Points
+- [x] tooltips and notes for Texts
 - [x] Efficiency: cache territory geometries by string rep rather than per-object
 - [x] optimize paxmax aggregation
 - [x] AdminRivers don't work again.
@@ -1460,3 +1663,4 @@ Bugfixes
 - [x] rename Colormap to Colormap
 - [x] efficiency and documentation
 - [x] [WONTFIX] make outline of rivers show on hover too -- need rivers to be grouped for that
+- [x] [WONTFIX] Point labels should align to exact position. It's OK, just set margins

@@ -32,7 +32,11 @@ src/xatra/icons/disk.svg
 src/xatra/icons/example.svg
 src/xatra/icons/fort.svg
 src/xatra/icons/important.svg
+src/xatra/icons/marker-icon-2x-green.png
+src/xatra/icons/marker-icon-2x-red.png
 src/xatra/icons/marker-icon-2x.png
+src/xatra/icons/marker-icon-green.png
+src/xatra/icons/marker-icon-red.png
 src/xatra/icons/marker-icon.png
 src/xatra/icons/marker-shadow.png
 src/xatra/icons/oilrig.svg
@@ -54,3 +58,5 @@ src/xatra/icons/temple.svg
 src/xatra/icons/triangle.svg
 src/xatra/icons/downloaded/temple-pagoda.svg
 tests/test_adminrivers_labels.py
+tests/test_geometric_icons.py
+tests/test_icon_size_anchor.py
