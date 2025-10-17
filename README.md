@@ -1170,6 +1170,23 @@ map.Path(label="Trade Route", value=[[28,77],[30,90],[40,120]], show_label=True,
 map.River(label="Ganga", value=naturalearth("1159122643"), show_label=True, classes="sacred-river")
 ```
 
+**Label Rotation:**
+
+Point and Text labels support rotation via the `rotation` parameter or CSS:
+
+```python
+# Rotate labels via API
+map.Point("City", [28.6, 77.2], show_label=True, rotation=45)
+map.Text("Label", [28.6, 77.2], rotation=30)
+
+# Or via CSS (rotation and positioning are separated)
+map.CSS("""
+.rotated-label .point-label {
+  transform: translateX(10px) rotate(15deg) !important;
+}
+""")
+```
+
 ### Multi-Layer Tooltips
 
 Xatra features an intelligent **multi-layer tooltip system** that shows information for **all overlapping elements** at the cursor position, not just the topmost element.
