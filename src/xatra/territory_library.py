@@ -289,7 +289,7 @@ PHILIPPINES = gadm("PHL")
 UP_CEDI = (
     gadm("IND.34.38")
     | gadm("IND.34.34")
-    | gadm("ARG.22.5")
+    | gadm("IND.34.13")
     | gadm("IND.34.21")
     | gadm("IND.34.40")
     | gadm("IND.34.51")
