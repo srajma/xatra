@@ -38,7 +38,7 @@ HTML_TEMPLATE = Template(
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: move; user-select: none; }
       #coordinate-display { margin-bottom: 12px; font-size: 14px; }
-      #coordinate-display label { font-weight: bold; }
+      #coordinate-label { font-weight: bold; }
       #coordinates { font-family: monospace; color: #0066cc; }
       #layer-selector { margin-top: 12px; }
       #colormap { margin-top: 12px; cursor: crosshair; }
@@ -108,10 +108,12 @@ HTML_TEMPLATE = Template(
       // Add map click event handler
       map.on('click', function(e) {
         const coordinateElement = document.getElementById('coordinates');
-        if (coordinateElement) {
+        const coordinateLabel = document.getElementById('coordinate-label');
+        if (coordinateElement && coordinateLabel) {
           const lat = e.latlng.lat;
           const lng = e.latlng.lng;
           coordinateElement.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          coordinateLabel.textContent = 'Clicked point: ';
         }
       });
       
@@ -2002,7 +2004,7 @@ HTML_TEMPLATE = Template(
         let content = '';
         
         // Add coordinate display first
-        content += '<div id="coordinate-display"><label>Coordinates: </label><span id="coordinates">Loading...</span></div>';
+        content += '<div id="coordinate-display"><span id="coordinate-label">Center: </span><span id="coordinates">Loading...</span></div>';
         
         // Add title boxes
         content += titleBoxes.map(tb => `<div class="title-box">${tb.html}</div>`).join('');
