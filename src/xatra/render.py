@@ -37,6 +37,9 @@ HTML_TEMPLATE = Template(
       html, body, #map { height: 100%; margin: 0; padding: 0; }
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
       #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: move; user-select: none; }
+      #coordinate-display { margin-bottom: 12px; font-size: 14px; }
+      #coordinate-display label { font-weight: bold; }
+      #coordinates { font-family: monospace; color: #0066cc; }
       #layer-selector { margin-top: 12px; }
       #colormap { margin-top: 12px; cursor: crosshair; }
       #colormap-tooltip { position: fixed; background: rgba(255,255,255,0.98); border: 1px solid #333; padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1001; pointer-events: none; display: none; font-size: 13px; }
@@ -73,6 +76,10 @@ HTML_TEMPLATE = Template(
   <body>
     <div id="map"></div>
     <div id="title">
+      <div id="coordinate-display">
+        <label>Coordinates: </label>
+        <span id="coordinates">Loading...</span>
+      </div>
       <div id="layer-selector">
         <label for="baseLayer">Base Layer:</label>
         <select id="baseLayer"></select>
@@ -89,6 +96,24 @@ HTML_TEMPLATE = Template(
       const initialFocus = payload.initial_focus || [22, 79];
       const initialZoom = payload.initial_zoom || 4;
       const map = L.map('map').setView(initialFocus, initialZoom);
+      
+      // Function to initialize coordinate display
+      function initializeCoordinateDisplay() {
+        const coordinateElement = document.getElementById('coordinates');
+        if (coordinateElement) {
+          coordinateElement.textContent = `${initialFocus[0].toFixed(4)}, ${initialFocus[1].toFixed(4)}`;
+        }
+      }
+      
+      // Add map click event handler
+      map.on('click', function(e) {
+        const coordinateElement = document.getElementById('coordinates');
+        if (coordinateElement) {
+          const lat = e.latlng.lat;
+          const lng = e.latlng.lng;
+          coordinateElement.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+      });
       
       // Debug mode - set to true to show centroid markers
       const DEBUG_CENTROIDS = false;
@@ -1976,7 +2001,10 @@ HTML_TEMPLATE = Template(
         // Create the content structure
         let content = '';
         
-        // Add title boxes first
+        // Add coordinate display first
+        content += '<div id="coordinate-display"><label>Coordinates: </label><span id="coordinates">Loading...</span></div>';
+        
+        // Add title boxes
         content += titleBoxes.map(tb => `<div class="title-box">${tb.html}</div>`).join('');
         
         // Add layer selector if there are base options
@@ -1998,6 +2026,9 @@ HTML_TEMPLATE = Template(
         if (payload.colormap_svg) {
           setupColormap();
         }
+        
+        // Initialize coordinate display after title boxes are rendered
+        initializeCoordinateDisplay();
       }
 
       function renderAdmins(year = null) {
