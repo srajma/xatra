@@ -613,7 +613,7 @@ GANDHARA_W_EXTRA = (
     gadm("PAK.3.1.5") | gadm("PAK.3.1.1") | gadm("PAK.5.6.3")
 )  # himalayan-ish regions adjacent to GANDHARA_W_GREATER
 
-
+VRJISTHANA = gadm("PAK.3.1.8") | gadm("PAK.3.1.6") | gadm("PAK.3.1.4")
 DOAB_IJ = DOAB_IJ_N | DOAB_IJ_S
 DOAB_JC = gadm("PAK.7.4.4") | gadm("PAK.7.4.1") | gadm("PAK.7.8.4")
 DOAB_CR = (
