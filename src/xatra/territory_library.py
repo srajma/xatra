@@ -71,10 +71,7 @@ TERAI_NPL_E = (
 )
 TERAI_NPL = TERAI_NPL_FW | TERAI_NPL_MW | TERAI_NPL_W | TERAI_NPL_C | TERAI_NPL_E
 TERAI_BENGAL = (
-    gadm("IND.36.6")
-    | gadm("IND.36.9")
-    | gadm("IND.36.1")
-    | gadm("IND.36.10")
+    gadm("IND.36.6") | gadm("IND.36.9") | gadm("IND.36.1") | gadm("IND.36.10")
 )
 # BENGAL_HIM = Matcher.__false__() # keep this line in for now
 TERAI = TERAI_HP | TERAI_UK | TERAI_NPL | TERAI_BENGAL
@@ -95,20 +92,23 @@ KASHMIR_MISC = (
     | gadm("Z01.14.9")
 )
 KASHMIR_PROPER = gadm("Z01.14") - (KASHMIR_MISC | LADAKH)
-KASHMIR_TBC = gadm("Z06.1")  # POK
-# KASHMIR = KASHMIR_PROPER | KASHMIR_MISC | KASHMIR_TBC
+POJK = gadm("Z06.1")  # POK
+# KASHMIR = KASHMIR_PROPER | KASHMIR_MISC | POJK
 
 # alternate division for Kashmir:
-JAMMU_IND = (
-    KASHMIR_MISC | gadm("Z01.14.16") | gadm("Z01.14.14")
-)  # + poonch and rajouri
+JAMMU_IND = KASHMIR_MISC | gadm("Z01.14.16") | gadm("Z01.14.14")  # + poonch and rajouri
 KASHMIR_IND = gadm("Z01.14") - (JAMMU_IND | LADAKH)
 KASHMIR_POK = gadm("Z06.1.1.6") | gadm("Z06.1.1.5")
-JAMMU_POK = KASHMIR_TBC - KASHMIR_POK
+JAMMU_POK = POJK - KASHMIR_POK
 JAMMU = JAMMU_IND | JAMMU_POK
 KASHMIR = KASHMIR_IND | KASHMIR_POK
 
-DARADA = gadm("Z06.6")
+SAVASA = JAMMU_POK | gadm("Z01.14.16") | gadm("Z01.14.14")
+# | gadm("Z06.1.1.7") | gadm("Z06.1.1.8") | gadm("Z06.1.1.3") | gadm("Z06.1.1.1") | gadm("Z06.1.1.4") | gadm("Z06.1.1.2")
+
+DARADA_PROPER = gadm("Z06.6")
+CHITRAL = gadm("PAK.5.6.1")
+DARADA = DARADA_PROPER | CHITRAL
 KHYBER_HIM = gadm("PAK.5.6") | gadm("PAK.5.4")
 ASSAM_HIM = (
     gadm("IND.4.4")
@@ -129,6 +129,7 @@ NEI_HIM = (
     | ASSAM_HIM
 )
 INNER_KAMBOJA = gadm("PAK.3")  # Federally Administered Tribal Areas
+URASA = gadm("PAK.5.4")
 HIMALAYAN = (
     HP_HIM
     | UK_HIM
@@ -183,9 +184,7 @@ YUNNAN_BURMA_INTERM = gadm("MMR.4")  # kachin state
 KAREN = gadm("MMR.5") | gadm("MMR.6")  # karenic parts of myanmar
 SIAM_BURMA_INTERM = gadm("MMR.13")  # shan state
 
-BURMA_UPPER = (
-    gadm("MMR.12") | gadm("MMR.7") | gadm("MMR.8") | gadm("MMR.10")
-)
+BURMA_UPPER = gadm("MMR.12") | gadm("MMR.7") | gadm("MMR.8") | gadm("MMR.10")
 BURMA_LOWER_RIVER = gadm("MMR.2") | gadm("MMR.1") | gadm("MMR.15")
 BURMA_LOWER_RAKHINE = gadm("MMR.11")
 BURMA_LOWER_THAICOAST = gadm("MMR.9") | gadm("MMR.14")
@@ -238,17 +237,11 @@ CHAM = (
     | gadm("VNM.33")
 )
 NORTH_VIETNAM = gadm("VNM") - CHAM
-BORNEO_MYS = (
-    gadm("MYS.13") | gadm("MYS.14") | gadm("MYS.5")
-)  # sabah serawak
+BORNEO_MYS = gadm("MYS.13") | gadm("MYS.14") | gadm("MYS.5")  # sabah serawak
 BORNEO_BRU = gadm("BRN")
 BORNEO_MYS_GREATER = BORNEO_MYS | BORNEO_BRU
 BORNEO_IDN = (
-    gadm("IDN.35")
-    | gadm("IDN.34")
-    | gadm("IDN.12")
-    | gadm("IDN.13")
-    | gadm("IDN.14")
+    gadm("IDN.35") | gadm("IDN.34") | gadm("IDN.12") | gadm("IDN.13") | gadm("IDN.14")
 )  # kalimantan
 BORNEO = BORNEO_MYS_GREATER | BORNEO_IDN
 
@@ -269,7 +262,11 @@ MALUKU_SOUTH = gadm("IDN.19")
 MALUKU_NORTH = gadm("IDN.18")
 MALUKU = MALUKU_SOUTH | MALUKU_NORTH
 
-SULAWESI = (gadm("IDN.25") | gadm("IDN.26") | gadm("IDN.27") | gadm("IDN.28") | gadm("IDN.29")) | gadm("IDN.6") | gadm("IDN.29")
+SULAWESI = (
+    (gadm("IDN.25") | gadm("IDN.26") | gadm("IDN.27") | gadm("IDN.28") | gadm("IDN.29"))
+    | gadm("IDN.6")
+    | gadm("IDN.29")
+)
 KEPULAUAN = gadm("IDN.16")  # bits of indonesia between indonesia and malaysia
 BANGKA = gadm("IDN.3")  # bits of indonesia between borneo and sumatra
 SUMATRA = (
@@ -526,6 +523,42 @@ KUKURA = (
     | gadm("IND.29.27")
     | gadm("IND.29.3")
 )
+# SALVA = (
+#     gadm("IND.29.8")
+#     | gadm("IND.29.15")
+#     | gadm("IND.29.16")
+#     | gadm("IND.29.11")
+#     | gadm("IND.29.21")
+#     | gadm("IND.29.30")
+#     | gadm("IND.29.2")
+#     | gadm("IND.29.17")
+#     | gadm("IND.29.1")
+#     | gadm("IND.29.25")
+# )
+# SALVA_PROPER = (
+#     gadm("IND.29.16")
+#     | gadm("IND.29.15")
+#     | gadm("IND.29.11.5")
+#     | gadm("IND.29.11.7")
+#     | gadm("IND.29.11.1")
+#     | gadm("IND.29.11.3")
+#     | gadm("IND.29.21")
+#     | gadm("IND.29.30.3")
+#     | gadm("IND.29.17.8")
+#     | gadm("IND.29.2")
+# )
+SALVA = (
+    gadm("IND.29.16")
+    | gadm("IND.29.15")
+    | gadm("IND.29.8.3")
+    | gadm("IND.29.11")
+    | gadm("IND.29.21")
+    | gadm("IND.29.30")
+    | gadm("IND.29.17.8")
+    | gadm("IND.29.17.13")
+    | gadm("IND.29.2")
+)
+SALVA_GREATER = SALVA | gadm("IND.29.25") | gadm("IND.29.8")
 KUKURA_GREATER = MATSYA | KUKURA
 HADOTI = gadm("IND.29.24") | gadm("IND.29.4") | gadm("IND.29.20")
 RJ_MARU = gadm("IND.29") - (MATSYA | KUKURA | HADOTI)
@@ -533,22 +566,54 @@ MP = AVANTI | AKARA | DASARNA | PULINDA | CEDI | HADOTI
 RJ = gadm("IND.29")
 
 PUNJAB = (
-    gadm("IND.28")
-    | gadm("PAK.7")
-    | gadm("IND.6.1")
-    | gadm("PAK.4.1")
-    | gadm("PAK.5")
+    gadm("IND.28") | gadm("PAK.7") | gadm("IND.6.1") | gadm("PAK.4.1") | gadm("PAK.5")
 ) - HIMALAYAN
-GANDHARA_W = gadm("PAK.5") - HIMALAYAN
-VARNU_PROPER = gadm("PAK.5.1.1") | gadm("PAK.5.1.2") | gadm("PAK.5.3.2")
+GANDHARA_W_GREATER = gadm("PAK.5") - HIMALAYAN
+VARNU = gadm("PAK.5.1.1") | gadm("PAK.5.1.2") | gadm("PAK.5.3.2")
+VANAVYA = gadm("PAK.5.2")
+APRITA = gadm("PAK.3.1.7") | gadm("PAK.3.1.3") | gadm("PAK.3.1.2")
+SWAT = gadm("PAK.5.6.5")
+UDDIYANA = SWAT | gadm("PAK.5.6.4")
+KAPISAYANA = gadm("AFG.24")
+DVIRAVATIKA_PROPER =(
+    gadm("PAK.3.1.1")
+    | gadm("PAK.3.1.5")
+)
+TRIRAVATIKA_PROPER = gadm("PAK.3.1.2")
+TRYAKSYAYANA_PROPER = (
+    gadm("AFG.22.13")
+    | gadm("AFG.22.7")
+    | gadm("AFG.22.10")
+    | gadm("AFG.18.7")
+    | gadm("AFG.18.12")
+    | gadm("AFG.18.8")
+    | gadm("AFG.18.5")
+)
+TRYAKSYAYANA = TRYAKSYAYANA_PROPER | DVIRAVATIKA_PROPER
+DVIRAVATIKA = TRYAKSYAYANA
+TRIRAVATIKA = APRITA
+ASVAKAYANA = gadm("PAK.5.6.3") | gadm("PAK.5.6.2")
+ASVAKAYANA_GREATER = ASVAKAYANA | gadm("PAK.5.6.1")
+ASVAYANA = (
+    gadm("AFG.20")
+    | gadm("AFG.18")
+    | gadm("AFG.22.4")
+    | gadm("AFG.22.12")
+    | gadm("AFG.22.9")
+) - TRYAKSYAYANA
+GANDHARA_W = GANDHARA_W_GREATER - (VANAVYA | VARNU)
+GANDHARA_E = gadm("PAK.7.7.1") | gadm("PAK.7.7.4") | gadm("PAK.4.1")
 PSEUDOSATTAGYDIA_S = gadm("PAK.7.2.1") | gadm("PAK.7.2.4")
-PSEUDOSATTAGYDIA_N = gadm("PAK.5.2") | gadm("PAK.5.1") | gadm("PAK.5.3.2")
+PSEUDOSATTAGYDIA_N = VANAVYA | gadm("PAK.5.1") | gadm("PAK.5.3.2")
 PSEUDOSATTAGYDIA = PSEUDOSATTAGYDIA_N | PSEUDOSATTAGYDIA_S
-DOAB_IJ_N = (
-    gadm("PAK.4.1") | gadm("PAK.7.7") | gadm("PAK.7.8")
-) - gadm("PAK.7.8.4")
+DOAB_IJ_N = (gadm("PAK.4.1") | gadm("PAK.7.7") | gadm("PAK.7.8")) - gadm("PAK.7.8.4")
 DOAB_IJ_S = gadm("PAK.7.2.2") | gadm("PAK.7.2.3")
-GANDHARA = GANDHARA_W | DOAB_IJ_N
+GANDHARA = GANDHARA_W | GANDHARA_E
+GANDHARA_W_EXTRA = (
+    gadm("PAK.3.1.5") | gadm("PAK.3.1.1") | gadm("PAK.5.6.3")
+)  # himalayan-ish regions adjacent to GANDHARA_W_GREATER
+
+
 DOAB_IJ = DOAB_IJ_N | DOAB_IJ_S
 DOAB_JC = gadm("PAK.7.4.4") | gadm("PAK.7.4.1") | gadm("PAK.7.8.4")
 DOAB_CR = (
@@ -564,34 +629,37 @@ DOAB_CR = (
     | gadm("PAK.7.3.2")
     | gadm("PAK.7.3.3")
 )
-DOAB_RS_N = (
-    gadm("IND.28.16")
-    | gadm("IND.28.8")
-    | gadm("IND.28.1")
-    | gadm("IND.28.22")
-)
+DOAB_RS_N = gadm("IND.28.16") | gadm("IND.28.8") | gadm("IND.28.1") | gadm("IND.28.22")
 DOAB_RS_C = (
     gadm("PAK.7.5.1") | gadm("PAK.7.5.2") | gadm("PAK.7.5.4") | gadm("PAK.7.5.5")
 )
 DOAB_RS_S = gadm("PAK.7.6")
 DOAB_RS = DOAB_RS_N | DOAB_RS_C | DOAB_RS_S
+
+USINARA = gadm("PAK.7.3")
+MALAVA = gadm("PAK.7.6.1") | gadm("PAK.7.6.2") | gadm("PAK.7.6.3") | gadm("PAK.7.6.6")
+KSUDRAKA = gadm("PAK.7.6.4") | gadm("PAK.7.6.5")
+LAVAPURA = gadm("PAK.7.5.1") | gadm("PAK.7.5.2") | gadm("PAK.7.5.4") | gadm("PAK.7.5.5")
+KSUDRAKA_GREATER = KSUDRAKA | LAVAPURA
+USINARA_GREATER = USINARA | MALAVA | KSUDRAKA
+MADRA = DOAB_JC | DOAB_CR - USINARA_GREATER
+MADRA_W = DOAB_JC - USINARA_GREATER
+MADRA_E = DOAB_CR - USINARA_GREATER
+MADRAKARA = gadm("IND.28.6") | gadm("IND.28.15")
+
 BAHAWALPUR = gadm("PAK.7.1")
 # TRIGARTA_PROPER = (gadm("IND.28") | gadm("IND.6.1")) - DOAB_RS_N
 # TRIGARTA = gadm("IND.28") | gadm("IND.6.1") | DOAB_RS_C
+TILAKHALA = gadm("IND.28.9")
+RAJANYA = gadm("IND.28.10") | gadm("IND.28.11") | gadm("IND.28.21")
 TRIGARTA_PJ = (
-    gadm("IND.28.9")
-    | gadm("IND.28.10")
-    | gadm("IND.28.11")
-    | gadm("IND.28.21")
+    gadm("IND.28.9") | gadm("IND.28.10") | gadm("IND.28.11") | gadm("IND.28.21")
 )
-TRIGARTA_HP = (
-    gadm("IND.13.4")
-    | gadm("IND.13.12")
-    | gadm("IND.13.1")
-    | gadm("IND.13.3")
-)
+TRIGARTA_HP = gadm("IND.13.4") | gadm("IND.13.12") | gadm("IND.13.1") | gadm("IND.13.3")
 TRIGARTA = TRIGARTA_PJ | TRIGARTA_HP
+AUDUMBARA = TRIGARTA_HP | gadm("IND.28.16")
 KUNINDA = (TERAI_UK_W | TERAI_HP) - TRIGARTA_HP
+
 PUADH = (
     gadm("IND.28.18")
     | gadm("IND.28.5")
@@ -601,14 +669,36 @@ PUADH = (
 )
 JANGALA_PJ = gadm("IND.28") - (TRIGARTA_PJ | PUADH | DOAB_RS_N)
 JANGALA_RJ = (
-    gadm("IND.29.8")
-    | gadm("IND.29.11")
-    | gadm("IND.29.16")
-    | gadm("IND.29.15")
+    gadm("IND.29.8") | gadm("IND.29.11") | gadm("IND.29.16") | gadm("IND.29.15")
 )
 KURU_KSETRA_GREATER = KURU_KSETRA_GREATER_HARYANA | PUADH
 JANGALA = JANGALA_HARYANA | JANGALA_PJ | JANGALA_RJ
 
+SUB_SUTLEJ_N = (
+    gadm("IND.28.14")
+    | gadm("IND.28.12")
+    | gadm("IND.28.5")
+    | gadm("IND.28.7")
+    | gadm("IND.28.18")
+) - KURU_KSETRA_GREATER
+SUB_SUTLEJ_S = (
+    gadm("IND.28.3")
+    | gadm("IND.28.13")
+    | gadm("IND.28.2")
+    | gadm("IND.28.20")
+    | gadm("IND.28.17")
+    | gadm("IND.28.4")
+    | gadm("IND.28.19")
+    | gadm("IND.6")
+) - KURU_KSETRA_GREATER
+YAUDHEYA = (
+    gadm("IND.12")
+    | gadm("IND.25")
+    | KURU_KSETRA_GREATER
+    | SUB_SUTLEJ_S
+    | MADRAKARA
+    | SUB_SUTLEJ_N
+)
 SINDH_N = gadm("PAK.8.3.1") | gadm("PAK.8.3.2") | gadm("PAK.8.3.4")
 SINDH_SW = (
     gadm("PAK.8.2.5")
@@ -618,9 +708,7 @@ SINDH_SW = (
     | gadm("PAK.8.2.2")
     | gadm("PAK.8.2.3")
 )
-SINDH_SE = (
-    gadm("PAK.8.1.8") | gadm("PAK.8.1.1") | gadm("PAK.8.1.6") | gadm("PAK.8.4.2")
-)
+SINDH_SE = gadm("PAK.8.1.8") | gadm("PAK.8.1.1") | gadm("PAK.8.1.6") | gadm("PAK.8.4.2")
 SINDH_W_PROPER = gadm("PAK.8.3") | gadm("PAK.8.1.2") | gadm("PAK.8.1.4")
 SINDH_W = SINDH_W_PROPER | SINDH_SW
 SINDH_E_PROPER = (
@@ -639,6 +727,14 @@ SINDH_E_PROPER = (
 SINDH_E = SINDH_E_PROPER | SINDH_SE
 SINDH_S = SINDH_SE | SINDH_SW
 SINDH = SINDH_N | SINDH_W_PROPER | SINDH_E_PROPER | SINDH_S
+MASURAKARNA = gadm("PAK.8.3")
+MUCUKARNA = gadm("PAK.8.6")
+BRAHMANAKA = gadm("PAK.8.4.3") | gadm("PAK.8.4.1") | gadm("PAK.8.1.3") | gadm("PAK.8.1.7") | gadm("PAK.8.1.5") 
+SINDHUVAKTRA = SINDH_S - gadm("PAK.8.4.2")
+INDRAVAKTRA = gadm("PAK.2.2.1")
+PARDAYANA = gadm("PAK.2.1.2") 
+ARABHATA = gadm("PAK.2.1.7")
+
 AUDICYA = PUNJAB | SINDH
 
 KUTCH = gadm("IND.11.16")
@@ -664,9 +760,7 @@ SURASTRA = (
     | gadm("IND.11.8")
     | gadm("IND.11.7")
 )
-LATA = (
-    gadm("IND.11") | gadm("IND.8") | gadm("IND.9")
-) - (KUTCH | ANARTA | SURASTRA)
+LATA = (gadm("IND.11") | gadm("IND.8") | gadm("IND.9")) - (KUTCH | ANARTA | SURASTRA)
 GUJARAT = KUTCH | ANARTA | SURASTRA | LATA
 
 JHARKHAND_ANGA = (
@@ -686,18 +780,8 @@ GAUDA_EB = gadm("BGD.5.5")
 GAUDA_WB = gadm("IND.36.13") | gadm("IND.36.12")
 GAUDA = GAUDA_EB | GAUDA_WB
 RADHA = gadm("IND.36.2") | gadm("IND.36.3") | gadm("IND.36.4")
-SUHMA = (
-    gadm("IND.36.16")
-    | gadm("IND.36.17")
-    | gadm("IND.36.7")
-    | gadm("IND.36.8")
-)
-VANGA_WB = (
-    gadm("IND.36.11")
-    | gadm("IND.36.14")
-    | gadm("IND.36.15")
-    | gadm("IND.36.19")
-)
+SUHMA = gadm("IND.36.16") | gadm("IND.36.17") | gadm("IND.36.7") | gadm("IND.36.8")
+VANGA_WB = gadm("IND.36.11") | gadm("IND.36.14") | gadm("IND.36.15") | gadm("IND.36.19")
 PUNDRA_EB = gadm("BGD.5") - GAUDA_EB
 VANGA_EB = (
     gadm("BGD.4")
@@ -725,10 +809,7 @@ CHATTISGARH_N = (
 )
 CHATTISGARH_S = gadm("IND.7") - CHATTISGARH_N
 KALINGA_UTKALA = (
-    gadm("IND.26.13")
-    | gadm("IND.26.6")
-    | gadm("IND.26.17")
-    | gadm("IND.26.3")
+    gadm("IND.26.13") | gadm("IND.26.6") | gadm("IND.26.17") | gadm("IND.26.3")
 )
 KALINGA_PROPER = (
     gadm("IND.26.7")
@@ -739,12 +820,7 @@ KALINGA_PROPER = (
     | gadm("IND.26.24")
     | gadm("IND.26.26")
 )
-KALINGA_TELUGU = (
-    gadm("IND.2.3")
-    | gadm("IND.2.9")
-    | gadm("IND.2.10")
-    | gadm("IND.2.11")
-)
+KALINGA_TELUGU = gadm("IND.2.3") | gadm("IND.2.9") | gadm("IND.2.10") | gadm("IND.2.11")
 KALINGA = KALINGA_PROPER | KALINGA_TELUGU | KALINGA_UTKALA
 UTKALA_PROPER = gadm("IND.26.22") | gadm("IND.26.18") | gadm("IND.26.9")
 UTKALA_INNER = (
@@ -763,12 +839,7 @@ GREAT_FOREST = GREAT_FOREST_NORTH | GREAT_FOREST_PROPER
 GREAT_FOREST_GREATER = GREAT_FOREST | UP_KALAKAVANA
 BENGAL = ANGA | BIHAR_NORTHEAST | RADHA | SUHMA | GAUDA | PUNDRA | VANGA | SAMATATA
 
-RSIKA = (
-    gadm("IND.20.13")
-    | gadm("IND.20.9")
-    | gadm("IND.20.21")
-    | gadm("IND.20.22")
-)
+RSIKA = gadm("IND.20.13") | gadm("IND.20.9") | gadm("IND.20.21") | gadm("IND.20.22")
 VIDARBHA = (
     gadm("IND.20.2")
     | gadm("IND.20.3")
@@ -817,12 +888,7 @@ APARANTA = (
     | gadm("IND.20.31")
 )
 GREATER_PUNE = gadm("IND.20") - (RSIKA | VIDARBHA | MULAKA | ASMAKA | APARANTA)
-MAHISAKA = (
-    gadm("IND.32.2")
-    | gadm("IND.32.5")
-    | gadm("IND.32.6")
-    | gadm("IND.32.9")
-)
+MAHISAKA = gadm("IND.32.2") | gadm("IND.32.5") | gadm("IND.32.6") | gadm("IND.32.9")
 VENGI_TG = gadm("IND.32.4") | gadm("IND.32.7") | gadm("IND.32.10")
 VENGI_AP = gadm("IND.2.4") | gadm("IND.2.5") | gadm("IND.2.12")
 VENGI = VENGI_TG | VENGI_AP
@@ -863,12 +929,7 @@ COORG = gadm("IND.16.19")
 AP_BAYALU = gadm("IND.2") - (AP_KANCI | VENGI | KALINGA)
 KA_BAYALU = gadm("IND.16") - (KUNTALA | KADAMBA | CAUVERIC | TULU | COORG)
 BAYALU = AP_BAYALU | KA_BAYALU
-VENGI_COASTAL = (
-    gadm("IND.2.4")
-    | gadm("IND.2.5")
-    | gadm("IND.2.12")
-    | gadm("IND.2.3")
-)
+VENGI_COASTAL = gadm("IND.2.4") | gadm("IND.2.5") | gadm("IND.2.12") | gadm("IND.2.3")
 KADAMBA_COASTAL = gadm("IND.10") | gadm("IND.16.29")
 DECCAN = (
     PULINDA
@@ -911,7 +972,9 @@ PANDYA_PROPER = (
     | gadm("IND.31.27")
     | gadm("IND.31.32")
 )
-PANDYA = PANDYA_PROPER | gadm("IND.31.9")  # adding Kanyakumari, which is strictly Ay land
+PANDYA = PANDYA_PROPER | gadm(
+    "IND.31.9"
+)  # adding Kanyakumari, which is strictly Ay land
 COLA = (
     gadm("IND.31.16")
     | gadm("IND.31.26")
@@ -923,12 +986,8 @@ COLA = (
 )
 KONGU = gadm("IND.31") - (COLA | PANDYA | KANCI)
 AY_PROPER = gadm("IND.17.12") | gadm("IND.31.9")  # Trivandrum + Kanyakumari
-AY = (
-    AY_PROPER | gadm("IND.17.6") | gadm("IND.17.11")
-)  # south kerala, later venad
-EZHIMALA_PROPER = (
-    gadm("IND.17.5") | KANNUR_PONDI
-)  # north kerala, later kolattunadu
+AY = AY_PROPER | gadm("IND.17.6") | gadm("IND.17.11")  # south kerala, later venad
+EZHIMALA_PROPER = gadm("IND.17.5") | KANNUR_PONDI  # north kerala, later kolattunadu
 EZHIMALA = EZHIMALA_PROPER | COORG  # Poozhinadu and Karkanadu
 CERA = KERALA - (
     AY | EZHIMALA
@@ -970,11 +1029,11 @@ AFG_BACTRIA = (
 AFG_MISC = gadm("AFG") - (
     KAMBOJA | KANDAHAR | ZARANJ | HERAT | AFG_MARGIANA | AFG_BACTRIA | AFG_MERU
 )
+NIGRAHARA = gadm("AFG.22") - ASVAYANA - TRYAKSYAYANA
+ROHITAGIRI = AFG_MISC
 KAMBOJA_EXT = KAMBOJA | AFG_MISC
 BALOCH = gadm("PAK.2") | gadm("IRN.26")  # gedrosia
-TJK_BACTRIA = (
-    gadm("TJK.3") | gadm("TJK.1") | gadm("TJK.5.7")
-)  # Khatlon province
+TJK_BACTRIA = gadm("TJK.3") | gadm("TJK.1") | gadm("TJK.5.7")  # Khatlon province
 TJK_SOGDIA_PROPER = gadm("TJK.4")
 TJK_MERU = gadm("TJK.2") | (gadm("TJK.5") - TJK_BACTRIA)  # Badakhshan
 UZB_BACTRIA = gadm("UZB.12")
@@ -1005,10 +1064,7 @@ KHWAREZM = UZB_KHWAREZM | TKM_KHWAREZM
 KASHGAR = gadm("CHN.28.9")
 KHOTAN = gadm("CHN.28.10")
 KUCHA = (
-    gadm("CHN.28.1.5")
-    | gadm("CHN.28.1.3")
-    | gadm("CHN.28.1.7")
-    | gadm("CHN.28.1.6")
+    gadm("CHN.28.1.5") | gadm("CHN.28.1.3") | gadm("CHN.28.1.7") | gadm("CHN.28.1.6")
 )
 AKSU = gadm("CHN.28.1") - KUCHA
 ROURAN = gadm("CHN.28.3.7")
@@ -1083,8 +1139,13 @@ GY_DOAB = (
     | gadm("IND.34.43")
 )
 
+# more deserts
+PAK_THAR = gadm("PAK.8.6") | gadm("PAK.8.4")
+PAK_CHOLISTAN = gadm("PAK.7.1")
+PAK_THALL = gadm("PAK.7.2.2") | gadm("PAK.7.2.3")
+
 # uncultivated (YYY) or historically unidentified (ZZZ) lands
-YYY_MARU = RJ_MARU
+YYY_MARU = RJ_MARU | PAK_THAR | PAK_CHOLISTAN
 YYY_NAIMISA = UP_NAIMISA
 YYY_KALAKAVANA = UP_KALAKAVANA
 YYY_GREAT_FOREST = GREAT_FOREST
@@ -1097,12 +1158,7 @@ ZZZ_BAYALU = BAYALU
 
 # Levant and Iran proper
 LEVANT = (
-    gadm("LBN")
-    | gadm("ISR")
-    | gadm("PSE")
-    | gadm("SYR")
-    | gadm("JOR")
-    | gadm("IRQ")
+    gadm("LBN") | gadm("ISR") | gadm("PSE") | gadm("SYR") | gadm("JOR") | gadm("IRQ")
 )
 IRAN = gadm("IRN")
 IRANIC = IRAN | CENTRAL_ASIA_GREATER
@@ -1184,9 +1240,7 @@ GULF = (
     | gadm("YEM")
 )
 
-AFRICA_EAST_SPOTTY = (
-    gadm("SOM") | gadm("TZA") | gadm("DJI") | gadm("ERI") | gadm("MDG")
-)
+AFRICA_EAST_SPOTTY = gadm("SOM") | gadm("TZA") | gadm("DJI") | gadm("ERI") | gadm("MDG")
 
 INDIAN_OCEAN = (
     SUBCONTINENT_PROPER
@@ -1235,11 +1289,7 @@ MITANNI_TURKEY = (
     | gadm("TUR.71")
 )
 MITANNI_IRAQ = (
-    gadm("IRQ.17")
-    | gadm("IRQ.8")
-    | gadm("IRQ.16")
-    | gadm("IRQ.6")
-    | gadm("IRQ.12")
+    gadm("IRQ.17") | gadm("IRQ.8") | gadm("IRQ.16") | gadm("IRQ.6") | gadm("IRQ.12")
 )
 MITANNI = MITANNI_SYRIA | MITANNI_TURKEY | MITANNI_IRAQ
 SOCOTRA = gadm("YEM.12.20") | gadm("YEM.12.18")
