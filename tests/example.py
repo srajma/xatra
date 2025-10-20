@@ -12,6 +12,7 @@ from matplotlib.colors import LinearSegmentedColormap
 map = xatra.Map()
 map.BaseOption("Esri.WorldTopoMap", default=True)
 map.BaseOption("Esri.WorldImagery")
+# map.BaseOption("Stadia.OSMBright")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
 map.FlagColorSequence(LinearColorSequence())

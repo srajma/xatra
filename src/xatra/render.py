@@ -130,10 +130,22 @@ HTML_TEMPLATE = Template(
       
       // Create base layers
       for (const option of payload.base_options || []) {
-        const layer = L.tileLayer(option.url, {
+        let layerOptions = {
           maxZoom: 18,
           attribution: '&copy; ' + option.name
-        });
+        };
+        
+        // Special handling for Stadia.OSMBright
+        if (option.name === 'Stadia.OSMBright') {
+          layerOptions = {
+            minZoom: 0,
+            maxZoom: 20,
+            attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            ext: 'png'
+          };
+        }
+        
+        const layer = L.tileLayer(option.url, layerOptions);
         baseLayers[option.name] = layer;
       }
       
