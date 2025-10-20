@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: xatra
-Version: 2.6.0
+Version: 2.7.0
 Summary: The matplotlib of maps - create beautiful historical, administrative, and data maps
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
@@ -36,7 +36,7 @@ xatra-install-data
 
 This installs `xatra`, then downloads GADM administrative boundaries, Natural Earth rivers, and other geographical data from [Hugging Face](https://huggingface.co/datasets/srajma/xatra-data) to `~/.xatra/data/`.
 
-[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.6 or later.
+[Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.7 or later.
 
 ## Example: Historical map
 
