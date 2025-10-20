@@ -8,7 +8,7 @@ from xatra.loaders import gadm
 
 # Create a map
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Test AdminRivers with labels

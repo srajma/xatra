@@ -402,8 +402,7 @@ class Map:
     def __init__(self) -> None:
         """Initialize a new Map instance.
         
-        Creates an empty map with default base layer options (OpenStreetMap,
-        Esri.WorldImagery, OpenTopoMap, Esri.WorldPhysical).
+        Creates an empty map.
         """
         self._flags: List[FlagEntry] = []
         self._rivers: List[RiverEntry] = []
@@ -1970,4 +1969,7 @@ class Map:
         "CartoDB.PositronNoLabels": "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
         "USGS.USImageryTopo": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
         "Esri.OceanBasemap": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}",
+        "Stadia.OSMBright": "https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.{ext}",
+        "Esri.WorldTopoMap": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+        
     }

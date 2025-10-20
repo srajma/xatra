@@ -14,7 +14,7 @@ from xatra.territory_library import NORTH_INDIA
 # No need to create a map object - just start adding elements!
 # A Map is automatically created on first use.
 
-xatra.BaseOption("OpenStreetMap", default=True)
+xatra.BaseOption("Esri.WorldTopoMap", default=True)
 xatra.BaseOption("Esri.WorldImagery")
 
 # Add flags - colors are automatically assigned

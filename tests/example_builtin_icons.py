@@ -9,7 +9,7 @@ from xatra.loaders import gadm
 
 # Create a map
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 
 # Add a flag for context

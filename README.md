@@ -55,7 +55,7 @@ from xatra.loaders import gadm, naturalearth
 from xatra.territory_library import NORTH_INDIA
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
@@ -106,7 +106,7 @@ Here's a taluk-level administrative map of the Indian subcontinent
 import xatra
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
@@ -133,7 +133,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
@@ -160,7 +160,7 @@ import pandas as pd
 import xatra
 import matplotlib.pyplot as plt
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
@@ -203,7 +203,7 @@ from xatra.colorseq import LinearColorSequence, Color
 from matplotlib.colors import LinearSegmentedColormap
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
@@ -258,7 +258,7 @@ from xatra.territory_library import NORTH_INDIA
 # No need to create a map object - just start adding elements!
 # A Map is automatically created on first use.
 
-xatra.BaseOption("OpenStreetMap", default=True)
+xatra.BaseOption("Esri.WorldTopoMap", default=True)
 xatra.BaseOption("Esri.WorldImagery")
 xatra.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240])
 xatra.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
@@ -604,7 +604,7 @@ import xatra
 import matplotlib.pyplot as plt
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 
 # Create a static DataFrame
 df = pd.DataFrame({
@@ -633,7 +633,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 
 # Create a dynamic DataFrame with year columns
 df = pd.DataFrame({
@@ -920,7 +920,7 @@ from xatra.loaders import gadm
 
 # Create a map
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Example 1: Basic geometric shapes
@@ -981,7 +981,7 @@ from xatra.loaders import gadm
 
 # Create a map
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # 1. External URL icons
@@ -1030,7 +1030,7 @@ import xatra
 from xatra.loaders import gadm
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Default: label appears in tooltip on hover
@@ -1055,7 +1055,7 @@ import xatra
 from xatra.loaders import gadm
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Default: label appears in tooltip on hover
@@ -1092,7 +1092,7 @@ import xatra
 from xatra.loaders import gadm
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Flag with note
@@ -1137,7 +1137,7 @@ import xatra
 from xatra.loaders import gadm, naturalearth
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 map.Flag(label="India", value=gadm("IND"))
 
 # Default: label appears in tooltip on hover
@@ -1277,7 +1277,7 @@ import xatra
 from xatra.loaders import gadm
 
 map = xatra.Map()
-map.BaseOption("OpenStreetMap", default=True)
+map.BaseOption("Esri.WorldTopoMap", default=True)
 
 # These elements overlap - hovering over Tamil Nadu will show all tooltips
 map.Flag(label="India", value=gadm("IND"), note="Republic of India")
