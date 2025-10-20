@@ -103,7 +103,8 @@ JAMMU_POK = POJK - KASHMIR_POK
 JAMMU = JAMMU_IND | JAMMU_POK
 KASHMIR = KASHMIR_IND | KASHMIR_POK
 
-SAVASA = JAMMU_POK | gadm("Z01.14.16") | gadm("Z01.14.14")
+GLAUCUKAYANAKA = gadm("Z01.14.16") | gadm("Z01.14.18") | gadm("Z06.1.1.2")
+SAVASA = JAMMU_POK | gadm("Z01.14.14") | gadm("Z01.14.16") | gadm("Z01.14.18") # reasi was a part of rajouri district when VS Agarwala wrote his book
 # | gadm("Z06.1.1.7") | gadm("Z06.1.1.8") | gadm("Z06.1.1.3") | gadm("Z06.1.1.1") | gadm("Z06.1.1.4") | gadm("Z06.1.1.2")
 
 DARADA_PROPER = gadm("Z06.6")
