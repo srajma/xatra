@@ -1565,6 +1565,8 @@ Kanging
 - [x] admin map
 
 Features
+- [ ] Vassals
+- [ ] Custom polygon territory
 - [x] Orient flag labels in direction of flag
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels
