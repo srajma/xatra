@@ -1016,6 +1016,7 @@ KAMBOJA = (
 KANDAHAR = gadm("AFG.15") | gadm("AFG.11")  # Arachosia
 ZARANJ = gadm("AFG.7") | gadm("AFG.23")  # Drangiana
 HERAT = gadm("AFG.12")  # Aria
+PAKTHA = gadm("AFG.25") | gadm("AFG.26") | gadm("AFG.17")
 AFG_MARGIANA = gadm("AFG.2") | gadm("AFG.8")
 AFG_MERU = gadm("AFG.1")  # Badakhshan
 AFG_BACTRIA = (
@@ -1028,12 +1029,14 @@ AFG_BACTRIA = (
     | gadm("AFG.30")
 )
 AFG_MISC = gadm("AFG") - (
-    KAMBOJA | KANDAHAR | ZARANJ | HERAT | AFG_MARGIANA | AFG_BACTRIA | AFG_MERU
+    KAMBOJA | KANDAHAR | ZARANJ | HERAT | AFG_MARGIANA | AFG_BACTRIA | AFG_MERU | PAKTHA
 )
 NIGRAHARA = gadm("AFG.22") - ASVAYANA - TRYAKSYAYANA
 ROHITAGIRI = AFG_MISC
 KAMBOJA_EXT = KAMBOJA | AFG_MISC
 BALOCH = gadm("PAK.2") | gadm("IRN.26")  # gedrosia
+DAMANI = gadm("PAK.2.4.1")
+
 TJK_BACTRIA = gadm("TJK.3") | gadm("TJK.1") | gadm("TJK.5.7")  # Khatlon province
 TJK_SOGDIA_PROPER = gadm("TJK.4")
 TJK_MERU = gadm("TJK.2") | (gadm("TJK.5") - TJK_BACTRIA)  # Badakhshan
@@ -1053,6 +1056,7 @@ UZB_FERGHANA = gadm("UZB") - (UZB_BACTRIA | UZB_SOGDIA_PROPER | UZB_KHWAREZM)
 TKM_KHWAREZM = gadm("TKM.3") | gadm("TKM.6")
 TKM_MARGIANA = gadm("TKM") - TKM_KHWAREZM
 MARGIANA = TKM_MARGIANA | AFG_MARGIANA
+ANDHAKAVARTA = MARGIANA - gadm("TKM") # should ideally include Nisa as well but Turkmenistan admin level 3 data is missing
 BACTRIA = AFG_BACTRIA | TJK_BACTRIA | UZB_BACTRIA
 MERU = AFG_MERU | TJK_MERU
 SOGDIA_PROPER = UZB_SOGDIA_PROPER | TJK_SOGDIA_PROPER
@@ -1164,6 +1168,9 @@ LEVANT = (
 IRAN = gadm("IRN")
 IRANIC = IRAN | CENTRAL_ASIA_GREATER
 IRANIC_GREATER = IRANIC | TARIM
+HYRCANIA = gadm("IRN.9")
+PARTHIA = gadm("IRN.25") | gadm("IRN.21") | gadm("IRN.24")
+PERSIA = gadm("IRN.7")
 
 MEDITERRANEAN_EAST = (
     gadm("GRC")
