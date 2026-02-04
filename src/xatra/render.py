@@ -79,12 +79,10 @@ HTML_TEMPLATE = Template(
       #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; }
       #title-search-wrapper .leaflet-control-search { width: 100%; }
       #title-search-wrapper .leaflet-control-search input { width: 100%; box-sizing: border-box; }
-      .xatra-feature-list { margin-bottom: 8px; font-size: 12px; }
-      .xatra-feature-list-title { font-weight: bold; margin-bottom: 4px; color: #444; }
-      .xatra-feature-list-groups { margin: 0; padding-left: 14px; }
-      .xatra-feature-list-groups li { margin: 2px 0; list-style: none; position: relative; padding-left: 0; }
-      .xatra-feature-list-groups li::before { content: '•'; position: absolute; left: -10px; color: #666; }
-      .xatra-feature-list-note { color: #666; font-style: italic; }
+      /* Feature search dropdown: open upward so it is not hidden under the geocoder bar; ensure it is visible */
+      #title-search-wrapper .leaflet-control-search .search-tooltip { bottom: 100%; top: auto; margin-top: 0; margin-bottom: 4px; z-index: 1100; max-height: 200px; }
+      #title { overflow: visible; }
+      #title-search-wrapper { overflow: visible; }
       {{ css }}
     </style>
   </head>
@@ -2653,26 +2651,6 @@ HTML_TEMPLATE = Template(
         }
 
         if (featuresContainer && typeof L.Control.Search !== 'undefined' && searchableFeatures.length > 0) {
-          const typeOrder = ['Flag', 'Point', 'Path', 'River', 'Text'];
-          const typeLabels = { Flag: 'Flags', Point: 'Points', Path: 'Paths', River: 'Rivers', Text: 'Text labels' };
-          const byType = {};
-          for (const t of typeOrder) byType[t] = [];
-          for (const f of searchableFeatures) {
-            if (byType[f.type]) byType[f.type].push(f);
-          }
-          let listHtml = '<div class="xatra-feature-list"><div class="xatra-feature-list-title">Map features (' + searchableFeatures.length + ')</div><ul class="xatra-feature-list-groups">';
-          for (const t of typeOrder) {
-            const items = byType[t];
-            if (items.length === 0) continue;
-            listHtml += '<li><strong>' + typeLabels[t] + ':</strong> ';
-            listHtml += items.map(function(f) {
-              return f.note ? (f.label + ' <span class="xatra-feature-list-note">(' + f.note + ')</span>') : f.label;
-            }).join(', ');
-            listHtml += '</li>';
-          }
-          listHtml += '</ul></div>';
-          featuresContainer.insertAdjacentHTML('afterbegin', listHtml);
-
           const searchLayer = L.layerGroup();
           for (const f of searchableFeatures) {
             const m = L.circleMarker([f.lat, f.lng], { radius: 0, opacity: 0, fillOpacity: 0 });

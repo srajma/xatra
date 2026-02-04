@@ -284,7 +284,7 @@ print("Map exported to tests/map_pyplot.html")
 
 Two search boxes appear in the **TitleBox** (the draggable panel at the top-left):
 
-1. **Search map features** — Finds elements you drew on the map (flags, points, paths, rivers, text labels). The box shows a short list of features on the map; typing filters by **label** and **note** (e.g. searching “capital” will match a point whose note says “Capital of India”). Selecting a result pans the map to that feature.
+1. **Search map features** — Finds elements you drew on the map (flags, points, paths, rivers, text labels). Focus the box to see a dropdown of all features; typing filters by **label** and **note** (e.g. searching “capital” will match a point whose note says “Capital of India”). Selecting a result pans the map to that feature.
 2. **Search place** — Geocoder to find places worldwide (addresses, cities, etc.). By default uses **Nominatim** (OpenStreetMap); no API key needed. For higher usage or other providers, call `map.Geocoder(provider, api_key)` before `map.show()` — e.g. `map.Geocoder("mapbox", api_key="pk.xxx")` or `map.Geocoder("google", api_key="...")`. Supported providers: `nominatim`, `mapbox`, `google`, `photon`.
 
 ```python
