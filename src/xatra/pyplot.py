@@ -133,6 +133,11 @@ def TitleBox(html: str, period: Optional[List[int]] = None) -> None:
     get_current_map().TitleBox(html, period)
 
 
+def Geocoder(provider: str = "nominatim", api_key: Optional[str] = None) -> None:
+    """Configure the map geocoder (search for places worldwide) on the current map."""
+    get_current_map().Geocoder(provider, api_key)
+
+
 def CSS(css: str) -> None:
     """Add custom CSS styles to the current map."""
     get_current_map().CSS(css)

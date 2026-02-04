@@ -433,6 +433,8 @@ class Map:
         self._data_colormap: Optional[DataColormap] = None
         self._initial_zoom: Optional[int] = None
         self._initial_focus: Optional[Tuple[float, float]] = None
+        self._geocoder_provider: str = "nominatim"
+        self._geocoder_api_key: Optional[str] = None
         
         # Vassal system: track parent flags and their children color sequences
         self._parent_labels: set = set()  # Labels that are actual flags (not placeholders)
@@ -941,6 +943,26 @@ class Map:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
         self._title_boxes.append(TitleBoxEntry(html=html, period=period_tuple))
+
+    def Geocoder(self, provider: str = "nominatim", api_key: Optional[str] = None) -> None:
+        """Configure the map geocoder (search for places worldwide).
+        
+        The geocoder search box appears inside the TitleBox. By default uses
+        Nominatim (OpenStreetMap), which is free and requires no API key.
+        For production or higher usage, set a provider that accepts an API key.
+        
+        Args:
+            provider: One of "nominatim", "mapbox", "google", "photon", "here".
+                      Nominatim is the default and needs no key.
+            api_key: API key for the provider. Required for mapbox, google, here.
+                     Not used for nominatim or photon.
+            
+        Example:
+            >>> map.Geocoder()  # Use free Nominatim
+            >>> map.Geocoder("mapbox", api_key="pk.xxx")  # Use Mapbox with key
+        """
+        self._geocoder_provider = provider.lower()
+        self._geocoder_api_key = api_key
 
     def CSS(self, css: str) -> None:
         """Add custom CSS styles to the map.
@@ -2062,6 +2084,8 @@ class Map:
             "colormap_info": self._serialize_colormap_info(all_dataframe_values) if self._data_colormap is not None else None,
             "initial_focus": initial_focus,
             "initial_zoom": initial_zoom,
+            "geocoder_provider": self._geocoder_provider,
+            "geocoder_api_key": self._geocoder_api_key,
         }
 
     @time_debug("Show (export map)")

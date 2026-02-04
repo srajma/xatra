@@ -33,6 +33,8 @@ HTML_TEMPLATE = Template(
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search@4.0.0/dist/leaflet-search.min.css" />
     <style>
       html, body, #map { height: 100%; margin: 0; padding: 0; }
       #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
@@ -71,27 +73,28 @@ HTML_TEMPLATE = Template(
       .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
     .admin-river { stroke: #0066cc; stroke-width: 2; opacity: 0.8; }
       .data { stroke: #333; stroke-width: 1; }
+      #title-search-wrapper { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+      #title-search-wrapper .leaflet-control { margin: 0; }
+      #title-search-wrapper .leaflet-control-geocoder { width: 100%; }
+      #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; }
+      #title-search-wrapper .leaflet-control-search { width: 100%; }
+      #title-search-wrapper .leaflet-control-search input { width: 100%; box-sizing: border-box; }
       {{ css }}
     </style>
   </head>
   <body>
     <div id="map"></div>
     <div id="title">
-      <div id="coordinate-display">
-        <label>Coordinates: </label>
-        <span id="coordinates">Loading...</span>
-      </div>
-      <div id="layer-selector">
-        <label for="baseLayer">Base Layer:</label>
-        <select id="baseLayer"></select>
-      </div>
-      <div id="colormap"></div>
+      <div id="title-content"></div>
+      <div id="title-search-wrapper"><div id="search-features-container"></div><div id="search-geocoder-container"></div></div>
     </div>
     <div id="colormap-tooltip"></div>
     <div id="multi-tooltip"></div>
     <div id="controls"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
+    <script src="https://unpkg.com/leaflet-search@4.0.0/dist/leaflet-search.min.js"></script>
     <script>
       const payload = {{ payload | safe }};
       const initialFocus = payload.initial_focus || [22, 79];
@@ -2035,9 +2038,9 @@ HTML_TEMPLATE = Template(
 
       function renderTitleBoxes(year = null) {
         const titleBoxes = year !== null ? filterByPeriod(payload.title_boxes, year) : payload.title_boxes;
-        const titleDiv = document.getElementById('title');
+        const titleContent = document.getElementById('title-content');
         
-        // Create the content structure
+        // Create the content structure (search wrapper is outside title-content so it is not replaced)
         let content = '';
         
         // Add coordinate display first
@@ -2056,7 +2059,7 @@ HTML_TEMPLATE = Template(
           content += '<div id="colormap"></div>';
         }
         
-        titleDiv.innerHTML = content;
+        titleContent.innerHTML = content;
         
         // Re-setup the layer selector and colormap after updating HTML
         if (payload.base_options && payload.base_options.length > 0) {
@@ -2567,6 +2570,123 @@ HTML_TEMPLATE = Template(
         });
       }
 
+      function getCentroidFromCoords(coords, geoJsonOrder) {
+        if (!coords || coords.length === 0) return null;
+        let lat = 0, lng = 0;
+        for (let i = 0; i < coords.length; i++) {
+          const c = coords[i];
+          if (geoJsonOrder) {
+            lng += c[0];
+            lat += c[1];
+          } else {
+            lat += c[0];
+            lng += c[1];
+          }
+        }
+        return [lat / coords.length, lng / coords.length];
+      }
+
+      function getCentroidFromGeometry(geom) {
+        if (!geom || !geom.coordinates) return null;
+        const c = geom.coordinates;
+        if (geom.type === 'Point') return [c[1], c[0]];
+        if (geom.type === 'MultiPoint' || geom.type === 'LineString') {
+          return getCentroidFromCoords(c, true);
+        }
+        if (geom.type === 'MultiLineString') {
+          let all = [];
+          for (let i = 0; i < c.length; i++) all = all.concat(c[i]);
+          return getCentroidFromCoords(all, true);
+        }
+        if (geom.type === 'Polygon') {
+          return getCentroidFromCoords(c[0], true);
+        }
+        if (geom.type === 'MultiPolygon') {
+          return getCentroidFromCoords(c[0][0], true);
+        }
+        return null;
+      }
+
+      function setupSearch() {
+        const featuresContainer = document.getElementById('search-features-container');
+        const geocoderContainer = document.getElementById('search-geocoder-container');
+        if (!featuresContainer && !geocoderContainer) return;
+
+        const searchableFeatures = [];
+        const add = (label, lat, lng) => {
+          if (label && lat != null && lng != null) searchableFeatures.push({ label: String(label), lat, lng });
+        };
+
+        for (const p of payload.points || []) {
+          if (p.position) add(p.label, p.position[0], p.position[1]);
+        }
+        for (const t of payload.texts || []) {
+          if (t.position) add(t.label, t.position[0], t.position[1]);
+        }
+        for (const p of payload.paths || []) {
+          if (p.coords && p.coords.length) {
+            const cen = getCentroidFromCoords(p.coords, false);
+            if (cen) add(p.label, cen[0], cen[1]);
+          }
+        }
+        for (const r of payload.rivers || []) {
+          if (r.geometry) {
+            const cen = getCentroidFromGeometry(r.geometry);
+            if (cen) add(r.label, cen[0], cen[1]);
+          }
+        }
+        const flags = payload.flags && payload.flags.flags ? payload.flags.flags : (payload.flags && payload.flags.snapshots && payload.flags.snapshots[0] ? payload.flags.snapshots[0].flags : []);
+        for (const f of flags || []) {
+          if (f.geometry) {
+            const cen = getCentroidFromGeometry(f.geometry);
+            if (cen) add(f.label, cen[0], cen[1]);
+          }
+        }
+
+        if (featuresContainer && typeof L.Control.Search !== 'undefined' && searchableFeatures.length > 0) {
+          const searchLayer = L.layerGroup();
+          for (const f of searchableFeatures) {
+            const m = L.circleMarker([f.lat, f.lng], { radius: 0, opacity: 0, fillOpacity: 0 });
+            m.options.title = f.label;
+            searchLayer.addLayer(m);
+          }
+          const searchControl = new L.Control.Search({
+            layer: searchLayer,
+            propertyName: 'title',
+            textPlaceholder: 'Search map features…',
+            initial: false,
+            hideMarkerOnCollapse: true,
+            marker: false
+          });
+          searchControl.addTo(map);
+          const searchEl = searchControl.getContainer();
+          if (searchEl && searchEl.parentNode) searchEl.parentNode.removeChild(searchEl);
+          featuresContainer.appendChild(searchEl);
+        }
+
+        if (geocoderContainer && typeof L.Control !== 'undefined' && L.Control.Geocoder) {
+          let geocoderInstance;
+          const provider = (payload.geocoder_provider || 'nominatim').toLowerCase();
+          const apiKey = payload.geocoder_api_key || '';
+          if (provider === 'mapbox' && apiKey) {
+            geocoderInstance = L.Control.Geocoder.mapbox({ apiKey: apiKey });
+          } else if (provider === 'google' && apiKey) {
+            geocoderInstance = L.Control.Geocoder.google({ apiKey: apiKey });
+          } else if (provider === 'photon') {
+            geocoderInstance = L.Control.Geocoder.photon();
+          } else {
+            geocoderInstance = new L.Control.Geocoder.Nominatim();
+          }
+          const geocoderControl = L.Control.geocoder({
+            geocoder: geocoderInstance,
+            defaultMarkGeocode: true
+          }).addTo(map);
+          const geocoderEl = geocoderControl.getContainer();
+          if (geocoderEl && geocoderEl.parentNode) geocoderEl.parentNode.removeChild(geocoderEl);
+          geocoderContainer.appendChild(geocoderEl);
+        }
+      }
+
       function setupDragFunctionality() {
         const titleDiv = document.getElementById('title');
         let isDragging = false;
@@ -2852,6 +2972,7 @@ HTML_TEMPLATE = Template(
       }
       setupControls();
       setupDragFunctionality();
+      setupSearch();
     </script>
   </body>
   </html>
