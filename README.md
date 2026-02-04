@@ -296,7 +296,7 @@ map = Map()
 
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
-- **`Flag(label, territory, period=None, note=None, color=None, classes=None)`**: Add a flag (country/kingdom)
+- **`Flag(label, territory=None, period=None, note=None, color=None, classes=None, parent=None, children_color_seq=None, placeholder=False)`**: Add a flag (country/kingdom) with optional vassal relationship. Use `placeholder=True` to create a non-rendering parent for grouping.
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
@@ -587,6 +587,92 @@ map.Flag("Unknown", territory7, classes="unknown-class")  # Uses default colors
 ```
 
 Flag labels automatically use a darker, more opaque version of the flag color for better readability.
+
+### Vassals (Parent/Child Flags)
+
+Flags can be organized into parent-child hierarchies using the `parent` parameter. This is useful for:
+- **Administrative divisions**: States/provinces of a country
+- **Historical relationships**: Vassal states of an empire
+- **Grouping by category**: Nations belonging to the same religion or alliance
+
+```python
+import xatra
+from xatra.loaders import gadm
+
+map = xatra.Map()
+map.BaseOption("Esri.WorldTopoMap", default=True)
+
+# Example 1: Real parent with vassals
+# India is a real flag, states are its vassals
+map.Flag(label="India", value=gadm("IND"), note="Republic of India")
+map.Flag(label="Karnataka", value=gadm("IND.16"), parent="India")
+map.Flag(label="Tamil Nadu", value=gadm("IND.31"), parent="India")
+map.Flag(label="Maharashtra", value=gadm("IND.20"), parent="India")
+
+# Example 2: Placeholder parent for grouping by religion
+# "Hindu" is not a real flag - just a grouping category
+map.Flag(label="Vijayanagara", value=gadm("IND.2"), parent="Hindu")
+map.Flag(label="Chola", value=gadm("IND.31"), parent="Hindu")
+
+# "Muslim" is another placeholder for grouping
+map.Flag(label="Delhi Sultanate", value=gadm("IND.25"), parent="Muslim")
+map.Flag(label="Gujarat Sultanate", value=gadm("IND.11"), parent="Muslim")
+
+map.show()
+```
+
+**Behavior for Real Parents (parent is an actual Flag):**
+- Vassals get colors with **reduced saturation** (~70%) derived from the parent's color
+- Vassal labels use a **smaller font size** (11px vs 14px)
+- Vassals appear within a similar color range as their parent
+- Tooltip shows "Label (vassal of Parent) — Note"
+
+**Behavior for Placeholder Parents (parent is not an actual Flag):**
+- Vassals get colors from a **shared color sequence** (similar hues)
+- Label font sizes remain **normal** (no reduction)
+- Tooltip shows "Label (vassal of Parent) — Note"
+- Useful for grouping flags by religion, alliance, historical period, etc.
+
+**Custom Children Color Sequence:**
+
+You can customize the color sequence used for vassals of a specific flag:
+
+```python
+from xatra.colorseq import LinearColorSequence, Color
+
+# Create a custom color sequence for India's states
+custom_seq = LinearColorSequence(
+    colors=[Color.hex("#ff9933")],  # Saffron base
+    step=Color.hsl(0.03, 0.0, 0.0)  # Small hue variations
+)
+
+map.Flag(label="India", value=gadm("IND"), children_color_seq=custom_seq)
+map.Flag(label="Karnataka", value=gadm("IND.16"), parent="India")  # Uses custom_seq
+```
+
+**Placeholder Parents:**
+
+Use `placeholder=True` to create a non-rendering parent flag that only serves to define the color family for its children:
+
+```python
+# Create a placeholder for Hindu empires (not rendered, just defines color family)
+map.Flag(label="Hindu", placeholder=True, color="#ff9933")  # Saffron base color
+map.Flag(label="Vijayanagara", value=gadm("IND.2"), parent="Hindu")
+map.Flag(label="Chola", value=gadm("IND.31"), parent="Hindu")
+
+# Placeholder with custom color sequence
+from xatra.colorseq import LinearColorSequence, Color
+green_seq = LinearColorSequence(colors=[Color.hex("#00ff00")], step=Color.hsl(0.03, 0.0, 0.0))
+map.Flag(label="Muslim", placeholder=True, children_color_seq=green_seq)
+map.Flag(label="Delhi Sultanate", value=gadm("IND.25"), parent="Muslim")
+map.Flag(label="Gujarat Sultanate", value=gadm("IND.11"), parent="Muslim")
+```
+
+Placeholder flags:
+- Are not rendered on the map
+- Define a base color or color sequence for their children
+- Children get normal font sizes (no reduction, since parent is not a "real" flag)
+- Tooltips still show "Label (vassal of Parent)"
 
 ### Data Visualization with DataFrames
 
@@ -1565,8 +1651,9 @@ The timing chart shows:
 - [x] admin map
 
 ## Features
-- [ ] Vassals. A Flag can be a "vassal/province" of another Flag if it has an attribute "parent", e.g. Flag(name="Karnataka", parent="India") (where "India" is the name of another Flag). Doing so should, in particular, give the vassals a separate color sequence so that they are all similar colors---with a fixed lower saturation value than their parent---within the range of their parent (the exact color sequence can be adjusted within the parent's attributes children_color_seq=...), and the size of their labels will also be less and the tooltips will specify what they are a vassal of. It should also be possible for the name of the parent to be a placeholder---we'd do this to e.g. color nations belonging to the same religion with the same color. The saturation and font sizes for such nations (that are vassals of placeholder names not belonging to any actual Flag) will not be reduced.
+- [x] Vassals. A Flag can be a "vassal/province" of another Flag if it has an attribute "parent", e.g. Flag(name="Karnataka", parent="India") (where "India" is the name of another Flag). Doing so should, in particular, give the vassals a separate color sequence so that they are all similar colors---with a fixed lower saturation value than their parent---within the range of their parent (the exact color sequence can be adjusted within the parent's attributes children_color_seq=...), and the size of their labels will also be less and the tooltips will specify what they are a vassal of. It should also be possible for the name of the parent to be a placeholder---we'd do this to e.g. color nations belonging to the same religion with the same color. The saturation and font sizes for such nations (that are vassals of placeholder names not belonging to any actual Flag) will not be reduced.
 - [ ] Custom polygon territory --- just like how we can add paths, but these can be treated as actual shapes that can be treated as territories (i.e. we can take unions, subtractions and intersections of them with any other territory)
+- [ ] search feature: search elements, and search map in general
 - [x] Orient flag labels in direction of flag
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels

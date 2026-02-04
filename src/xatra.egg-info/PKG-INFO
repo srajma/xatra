@@ -1571,7 +1571,7 @@ The timing chart shows:
 
 ## TODO
 
-Kanging
+## Usage/examples
 - [x] copy maps from old xatra (colonies and hsr remaining)
 - [x] redirect old map links
 - [ ] maps of north-west: Panini, Puranas and Greek
@@ -1579,9 +1579,9 @@ Kanging
 - [x] GDP per capita map
 - [x] admin map
 
-Features
-- [ ] Vassals
-- [ ] Custom polygon territory
+## Features
+- [ ] Vassals. A Flag can be a "vassal/province" of another Flag if it has an attribute "parent", e.g. Flag(name="Karnataka", parent="India") (where "India" is the name of another Flag). Doing so should, in particular, give the vassals a separate color sequence so that they are all similar colors---with a fixed lower saturation value than their parent---within the range of their parent (the exact color sequence can be adjusted within the parent's attributes children_color_seq=...), and the size of their labels will also be less and the tooltips will specify what they are a vassal of. It should also be possible for the name of the parent to be a placeholder---we'd do this to e.g. color nations belonging to the same religion with the same color. The saturation and font sizes for such nations (that are vassals of placeholder names not belonging to any actual Flag) will not be reduced.
+- [ ] Custom polygon territory --- just like how we can add paths, but these can be treated as actual shapes that can be treated as territories (i.e. we can take unions, subtractions and intersections of them with any other territory)
 - [x] Orient flag labels in direction of flag
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels
@@ -1600,19 +1600,22 @@ Features
 - [ ] MAYBE: calculate and keep simplified geometries (check what the main source of slowness is) PROBLEM: boundaries between different geometries no longer fit perfectly -- use mapshaper
 - [ ] MAYBE: loading geojson from file instead of storing it in html; i.e. with a server
 
-Dev
+## Dev
 - [x] Get it in a publishable state
 - [x] why not just upload my cache. Need to change the HF repository to have a data and a cache folder
 - [x] Publish it
 - [x] time debugging
 
-Interactive platform
-- [ ] DSL
-- [ ] type in DSL panel, hit render => gets transmitted to server and parsed into Python, turned into geojson and re-rendered
-- [ ] while typing in DSL panel: search, select from AdminMap, preview territories (matchers/gadms/...) on AdminMap
-- [ ] ideally we want a crud type of thing for real-time updating
+## Interactive platform
+We want a GUI-based interactive version of this platform that allows non-code users to build xatra maps interactively, i.e. by adding and editing features to a map through a graphical user interface in a browser and displaying/previewing the resulting map right then and there for the user.
 
-Stylistic changes
+
+Additional features:
+- also show an Admin Map in a separate tab; search, select from it and preview territories (matchers/gadms/...) on it
+- direct text/code input---maybe a slick code input UI with proper autocomplet and everything.
+- crud type thing to more efficiently store and update map instead of redrawing everything each time
+
+## Stylistic changes
 - [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [x] custom IDs and classes for styling
@@ -1626,10 +1629,10 @@ Stylistic changes
 - [x] slider play button plus positions of years, start and end year
 - [x] watermark
 
-Libraries
+## Libraries
 - [x] copy matchers from old xatra
 
-Bugfixes
+## Bugfixes
 - [x] Better documentation for icons
 - [x] classes for Points that affect their labels
 - [x] center map at center; and allow setting zoom
