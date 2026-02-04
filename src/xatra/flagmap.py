@@ -737,6 +737,16 @@ class Map:
             self._parent_children_idx[label] = 0
             self._parent_base_colors[label] = base_color
         
+        # Warn if a non-placeholder flag has no territory
+        if not placeholder and value is None:
+            import warnings
+            warnings.warn(
+                f"Flag '{label}' has no territory (value=None). It will not be rendered on the map. "
+                f"Use placeholder=True if this is intentional for a grouping parent.",
+                UserWarning,
+                stacklevel=2
+            )
+        
         self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color, classes=classes, parent=parent, children_color_seq=children_color_seq, placeholder=placeholder))
     
     def _get_vassal_color(self, label: str, parent: str) -> str:
