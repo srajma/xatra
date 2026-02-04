@@ -54,7 +54,7 @@ if not is_data_installed():
 
 from .flagmap import Map
 from .territory import Territory
-from .loaders import gadm, naturalearth, overpass
+from .loaders import gadm, naturalearth, overpass, polygon
 from .icon import Icon, ShapeType
 from . import debug_utils
 from .geometry_cache import clear_geometry_cache, get_geometry_cache_stats
@@ -193,6 +193,7 @@ __all__ = [
     "gadm",
     "naturalearth",
     "overpass",
+    "polygon",
     # Pyplot-style functions
     "get_current_map",
     "set_current_map",

@@ -134,6 +134,46 @@ def gadm(key: str, find_in_gadm: Optional[List[str]] = None):
     return Territory.from_gadm(key, find_in_gadm)
 
 
+def polygon(coords: List[List[float]], holes: Optional[List[List[List[float]]]] = None):
+    """Create a custom polygon territory from coordinates.
+    
+    This allows creating arbitrary polygon shapes that can be used in
+    set algebra operations (union |, difference -, intersection &) with other
+    territories like GADM regions.
+    
+    Args:
+        coords: List of [latitude, longitude] coordinate pairs defining the 
+               exterior ring of the polygon. The polygon will be automatically
+               closed if the first and last coordinates are not the same.
+        holes: Optional list of coordinate rings defining holes in the polygon.
+              Each hole is a list of [latitude, longitude] pairs.
+        
+    Returns:
+        Territory object
+        
+    Example:
+        >>> from xatra.loaders import polygon, gadm
+        >>> 
+        >>> # Simple triangle territory
+        >>> triangle = polygon([[28, 77], [29, 78], [28, 79]])
+        >>> 
+        >>> # Use in set algebra with GADM regions
+        >>> custom_region = gadm("IND.31") | polygon([[10, 75], [12, 76], [10, 77]])
+        >>> india_clipped = gadm("IND") & polygon([[20, 70], [30, 70], [30, 90], [20, 90]])
+        >>> 
+        >>> # Rectangle covering a region
+        >>> bounding_box = polygon([[25, 75], [25, 85], [15, 85], [15, 75]])
+        >>> 
+        >>> # Polygon with a hole (e.g., a lake)
+        >>> region_with_hole = polygon(
+        ...     [[20, 75], [25, 75], [25, 80], [20, 80]],
+        ...     holes=[[[21, 76], [24, 76], [24, 79], [21, 79]]]
+        ... )
+    """
+    from .territory import Territory
+    return Territory.from_polygon(coords, holes)
+
+
 @time_debug("Load Natural Earth feature")
 def naturalearth(ne_id: str) -> Dict[str, Any]:
     """Return GeoJSON Feature for a Natural Earth feature id from a monolithic file.

@@ -60,3 +60,4 @@ src/xatra/icons/downloaded/temple-pagoda.svg
 tests/test_adminrivers_labels.py
 tests/test_geometric_icons.py
 tests/test_icon_size_anchor.py
+tests/test_polygon.py

@@ -520,17 +520,68 @@ Represents geographical regions with set algebra operations.
 - **`from_geojson(geojson_obj)`**: Create from GeoJSON object
 - **`from_gadm(key)`**: Create from GADM administrative boundary
 - **`from_naturalearth(ne_id)`**: Create from Natural Earth dataset
+- **`from_polygon(coords, holes=None)`**: Create from custom polygon coordinates
 
 #### Operations
 
 - **`territory1 | territory2`**: Union of two territories
 - **`territory1 - territory2`**: Difference of two territories
+- **`territory1 & territory2`**: Intersection of two territories
 
 ### Data Loaders
 
 - **`gadm(key)`**: Load GADM administrative boundary (e.g., "IND", "PAK")
 - **`naturalearth(ne_id)`**: Load Natural Earth feature by ID
 - **`overpass(osm_id)`**: Load Overpass API data by OSM ID
+- **`polygon(coords, holes=None)`**: Create custom polygon territory from coordinates
+
+### Custom Polygon Territories
+
+The `polygon()` loader creates custom polygon territories that can be combined with other territories using set algebra operations. This is useful for defining arbitrary regions that don't correspond to existing administrative boundaries.
+
+```python
+from xatra.loaders import polygon, gadm
+
+# Create a simple rectangular territory
+rectangle = polygon([
+    [25, 75],  # [latitude, longitude]
+    [25, 85],
+    [15, 85],
+    [15, 75]
+])
+
+# Use set algebra with GADM regions
+# Union: combine custom polygon with existing territory
+extended_india = gadm("IND") | polygon([[30, 70], [35, 70], [35, 80], [30, 80]])
+
+# Intersection: clip a territory to a bounding box
+south_india = gadm("IND") & polygon([[8, 72], [8, 88], [20, 88], [20, 72]])
+
+# Difference: remove custom area from territory
+india_without_region = gadm("IND") - polygon([[25, 75], [25, 85], [30, 85], [30, 75]])
+
+# Create polygon with holes (e.g., representing a lake or exclusion zone)
+region_with_hole = polygon(
+    [[20, 75], [25, 75], [25, 80], [20, 80]],  # Exterior ring
+    holes=[[[21, 76], [24, 76], [24, 79], [21, 79]]]  # Interior hole
+)
+
+# Use in a map
+map = xatra.Map()
+map.Flag("Custom Region", extended_india)
+map.Flag("Clipped Region", south_india, color="#ff0000")
+map.show()
+```
+
+**Coordinate Format:**
+- Coordinates are specified as `[latitude, longitude]` pairs (same as `Path()` and `Point()`)
+- The polygon is automatically closed if the first and last coordinates differ
+- Interior holes are specified as a list of coordinate rings
+
+**Set Algebra Operations:**
+- `|` (union): Combines two territories
+- `-` (difference): Subtracts one territory from another
+- `&` (intersection): Returns the overlapping area of two territories
 
 ### Color Sequences
 

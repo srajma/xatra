@@ -14,10 +14,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from shapely.geometry import shape
+from shapely.geometry import shape, Polygon, mapping
 from shapely.ops import unary_union
 
 from .loaders import load_gadm_like, load_naturalearth_like
+from typing import List, Tuple
 from .debug_utils import time_debug
 from .geometry_cache import get_global_cache
 
@@ -106,6 +107,68 @@ class Territory:
             return _geojson_to_geometry(obj)
         return Territory(_geometry_provider=provider, strrepr=f'naturalearth("{ne_id}")')
 
+    @staticmethod
+    def from_polygon(coords: List[List[float]], holes: Optional[List[List[List[float]]]] = None) -> "Territory":
+        """Create Territory from a custom polygon defined by coordinates.
+        
+        This allows creating arbitrary polygon shapes that can be used in
+        set algebra operations (union, difference, intersection) with other
+        territories like GADM regions.
+        
+        Args:
+            coords: List of [latitude, longitude] coordinate pairs defining the 
+                   exterior ring of the polygon. The polygon will be automatically
+                   closed if the first and last coordinates are not the same.
+            holes: Optional list of coordinate rings defining holes in the polygon.
+                  Each hole is a list of [latitude, longitude] pairs.
+            
+        Returns:
+            Territory instance
+            
+        Example:
+            >>> # Simple triangle territory
+            >>> triangle = Territory.from_polygon([[28, 77], [29, 78], [28, 79]])
+            >>> 
+            >>> # Use in set algebra with GADM regions
+            >>> custom_region = gadm("IND.31") | Territory.from_polygon([[10, 75], [12, 76], [10, 77]])
+            >>> 
+            >>> # Polygon with a hole
+            >>> donut = Territory.from_polygon(
+            ...     [[20, 75], [25, 75], [25, 80], [20, 80]],
+            ...     holes=[[[21, 76], [24, 76], [24, 79], [21, 79]]]
+            ... )
+        """
+        # Convert from [lat, lon] to [lon, lat] for GeoJSON/Shapely (which uses lon, lat order)
+        exterior = [(float(lon), float(lat)) for lat, lon in coords]
+        
+        # Ensure the polygon is closed
+        if exterior[0] != exterior[-1]:
+            exterior.append(exterior[0])
+        
+        # Process holes if provided
+        interior_rings = None
+        if holes:
+            interior_rings = []
+            for hole in holes:
+                interior = [(float(lon), float(lat)) for lat, lon in hole]
+                # Ensure each hole is closed
+                if interior[0] != interior[-1]:
+                    interior.append(interior[0])
+                interior_rings.append(interior)
+        
+        # Create string representation for caching
+        coords_str = str(coords)
+        holes_str = str(holes) if holes else ""
+        strrepr = f'polygon({coords_str}{", holes=" + holes_str if holes else ""})'
+        
+        def provider():
+            if interior_rings:
+                return Polygon(exterior, interior_rings)
+            else:
+                return Polygon(exterior)
+        
+        return Territory(_geometry_provider=provider, strrepr=strrepr)
+
     @time_debug("Convert territory to geometry")
     def to_geometry(self):
         """Get the Shapely geometry for this territory.
@@ -179,6 +242,23 @@ class Territory:
                 return a
             return a.difference(b)
         return Territory(_geometry_provider=provider, strrepr=f'({self.strrepr} - {other.strrepr})')
+
+    def __and__(self, other: "Territory") -> "Territory":
+        """Intersection of two territories.
+        
+        Args:
+            other: Another Territory object
+            
+        Returns:
+            New Territory representing the intersection
+        """
+        def provider():
+            a = self.to_geometry()
+            b = other.to_geometry()
+            if a is None or b is None:
+                return None
+            return a.intersection(b)
+        return Territory(_geometry_provider=provider, strrepr=f'({self.strrepr} & {other.strrepr})')
 
     @staticmethod
     def union_territories(territories: List["Territory"]) -> "Territory":
