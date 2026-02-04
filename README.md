@@ -280,6 +280,21 @@ xatra.show(out_json="tests/map_pyplot.json", out_html="tests/map_pyplot.html")
 print("Map exported to tests/map_pyplot.html")
 ```
 
+## Search
+
+Two search boxes appear in the **TitleBox** (the draggable panel at the top-left):
+
+1. **Search map features** — Finds elements you drew on the map (flags, points, paths, rivers, text labels). The box shows a short list of features on the map; typing filters by **label** and **note** (e.g. searching “capital” will match a point whose note says “Capital of India”). Selecting a result pans the map to that feature.
+2. **Search place** — Geocoder to find places worldwide (addresses, cities, etc.). By default uses **Nominatim** (OpenStreetMap); no API key needed. For higher usage or other providers, call `map.Geocoder(provider, api_key)` before `map.show()` — e.g. `map.Geocoder("mapbox", api_key="pk.xxx")` or `map.Geocoder("google", api_key="...")`. Supported providers: `nominatim`, `mapbox`, `google`, `photon`.
+
+```python
+map = xatra.Map()
+# … add flags, points, etc. …
+map.Geocoder()   # optional: use Nominatim (default)
+# map.Geocoder("mapbox", api_key="pk.xxx")
+map.show()
+```
+
 ## API Reference
 
 ### Map
@@ -305,6 +320,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`Point(label, position, note=None, period=None, icon=None, show_label=False, hover_radius=20, classes=None)`**: Add a point of interest with optional tooltip note, custom icon, label display, customizable hover detection radius, and CSS classes
 - **`Text(label, position, note=None, classes=None, period=None)`**: Add a text label with optional tooltip note
 - **`TitleBox(html, period=None)`**: Add a title box with HTML content
+- **`Geocoder(provider="nominatim", api_key=None)`**: Set the place-search (geocoder) provider. Use `nominatim` (default), `mapbox`, `google`, or `photon`. API key required for mapbox/google.
 
 ##### Styling and Configuration
 
@@ -342,6 +358,7 @@ All Map methods are available as top-level functions that operate on the current
 - **`xatra.Point(...)`**: Add a point to the current map
 - **`xatra.Text(...)`**: Add a text label to the current map
 - **`xatra.TitleBox(...)`**: Add a title box to the current map
+- **`xatra.Geocoder(...)`**: Set geocoder provider for the current map
 - **`xatra.Admin(...)`**: Add administrative regions to the current map
 - **`xatra.AdminRivers(...)`**: Add rivers to the current map
 - **`xatra.Dataframe(...)`**: Add DataFrame data to the current map
@@ -1704,7 +1721,7 @@ The timing chart shows:
 ## Features
 - [x] Vassals. A Flag can be a "vassal/province" of another Flag if it has an attribute "parent", e.g. Flag(name="Karnataka", parent="India") (where "India" is the name of another Flag). Doing so should, in particular, give the vassals a separate color sequence so that they are all similar colors---with a fixed lower saturation value than their parent---within the range of their parent (the exact color sequence can be adjusted within the parent's attributes children_color_seq=...), and the size of their labels will also be less and the tooltips will specify what they are a vassal of. It should also be possible for the name of the parent to be a placeholder---we'd do this to e.g. color nations belonging to the same religion with the same color. The saturation and font sizes for such nations (that are vassals of placeholder names not belonging to any actual Flag) will not be reduced.
 - [x] Custom polygon territory --- just like how we can add paths, but these can be treated as actual shapes that can be treated as territories (i.e. we can take unions, subtractions and intersections of them with any other territory)
-- [ ] search feature: search elements, and search map in general
+- [x] search feature: search elements (feature search + geocoder in TitleBox)
 - [x] Orient flag labels in direction of flag
 - [x] option for different point markers besides pin
 - [x] option for point labels, path, river labels

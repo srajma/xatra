@@ -79,6 +79,12 @@ HTML_TEMPLATE = Template(
       #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; }
       #title-search-wrapper .leaflet-control-search { width: 100%; }
       #title-search-wrapper .leaflet-control-search input { width: 100%; box-sizing: border-box; }
+      .xatra-feature-list { margin-bottom: 8px; font-size: 12px; }
+      .xatra-feature-list-title { font-weight: bold; margin-bottom: 4px; color: #444; }
+      .xatra-feature-list-groups { margin: 0; padding-left: 14px; }
+      .xatra-feature-list-groups li { margin: 2px 0; list-style: none; position: relative; padding-left: 0; }
+      .xatra-feature-list-groups li::before { content: '•'; position: absolute; left: -10px; color: #666; }
+      .xatra-feature-list-note { color: #666; font-style: italic; }
       {{ css }}
     </style>
   </head>
@@ -2613,47 +2619,70 @@ HTML_TEMPLATE = Template(
         if (!featuresContainer && !geocoderContainer) return;
 
         const searchableFeatures = [];
-        const add = (label, lat, lng) => {
-          if (label && lat != null && lng != null) searchableFeatures.push({ label: String(label), lat, lng });
+        const add = (label, lat, lng, type, note) => {
+          if (label && lat != null && lng != null) {
+            const searchText = note ? (label + ' — ' + note) : label;
+            searchableFeatures.push({ label: String(label), lat, lng, type: type || 'Feature', note: note || '', searchText });
+          }
         };
 
         for (const p of payload.points || []) {
-          if (p.position) add(p.label, p.position[0], p.position[1]);
+          if (p.position) add(p.label, p.position[0], p.position[1], 'Point', p.note);
         }
         for (const t of payload.texts || []) {
-          if (t.position) add(t.label, t.position[0], t.position[1]);
+          if (t.position) add(t.label, t.position[0], t.position[1], 'Text', t.note);
         }
         for (const p of payload.paths || []) {
           if (p.coords && p.coords.length) {
             const cen = getCentroidFromCoords(p.coords, false);
-            if (cen) add(p.label, cen[0], cen[1]);
+            if (cen) add(p.label, cen[0], cen[1], 'Path', p.note);
           }
         }
         for (const r of payload.rivers || []) {
           if (r.geometry) {
             const cen = getCentroidFromGeometry(r.geometry);
-            if (cen) add(r.label, cen[0], cen[1]);
+            if (cen) add(r.label, cen[0], cen[1], 'River', r.note);
           }
         }
         const flags = payload.flags && payload.flags.flags ? payload.flags.flags : (payload.flags && payload.flags.snapshots && payload.flags.snapshots[0] ? payload.flags.snapshots[0].flags : []);
         for (const f of flags || []) {
           if (f.geometry) {
             const cen = getCentroidFromGeometry(f.geometry);
-            if (cen) add(f.label, cen[0], cen[1]);
+            if (cen) add(f.label, cen[0], cen[1], 'Flag', f.note);
           }
         }
 
         if (featuresContainer && typeof L.Control.Search !== 'undefined' && searchableFeatures.length > 0) {
+          const typeOrder = ['Flag', 'Point', 'Path', 'River', 'Text'];
+          const typeLabels = { Flag: 'Flags', Point: 'Points', Path: 'Paths', River: 'Rivers', Text: 'Text labels' };
+          const byType = {};
+          for (const t of typeOrder) byType[t] = [];
+          for (const f of searchableFeatures) {
+            if (byType[f.type]) byType[f.type].push(f);
+          }
+          let listHtml = '<div class="xatra-feature-list"><div class="xatra-feature-list-title">Map features (' + searchableFeatures.length + ')</div><ul class="xatra-feature-list-groups">';
+          for (const t of typeOrder) {
+            const items = byType[t];
+            if (items.length === 0) continue;
+            listHtml += '<li><strong>' + typeLabels[t] + ':</strong> ';
+            listHtml += items.map(function(f) {
+              return f.note ? (f.label + ' <span class="xatra-feature-list-note">(' + f.note + ')</span>') : f.label;
+            }).join(', ');
+            listHtml += '</li>';
+          }
+          listHtml += '</ul></div>';
+          featuresContainer.insertAdjacentHTML('afterbegin', listHtml);
+
           const searchLayer = L.layerGroup();
           for (const f of searchableFeatures) {
             const m = L.circleMarker([f.lat, f.lng], { radius: 0, opacity: 0, fillOpacity: 0 });
-            m.options.title = f.label;
+            m.options.title = f.searchText;
             searchLayer.addLayer(m);
           }
           const searchControl = new L.Control.Search({
             layer: searchLayer,
             propertyName: 'title',
-            textPlaceholder: 'Search map features…',
+            textPlaceholder: 'Search by name or note…',
             initial: false,
             hideMarkerOnCollapse: true,
             marker: false
