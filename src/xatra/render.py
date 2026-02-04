@@ -73,15 +73,26 @@ HTML_TEMPLATE = Template(
       .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
     .admin-river { stroke: #0066cc; stroke-width: 2; opacity: 0.8; }
       .data { stroke: #333; stroke-width: 1; }
-      #title-search-wrapper { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+      #title-search-wrapper { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
       #title-search-wrapper .leaflet-control { margin: 0; }
-      #title-search-wrapper .leaflet-control-geocoder { width: 100%; }
+      .search-block { display: flex; flex-direction: column; gap: 4px; max-width: 100%; }
+      .search-block-label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.03em; }
+      /* Feature search: single row, input + button inline, don't overflow */
+      #search-features-container { max-width: 100%; min-width: 0; }
+      #search-features-container .leaflet-control-search { display: flex !important; flex-direction: row !important; align-items: stretch; width: 100% !important; max-width: 100%; box-sizing: border-box; }
+      #search-features-container .leaflet-control-search .search-input { flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; height: 28px !important; margin: 3px 0 3px 3px !important; box-sizing: border-box !important; }
+      #search-features-container .leaflet-control-search .search-button { flex: 0 0 32px !important; width: 32px !important; height: 28px !important; margin: 3px 3px 3px 0 !important; }
+      #search-features-container .leaflet-control-search .search-cancel { right: 36px !important; margin: 0 !important; height: 28px !important; }
+      #search-features-container .leaflet-control-search .search-tooltip { z-index: 1100; max-height: 200px; left: 0; right: 0; width: 100% !important; min-width: 0; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+      #search-features-container .leaflet-control-search .search-tooltip ul { list-style: none; margin: 0; padding: 2px 0; }
+      #search-features-container .leaflet-control-search .search-tip { margin: 0; padding: 6px 10px; border-radius: 0; background: #fff; border: none; border-bottom: 1px solid #eee; font-size: 13px; }
+      #search-features-container .leaflet-control-search .search-tip:last-child { border-bottom: none; }
+      #search-features-container .leaflet-control-search .search-tip:hover,
+      #search-features-container .leaflet-control-search .search-tip-select { background: #f0f4ff; }
+      /* Map search (geocoder) */
+      #search-geocoder-container { z-index: 400; max-width: 100%; min-width: 0; }
+      #title-search-wrapper .leaflet-control-geocoder { width: 100%; max-width: 100%; }
       #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; }
-      #title-search-wrapper .leaflet-control-search { width: 100%; }
-      #title-search-wrapper .leaflet-control-search input { width: 100%; box-sizing: border-box; }
-      /* Feature search dropdown: higher z-index so it appears above the geocoder bar when it opens down */
-      #title-search-wrapper .leaflet-control-search .search-tooltip { z-index: 1100; max-height: 200px; }
-      #search-geocoder-container { z-index: 400; }
       {{ css }}
     </style>
   </head>
@@ -89,7 +100,7 @@ HTML_TEMPLATE = Template(
     <div id="map"></div>
     <div id="title">
       <div id="title-content"></div>
-      <div id="title-search-wrapper"><div id="search-features-container"></div><div id="search-geocoder-container"></div></div>
+      <div id="title-search-wrapper"><div class="search-block"><label class="search-block-label">Feature search</label><div id="search-features-container"></div></div><div class="search-block"><label class="search-block-label">Map search</label><div id="search-geocoder-container"></div></div></div>
     </div>
     <div id="colormap-tooltip"></div>
     <div id="multi-tooltip"></div>
