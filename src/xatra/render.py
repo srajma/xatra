@@ -79,10 +79,9 @@ HTML_TEMPLATE = Template(
       #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; }
       #title-search-wrapper .leaflet-control-search { width: 100%; }
       #title-search-wrapper .leaflet-control-search input { width: 100%; box-sizing: border-box; }
-      /* Feature search dropdown: open upward so it is not hidden under the geocoder bar; ensure it is visible */
-      #title-search-wrapper .leaflet-control-search .search-tooltip { bottom: 100%; top: auto; margin-top: 0; margin-bottom: 4px; z-index: 1100; max-height: 200px; }
-      #title { overflow: visible; }
-      #title-search-wrapper { overflow: visible; }
+      /* Feature search dropdown: higher z-index so it appears above the geocoder bar when it opens down */
+      #title-search-wrapper .leaflet-control-search .search-tooltip { z-index: 1100; max-height: 200px; }
+      #search-geocoder-container { z-index: 400; }
       {{ css }}
     </style>
   </head>
