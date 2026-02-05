@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 from .territory import Territory
-from .render import export_html
+from .render import export_html, export_html_string
 from .paxmax import paxmax_aggregate
 from .colorseq import ColorSequence, LinearColorSequence
 from .debug_utils import time_debug
@@ -2088,14 +2088,28 @@ class Map:
             "geocoder_api_key": self._geocoder_api_key,
         }
 
+    def to_html_string(self) -> str:
+        """Export the map to an HTML string for embedding.
+
+        Returns:
+            HTML string containing the complete interactive map.
+
+        Example:
+            >>> html = map.to_html_string()
+            >>> # Use in iframe or embed directly
+        """
+        self.TitleBox("<i>made with <a href='https://github.com/srajma/xatra'>xatra</a></i>")
+        payload = self._export_json()
+        return export_html_string(payload)
+
     @time_debug("Show (export map)")
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
         """Export the map to JSON and HTML files.
-        
+
         Args:
             out_json: Output path for JSON data file
             out_html: Output path for HTML visualization file
-            
+
         Example:
             >>> map.show("my_map.json", "my_map.html")
         """

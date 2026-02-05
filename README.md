@@ -1747,11 +1747,22 @@ The timing chart shows:
 - [x] time debugging
 
 ## Interactive platform
-We want a GUI-based interactive version of this platform that allows non-code users to build xatra maps interactively, i.e. by adding and editing features to a map through a graphical user interface in a browser and displaying/previewing the resulting map right then and there for the user.
 
+Xatra Studio is a GUI-based interactive platform that allows you to build maps interactively in your browser.
+
+### How to start Xatra Studio
+
+1. Ensure you have `uv` and `npm` installed.
+2. Run the startup script:
+   ```bash
+   ./start_gui.sh
+   ```
+3. Open your browser to [http://localhost:5188](http://localhost:5188).
+
+Xatra Studio provides a **Builder** interface for form-based map creation and a **Code** interface for direct Python API access with live preview.
 
 Additional features:
-- also show an Admin Map in a separate tab; search, select from it and preview territories (matchers/gadms/...) on it
+- show an Admin Map in a separate tab; search, select from it and preview territories (matchers/gadms/...) on it
 - direct text/code input---maybe a slick code input UI with proper autocomplet and everything.
 - crud type thing to more efficiently store and update map instead of redrawing everything each time
 

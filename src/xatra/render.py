@@ -2997,17 +2997,33 @@ HTML_TEMPLATE = Template(
 )
 
 
+def export_html_string(payload: Dict[str, Any]) -> str:
+    """Export map data to HTML string for embedding.
+
+    Args:
+        payload: Map data dictionary containing flags, rivers, paths, etc.
+
+    Returns:
+        HTML string containing the complete interactive map.
+
+    Example:
+        >>> html = export_html_string(map_data)
+        >>> # Use in iframe or embed directly
+    """
+    return HTML_TEMPLATE.render(payload=json.dumps(payload, ensure_ascii=False), css=payload.get("css", ""))
+
+
 @time_debug("Export to HTML")
 def export_html(payload: Dict[str, Any], out_html: str) -> None:
     """Export map data to an interactive HTML file.
-    
+
     Args:
         payload: Map data dictionary containing flags, rivers, paths, etc.
         out_html: Output path for the HTML file
-        
+
     Example:
         >>> export_html(map_data, "my_map.html")
     """
-    html = HTML_TEMPLATE.render(payload=json.dumps(payload, ensure_ascii=False), css=payload.get("css", ""))
+    html = export_html_string(payload)
     with open(out_html, "w", encoding="utf-8") as f:
         f.write(html)
