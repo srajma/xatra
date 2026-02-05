@@ -1746,26 +1746,6 @@ The timing chart shows:
 - [x] Publish it
 - [x] time debugging
 
-## Interactive platform
-
-Xatra Studio is a GUI-based interactive platform that allows you to build maps interactively in your browser.
-
-### How to start Xatra Studio
-
-1. Ensure you have `uv` and `npm` installed.
-2. Run the startup script:
-   ```bash
-   ./start_gui.sh
-   ```
-3. Open your browser to [http://localhost:5188](http://localhost:5188).
-
-Xatra Studio provides a **Builder** interface for form-based map creation and a **Code** interface for direct Python API access with live preview.
-
-Additional features:
-- show an Admin Map in a separate tab; search, select from it and preview territories (matchers/gadms/...) on it
-- direct text/code input---maybe a slick code input UI with proper autocomplet and everything.
-- crud type thing to more efficiently store and update map instead of redrawing everything each time
-
 ## Stylistic changes
 - [x] The slider seems to be hidden under the map: I can move it around by clicking where it should be, but can only actually see it visually when I'm zooming out or am fully zoomed out (because that's when the blank space behind the map appears before the tiles load to fill it up). The slider should be a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.
 - [x] the TitleBox only appears when fully zoomed out. It too should appear as a fixed element on the screen *over* the map that stays at the exact same position regardless of where I pan or zoom to.

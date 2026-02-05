@@ -8,31 +8,6 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     setOptions({ ...options, [key]: value });
   };
 
-  const addBaseMap = () => {
-    const current = options.basemaps || [];
-    setOptions({
-        ...options,
-        basemaps: [...current, { url_or_provider: 'Esri.WorldTopoMap', name: 'New Base Layer', default: current.length === 0 }]
-    });
-  };
-
-  const removeBaseMap = (index) => {
-      const current = [...(options.basemaps || [])];
-      current.splice(index, 1);
-      setOptions({ ...options, basemaps: current });
-  };
-
-  const updateBaseMap = (index, field, value) => {
-      const current = [...(options.basemaps || [])];
-      current[index] = { ...current[index], [field]: value };
-      if (field === 'default' && value === true) {
-          current.forEach((bm, i) => {
-              if (i !== index) bm.default = false;
-          });
-      }
-      setOptions({ ...options, basemaps: current });
-  };
-
   const getAvailableClasses = () => {
       const classes = new Set([
         'flag', 'river', 'path', 'point', 'admin', 'admin-river', 'data',

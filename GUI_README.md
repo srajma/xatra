@@ -1,3 +1,21 @@
+# Xatra Studio GUI
+
+## How to Start / Restart
+
+To start the full application (backend + frontend):
+```bash
+./start_gui.sh
+```
+
+To restart if the page is blank or not responding:
+1. Stop the current process (usually `Ctrl+C` in the terminal where you ran the script).
+2. If it doesn't stop cleanly, kill any remaining processes:
+   ```bash
+   pkill -f uvicorn
+   pkill -f vite
+   ```
+3. Run `./start_gui.sh` again.
+
 ## TODO
 
 Bugs

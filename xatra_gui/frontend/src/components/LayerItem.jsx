@@ -232,33 +232,32 @@ const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) 
                     onChange={(e) => {
                          const val = e.target.value;
                          try {
-                             updateArg(index, 'icon', JSON.parse(val));
-                         } catch (err) {
-                             updateArg(index, 'icon', val);
-                         }
-                    }}
-                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                    placeholder='e.g. "city" or {"shape": "star"}'
-                />
-            </div>
-         )}
-      </div>
-    );
-  };
-
-  const [periodText, setPeriodText] = useState(element.args?.period ? element.args.period.join(', ') : '');
-
-  const handlePeriodChange = (val) => {
-      setPeriodText(val);
-      if (val === "") {
-          updateArg(index, 'period', null);
-          return;
-      }
-      
-      // Support [-320, -180] or -320, -180
-      let clean = val.replace(/[\[\]]/g, '');
-      const parts = clean.split(',').map(s => s.trim());
-      
+                                                 updateArg(index, 'icon', JSON.parse(val));
+                                              } catch {
+                                                  updateArg(index, 'icon', val);
+                                              }
+                                         }}
+                                         className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
+                                         placeholder='e.g. "city" or {"shape": "star"}'
+                                     />
+                                 </div>
+                              )}
+                             </div>
+                             );
+                             };
+                             
+                             const [periodText, setPeriodText] = useState(element.args?.period ? element.args.period.join(', ') : '');
+                             
+                             const handlePeriodChange = (val) => {
+                             setPeriodText(val);
+                             if (val === "") {
+                               updateArg(index, 'period', null);
+                               return;
+                             }
+                             
+                             // Support [-320, -180] or -320, -180
+                             let clean = val.split('[').join('').split(']').join('');
+                             const parts = clean.split(',').map(s => s.trim());      
       if (parts.length === 2) {
           const start = parseInt(parts[0]);
           const end = parseInt(parts[1]);

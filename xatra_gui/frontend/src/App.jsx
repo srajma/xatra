@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layers, Code, Play, RefreshCw, Map as MapIcon, Upload, Save, FileJson, FileCode } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
@@ -14,6 +14,24 @@ function App() {
   const [pickerHtml, setPickerHtml] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Builder State
+  const [builderElements, setBuilderElements] = useState([
+    { type: 'flag', label: 'India', value: [], args: { note: 'Republic of India' } }
+  ]);
+  const [builderOptions, setBuilderOptions] = useState({
+    title: '<b>My Interactive Map</b>',
+    basemaps: [{ url_or_provider: 'Esri.WorldTopoMap', default: true }]
+  });
+
+  // Code State
+  const [code, setCode] = useState(`import xatra
+from xatra.loaders import gadm, naturalearth
+
+xatra.BaseOption("Esri.WorldTopoMap", default=True)
+xatra.Flag(label="India", value=gadm("IND"), note="Republic of India")
+xatra.TitleBox("<b>My Map</b>")
+`);
 
   // Picker State
   const [pickerOptions, setPickerOptions] = useState({
@@ -168,7 +186,7 @@ function App() {
     }
 
     if (builderOptions.css_rules) {
-        let css = builderOptions.css_rules.map(r => `${r.selector} { ${r.style} }`).join('\\n');
+        let css = builderOptions.css_rules.map(r => `${r.selector} { ${r.style} }`).join('\n');
         if (css) lines.push(`xatra.CSS("""${css}""")`);
     }
 
@@ -223,7 +241,7 @@ function App() {
         }
     });
 
-    setCode(lines.join('\\n'));
+    setCode(lines.join('\n'));
   };
 
   // Initial render
