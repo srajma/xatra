@@ -53,6 +53,10 @@ def build_gadm_index():
                             varname = p.get(f"VARNAME_{level}")
                             
                             if gid:
+                                # Strip _1 suffix as it's not used by xatra
+                                if gid.endswith("_1"):
+                                    gid = gid[:-2]
+                                    
                                 entry = {
                                     "gid": gid,
                                     "name": name,
@@ -137,9 +141,34 @@ class BuilderRequest(BaseModel):
     elements: List[MapElement]
     options: Dict[str, Any] = {}
 
+class PickerRequest(BaseModel):
+    countries: List[str]
+    level: int = 1
+    adminRivers: bool = False
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.post("/render/picker")
+def render_picker(request: PickerRequest):
+    try:
+        xatra.new_map()
+        m = xatra.get_current_map()
+        
+        m.BaseOption("Esri.WorldTopoMap", default=True)
+        
+        for country in request.countries:
+            m.Admin(gadm=country, level=request.level)
+            
+        if request.adminRivers:
+            m.AdminRivers()
+            
+        payload = m._export_json()
+        html = export_html_string(payload)
+        return {"html": html}
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 @app.post("/render/code")
 def render_code(request: CodeRequest):
@@ -298,9 +327,16 @@ def render_builder(request: BuilderRequest):
                 m.Flag(value=territory, **args)
                 
             elif el.type == "river":
-                # Value is ne_id
+                # Value is id or name
+                source_type = args.get("source_type", "naturalearth")
+                if "source_type" in args: del args["source_type"]
+                
                 if isinstance(el.value, str):
-                    geom = naturalearth(el.value)
+                    if source_type == "overpass":
+                        from xatra.loaders import overpass
+                        geom = overpass(el.value)
+                    else:
+                        geom = naturalearth(el.value)
                     m.River(value=geom, **args)
                     
             elif el.type == "point":
@@ -333,10 +369,14 @@ def render_builder(request: BuilderRequest):
                 
             elif el.type == "admin":
                 # Value is gadm code
+                # Admin doesn't take label
+                if "label" in args: del args["label"]
                 m.Admin(gadm=el.value, **args)
             
             elif el.type == "admin_rivers":
                 # Value could be sources list
+                # AdminRivers doesn't take label
+                if "label" in args: del args["label"]
                 sources = el.value
                 if isinstance(sources, str):
                     try:

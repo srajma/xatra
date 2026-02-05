@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Crosshair, Info } from 'lucide-react';
 
-const GlobalOptions = ({ options, setOptions, elements }) => {
+const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
   const [showMore, setShowMore] = useState(false);
 
-  // Helper to update top-level options
   const updateOption = (key, value) => {
     setOptions({ ...options, [key]: value });
   };
 
-  // Helper for Base Maps (list of objects)
   const addBaseMap = () => {
     const current = options.basemaps || [];
-    // If it was just a string/object, normalize to array
-    // But App.jsx initializes it as array.
     setOptions({
         ...options,
         basemaps: [...current, { url_or_provider: 'Esri.WorldTopoMap', name: 'New Base Layer', default: current.length === 0 }]
@@ -29,8 +25,6 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
   const updateBaseMap = (index, field, value) => {
       const current = [...(options.basemaps || [])];
       current[index] = { ...current[index], [field]: value };
-      // If setting default to true, unset others?
-      // xatra might support multiple defaults? No, typically one.
       if (field === 'default' && value === true) {
           current.forEach((bm, i) => {
               if (i !== index) bm.default = false;
@@ -39,22 +33,19 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
       setOptions({ ...options, basemaps: current });
   };
 
-  // Helper for CSS (custom CSS string generation from UI)
-  // The roadmap asks for a UI: pair of (class dropdown, style text).
-  // We need to store this structured data in options, then generate .CSS() string.
-  // Or just store raw CSS string if simpler?
-  // Roadmap: "The interface for this should be as follows: we have a list of classes... each row is a pair..."
-  // So we need a new option field `css_rules` which is a list of { selector: string, style: string }.
-  // And we gather available classes from `elements`.
-  
   const getAvailableClasses = () => {
-      const classes = new Set(['flag', 'river', 'point', 'text', 'path', 'admin']);
+      const classes = new Set([
+        'flag', 'river', 'path', 'point', 'admin', 'admin-river', 'data',
+        'text-label', 'path-label', 'river-label', 'admin-river-label', 'point-label', 'flag-label', 'vassal-label'
+      ]);
       elements.forEach(el => {
           if (el.args?.classes) {
-              el.args.classes.split(' ').forEach(c => classes.add(c));
+              el.args.classes.split(' ').forEach(c => {
+                  if (c.trim()) classes.add(c.trim());
+              });
           }
       });
-      return Array.from(classes);
+      return Array.from(classes).sort();
   };
 
   const addCssRule = () => {
@@ -74,13 +65,20 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
        setOptions({ ...options, css_rules: current });
   };
 
+  const ALL_BASE_MAPS = [
+      { id: 'Esri.WorldTopoMap', name: 'Esri World Topo' },
+      { id: 'Esri.WorldImagery', name: 'Esri World Imagery' },
+      { id: 'OpenTopoMap', name: 'Open Topo Map' },
+      { id: 'Esri.WorldPhysical', name: 'Esri World Physical' },
+      { id: 'Stadia.OSMBright', name: 'Stadia OSM Bright' },
+  ];
+
   return (
     <section className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Global Options</h3>
         
-        {/* Prominent Title */}
         <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Title (HTML)</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">TitleBox (HTML)</label>
             <textarea
               value={options.title || ''}
               onChange={(e) => updateOption('title', e.target.value)}
@@ -102,47 +100,47 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
                 
                 {/* Base Maps */}
                 <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-xs font-medium text-gray-700">Base Layers</label>
-                        <button onClick={addBaseMap} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"><Plus size={12}/> Add</button>
-                    </div>
-                    <div className="space-y-2">
-                        {(options.basemaps || []).map((bm, idx) => (
-                            <div key={idx} className="flex gap-2 items-start bg-gray-50 p-2 rounded">
-                                <div className="flex-1 space-y-1">
-                                    <select 
-                                        value={bm.url_or_provider}
-                                        onChange={(e) => updateBaseMap(idx, 'url_or_provider', e.target.value)}
-                                        className="w-full text-xs p-1 border rounded"
-                                    >
-                                        <option value="Esri.WorldTopoMap">Esri World Topo</option>
-                                        <option value="Esri.WorldImagery">Esri World Imagery</option>
-                                        <option value="OpenTopoMap">Open Topo Map</option>
-                                        <option value="Esri.WorldPhysical">Esri World Physical</option>
-                                        <option value="Stadia.OSMBright">Stadia OSM Bright</option>
-                                        {/* Allow custom URL? maybe later */}
-                                    </select>
-                                    <div className="flex items-center gap-2">
-                                        <label className="flex items-center gap-1 text-[10px] text-gray-600 cursor-pointer">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={bm.default || false} 
-                                                onChange={(e) => updateBaseMap(idx, 'default', e.target.checked)}
-                                            />
-                                            Default
-                                        </label>
-                                         <input
-                                            type="text"
-                                            value={bm.name || ''}
-                                            onChange={(e) => updateBaseMap(idx, 'name', e.target.value)}
-                                            className="flex-1 text-[10px] p-1 border rounded"
-                                            placeholder="Display Name"
+                    <label className="text-xs font-medium text-gray-700 mb-2 block">Base Layers</label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
+                        {ALL_BASE_MAPS.map(bm => {
+                            const isIncluded = (options.basemaps || []).some(b => b.url_or_provider === bm.id);
+                            const isDefault = (options.basemaps || []).find(b => b.url_or_provider === bm.id)?.default;
+                            
+                            return (
+                                <div key={bm.id} className="flex items-center justify-between gap-2 p-1 hover:bg-white rounded transition-colors">
+                                    <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={isIncluded}
+                                            onChange={(e) => {
+                                                const current = options.basemaps || [];
+                                                if (e.target.checked) {
+                                                    updateOption('basemaps', [...current, { url_or_provider: bm.id, name: bm.name, default: current.length === 0 }]);
+                                                } else {
+                                                    updateOption('basemaps', current.filter(b => b.url_or_provider !== bm.id));
+                                                }
+                                            }}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
-                                    </div>
+                                        <span className="text-xs truncate">{bm.name}</span>
+                                    </label>
+                                    {isIncluded && (
+                                        <button 
+                                            onClick={() => {
+                                                const current = (options.basemaps || []).map(b => ({
+                                                    ...b,
+                                                    default: b.url_or_provider === bm.id
+                                                }));
+                                                updateOption('basemaps', current);
+                                            }}
+                                            className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${isDefault ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                                        >
+                                            {isDefault ? 'Default' : 'Set Default'}
+                                        </button>
+                                    )}
                                 </div>
-                                <button onClick={() => removeBaseMap(idx)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={12}/></button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -157,21 +155,26 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
                              <div key={idx} className="flex gap-2 items-start bg-gray-50 p-2 rounded">
                                  <div className="flex-1 space-y-1">
                                      <div className="flex gap-1">
-                                         <select
-                                            value={rule.selector}
-                                            onChange={(e) => updateCssRule(idx, 'selector', e.target.value)}
-                                            className="w-1/3 text-xs p-1 border rounded font-mono"
-                                         >
-                                             {getAvailableClasses().map(c => (
-                                                 <option key={c} value={c.startsWith('.') ? c : '.' + c}>{c.startsWith('.') ? c : '.' + c}</option>
-                                             ))}
-                                         </select>
+                                         <div className="w-1/3 relative">
+                                            <input
+                                                list="classes-list"
+                                                value={rule.selector}
+                                                onChange={(e) => updateCssRule(idx, 'selector', e.target.value)}
+                                                className="w-full text-xs p-1 border rounded font-mono"
+                                                placeholder=".class"
+                                            />
+                                            <datalist id="classes-list">
+                                                {getAvailableClasses().map(c => (
+                                                    <option key={c} value={c.startsWith('.') ? c : '.' + c} />
+                                                ))}
+                                            </datalist>
+                                         </div>
                                           <input 
                                             type="text"
                                             value={rule.style}
                                             onChange={(e) => updateCssRule(idx, 'style', e.target.value)}
                                             className="flex-1 text-xs p-1 border rounded font-mono"
-                                            placeholder="fill: red; stroke-width: 2px;"
+                                            placeholder="fill: red; ..."
                                           />
                                      </div>
                                  </div>
@@ -188,19 +191,29 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
                          <div>
                             <label className="block text-[10px] text-gray-500">Start Year</label>
                             <input
-                                type="number"
-                                value={options.slider?.start || ''}
-                                onChange={(e) => updateOption('slider', { ...options.slider, start: parseInt(e.target.value) })}
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
+                                type="text"
+                                value={options.slider?.start !== undefined && options.slider?.start !== null ? options.slider.start : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : parseInt(e.target.value);
+                                    if (e.target.value === '' || !isNaN(val)) {
+                                        updateOption('slider', { ...options.slider, start: val });
+                                    }
+                                }}
+                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded font-mono"
                             />
                         </div>
                          <div>
                             <label className="block text-[10px] text-gray-500">End Year</label>
                              <input
-                                type="number"
-                                value={options.slider?.end || ''}
-                                onChange={(e) => updateOption('slider', { ...options.slider, end: parseInt(e.target.value) })}
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
+                                type="text"
+                                value={options.slider?.end !== undefined && options.slider?.end !== null ? options.slider.end : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : parseInt(e.target.value);
+                                    if (e.target.value === '' || !isNaN(val)) {
+                                        updateOption('slider', { ...options.slider, end: val });
+                                    }
+                                }}
+                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded font-mono"
                             />
                         </div>
                          <div>
@@ -208,7 +221,7 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
                              <input
                                 type="number"
                                 step="0.1"
-                                value={options.slider?.speed || 5.0}
+                                value={options.slider?.speed !== undefined ? options.slider.speed : 5.0}
                                 onChange={(e) => updateOption('slider', { ...options.slider, speed: parseFloat(e.target.value) })}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
@@ -218,14 +231,22 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
 
                 {/* Zoom and Focus */}
                 <div>
-                     <label className="text-xs font-medium text-gray-700 mb-2 block">Initial View</label>
+                     <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-medium text-gray-700">Initial View</label>
+                        <button 
+                            onClick={onGetCurrentView}
+                            className="text-blue-600 hover:text-blue-800 text-[10px] flex items-center gap-1 font-medium bg-blue-50 px-1.5 py-0.5 rounded"
+                        >
+                            <Crosshair size={10}/> Use Current
+                        </button>
+                     </div>
                      <div className="grid grid-cols-3 gap-2">
                          <div>
                             <label className="block text-[10px] text-gray-500">Zoom (0-18)</label>
                             <input
                                 type="number"
                                 value={options.zoom || ''}
-                                onChange={(e) => updateOption('zoom', parseInt(e.target.value))}
+                                onChange={(e) => updateOption('zoom', e.target.value === '' ? null : parseInt(e.target.value))}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
                         </div>
@@ -253,38 +274,91 @@ const GlobalOptions = ({ options, setOptions, elements }) => {
                 </div>
 
                 {/* Color Sequences */}
-                <div>
-                     <label className="text-xs font-medium text-gray-700 mb-2 block">Colors</label>
-                     <div className="space-y-2">
+                <div className="space-y-4">
+                     <label className="text-xs font-medium text-gray-700 block border-b pb-1">Color Options</label>
+                     
+                     <div className="space-y-3">
                          <div>
-                             <label className="block text-[10px] text-gray-500">Flag Color Sequence (Hex list or Palette Name)</label>
-                             <input
-                                type="text"
-                                value={options.flag_colors || ''}
-                                onChange={(e) => updateOption('flag_colors', e.target.value)}
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
-                                placeholder="#ff0000, #00ff00... or 'Pastel1'"
-                             />
+                             <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
+                                Flag Color Sequence
+                                <span title="List of hex colors separated by commas, or a Matplotlib palette name (e.g. 'Pastel1', 'tab10', 'Set3').">
+                                    <Info size={10} className="text-blue-500 cursor-help"/>
+                                </span>
+                             </label>
+                             <div className="flex gap-1">
+                                <input
+                                    type="text"
+                                    value={options.flag_colors || ''}
+                                    onChange={(e) => updateOption('flag_colors', e.target.value)}
+                                    className="flex-1 px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                    placeholder="#ff0000, #00ff00... or 'Pastel1'"
+                                />
+                                <select 
+                                    className="text-[10px] border rounded px-1 bg-white"
+                                    onChange={(e) => updateOption('flag_colors', e.target.value)}
+                                    value=""
+                                >
+                                    <option value="" disabled>Presets</option>
+                                    <option value="Pastel1">Pastel1</option>
+                                    <option value="Set1">Set1</option>
+                                    <option value="Set3">Set3</option>
+                                    <option value="tab10">tab10</option>
+                                    <option value="Accent">Accent</option>
+                                </select>
+                             </div>
                          </div>
                          <div>
-                             <label className="block text-[10px] text-gray-500">Admin Color Sequence</label>
-                             <input
-                                type="text"
-                                value={options.admin_colors || ''}
-                                onChange={(e) => updateOption('admin_colors', e.target.value)}
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
-                                placeholder="#ff0000, #00ff00..."
-                             />
+                             <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
+                                Admin Color Sequence
+                             </label>
+                             <div className="flex gap-1">
+                                <input
+                                    type="text"
+                                    value={options.admin_colors || ''}
+                                    onChange={(e) => updateOption('admin_colors', e.target.value)}
+                                    className="flex-1 px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                    placeholder="#ff0000, #00ff00..."
+                                />
+                                <select 
+                                    className="text-[10px] border rounded px-1 bg-white"
+                                    onChange={(e) => updateOption('admin_colors', e.target.value)}
+                                    value=""
+                                >
+                                    <option value="" disabled>Presets</option>
+                                    <option value="Greys">Greys</option>
+                                    <option value="Purples">Purples</option>
+                                    <option value="Blues">Blues</option>
+                                    <option value="Greens">Greens</option>
+                                </select>
+                             </div>
                          </div>
                          <div>
-                             <label className="block text-[10px] text-gray-500">Data Colormap</label>
-                             <input
-                                type="text"
-                                value={options.data_colormap || ''}
-                                onChange={(e) => updateOption('data_colormap', e.target.value)}
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
-                                placeholder="viridis, plasma, or #color1, #color2..."
-                             />
+                             <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
+                                Data Colormap
+                             </label>
+                             <div className="flex gap-1">
+                                <input
+                                    type="text"
+                                    value={options.data_colormap || ''}
+                                    onChange={(e) => updateOption('data_colormap', e.target.value)}
+                                    className="flex-1 px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                    placeholder="viridis, plasma, or #color1, #color2..."
+                                />
+                                <select 
+                                    className="text-[10px] border rounded px-1 bg-white"
+                                    onChange={(e) => updateOption('data_colormap', e.target.value)}
+                                    value=""
+                                >
+                                    <option value="" disabled>Presets</option>
+                                    <option value="viridis">viridis</option>
+                                    <option value="plasma">plasma</option>
+                                    <option value="inferno">inferno</option>
+                                    <option value="magma">magma</option>
+                                    <option value="cividis">cividis</option>
+                                    <option value="RdYlGn">RdYlGn</option>
+                                    <option value="Spectral">RdYlBu</option>
+                                </select>
+                             </div>
                          </div>
                      </div>
                 </div>

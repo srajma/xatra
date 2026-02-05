@@ -3,7 +3,7 @@ import { Map, Users, MapPin, Type, GitMerge } from 'lucide-react';
 import LayerItem from './LayerItem';
 import GlobalOptions from './GlobalOptions';
 
-const Builder = ({ elements, setElements, options, setOptions }) => {
+const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView }) => {
   const addElement = (type) => {
     let newElement = { 
       type, 
@@ -15,10 +15,11 @@ const Builder = ({ elements, setElements, options, setOptions }) => {
     switch (type) {
       case 'flag':
         newElement.label = 'New Country';
-        newElement.value = 'IND';
+        newElement.value = [];
         break;
       case 'river':
         newElement.value = 'Ganges';
+        newElement.args = { source_type: 'naturalearth' };
         break;
       case 'point':
         newElement.value = '[28.6, 77.2]';
@@ -69,6 +70,7 @@ const Builder = ({ elements, setElements, options, setOptions }) => {
         options={options} 
         setOptions={setOptions} 
         elements={elements} 
+        onGetCurrentView={onGetCurrentView}
       />
 
       {/* Layers */}

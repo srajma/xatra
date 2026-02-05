@@ -509,6 +509,19 @@ HTML_TEMPLATE = Template(
       // Update tooltip on mousemove
       map.on('mousemove', updateMultiTooltip);
 
+      // Listener for parent window messages (Studio integration)
+      window.addEventListener('message', function(event) {
+        if (event.data === 'getCurrentView') {
+          const center = map.getCenter();
+          const zoom = map.getZoom();
+          window.parent.postMessage({
+            type: 'mapViewUpdate',
+            center: [center.lat, center.lng],
+            zoom: zoom
+          }, '*');
+        }
+      });
+
       function getCentroid(geometry) {
         // Proper geometric centroid calculation
         if (geometry.type === 'Polygon') {

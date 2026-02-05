@@ -21,7 +21,11 @@ const TerritoryBuilder = ({ value, onChange }) => {
 
   const updatePart = (index, field, val) => {
     const newParts = [...parts];
-    newParts[index] = { ...newParts[index], [field]: val };
+    let finalVal = val;
+    if (field === 'value' && newParts[index].type === 'gadm' && typeof val === 'string') {
+        finalVal = val.replace(/_1$/, '');
+    }
+    newParts[index] = { ...newParts[index], [field]: finalVal };
     onChange(newParts);
   };
 

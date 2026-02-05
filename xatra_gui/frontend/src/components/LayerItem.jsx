@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 import TerritoryBuilder from './TerritoryBuilder';
 
@@ -32,26 +32,43 @@ const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) 
         );
       case 'river':
         return (
-           <div className="grid grid-cols-2 gap-3 mb-2">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Label</label>
-              <input
-                type="text"
-                value={element.label || ''}
-                onChange={(e) => updateElement(index, 'label', e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-                placeholder="River Name"
-              />
+           <div className="space-y-3 mb-2">
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                <label className="block text-xs text-gray-500 mb-1">Label</label>
+                <input
+                    type="text"
+                    value={element.label || ''}
+                    onChange={(e) => updateElement(index, 'label', e.target.value)}
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
+                    placeholder="River Name"
+                />
+                </div>
+                <div>
+                    <label className="block text-xs text-gray-500 mb-1">Source</label>
+                    <select
+                        value={element.args?.source_type || 'naturalearth'}
+                        onChange={(e) => updateArg(index, 'source_type', e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
+                    >
+                        <option value="naturalearth">Natural Earth</option>
+                        <option value="overpass">Overpass (OSM)</option>
+                    </select>
+                </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">NE ID / Name</label>
+              <label className="block text-xs text-gray-500 mb-1">ID</label>
               <input
                 type="text"
                 value={element.value || ''}
                 onChange={(e) => updateElement(index, 'value', e.target.value)}
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                placeholder="e.g. Ganges"
+                placeholder={element.args?.source_type === 'overpass' ? 'e.g. 1159122643' : 'e.g. Ganges'}
               />
+              <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                  <Info size={10}/> 
+                  {element.args?.source_type === 'overpass' ? 'OSM Way/Relation ID' : 'Natural Earth ID or Name'}
+              </div>
             </div>
           </div>
         );
@@ -149,37 +166,6 @@ const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) 
   const renderMoreOptions = () => {
     return (
       <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-3">
-        {/* Common Period */}
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Period [start, end]</label>
-          <input
-            type="text"
-            value={element.args?.period ? JSON.stringify(element.args.period) : ''}
-            onChange={(e) => {
-                try {
-                    const val = e.target.value ? JSON.parse(e.target.value) : null;
-                    updateArg(index, 'period', val);
-                } catch(err) {
-                    // Allow typing invalid json momentarily or handle as string and parse later? 
-                    // Ideally we should validte. For now let's just store if valid.
-                    // Actually, storing as string and parsing on submit is better for UX, but we need to change data structure.
-                    // For simplicity, let's assume user types valid JSON or we store raw string and handle in backend?
-                    // No backend expects list. 
-                    // Let's allow simple text input "1900, 2000" and parse it.
-                    const parts = e.target.value.split(',').map(s => parseInt(s.trim()));
-                    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                        updateArg(index, 'period', parts);
-                    } else if (e.target.value === "") {
-                        updateArg(index, 'period', null);
-                    }
-                }
-            }}
-            className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-            placeholder="e.g. 1947, 2024"
-          />
-           <div className="text-[10px] text-gray-400 mt-0.5">Format: Start, End</div>
-        </div>
-        
         {/* Classes */}
         <div>
            <label className="block text-xs text-gray-500 mb-1">CSS Classes</label>
@@ -233,23 +219,53 @@ const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) 
         )}
 
          {element.type === 'point' && (
-             <div>
-                <label className="block text-xs text-gray-500 mb-1">Icon (JSON)</label>
+             <div className="col-span-2">
+                <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1">
+                    Icon Options (JSON) 
+                    <span title='Supports xatra.Icon() args: e.g. {"iconUrl": "...", "iconSize": [32, 32]}. Built-in icons: "city", "fort", "port", "temple", etc. Geometric: {"shape": "circle", "color": "red"}'>
+                        <Info size={12} className="text-blue-500 cursor-help"/>
+                    </span>
+                </label>
                  <input
                     type="text"
-                    value={element.args?.icon ? JSON.stringify(element.args.icon) : ''}
+                    value={element.args?.icon ? (typeof element.args.icon === 'string' ? element.args.icon : JSON.stringify(element.args.icon)) : ''}
                     onChange={(e) => {
+                         const val = e.target.value;
                          try {
-                             updateArg(index, 'icon', JSON.parse(e.target.value));
-                         } catch (err) {}
+                             updateArg(index, 'icon', JSON.parse(val));
+                         } catch (err) {
+                             updateArg(index, 'icon', val);
+                         }
                     }}
                     className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                    placeholder='{"iconUrl": "..."}'
+                    placeholder='e.g. "city" or {"shape": "star"}'
                 />
             </div>
          )}
       </div>
     );
+  };
+
+  const [periodText, setPeriodText] = useState(element.args?.period ? element.args.period.join(', ') : '');
+
+  const handlePeriodChange = (val) => {
+      setPeriodText(val);
+      if (val === "") {
+          updateArg(index, 'period', null);
+          return;
+      }
+      
+      // Support [-320, -180] or -320, -180
+      let clean = val.replace(/[\[\]]/g, '');
+      const parts = clean.split(',').map(s => s.trim());
+      
+      if (parts.length === 2) {
+          const start = parseInt(parts[0]);
+          const end = parseInt(parts[1]);
+          if (!isNaN(start) && !isNaN(end)) {
+              updateArg(index, 'period', [start, end]);
+          }
+      }
   };
 
   return (
@@ -271,7 +287,22 @@ const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) 
 
       {renderSpecificFields()}
 
-      {/* Common args */}
+      {/* Period - Now visible by default */}
+      <div className="mb-2">
+          <label className="block text-xs text-gray-500 mb-1">Period [start, end]</label>
+          <input
+            type="text"
+            value={periodText}
+            onChange={(e) => handlePeriodChange(e.target.value)}
+            className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
+            placeholder="e.g. -320, -180"
+          />
+           <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
+               <Info size={10}/> Use negative numbers for BC years (e.g. -320, -180)
+           </div>
+      </div>
+
+      {/* Note */}
       <div>
         <label className="block text-xs text-gray-500 mb-1">Note (Tooltip)</label>
         <input

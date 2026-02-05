@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MapPreview = ({ html, loading }) => {
+const MapPreview = ({ html, loading, iframeRef }) => {
   return (
     <div className="w-full h-full relative">
       {loading && (
@@ -14,6 +14,7 @@ const MapPreview = ({ html, loading }) => {
       
       {html ? (
         <iframe
+          ref={iframeRef}
           srcDoc={html}
           title="Map Preview"
           className="w-full h-full border-none bg-white"

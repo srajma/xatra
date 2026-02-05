@@ -8,28 +8,66 @@ import MapPreview from './components/MapPreview';
 
 function App() {
   const [activeTab, setActiveTab] = useState('builder'); // 'builder' or 'code'
+  const [activePreviewTab, setActivePreviewTab] = useState('main'); // 'main' or 'picker'
   const [mapHtml, setMapHtml] = useState('');
   const [mapPayload, setMapPayload] = useState(null);
+  const [pickerHtml, setPickerHtml] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Builder State
-  const [builderElements, setBuilderElements] = useState([
-    { type: 'flag', label: 'India', value: 'IND', args: { note: 'Republic of India' } }
-  ]);
-  const [builderOptions, setBuilderOptions] = useState({
-    title: 'My Interactive Map',
-    basemaps: [{ url_or_provider: 'Esri.WorldTopoMap', default: true }]
+  // Picker State
+  const [pickerOptions, setPickerOptions] = useState({
+    countries: ['IND'],
+    level: 1,
+    adminRivers: true
   });
 
-  // Code State
-  const [code, setCode] = useState(`import xatra
-from xatra.loaders import gadm, naturalearth
+  const iframeRef = useRef(null);
+  const pickerIframeRef = useRef(null);
 
-xatra.BaseOption("Esri.WorldTopoMap", default=True)
-xatra.Flag(label="India", value=gadm("IND"), note="Republic of India")
-xatra.TitleBox("<b>My Map</b>")
-`);
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'mapViewUpdate') {
+        const targetSet = activePreviewTab === 'picker' ? null : setBuilderOptions;
+        if (targetSet) {
+            targetSet(prev => ({
+                ...prev,
+                focus: [
+                    parseFloat(event.data.center[0].toFixed(4)), 
+                    parseFloat(event.data.center[1].toFixed(4))
+                ],
+                zoom: event.data.zoom
+            }));
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [activePreviewTab]);
+
+  const handleGetCurrentView = () => {
+    const ref = activePreviewTab === 'picker' ? pickerIframeRef : iframeRef;
+    if (ref.current && ref.current.contentWindow) {
+      ref.current.contentWindow.postMessage('getCurrentView', '*');
+    }
+  };
+
+  const renderPickerMap = async () => {
+      setLoading(true);
+      try {
+          const response = await fetch(`http://localhost:8088/render/picker`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(pickerOptions)
+          });
+          const data = await response.json();
+          if (data.html) setPickerHtml(data.html);
+      } catch (err) {
+          setError(err.message);
+      } finally {
+          setLoading(false);
+      }
+  };
 
   const renderMap = async () => {
     setLoading(true);
@@ -103,6 +141,91 @@ xatra.TitleBox("<b>My Map</b>")
     e.target.value = null;
   };
 
+  const generatePythonCode = () => {
+    let lines = [
+        'import xatra',
+        'from xatra.loaders import gadm, naturalearth, polygon',
+        ''
+    ];
+
+    // Options
+    if (builderOptions.basemaps) {
+        builderOptions.basemaps.forEach(bm => {
+            lines.push(`xatra.BaseOption("${bm.url_or_provider}", name="${bm.name || ''}", default=${bm.default ? 'True' : 'False'})`);
+        });
+    }
+
+    if (builderOptions.title) {
+        lines.push(`xatra.TitleBox("""${builderOptions.title}""")`);
+    }
+
+    if (builderOptions.zoom) {
+        lines.push(`xatra.zoom(${builderOptions.zoom})`);
+    }
+
+    if (builderOptions.focus) {
+        lines.push(`xatra.focus(${builderOptions.focus[0]}, ${builderOptions.focus[1]})`);
+    }
+
+    if (builderOptions.css_rules) {
+        let css = builderOptions.css_rules.map(r => `${r.selector} { ${r.style} }`).join('\\n');
+        if (css) lines.push(`xatra.CSS("""${css}""")`);
+    }
+
+    if (builderOptions.slider) {
+        const { start, end, speed } = builderOptions.slider;
+        lines.push(`xatra.slider(start=${start ?? 'None'}, end=${end ?? 'None'}, speed=${speed ?? 5.0})`);
+    }
+
+    lines.push('');
+
+    // Elements
+    builderElements.forEach(el => {
+        const args = { ...el.args };
+        if (el.label) args.label = el.label;
+        
+        let argsStr = Object.entries(args)
+            .map(([k, v]) => `${k}=${JSON.stringify(v).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}`)
+            .join(', ');
+        
+        if (argsStr) argsStr = ', ' + argsStr;
+
+        if (el.type === 'flag') {
+            let valStr = 'None';
+            if (Array.isArray(el.value)) {
+                // Complex territory
+                const ops = { union: '|', difference: '-', intersection: '&' };
+                valStr = el.value.map((part, i) => {
+                    let pStr = '';
+                    if (part.type === 'gadm') pStr = `gadm("${part.value}")`;
+                    else if (part.type === 'polygon') pStr = `polygon(${part.value})`;
+                    
+                    if (i === 0) return pStr;
+                    return ` ${ops[part.op] || '|'} ${pStr}`;
+                }).join('');
+            } else {
+                valStr = `gadm("${el.value}")`;
+            }
+            lines.push(`xatra.Flag(value=${valStr}${argsStr})`);
+        } else if (el.type === 'river') {
+            const func = el.args?.source_type === 'overpass' ? 'overpass' : 'naturalearth';
+            lines.push(`xatra.River(value=${func}("${el.value}")${argsStr})`);
+        } else if (el.type === 'point') {
+            lines.push(`xatra.Point(position=${el.value}${argsStr})`);
+        } else if (el.type === 'text') {
+            lines.push(`xatra.Text(position=${el.value}${argsStr})`);
+        } else if (el.type === 'path') {
+            lines.push(`xatra.Path(value=${el.value}${argsStr})`);
+        } else if (el.type === 'admin') {
+            lines.push(`xatra.Admin(gadm="${el.value}"${argsStr})`);
+        } else if (el.type === 'admin_rivers') {
+            lines.push(`xatra.AdminRivers(sources=${el.value}${argsStr})`);
+        }
+    });
+
+    setCode(lines.join('\\n'));
+  };
+
   // Initial render
   useEffect(() => {
     renderMap();
@@ -153,9 +276,10 @@ xatra.TitleBox("<b>My Map</b>")
               setElements={setBuilderElements}
               options={builderOptions}
               setOptions={setBuilderOptions}
+              onGetCurrentView={handleGetCurrentView}
             />
           ) : (
-            <CodeEditor code={code} setCode={setCode} />
+            <CodeEditor code={code} setCode={setCode} onSync={generatePythonCode} />
           )}
         </div>
 
@@ -177,8 +301,82 @@ xatra.TitleBox("<b>My Map</b>")
       </div>
 
       {/* Main Preview Area */}
-      <div className="flex-1 relative bg-gray-200">
-        <MapPreview html={mapHtml} loading={loading} />
+      <div className="flex-1 flex flex-col relative bg-gray-200">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 flex bg-white/90 backdrop-blur shadow-md rounded-full p-1 border border-gray-200">
+            <button 
+                onClick={() => setActivePreviewTab('main')}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'main' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+                Map Preview
+            </button>
+            <button 
+                onClick={() => setActivePreviewTab('picker')}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'picker' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+                Picker Map
+            </button>
+        </div>
+
+        {activePreviewTab === 'picker' && (
+            <div className="absolute top-16 right-4 z-20 w-64 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4">
+                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b pb-2">
+                    Picker Options
+                </h3>
+                <div className="space-y-3">
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Countries (GADM)</label>
+                        <input 
+                            type="text" 
+                            value={pickerOptions.countries.join(', ')}
+                            onChange={(e) => setPickerOptions({ ...pickerOptions, countries: e.target.value.split(',').map(s => s.trim()) })}
+                            className="w-full text-xs p-2 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="IND, PAK..."
+                        />
+                    </div>
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Level</label>
+                            <input 
+                                type="number" 
+                                value={pickerOptions.level}
+                                onChange={(e) => setPickerOptions({ ...pickerOptions, level: parseInt(e.target.value) })}
+                                className="w-full text-xs p-2 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                min="0" max="3"
+                            />
+                        </div>
+                        <div className="flex items-end pb-2">
+                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
+                                <input 
+                                    type="checkbox"
+                                    checked={pickerOptions.adminRivers}
+                                    onChange={(e) => setPickerOptions({ ...pickerOptions, adminRivers: e.target.checked })}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                Rivers
+                            </label>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={renderPickerMap}
+                        disabled={loading}
+                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors disabled:opacity-50"
+                    >
+                        Update Picker Map
+                    </button>
+                </div>
+                <div className="text-[10px] text-gray-400 bg-gray-50 p-2 rounded italic">
+                    Tip: Use the picker map to find GADM codes or coordinates. You can still use "Use Current View" in Global Options while this tab is active.
+                </div>
+            </div>
+        )}
+
+        <div className="flex-1 overflow-hidden">
+            {activePreviewTab === 'main' ? (
+                <MapPreview html={mapHtml} loading={loading} iframeRef={iframeRef} />
+            ) : (
+                <MapPreview html={pickerHtml} loading={loading} iframeRef={pickerIframeRef} />
+            )}
+        </div>
       </div>
     </div>
   );
