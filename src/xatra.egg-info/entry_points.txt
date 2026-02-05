@@ -1,0 +1,2 @@
+[console_scripts]
+xatra-install-data = xatra.data_installer:main
