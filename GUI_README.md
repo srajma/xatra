@@ -32,7 +32,11 @@ Bugs
 - [x] In all the forms there should be something to ensure when the contents are cleared, it is treated exactly as it would be exactly as if it were never edited. E.g. when I enter something into the Flag Color Sequence box and then remove it, I get an error while generating the map "Error: name 'parse_color_sequence' is not defined" even though its contents are clear again.
 
 Bugs caught by AI
-- 
+- [ ] Code Generation: The "Sync from Builder" function produces invalid Python code for the Flag layer (e.g., `value=` with no value), likely because the territory value is lost or not tracked properly in the state.
+- [ ] UI Feedback: The Builder UI does not display the currently selected territory value for a layer, making it impossible for the user to know what `value` is set.
+- [ ] Interactivity: Input fields in the second layer (e.g., Point layer added after a Flag layer) appear to be difficult to interact with programmatically and potentially for users, often timing out or not registering changes.
+- [ ] UX/Workflow: The "Code" view does not update automatically when switching tabs; the user must manually click "Sync from Builder", which is error-prone.
+- [ ] Point Layer Persistence: Changes made to the Point layer (Label, Position) in the Builder are not reflected in the generated code after a sync, suggesting state management issues.
 
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
