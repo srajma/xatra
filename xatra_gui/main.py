@@ -3,6 +3,13 @@ import os
 from pathlib import Path
 import json
 import traceback
+import threading
+import multiprocessing
+import signal
+
+# Set matplotlib backend to Agg before importing anything else
+import matplotlib
+matplotlib.use('Agg')
 
 # Add src to path so we can import xatra
 sys.path.append(str(Path(__file__).parent.parent / "src"))
@@ -16,7 +23,10 @@ import xatra
 from xatra.loaders import gadm, naturalearth, polygon, GADM_DIR
 from xatra.render import export_html_string
 from xatra.colorseq import Color, RotatingColorSequence, color_sequences
-import threading
+
+# Global variable to track the current rendering process
+current_process = None
+process_lock = threading.Lock()
 
 # GADM Indexing
 GADM_INDEX = []
@@ -32,8 +42,6 @@ def build_gadm_index():
         index = []
         seen_gids = set()
         if os.path.exists(GADM_DIR):
-            # Sort files by level so we process level 0, then 1, etc.
-            # This helps if we want to prioritize something, though with seen_gids it's first-come-first-served
             files = sorted(os.listdir(GADM_DIR))
             for f in files:
                 if not f.endswith(".json") or not f.startswith("gadm41_"): continue
@@ -57,7 +65,6 @@ def build_gadm_index():
                             varname = p.get(f"VARNAME_{level}")
                             
                             if gid:
-                                # Strip _1 suffix as it's not used by xatra
                                 if gid.endswith("_1"):
                                     gid = gid[:-2]
                                 
@@ -76,7 +83,6 @@ def build_gadm_index():
                                     
                                 index.append(entry)
                 except Exception as e:
-                    # print(f"Error processing {f}: {e}")
                     pass
         
         GADM_INDEX = index
@@ -89,7 +95,6 @@ def build_gadm_index():
     finally:
         INDEX_BUILDING = False
 
-# Load cache if exists
 if os.path.exists("gadm_index.json"):
     try:
         with open("gadm_index.json", "r") as f:
@@ -116,7 +121,6 @@ def search_gadm(q: str):
     results = []
     limit = 20
     
-    # Priority: Exact GID match, Start GID match, Exact Name match, Start Name match, Contains Name
     for item in GADM_INDEX:
         score = 0
         gid = item["gid"].lower()
@@ -131,11 +135,9 @@ def search_gadm(q: str):
         elif item["country"] and q in item["country"].lower(): score = 30
         
         if score > 0:
-            # Penalty for longer GIDs to prefer parent levels when prefix matching
             tie_breaker = -len(gid)
             results.append((score, tie_breaker, item))
             
-    # Sort by score desc, then by tie_breaker desc (shorter strings first)
     results.sort(key=lambda x: (x[0], x[1]), reverse=True)
     return [r[2] for r in results[:limit]]
 
@@ -143,9 +145,9 @@ class CodeRequest(BaseModel):
     code: str
 
 class MapElement(BaseModel):
-    type: str # flag, river, point, text, path, admin
+    type: str
     label: Optional[str] = None
-    value: Any = None # gadm code, ne_id, coords, etc.
+    value: Any = None
     args: Dict[str, Any] = {}
 
 class BuilderRequest(BaseModel):
@@ -163,10 +165,8 @@ class PickerRequest(BaseModel):
 def parse_color_sequence(val):
     if not val or not isinstance(val, str) or not val.strip():
         return None
-    # Check if it's a matplotlib colormap name (simple check: alphanumeric)
     if val.replace('_', '').isalnum():
         return val.strip()
-    # Assume it's a comma-separated list of colors
     return [c.strip() for c in val.split(',') if c.strip()]
 
 @app.get("/health")
@@ -175,272 +175,262 @@ def health():
 
 @app.post("/stop")
 def stop_generation():
-    # Placeholder for stopping generation
-    # Since we use exec() in the same process, we can't easily kill it safely.
-    # But we can use this to perhaps signal a flag if we move to a threaded model later.
-    return {"status": "stopped"}
+    global current_process
+    with process_lock:
+        if current_process and current_process.is_alive():
+            current_process.terminate()
+            current_process.join()
+            current_process = None
+            return {"status": "stopped"}
+    return {"status": "no process running"}
+
+def run_rendering_task(task_type, data, result_queue):
+    try:
+        # Re-import xatra inside the process just in case, though imports are inherited on fork (mostly)
+        # But we need fresh map state
+        import xatra
+        xatra.new_map()
+        m = xatra.get_current_map()
+        
+        if task_type == 'picker':
+            m.BaseOption("Esri.WorldTopoMap", default=True)
+            for entry in data.entries:
+                m.Admin(gadm=entry.country, level=entry.level)
+            if data.adminRivers:
+                m.AdminRivers()
+                
+        elif task_type == 'code':
+            exec_globals = {
+                "xatra": xatra,
+                "gadm": xatra.loaders.gadm,
+                "naturalearth": xatra.loaders.naturalearth,
+                "polygon": xatra.loaders.polygon,
+                "overpass": xatra.loaders.overpass,
+                "map": m
+            }
+            exec(data.code, exec_globals)
+            m = xatra.get_current_map() # Refresh in case they used map = xatra.Map()
+            
+        elif task_type == 'builder':
+            # Apply options
+            if "basemaps" in data.options:
+                for bm in data.options["basemaps"]:
+                    if isinstance(bm, dict):
+                        m.BaseOption(**bm)
+                    else:
+                        m.BaseOption(bm)
+            
+            if "title" in data.options:
+                m.TitleBox(data.options["title"])
+                
+            if "css_rules" in data.options:
+                css_str = ""
+                for rule in data.options["css_rules"]:
+                    selector = rule.get("selector", "")
+                    style = rule.get("style", "")
+                    if selector and style:
+                        css_str += f"{selector} {{ {style} }}\n"
+                if css_str:
+                    m.CSS(css_str)
+            
+            if "slider" in data.options:
+                sl = data.options["slider"]
+                start = sl.get("start")
+                end = sl.get("end")
+                speed = sl.get("speed")
+                if isinstance(start, str) and start.strip():
+                     try: start = int(start)
+                     except: start = None
+                elif isinstance(start, str): start = None
+                if isinstance(end, str) and end.strip():
+                     try: end = int(end)
+                     except: end = None
+                elif isinstance(end, str): end = None
+                
+                if start is not None or end is not None:
+                    m.slider(start=start, end=end, speed=speed if speed else 5.0)
+
+            if "zoom" in data.options and data.options["zoom"] is not None:
+                 try: m.zoom(int(data.options["zoom"]))
+                 except: pass
+                 
+            if "focus" in data.options and data.options["focus"]:
+                 focus = data.options["focus"]
+                 if isinstance(focus, list) and len(focus) == 2:
+                     try: m.focus(float(focus[0]), float(focus[1]))
+                     except: pass
+
+            if "flag_colors" in data.options:
+                seq = parse_color_sequence(data.options["flag_colors"])
+                if seq:
+                    m.FlagColorSequence(seq)
+            
+            if "admin_colors" in data.options:
+                seq = parse_color_sequence(data.options["admin_colors"])
+                if seq:
+                    m.AdminColorSequence(seq)
+                    
+            if "data_colormap" in data.options and data.options["data_colormap"]:
+                m.DataColormap(data.options["data_colormap"])
+                
+            for el in data.elements:
+                args = el.args.copy()
+                if el.label:
+                    args["label"] = el.label
+                    
+                if el.type == "flag":
+                    if isinstance(el.value, str):
+                        territory = xatra.loaders.gadm(el.value)
+                    elif isinstance(el.value, list):
+                        territory = None
+                        if len(el.value) > 0 and isinstance(el.value[0], dict):
+                             for part in el.value:
+                                 op = part.get("op", "union")
+                                 ptype = part.get("type", "gadm")
+                                 val = part.get("value")
+                                 part_terr = None
+                                 if ptype == "gadm":
+                                     part_terr = xatra.loaders.gadm(val)
+                                 elif ptype == "polygon":
+                                     try:
+                                         coords = json.loads(val) if isinstance(val, str) else val
+                                         part_terr = xatra.loaders.polygon(coords)
+                                     except: pass
+                                 
+                                 if part_terr:
+                                     if territory is None: territory = part_terr
+                                     else:
+                                         if op == "union": territory = territory | part_terr
+                                         elif op == "difference": territory = territory - part_terr
+                                         elif op == "intersection": territory = territory & part_terr
+                        else:
+                            for code in el.value:
+                                t = xatra.loaders.gadm(code)
+                                territory = t if territory is None else (territory | t)
+                    else:
+                        continue
+                    m.Flag(value=territory, **args)
+                    
+                elif el.type == "river":
+                    source_type = args.get("source_type", "naturalearth")
+                    if "source_type" in args: del args["source_type"]
+                    if isinstance(el.value, str):
+                        if source_type == "overpass":
+                            geom = xatra.loaders.overpass(el.value)
+                        else:
+                            geom = xatra.loaders.naturalearth(el.value)
+                        m.River(value=geom, **args)
+                        
+                elif el.type == "point":
+                    pos = el.value
+                    if isinstance(pos, str):
+                        try: pos = json.loads(pos)
+                        except: continue
+                    m.Point(position=pos, **args)
+                    
+                elif el.type == "text":
+                    pos = el.value
+                    if isinstance(pos, str):
+                        try: pos = json.loads(pos)
+                        except: continue
+                    m.Text(position=pos, **args)
+                
+                elif el.type == "path":
+                    val = el.value
+                    if isinstance(val, str):
+                        try: val = json.loads(val)
+                        except: continue
+                    m.Path(value=val, **args)
+                    
+                elif el.type == "admin":
+                    if "label" in args: del args["label"]
+                    m.Admin(gadm=el.value, **args)
+                
+                elif el.type == "admin_rivers":
+                    if "label" in args: del args["label"]
+                    sources = el.value
+                    if isinstance(sources, str):
+                        try: sources = json.loads(sources)
+                        except: sources = [sources]
+                    m.AdminRivers(sources=sources, **args)
+
+                elif el.type == "dataframe":
+                    import pandas as pd
+                    import io
+                    val = el.value
+                    if isinstance(val, str):
+                        if val.endswith('.csv') and os.path.exists(val):
+                             df = pd.read_csv(val)
+                        else:
+                             df = pd.read_csv(io.StringIO(val))
+                        if "label" in args: del args["label"]
+                        m.Dataframe(df, **args)
+
+        payload = m._export_json()
+        html = export_html_string(payload)
+        result_queue.put({"html": html, "payload": payload})
+        
+    except Exception as e:
+        result_queue.put({"error": str(e), "traceback": traceback.format_exc()})
+
+def run_in_process(task_type, data):
+    global current_process
+    
+    # Ensure previous process is dead
+    with process_lock:
+        if current_process and current_process.is_alive():
+            current_process.terminate()
+            current_process.join()
+    
+    queue = multiprocessing.Queue()
+    p = multiprocessing.Process(target=run_rendering_task, args=(task_type, data, queue))
+    
+    with process_lock:
+        current_process = p
+        
+    p.start()
+    
+    result = {"error": "Rendering process timed out or crashed"}
+    try:
+        # Get result from queue with a timeout (60s)
+        # IMPORTANT: Read from queue BEFORE join() to avoid deadlocks with large data
+        result = queue.get(timeout=60)
+    except Exception as e:
+        result = {"error": f"Rendering failed: {str(e)}"}
+    
+    p.join(timeout=5)
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        
+    with process_lock:
+        current_process = None
+        
+    return result
 
 @app.post("/render/picker")
 def render_picker(request: PickerRequest):
-    try:
-        xatra.new_map()
-        m = xatra.get_current_map()
-        
-        m.BaseOption("Esri.WorldTopoMap", default=True)
-        
-        for entry in request.entries:
-            m.Admin(gadm=entry.country, level=entry.level)
-            
-        if request.adminRivers:
-            m.AdminRivers()
-            
-        payload = m._export_json()
-        html = export_html_string(payload)
-        return {"html": html}
-    except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+    result = run_in_process('picker', request)
+    if "error" in result:
+        return result
+    return result
 
 @app.post("/render/code")
 def render_code(request: CodeRequest):
-    try:
-        # Reset the current map
-        xatra.new_map()
-        
-        # execution context
-        exec_globals = {
-            "xatra": xatra,
-            "gadm": gadm,
-            "naturalearth": naturalearth,
-            "polygon": polygon,
-            "map": xatra.get_current_map() # Provide a 'map' variable initially
-        }
-        
-        # Execute the code
-        exec(request.code, exec_globals)
-        
-        # Get the map state
-        current_map = xatra.get_current_map()
-        
-        # Export
-        payload = current_map._export_json()
-        html = export_html_string(payload)
-        
-        return {"html": html, "payload": payload}
-    except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+    result = run_in_process('code', request)
+    if "error" in result:
+        return result
+    return result
 
 @app.post("/render/builder")
 def render_builder(request: BuilderRequest):
-    try:
-        xatra.new_map()
-        m = xatra.get_current_map()
-        
-        # Apply options
-        if "basemaps" in request.options:
-            for bm in request.options["basemaps"]:
-                 # Check if dict or string
-                if isinstance(bm, dict):
-                    m.BaseOption(**bm)
-                else:
-                    m.BaseOption(bm)
-        
-        if "title" in request.options:
-            m.TitleBox(request.options["title"])
-            
-        # CSS Rules
-        if "css_rules" in request.options:
-            css_str = ""
-            for rule in request.options["css_rules"]:
-                selector = rule.get("selector", "")
-                style = rule.get("style", "")
-                if selector and style:
-                    css_str += f"{selector} {{ {style} }}\n"
-            if css_str:
-                m.CSS(css_str)
-        
-        # Slider
-        if "slider" in request.options:
-            sl = request.options["slider"]
-            start = sl.get("start")
-            end = sl.get("end")
-            speed = sl.get("speed")
-            
-            # Ensure types if they come as strings
-            if isinstance(start, str) and start.strip():
-                 try: start = int(start)
-                 except: start = None
-            elif isinstance(start, str): start = None
-                 
-            if isinstance(end, str) and end.strip():
-                 try: end = int(end)
-                 except: end = None
-            elif isinstance(end, str): end = None
-            
-            if start is not None or end is not None:
-                m.slider(start=start, end=end, speed=speed if speed else 5.0)
-
-        # Zoom and Focus
-        if "zoom" in request.options and request.options["zoom"] is not None:
-             try: m.zoom(int(request.options["zoom"]))
-             except: pass
-             
-        if "focus" in request.options and request.options["focus"]:
-             focus = request.options["focus"]
-             if isinstance(focus, list) and len(focus) == 2:
-                 try: m.focus(float(focus[0]), float(focus[1]))
-                 except: pass
-
-        # Colors
-        if "flag_colors" in request.options:
-            seq = parse_color_sequence(request.options["flag_colors"])
-            if seq:
-                m.FlagColorSequence(seq)
-        
-        if "admin_colors" in request.options:
-            seq = parse_color_sequence(request.options["admin_colors"])
-            if seq:
-                m.AdminColorSequence(seq)
-                
-        if "data_colormap" in request.options and request.options["data_colormap"]:
-            # DataColormap takes string or list?
-            # xatra.pyplot.DataColormap(colormap, ...)
-            # If colormap is None, it sets default?
-            # If it's a string, it might be a matplotlib colormap name.
-            # If it's a list, it might be custom.
-            # Let's assume user passes string or parse it if comma separated?
-            # DataColormap usually takes a name.
-            m.DataColormap(request.options["data_colormap"])
-            
-        # Add elements
-        for el in request.elements:
-            args = el.args.copy()
-            if el.label:
-                args["label"] = el.label
-                
-            if el.type == "flag":
-                # Value is expected to be a GADM code string or list
-                if isinstance(el.value, str):
-                    territory = gadm(el.value)
-                elif isinstance(el.value, list):
-                    territory = None
-                    if len(el.value) > 0 and isinstance(el.value[0], dict):
-                         # Complex builder structure: list of {op, type, value}
-                         for part in el.value:
-                             op = part.get("op", "union")
-                             ptype = part.get("type", "gadm")
-                             val = part.get("value")
-                             
-                             part_terr = None
-                             if ptype == "gadm":
-                                 part_terr = gadm(val)
-                             elif ptype == "polygon":
-                                 try:
-                                     coords = json.loads(val) if isinstance(val, str) else val
-                                     part_terr = polygon(coords)
-                                 except: pass
-                             
-                             if part_terr:
-                                 if territory is None:
-                                     territory = part_terr
-                                 else:
-                                     if op == "union": territory = territory | part_terr
-                                     elif op == "difference": territory = territory - part_terr
-                                     elif op == "intersection": territory = territory & part_terr
-                    else:
-                        # List of strings (union)
-                        for code in el.value:
-                            t = gadm(code)
-                            territory = t if territory is None else (territory | t)
-                else:
-                    continue # Skip invalid
-                
-                m.Flag(value=territory, **args)
-                
-            elif el.type == "river":
-                # Value is id or name
-                source_type = args.get("source_type", "naturalearth")
-                if "source_type" in args: del args["source_type"]
-                
-                if isinstance(el.value, str):
-                    if source_type == "overpass":
-                        from xatra.loaders import overpass
-                        geom = overpass(el.value)
-                    else:
-                        geom = naturalearth(el.value)
-                    m.River(value=geom, **args)
-                    
-            elif el.type == "point":
-                # Value is [lat, lon] or string "[lat, lon]"
-                pos = el.value
-                if isinstance(pos, str):
-                    try:
-                        pos = json.loads(pos)
-                    except:
-                        continue
-                m.Point(position=pos, **args)
-                
-            elif el.type == "text":
-                pos = el.value
-                if isinstance(pos, str):
-                    try:
-                        pos = json.loads(pos)
-                    except:
-                        continue
-                m.Text(position=pos, **args)
-            
-            elif el.type == "path":
-                val = el.value
-                if isinstance(val, str):
-                    try:
-                        val = json.loads(val)
-                    except:
-                        continue
-                m.Path(value=val, **args)
-                
-            elif el.type == "admin":
-                # Value is gadm code
-                # Admin doesn't take label
-                if "label" in args: del args["label"]
-                m.Admin(gadm=el.value, **args)
-            
-            elif el.type == "admin_rivers":
-                # Value could be sources list
-                # AdminRivers doesn't take label
-                if "label" in args: del args["label"]
-                sources = el.value
-                if isinstance(sources, str):
-                    try:
-                        sources = json.loads(sources)
-                    except:
-                        sources = [sources] # treat as single source string
-                m.AdminRivers(sources=sources, **args)
-
-            elif el.type == "dataframe":
-                import pandas as pd
-                import io
-                
-                val = el.value
-                if isinstance(val, str):
-                    # Check if it looks like a path or CSV content
-                    # Simple heuristic: if it has newlines, it's content. If it ends with .csv and exists, it's path.
-                    if val.endswith('.csv') and os.path.exists(val):
-                         df = pd.read_csv(val)
-                    else:
-                         # Assume content
-                         df = pd.read_csv(io.StringIO(val))
-                    
-                    # Clean args
-                    if "label" in args: del args["label"]
-                    
-                    m.Dataframe(df, **args)
-
-        payload = m._export_json()
-        html = export_html_string(payload)
-        return {"html": html, "payload": payload}
-
-    except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+    result = run_in_process('builder', request)
+    if "error" in result:
+        return result
+    return result
 
 if __name__ == "__main__":
     import uvicorn
+    # Use spawn for multiprocessing compatibility
+    multiprocessing.set_start_method('spawn')
     uvicorn.run(app, host="0.0.0.0", port=8088)

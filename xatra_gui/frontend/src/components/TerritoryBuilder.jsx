@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, MousePointer2 } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 
 const TerritoryBuilder = ({ 
-  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId 
+  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId, predefinedCode 
 }) => {
   // Normalize value to list of objects
   let parts = [];
@@ -86,6 +86,25 @@ const TerritoryBuilder = ({
     onChange(newParts);
   };
 
+  const predefinedVariables = useMemo(() => {
+      if (!predefinedCode) return [];
+      const regex = /^(\w+)\s*=/gm;
+      const matches = [];
+      let match;
+      while ((match = regex.exec(predefinedCode)) !== null) {
+          matches.push(match[1]);
+      }
+      return matches;
+  }, [predefinedCode]);
+
+  // Mock search for predefined variables
+  const searchPredefined = async (q) => {
+      if (!q) return predefinedVariables.map(v => ({ gid: v, name: v, country: 'Predefined', level: '-' }));
+      return predefinedVariables
+          .filter(v => v.toLowerCase().includes(q.toLowerCase()))
+          .map(v => ({ gid: v, name: v, country: 'Predefined', level: '-' }));
+  };
+
   if (parts.length === 0) {
       return (
           <div className="border border-dashed border-gray-300 rounded p-2 text-center bg-gray-50">
@@ -123,6 +142,7 @@ const TerritoryBuilder = ({
            >
              <option value="gadm">GADM</option>
              <option value="polygon">Polygon</option>
+             <option value="predefined">Predefined</option>
            </select>
 
            {/* Value */}
@@ -132,8 +152,24 @@ const TerritoryBuilder = ({
                      value={part.value}
                      onChange={(val) => updatePart(idx, 'value', val)}
                      className="w-full text-xs p-1 border rounded bg-white"
-                     placeholder="Search..."
+                     placeholder="Search GADM..."
                    />
+               ) : part.type === 'predefined' ? (
+                   <div className="relative">
+                       <input 
+                           type="text"
+                           value={part.value}
+                           onChange={(e) => updatePart(idx, 'value', e.target.value)}
+                           className="w-full text-xs p-1 border rounded bg-white"
+                           placeholder="Variable name..."
+                           list={`predefined-list-${idx}`}
+                       />
+                       <datalist id={`predefined-list-${idx}`}>
+                           {predefinedVariables.map(v => (
+                               <option key={v} value={v} />
+                           ))}
+                       </datalist>
+                   </div>
                ) : (
                    <div className="flex gap-1 items-start">
                        <textarea

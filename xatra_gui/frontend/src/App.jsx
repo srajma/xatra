@@ -409,6 +409,7 @@ xatra.TitleBox("<b>My Map</b>")
               draftPoints={draftPoints}
               setDraftPoints={setDraftPoints}
               onSaveTerritory={handleSaveTerritoryToLibrary}
+              predefinedCode={predefinedCode}
             />
           ) : (
             <CodeEditor 

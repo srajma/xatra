@@ -6,7 +6,7 @@ import GlobalOptions from './GlobalOptions';
 const Builder = ({ 
   elements, setElements, options, setOptions, onGetCurrentView, 
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
-  onSaveTerritory
+  onSaveTerritory, predefinedCode
 }) => {
   const addElement = (type) => {
     let newElement = { 
@@ -138,6 +138,7 @@ const Builder = ({
               draftPoints={draftPoints}
               setDraftPoints={setDraftPoints}
               onSaveTerritory={onSaveTerritory}
+              predefinedCode={predefinedCode}
             />
           ))}
           
