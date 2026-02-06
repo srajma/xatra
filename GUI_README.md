@@ -102,10 +102,14 @@ Basic extensions
 
 Features
 - [x] Visual ways to draw Paths, picking locations for Texts and Points.
-  - [x] Amazing, well done. Just one thing: show some visual cues on the map when picking points or drawing paths and polygons; like actually show the path or polygon being drawn.
-  - [x] Also allow a user to undo the last point by pressing backspace.
-  - [x] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode.
-  - [x] Display these tips (backspace, freehand mode)
+  - [ ] Amazing, well done. Just one thing: show some visual cues on the map when picking points or drawing paths and polygons; like actually show the path or polygon being drawn.
+    - [ ] No, this has not been implemented---idk if you've tried to do something and failed, or what. Again, you can use the browser using the Dev Tools extension to test your changes for yourself.
+  - [ ] Also allow a user to undo the last point by pressing backspace.
+    - [ ] Nope this hasn't been implemented either
+  - [ ] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode.
+    - [ ] Nor this.
+  - [ ] Display these tips (backspace, freehand mode)
+    - [ ] Nor this.
   - [x] One problem is that the user may forget to un-click the picker and leave it on while picking other co-ordinates. To avoid this, only one picker should be turned on at a time: clicking another picker should turn off all the other ones (and show this visually too).
   - [x] Oh, and for Path the co-ordinates should not be pre-filled with [[28.6, 77.2], [19.0, 72.8]] like they are now: it should start out blank, like polygon does.
 - [x] Better Territory setting interface---right now it just lets you pick one individual GADM for a flag, rather than any complex territory. Instead, we should have a fancier system: where you can compose the territory with the | and - operations (so you have buttons "add" and "subtract" which let you define a new step of the operation); in each component you can select `gadm`, Predefined territory or `polygon`.
@@ -114,12 +118,15 @@ Features
       - [x] No, no no---you fixed this wrong. I didn't ask you to strip `_1` from the input field if the user inputs it (please revert this), I asked you to strip it out in the list of GIDs that we search.
   - [x] Predefined territories should be a section under the Code tab, also in the form of a code field. For any existing territory in the Flags, there should be a button to add it to pre-existing territories.
   - [x] `polygon` should, in addition to just typing out co-ordinates manually, have a visual way to draw it on the map---by picking points or tracing them out if some key is held.
+  - [ ] Actually using pre-defined territories in the territory-making (i.e. as an option in the dropdown alongside GADM and polygon) still needs to be implemented.
+    - [ ] then there should be autocomplete search for entering pre-defined territories in the pre-defined territory option
 - [x] The user should be able to create auxillary "Picker maps" for visualizing and selecting admin features and pre-defined territories. The map panel should be tabbed, so the user can create a new (or switch to a) Picker Map tab---when they create a new Picker Map tab, they will get to set any number of countries whose admin maps (at any level) to load, or instead to create a map with .AdminRivers(), or instead to load the pre-defined territories for visualization.
   - [x] Nice, I like the implementation. However, instead of just one field for Countries and one field for Level, the user should be able to add multiple rows, one for each country and set the level for each. So e.g. I can have IND: 2: PAK: 3.
     - [x] Nice. However, the box and its contents are a bit weirdly-sized (the contents don't fit the box which causes a horizontal scrollbar to appear)
     - [x] The user should be able to search for their country (either by GID or by country name) when entering a country code--just like they can while entering GADM territories for Flags.
   - [ ] Then they will be able to select gadm territories from an admin Picker map.
   - [ ] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields.
+  - [ ] And also selecting rivers
 - [x] Code editor should be nice, not just a simple text editor.
   - [ ] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported.
 
