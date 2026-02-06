@@ -30,11 +30,13 @@ Bugs
   - [x] While the feature has been implemented, it doesn't solve the underlying problem, which is that the server is itself in an error state, so no other operation runs afterward. It should stop the underlying Python process that is in error. 
   - [x] Also in general errors should always break the process, right (I might be talking nonsense, IDK)? Why does the execution not return things to normal upon these errors? 
 - [x] In all the forms there should be something to ensure when the contents are cleared, it is treated exactly as it would be exactly as if it were never edited. E.g. when I enter something into the Flag Color Sequence box and then remove it, I get an error while generating the map "Error: name 'parse_color_sequence' is not defined" even though its contents are clear again.
-- [ ] territories don't get stored correctly if they themselves contain pre-computed territories. I.e. if I define a new Flag and build a territory for it KURU | gadm("IND.31") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]), it will just get stored as: india =  |  |  |  - gadm("IND.12") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]).
+- [x] territories don't get stored correctly if they themselves contain pre-computed territories. I.e. if I define a new Flag and build a territory for it KURU | gadm("IND.31") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]), it will just get stored as: india =  |  |  |  - gadm("IND.12") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]).
 - [ ] Bugs with the code editor
-  - [ ] Weird bug: Every time I switch away from the Code window and then back to it, another copy of each item in the autocomplete appears. So when one first clicks out and back, there are two copies of "xatra" in the autocomplete menu, and if you type `xatra.` then there are two copies of `Admin` etc.; do it again and there are three copies of each, etc.
+  - [x] Weird bug: Every time I switch away from the Code window and then back to it, another copy of each item in the autocomplete appears. So when one first clicks out and back, there are two copies of "xatra" in the autocomplete menu, and if you type `xatra.` then there are two copies of `Admin` etc.; do it again and there are three copies of each, etc.
   - [ ] Code editor is weirdly smaller vertically than the space available in the boxes for them 
-  - [ ] This tip: `Type xatra. or map. for map methods. Use Ctrl+Space for suggestions.` should not say `map.`, it should just be `Type xatra. for map methods. Use Ctrl+Space for suggestions.`
+    - [ ] This is still imperfect.
+  - [x] This tip: `Type xatra. or map. for map methods. Use Ctrl+Space for suggestions.` should not say `map.`, it should just be `Type xatra. for map methods. Use Ctrl+Space for suggestions.`
+  - [ ] I have vimium installed, and when I try typing in the code editor it doesn't realize I'm in insert mode---I guess it doesn't understand that clicking in the code editor puts you in a "textbox"---and so it interprets "x" as me trying to close the tab. IDK if this is easy to fix; if not we can just tell users to disable vimium for this website, but if there's an easy fix, do it.
 
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
@@ -76,6 +78,7 @@ Features
   - [x] Amazing, well done. Just one thing: show some visual cues on the map when picking points or drawing paths and polygons; i.e. actually show/preview the path or polygon being drawn.
   - [ ] Also allow a user to undo the last point by pressing backspace.
     - [ ] I think a previous AI agent attempted to implement this, but has failed.
+      - [ ] Nope, still not working
   - [ ] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode (and then you can continue clicking points normally).
     - [ ] I think a previous AI agent attempted to implement this, but has failed.
   - [x] Display these tips (backspace, freehand mode)
@@ -112,11 +115,13 @@ Features
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
 - [x] "Picker Map" should be called "Reference Map" instead.
-- [ ] The panel for adding layers should be at the *bottom* of the layer list, so that new layers just get added on top of it (while scrolling just to compensate for the new element to ensure the panel is still in view) rather than having to scroll all the way to the bottom like it is now.
-- [ ] should be able to reorder the lines of the territory builder (the operations) around by dragging them (and it should also reorder them in the internal state)
-- [ ] when you save a territory to library, it should be case-sensitive, i.e. if you store the territory of a flag called "India" its variable name should be "India" and not "india".
-- [ ] We now have visual cues for drawing paths and polygons, thank you---just one thing: the *vertices* of paths and polygons should also be shown in this visual cue, with dots, so that even the first point drawn can be seen on the map before any actual line is drawn.
-- [ ] The "Note" field should have monospaced font.
+- [x] The panel for adding layers should be at the *bottom* of the layer list, so that new layers just get added on top of it (while scrolling just to compensate for the new element to ensure the panel is still in view) rather than having to scroll all the way to the bottom like it is now.
+  - [ ] Thank you---but can you make it automatically scroll to the very bottom of the panel after adding any new layer?
+- [x] should be able to reorder the lines of the territory builder (the operations) around by dragging them (and it should also reorder them in the internal state)
+- [x] when you save a territory to library, it should be case-sensitive, i.e. if you store the territory of a flag called "India" its variable name should be "India" and not "india".
+- [x] We now have visual cues for drawing paths and polygons, thank you---just one thing: the *vertices* of paths and polygons should also be shown in this visual cue, with dots, so that even the first point drawn can be seen on the map before any actual line is drawn.
+  - [ ] Also implement this for points. When a point has a pre-existing value for Position and you hit the "Click on map" button, it should show that little point on that map with the same sort of dot.
+- [x] The "Note" field should have monospaced font.
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"

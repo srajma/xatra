@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, MousePointer2 } from 'lucide-react';
+import { Plus, Trash2, MousePointer2, GripVertical } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 
 const TerritoryBuilder = ({ 
@@ -86,6 +86,42 @@ const TerritoryBuilder = ({
     onChange(newParts);
   };
 
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  const movePart = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    const newParts = [...parts];
+    const [removed] = newParts.splice(fromIndex, 1);
+    newParts.splice(toIndex, 0, removed);
+    onChange(newParts);
+    setActivePicker(null);
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+  const handleDragLeave = () => setDragOverIndex(null);
+  const handleDrop = (e, toIndex) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    setDraggedIndex(null);
+    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (Number.isNaN(fromIndex)) return;
+    movePart(fromIndex, toIndex);
+  };
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   const [territoryLibraryNames, setTerritoryLibraryNames] = useState([]);
   useEffect(() => {
     fetch('http://localhost:8088/territory_library/names')
@@ -124,7 +160,19 @@ const TerritoryBuilder = ({
   return (
     <div className="space-y-2">
       {parts.map((part, idx) => (
-        <div key={idx} className="flex gap-2 items-start bg-gray-50 p-2 rounded border border-gray-200">
+        <div
+          key={idx}
+          draggable
+          onDragStart={(e) => handleDragStart(e, idx)}
+          onDragOver={(e) => handleDragOver(e, idx)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, idx)}
+          onDragEnd={handleDragEnd}
+          className={`flex gap-2 items-start bg-gray-50 p-2 rounded border transition-colors ${draggedIndex === idx ? 'opacity-50' : ''} ${dragOverIndex === idx ? 'border-blue-400 ring-1 ring-blue-200' : 'border-gray-200'}`}
+        >
+           <div className="flex items-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 flex-shrink-0" title="Drag to reorder">
+             <GripVertical size={14}/>
+           </div>
            {/* Operator */}
            {idx > 0 ? (
                <select

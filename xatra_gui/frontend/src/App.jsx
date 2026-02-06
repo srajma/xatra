@@ -110,6 +110,21 @@ xatra.TitleBox("<b>My Map</b>")
           const newElements = [...builderElements];
           newElements[idx].value = JSON.stringify(points);
           setBuilderElements(newElements);
+      } else if (typeof activePicker.context === 'string' && activePicker.context.startsWith('territory-')) {
+          const parentId = parseInt(activePicker.context.replace('territory-', ''), 10);
+          if (Number.isNaN(parentId)) return;
+          const el = builderElements[parentId];
+          if (!el || el.type !== 'flag' || !Array.isArray(el.value)) return;
+          const partIndex = activePicker.id;
+          const parts = [...el.value];
+          if (partIndex < 0 || partIndex >= parts.length) return;
+          const part = parts[partIndex];
+          if (part && part.type === 'polygon') {
+              parts[partIndex] = { ...part, value: JSON.stringify(points) };
+              const newElements = [...builderElements];
+              newElements[parentId] = { ...el, value: parts };
+              setBuilderElements(newElements);
+          }
       }
   };
 
@@ -254,6 +269,7 @@ xatra.TitleBox("<b>My Map</b>")
               let pStr = '';
               if (part.type === 'gadm') pStr = `gadm("${part.value}")`;
               else if (part.type === 'polygon') pStr = `polygon(${part.value})`;
+              else if (part.type === 'predefined' && part.value) pStr = part.value;
               
               if (i === 0) return pStr;
               return ` ${ops[part.op] || '|'} ${pStr}`;
@@ -263,7 +279,7 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   const handleSaveTerritoryToLibrary = (element) => {
-      const name = element.label.toLowerCase().replace(/\s+/g, '_');
+      const name = (element.label || '').replace(/\s+/g, '_');
       const terrStr = formatTerritory(element.value);
       setPredefinedCode(prev => prev + `\n${name} = ${terrStr}\n`);
       setActiveTab('code');

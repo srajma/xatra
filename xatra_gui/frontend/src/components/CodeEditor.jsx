@@ -36,6 +36,7 @@ const XATRA_COMPLETIONS = {
 const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }) => {
   const editorRef = useRef(null);
   const predefinedEditorRef = useRef(null);
+  const completionDisposableRef = useRef(null);
 
   const handleEditorDidMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
@@ -47,7 +48,13 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
     });
     monaco.editor.setTheme('xatra-dark');
 
-    monaco.languages.registerCompletionItemProvider('python', {
+    // Dispose any previous provider so tab switching doesn't duplicate suggestions
+    if (completionDisposableRef.current) {
+      completionDisposableRef.current.dispose();
+      completionDisposableRef.current = null;
+    }
+
+    completionDisposableRef.current = monaco.languages.registerCompletionItemProvider('python', {
       triggerCharacters: ['.', '('],
       provideCompletionItems: (model, position) => {
         const textUntilPosition = model.getValueInRange({ startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column });
@@ -55,7 +62,7 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
         const linePrefix = textUntilPosition.slice(-80);
 
         const items = [];
-        if (linePrefix.endsWith('xatra.') || linePrefix.match(/map\.\s*$/)) {
+        if (linePrefix.endsWith('xatra.')) {
           XATRA_COMPLETIONS.xatraMethods.forEach((m) => {
             items.push({
               label: m.label,
@@ -80,6 +87,16 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
         return { suggestions: items };
       },
     });
+  }, []);
+
+  // Dispose completion provider on unmount to avoid duplicate registrations when switching tabs
+  React.useEffect(() => {
+    return () => {
+      if (completionDisposableRef.current) {
+        completionDisposableRef.current.dispose();
+        completionDisposableRef.current = null;
+      }
+    };
   }, []);
 
   const handlePredefinedMount = useCallback((editor) => {
@@ -111,7 +128,7 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
         </div>
       </div>
 
-      <div className="flex flex-col flex-[2] min-h-[200px]">
+      <div className="flex flex-col flex-[2] min-h-[200px] flex-1">
         <div className="flex justify-between items-center mb-2">
           <label className="block text-sm font-medium text-gray-700">Map Code</label>
           <button
@@ -122,9 +139,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
             <RefreshCw size={12} /> Sync from Builder
           </button>
         </div>
-        <div className="flex-1 border border-gray-700 rounded-md overflow-hidden min-h-[200px]" style={{ minHeight: 280 }}>
+        <div className="flex-1 border border-gray-700 rounded-md overflow-hidden min-h-[380px] flex flex-col">
           <Editor
-            height="280px"
+            height="380px"
             defaultLanguage="python"
             value={code || ''}
             onChange={(v) => setCode(v ?? '')}
@@ -144,7 +161,7 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
       <div className="p-2 bg-gray-50 border rounded">
         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Autocomplete</p>
         <p className="text-xs text-gray-600">
-          Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> or <kbd className="px-1 bg-gray-200 rounded">map.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
+          Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
         </p>
       </div>
     </div>

@@ -536,7 +536,7 @@ const LayerItem = ({
           type="text"
           value={element.args?.note || ''}
           onChange={(e) => updateArg(index, 'note', e.target.value)}
-          className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
+          className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
           placeholder="Optional description..."
         />
       </div>

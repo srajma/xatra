@@ -568,12 +568,18 @@ HTML_TEMPLATE = Template(
             if (t === 'point' || t === 'text') {
                 const pt = points[0];
                 draftLayer = L.circleMarker(Array.isArray(pt) ? pt : [pt.lat, pt.lng], { color: 'red', radius: 8, weight: 2, fillOpacity: 0.7 }).addTo(map);
-            } else if (t === 'path') {
+            } else if (t === 'path' || t === 'polygon') {
                 const latlngs = points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]);
-                draftLayer = L.polyline(latlngs, { color: '#dc2626', weight: 4, dashArray: '8, 8', opacity: 0.9 }).addTo(map);
-            } else if (t === 'polygon') {
-                const latlngs = points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]);
-                draftLayer = L.polygon(latlngs, { color: '#dc2626', weight: 3, fillColor: '#dc2626', fillOpacity: 0.25, dashArray: '6, 6' }).addTo(map);
+                const group = L.layerGroup();
+                if (t === 'path') {
+                    group.addLayer(L.polyline(latlngs, { color: '#dc2626', weight: 4, dashArray: '8, 8', opacity: 0.9 }));
+                } else {
+                    group.addLayer(L.polygon(latlngs, { color: '#dc2626', weight: 3, fillColor: '#dc2626', fillOpacity: 0.25, dashArray: '6, 6' }));
+                }
+                latlngs.forEach(function(ll) {
+                    group.addLayer(L.circleMarker(ll, { color: '#dc2626', radius: 5, weight: 2, fillColor: '#fff', fillOpacity: 1 }));
+                });
+                draftLayer = group.addTo(map);
             }
         }
       });

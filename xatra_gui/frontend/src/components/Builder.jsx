@@ -93,9 +93,35 @@ const Builder = ({
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-900">Layers</h3>
         </div>
-        
-        {/* Add Buttons Grid */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+
+        <div className="space-y-3">
+          {elements.map((el, index) => (
+            <LayerItem 
+              key={index} 
+              element={el} 
+              index={index} 
+              updateElement={updateElement} 
+              updateArg={updateArg}
+              replaceElement={replaceElement}
+              removeElement={removeElement}
+              lastMapClick={lastMapClick}
+              activePicker={activePicker}
+              setActivePicker={setActivePicker}
+              draftPoints={draftPoints}
+              setDraftPoints={setDraftPoints}
+              onSaveTerritory={onSaveTerritory}
+              predefinedCode={predefinedCode}
+            />
+          ))}
+          
+          {elements.length === 0 && (
+            <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 text-sm">
+              No layers added yet. Add one below.
+            </div>
+          )}
+
+          {/* Add layer panel at bottom so new layers appear above it */}
+          <div className="grid grid-cols-4 gap-2 pt-2">
              <button onClick={() => addElement('flag')} className="flex flex-col items-center justify-center p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-[10px] gap-1 border border-blue-100">
                <Map size={14}/> Flag
              </button>
@@ -120,33 +146,7 @@ const Builder = ({
              <button onClick={() => addElement('dataframe')} className="flex flex-col items-center justify-center p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 text-[10px] gap-1 border border-green-100">
                <Table size={14}/> Data
              </button>
-        </div>
-
-        <div className="space-y-3">
-          {elements.map((el, index) => (
-            <LayerItem 
-              key={index} 
-              element={el} 
-              index={index} 
-              updateElement={updateElement} 
-              updateArg={updateArg}
-              replaceElement={replaceElement}
-              removeElement={removeElement}
-              lastMapClick={lastMapClick}
-              activePicker={activePicker}
-              setActivePicker={setActivePicker}
-              draftPoints={draftPoints}
-              setDraftPoints={setDraftPoints}
-              onSaveTerritory={onSaveTerritory}
-              predefinedCode={predefinedCode}
-            />
-          ))}
-          
-          {elements.length === 0 && (
-            <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 text-sm">
-              No layers added yet. Click above to add one.
-            </div>
-          )}
+          </div>
         </div>
       </section>
     </div>
