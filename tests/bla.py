@@ -21,6 +21,8 @@ from xatra.loaders import gadm, naturalearth, polygon, overpass
 # Define reusable territories here
 # e.g. maurya = gadm("IND") | gadm("PAK")
 
+# map = xatra.Map()
+
 xatra.BaseOption("Esri.WorldTopoMap", name="", default=True)
 xatra.TitleBox("""<b>My Interactive Map</b>""")
 
@@ -29,4 +31,3 @@ xatra.Point(position=[28.6, 77.2], label='New point')
 xatra.Path(value=[[9.2756,58.4912],[10.7038,63.5889],[11.9963,55.9863],[19.8494,53.0859]], label='New path', period=[-320,100])
 xatra.River(value=naturalearth("1159122643"), label='New river')
 xatra.show()
-
