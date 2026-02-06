@@ -125,13 +125,22 @@ HTML_TEMPLATE = Template(
       
       // Add map click event handler
       map.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
         const coordinateElement = document.getElementById('coordinates');
         const coordinateLabel = document.getElementById('coordinate-label');
         if (coordinateElement && coordinateLabel) {
-          const lat = e.latlng.lat;
-          const lng = e.latlng.lng;
           coordinateElement.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
           coordinateLabel.textContent = 'Clicked point: ';
+        }
+        
+        if (window.parent) {
+            window.parent.postMessage({
+                type: 'mapClick',
+                lat: lat,
+                lng: lng
+            }, '*');
         }
       });
       

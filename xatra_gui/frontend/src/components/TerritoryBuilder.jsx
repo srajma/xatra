@@ -1,23 +1,58 @@
-import React from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, MousePointer2 } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 
-const TerritoryBuilder = ({ value, onChange }) => {
+const TerritoryBuilder = ({ value, onChange, lastMapClick }) => {
   // Normalize value to list of objects
-  // If string, convert to single part
-  // If array of strings, convert to multiple unions (legacy support if loaded)
-  // If array of objects, use as is
   let parts = [];
   if (Array.isArray(value)) {
       if (value.length > 0 && typeof value[0] === 'object') {
           parts = value;
       } else {
-          // Array of strings
           parts = value.map(v => ({ op: 'union', type: 'gadm', value: v }));
       }
   } else if (typeof value === 'string' && value) {
       parts = [{ op: 'union', type: 'gadm', value: value }];
   }
+
+  const [pickingState, setPickingState] = useState({ index: -1, start: 0 });
+
+  useEffect(() => {
+      if (pickingState.index >= 0 && lastMapClick && lastMapClick.ts > pickingState.start) {
+        const idx = pickingState.index;
+        const lat = parseFloat(lastMapClick.lat.toFixed(4));
+        const lng = parseFloat(lastMapClick.lng.toFixed(4));
+        const point = [lat, lng];
+
+        const part = parts[idx];
+        if (part && part.type === 'polygon') {
+             try {
+                let current = [];
+                if (part.value) {
+                    try { current = JSON.parse(part.value); } catch {}
+                }
+                if (!Array.isArray(current)) current = [];
+                current.push(point);
+                
+                const newParts = [...parts];
+                newParts[idx] = { ...part, value: JSON.stringify(current) };
+                onChange(newParts);
+            } catch (e) {
+                const newParts = [...parts];
+                newParts[idx] = { ...part, value: JSON.stringify([point]) };
+                onChange(newParts);
+            }
+        }
+      }
+  }, [lastMapClick]);
+
+  const togglePicking = (index) => {
+      if (pickingState.index === index) {
+          setPickingState({ index: -1, start: 0 });
+      } else {
+          setPickingState({ index: index, start: Date.now() });
+      }
+  };
 
   const updatePart = (index, field, val) => {
     const newParts = [...parts];
@@ -84,12 +119,21 @@ const TerritoryBuilder = ({ value, onChange }) => {
                      placeholder="Search..."
                    />
                ) : (
-                   <textarea
-                     value={part.value}
-                     onChange={(e) => updatePart(idx, 'value', e.target.value)}
-                     className="w-full text-xs p-1 border rounded font-mono h-8 resize-none bg-white"
-                     placeholder="[[lat,lon],...]"
-                   />
+                   <div className="flex gap-1 items-start">
+                       <textarea
+                         value={part.value}
+                         onChange={(e) => updatePart(idx, 'value', e.target.value)}
+                         className="w-full text-xs p-1 border rounded font-mono h-8 resize-none bg-white"
+                         placeholder="[[lat,lon],...]"
+                       />
+                       <button 
+                            onClick={() => togglePicking(idx)}
+                            className={`p-1 border rounded flex-shrink-0 transition-colors ${pickingState.index === idx ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-300'}`}
+                            title={pickingState.index === idx ? "Click on map to append points" : "Draw polygon on map"}
+                        >
+                            <MousePointer2 size={12}/>
+                        </button>
+                   </div>
                )}
            </div>
 

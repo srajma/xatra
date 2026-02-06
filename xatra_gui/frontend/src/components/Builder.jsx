@@ -1,9 +1,9 @@
 import React from 'react';
-import { Map, Users, MapPin, Type, GitMerge } from 'lucide-react';
+import { Map, Users, MapPin, Type, GitMerge, Table } from 'lucide-react';
 import LayerItem from './LayerItem';
 import GlobalOptions from './GlobalOptions';
 
-const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView }) => {
+const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView, lastMapClick }) => {
   const addElement = (type) => {
     let newElement = { 
       type, 
@@ -37,6 +37,11 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView 
       case 'admin_rivers':
         newElement.label = 'Rivers'; // AdminRivers doesn't really have a label arg in MapElement but useful for UI
         newElement.value = '["naturalearth"]';
+        break;
+      case 'dataframe':
+        newElement.label = 'Data';
+        newElement.value = 'gadm,value\nIND,100\nPAK,50';
+        newElement.args = { data_column: 'value' };
         break;
       default:
         break;
@@ -105,8 +110,11 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView 
              <button onClick={() => addElement('admin')} className="flex flex-col items-center justify-center p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-[10px] gap-1 border border-indigo-100">
                <Users size={14}/> Admin
              </button>
-             <button onClick={() => addElement('admin_rivers')} className="col-span-2 flex flex-col items-center justify-center p-2 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 text-[10px] gap-1 border border-teal-100">
-               <span className="text-lg leading-3">≈</span> Admin Rivers
+             <button onClick={() => addElement('admin_rivers')} className="flex flex-col items-center justify-center p-2 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 text-[10px] gap-1 border border-teal-100">
+               <span className="text-lg leading-3">≈</span> Rivers
+             </button>
+             <button onClick={() => addElement('dataframe')} className="flex flex-col items-center justify-center p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 text-[10px] gap-1 border border-green-100">
+               <Table size={14}/> Data
              </button>
         </div>
 
@@ -119,7 +127,8 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView 
               updateElement={updateElement} 
               updateArg={updateArg}
               replaceElement={replaceElement}
-              removeElement={removeElement} 
+              removeElement={removeElement}
+              lastMapClick={lastMapClick}
             />
           ))}
           

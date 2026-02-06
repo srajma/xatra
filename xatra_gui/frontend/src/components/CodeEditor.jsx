@@ -1,5 +1,9 @@
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
+import Editor from 'react-simple-code-editor';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-python';
+import 'prismjs/themes/prism-tomorrow.css';
 
 const CodeEditor = ({ code, setCode, onSync }) => {
   return (
@@ -14,12 +18,26 @@ const CodeEditor = ({ code, setCode, onSync }) => {
             <RefreshCw size={12}/> Sync from Builder
         </button>
       </div>
-      <textarea
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        className="flex-1 w-full p-3 font-mono text-sm bg-gray-900 text-gray-100 rounded-md border border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-        spellCheck="false"
-      />
+      
+      <div className="flex-1 border border-gray-700 rounded-md overflow-hidden bg-[#2d2d2d] relative">
+          <div className="absolute inset-0 overflow-auto">
+            <Editor
+                value={code}
+                onValueChange={code => setCode(code)}
+                highlight={code => Prism.highlight(code, Prism.languages.python || Prism.languages.extend('clike', {}), 'python')}
+                padding={12}
+                style={{
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                fontSize: 13,
+                backgroundColor: '#2d2d2d',
+                color: '#f8f8f2',
+                minHeight: '100%'
+                }}
+                textareaClassName="focus:outline-none"
+            />
+          </div>
+      </div>
+
       <div className="mt-2 p-2 bg-gray-50 border rounded">
           <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Available globals</p>
           <div className="flex flex-wrap gap-2">

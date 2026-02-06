@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Code, Play, RefreshCw, Map as MapIcon, Upload, Save, FileJson, FileCode } from 'lucide-react';
+import { Layers, Code, Play, RefreshCw, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2 } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
 import Builder from './components/Builder';
@@ -35,10 +35,11 @@ xatra.TitleBox("<b>My Map</b>")
 
   // Picker State
   const [pickerOptions, setPickerOptions] = useState({
-    countries: ['IND'],
-    level: 1,
+    entries: [{ country: 'IND', level: 1 }],
     adminRivers: true
   });
+  
+  const [lastMapClick, setLastMapClick] = useState(null);
 
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
@@ -57,6 +58,8 @@ xatra.TitleBox("<b>My Map</b>")
                 zoom: event.data.zoom
             }));
         }
+      } else if (event.data && event.data.type === 'mapClick') {
+          setLastMapClick({ lat: event.data.lat, lng: event.data.lng, ts: Date.now() });
       }
     };
     window.addEventListener('message', handleMessage);
@@ -295,6 +298,7 @@ xatra.TitleBox("<b>My Map</b>")
               options={builderOptions}
               setOptions={setBuilderOptions}
               onGetCurrentView={handleGetCurrentView}
+              lastMapClick={lastMapClick}
             />
           ) : (
             <CodeEditor code={code} setCode={setCode} onSync={generatePythonCode} />
@@ -336,44 +340,69 @@ xatra.TitleBox("<b>My Map</b>")
         </div>
 
         {activePreviewTab === 'picker' && (
-            <div className="absolute top-16 right-4 z-20 w-64 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4">
+            <div className="absolute top-16 right-4 z-20 w-64 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b pb-2">
                     Picker Options
                 </h3>
                 <div className="space-y-3">
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Countries (GADM)</label>
-                        <input 
-                            type="text" 
-                            value={pickerOptions.countries.join(', ')}
-                            onChange={(e) => setPickerOptions({ ...pickerOptions, countries: e.target.value.split(',').map(s => s.trim()) })}
-                            className="w-full text-xs p-2 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="IND, PAK..."
-                        />
+                    <div className="space-y-2">
+                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Countries</label>
+                         {pickerOptions.entries.map((entry, idx) => (
+                             <div key={idx} className="flex gap-2 items-center">
+                                 <input 
+                                     type="text" 
+                                     value={entry.country}
+                                     onChange={(e) => {
+                                         const newEntries = [...pickerOptions.entries];
+                                         newEntries[idx].country = e.target.value;
+                                         setPickerOptions({...pickerOptions, entries: newEntries});
+                                     }}
+                                     className="flex-1 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase"
+                                     placeholder="IND"
+                                 />
+                                 <input 
+                                     type="number" 
+                                     value={entry.level}
+                                     onChange={(e) => {
+                                         const newEntries = [...pickerOptions.entries];
+                                         newEntries[idx].level = parseInt(e.target.value);
+                                         setPickerOptions({...pickerOptions, entries: newEntries});
+                                     }}
+                                     className="w-12 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                     min="0" max="4"
+                                 />
+                                 <button 
+                                     onClick={() => {
+                                         const newEntries = [...pickerOptions.entries];
+                                         newEntries.splice(idx, 1);
+                                         setPickerOptions({...pickerOptions, entries: newEntries});
+                                     }}
+                                     className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                                 >
+                                     <Trash2 size={12}/>
+                                 </button>
+                             </div>
+                         ))}
+                         <button 
+                             onClick={() => setPickerOptions({...pickerOptions, entries: [...pickerOptions.entries, {country: '', level: 1}]})}
+                             className="text-xs text-blue-600 flex items-center gap-1 font-medium hover:text-blue-800"
+                         >
+                             <Plus size={12}/> Add Country
+                         </button>
                     </div>
-                    <div className="flex gap-4">
-                        <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Level</label>
+
+                    <div className="flex items-center pb-2 pt-2 border-t border-gray-100">
+                        <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
                             <input 
-                                type="number" 
-                                value={pickerOptions.level}
-                                onChange={(e) => setPickerOptions({ ...pickerOptions, level: parseInt(e.target.value) })}
-                                className="w-full text-xs p-2 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                min="0" max="3"
+                                type="checkbox"
+                                checked={pickerOptions.adminRivers}
+                                onChange={(e) => setPickerOptions({ ...pickerOptions, adminRivers: e.target.checked })}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
-                        </div>
-                        <div className="flex items-end pb-2">
-                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
-                                <input 
-                                    type="checkbox"
-                                    checked={pickerOptions.adminRivers}
-                                    onChange={(e) => setPickerOptions({ ...pickerOptions, adminRivers: e.target.checked })}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                Rivers
-                            </label>
-                        </div>
+                            Show Admin Rivers
+                        </label>
                     </div>
+
                     <button 
                         onClick={renderPickerMap}
                         disabled={loading}
@@ -383,7 +412,7 @@ xatra.TitleBox("<b>My Map</b>")
                     </button>
                 </div>
                 <div className="text-[10px] text-gray-400 bg-gray-50 p-2 rounded italic">
-                    Tip: Use the picker map to find GADM codes or coordinates. You can still use "Use Current View" in Global Options while this tab is active.
+                    Tip: Use the picker map to find GADM codes or coordinates.
                 </div>
             </div>
         )}

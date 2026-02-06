@@ -152,9 +152,12 @@ class BuilderRequest(BaseModel):
     elements: List[MapElement]
     options: Dict[str, Any] = {}
 
+class PickerEntry(BaseModel):
+    country: str
+    level: int
+
 class PickerRequest(BaseModel):
-    countries: List[str]
-    level: int = 1
+    entries: List[PickerEntry]
     adminRivers: bool = False
 
 @app.get("/health")
@@ -169,8 +172,8 @@ def render_picker(request: PickerRequest):
         
         m.BaseOption("Esri.WorldTopoMap", default=True)
         
-        for country in request.countries:
-            m.Admin(gadm=country, level=request.level)
+        for entry in request.entries:
+            m.Admin(gadm=entry.country, level=entry.level)
             
         if request.adminRivers:
             m.AdminRivers()
@@ -395,6 +398,25 @@ def render_builder(request: BuilderRequest):
                     except:
                         sources = [sources] # treat as single source string
                 m.AdminRivers(sources=sources, **args)
+
+            elif el.type == "dataframe":
+                import pandas as pd
+                import io
+                
+                val = el.value
+                if isinstance(val, str):
+                    # Check if it looks like a path or CSV content
+                    # Simple heuristic: if it has newlines, it's content. If it ends with .csv and exists, it's path.
+                    if val.endswith('.csv') and os.path.exists(val):
+                         df = pd.read_csv(val)
+                    else:
+                         # Assume content
+                         df = pd.read_csv(io.StringIO(val))
+                    
+                    # Clean args
+                    if "label" in args: del args["label"]
+                    
+                    m.Dataframe(df, **args)
 
         payload = m._export_json()
         html = export_html_string(payload)

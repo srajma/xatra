@@ -16,9 +16,11 @@
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.563.0",
+    "prismjs": "^1.30.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-leaflet": "^5.0.0",
+    "react-simple-code-editor": "^0.14.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

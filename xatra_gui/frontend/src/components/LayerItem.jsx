@@ -1,10 +1,44 @@
-import React, { useState } from 'react';
-import { Trash2, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2 } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 import TerritoryBuilder from './TerritoryBuilder';
 
-const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, removeElement }) => {
+const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, removeElement, lastMapClick }) => {
   const [showMore, setShowMore] = useState(false);
+  const [pickingStart, setPickingStart] = useState(0);
+
+  useEffect(() => {
+      if (pickingStart > 0 && lastMapClick && lastMapClick.ts > pickingStart) {
+        const lat = parseFloat(lastMapClick.lat.toFixed(4));
+        const lng = parseFloat(lastMapClick.lng.toFixed(4));
+        const point = [lat, lng];
+
+        if (element.type === 'point' || element.type === 'text') {
+            updateElement(index, 'value', JSON.stringify(point));
+            setPickingStart(0); // Stop picking
+        } else if (element.type === 'path') {
+            // Append point
+             try {
+                let current = [];
+                if (element.value) {
+                    try { current = JSON.parse(element.value); } catch {}
+                }
+                if (!Array.isArray(current)) current = [];
+                
+                current.push(point);
+                updateElement(index, 'value', JSON.stringify(current));
+                // Continue picking for path
+            } catch (e) {
+                updateElement(index, 'value', JSON.stringify([point]));
+            }
+        }
+      }
+  }, [lastMapClick]);
+
+  const togglePicking = () => {
+      if (pickingStart > 0) setPickingStart(0);
+      else setPickingStart(Date.now());
+  };
 
   const renderSpecificFields = () => {
     switch (element.type) {
@@ -26,6 +60,7 @@ const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, r
               <TerritoryBuilder
                 value={element.value}
                 onChange={(val) => updateElement(index, 'value', val)}
+                lastMapClick={lastMapClick}
               />
             </div>
           </div>
@@ -96,13 +131,22 @@ const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, r
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Position [lat, lon]</label>
-              <input
-                type="text"
-                value={element.value || ''}
-                onChange={(e) => updateElement(index, 'value', e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                placeholder="[28.6, 77.2]"
-              />
+              <div className="flex gap-1">
+                  <input
+                    type="text"
+                    value={element.value || ''}
+                    onChange={(e) => updateElement(index, 'value', e.target.value)}
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
+                    placeholder="[28.6, 77.2]"
+                  />
+                  <button 
+                    onClick={togglePicking}
+                    className={`p-1.5 border rounded flex-shrink-0 transition-colors ${pickingStart > 0 ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
+                    title={pickingStart > 0 ? "Click on map to pick location" : "Pick from map"}
+                  >
+                    <MousePointer2 size={16}/>
+                  </button>
+              </div>
             </div>
           </div>
         );
@@ -121,12 +165,94 @@ const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, r
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Coords [[lat,lon]...]</label>
+              <div className="flex gap-1 items-start">
+                  <textarea
+                    value={element.value || ''}
+                    onChange={(e) => updateElement(index, 'value', e.target.value)}
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono h-20 resize-none"
+                    placeholder="[[28.6, 77.2], [19.0, 72.8]]"
+                  />
+                  <button 
+                    onClick={togglePicking}
+                    className={`p-1.5 border rounded flex-shrink-0 transition-colors ${pickingStart > 0 ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
+                    title={pickingStart > 0 ? "Click on map to append points. Click again to stop." : "Draw path on map"}
+                  >
+                    <MousePointer2 size={16}/>
+                  </button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'dataframe':
+        return (
+          <div className="space-y-3 mb-2">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">CSV Content or File Path</label>
               <textarea
                 value={element.value || ''}
                 onChange={(e) => updateElement(index, 'value', e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono h-20"
-                placeholder="[[28.6, 77.2], [19.0, 72.8]]"
+                className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono h-24 resize-y text-xs"
+                placeholder="gadm,value\nIND,100"
               />
+              <div className="mt-1">
+                 <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                                updateElement(index, 'value', ev.target.result);
+                            };
+                            reader.readAsText(file);
+                        }
+                    }}
+                    className="text-xs text-gray-500"
+                 />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+                 <div>
+                    <label className="block text-xs text-gray-500 mb-1">Data Column</label>
+                    <input
+                        type="text"
+                        value={element.args?.data_column || ''}
+                        onChange={(e) => updateArg(index, 'data_column', e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
+                        placeholder="value"
+                    />
+                </div>
+                 <div>
+                    <label className="block text-xs text-gray-500 mb-1">Year Columns (comma sep)</label>
+                    <input
+                        type="text"
+                        value={element.args?.year_columns ? element.args.year_columns.join(',') : ''}
+                        onChange={(e) => {
+                             const val = e.target.value;
+                             if (!val) updateArg(index, 'year_columns', null);
+                             else updateArg(index, 'year_columns', val.split(',').map(s => s.trim()));
+                        }}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
+                        placeholder="2000, 2010"
+                    />
+                </div>
+            </div>
+            
+            <div>
+                 <label className="block text-xs text-gray-500 mb-1">Find in GADM (comma sep)</label>
+                 <input
+                    type="text"
+                    value={element.args?.find_in_gadm ? element.args.find_in_gadm.join(',') : ''}
+                    onChange={(e) => {
+                         const val = e.target.value;
+                         if (!val) updateArg(index, 'find_in_gadm', null);
+                         else updateArg(index, 'find_in_gadm', val.split(',').map(s => s.trim()));
+                    }}
+                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
+                    placeholder="e.g. IND, PAK (optional filter)"
+                />
             </div>
           </div>
         );
