@@ -244,7 +244,7 @@ const LayerItem = ({
                 value={element.value || ''}
                 onChange={(e) => updateElement(index, 'value', e.target.value)}
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono h-24 resize-y text-xs"
-                placeholder="gadm,value\nIND,100"
+                placeholder="GID,value\nIND,100"
               />
               <div className="mt-1">
                  <input
@@ -290,21 +290,6 @@ const LayerItem = ({
                         placeholder="2000, 2010"
                     />
                 </div>
-            </div>
-            
-            <div>
-                 <label className="block text-xs text-gray-500 mb-1">Find in GADM (comma sep)</label>
-                 <input
-                    type="text"
-                    value={element.args?.find_in_gadm ? element.args.find_in_gadm.join(',') : ''}
-                    onChange={(e) => {
-                         const val = e.target.value;
-                         if (!val) updateArg(index, 'find_in_gadm', null);
-                         else updateArg(index, 'find_in_gadm', val.split(',').map(s => s.trim()));
-                    }}
-                    className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-                    placeholder="e.g. IND, PAK (optional filter)"
-                />
             </div>
           </div>
         );

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Code, Play, RefreshCw, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2 } from 'lucide-react';
+import { Layers, Code, Play, RefreshCw, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
 import Builder from './components/Builder';
 import CodeEditor from './components/CodeEditor';
 import MapPreview from './components/MapPreview';
+import AutocompleteInput from './components/AutocompleteInput';
 
 function App() {
   const [activeTab, setActiveTab] = useState('builder'); // 'builder' or 'code'
@@ -343,6 +344,14 @@ xatra.TitleBox("<b>My Map</b>")
     setCode(lines.join('\n'));
   };
 
+  const handleStop = async () => {
+      // Force stop loading on frontend
+      setLoading(false);
+      try {
+          await fetch('http://localhost:8088/stop', { method: 'POST' });
+      } catch (e) { console.error(e); }
+  };
+
   // Initial render
   useEffect(() => {
     renderMap();
@@ -411,14 +420,21 @@ xatra.TitleBox("<b>My Map</b>")
         </div>
 
         <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <button
-            onClick={renderMap}
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            {loading ? <RefreshCw className="animate-spin w-5 h-5" /> : <Play className="w-5 h-5 fill-current" />}
-            {loading ? 'Rendering...' : 'Render Map'}
-          </button>
+          {loading ? (
+              <button
+                onClick={handleStop}
+                className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all"
+              >
+                <X size={20} /> Stop Generation
+              </button>
+          ) : (
+              <button
+                onClick={renderMap}
+                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all"
+              >
+                <Play className="w-5 h-5 fill-current" /> Render Map
+              </button>
+          )}
           {error && (
             <div className="mt-3 p-3 bg-red-50 text-red-700 text-xs rounded border border-red-200 overflow-auto max-h-32">
               <strong>Error:</strong> {error}
@@ -454,15 +470,14 @@ xatra.TitleBox("<b>My Map</b>")
                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Countries</label>
                          {pickerOptions.entries.map((entry, idx) => (
                              <div key={idx} className="flex gap-1.5 items-center">
-                                 <input 
-                                     type="text" 
+                                 <AutocompleteInput 
                                      value={entry.country}
-                                     onChange={(e) => {
+                                     onChange={(val) => {
                                          const newEntries = [...pickerOptions.entries];
-                                         newEntries[idx].country = e.target.value;
+                                         newEntries[idx].country = val;
                                          setPickerOptions({...pickerOptions, entries: newEntries});
                                      }}
-                                     className="w-20 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase"
+                                     className="w-20 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
                                      placeholder="IND"
                                  />
                                  <input 

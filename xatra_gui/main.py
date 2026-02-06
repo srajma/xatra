@@ -160,9 +160,25 @@ class PickerRequest(BaseModel):
     entries: List[PickerEntry]
     adminRivers: bool = False
 
+def parse_color_sequence(val):
+    if not val or not isinstance(val, str) or not val.strip():
+        return None
+    # Check if it's a matplotlib colormap name (simple check: alphanumeric)
+    if val.replace('_', '').isalnum():
+        return val.strip()
+    # Assume it's a comma-separated list of colors
+    return [c.strip() for c in val.split(',') if c.strip()]
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.post("/stop")
+def stop_generation():
+    # Placeholder for stopping generation
+    # Since we use exec() in the same process, we can't easily kill it safely.
+    # But we can use this to perhaps signal a flag if we move to a threaded model later.
+    return {"status": "stopped"}
 
 @app.post("/render/picker")
 def render_picker(request: PickerRequest):

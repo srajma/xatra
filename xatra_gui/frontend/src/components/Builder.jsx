@@ -32,7 +32,7 @@ const Builder = ({
         newElement.value = '[28.6, 77.2]';
         break;
       case 'path':
-        newElement.value = '[[28.6, 77.2], [19.0, 72.8]]';
+        newElement.value = '[]';
         break;
       case 'admin':
         newElement.value = 'IND';
@@ -44,7 +44,7 @@ const Builder = ({
         break;
       case 'dataframe':
         newElement.label = 'Data';
-        newElement.value = 'gadm,value\nIND,100\nPAK,50';
+        newElement.value = 'GID,value\nIND,100\nPAK,50';
         newElement.args = { data_column: 'value' };
         break;
       default:
