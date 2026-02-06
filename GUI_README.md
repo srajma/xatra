@@ -31,13 +31,6 @@ Bugs
   - [x] Also in general errors should always break the process, right (I might be talking nonsense, IDK)? Why does the execution not return things to normal upon these errors? 
 - [x] In all the forms there should be something to ensure when the contents are cleared, it is treated exactly as it would be exactly as if it were never edited. E.g. when I enter something into the Flag Color Sequence box and then remove it, I get an error while generating the map "Error: name 'parse_color_sequence' is not defined" even though its contents are clear again.
 
-Bugs caught by AI
-- [ ] Code Generation: The "Sync from Builder" function produces invalid Python code for the Flag layer (e.g., `value=` with no value), likely because the territory value is lost or not tracked properly in the state.
-- [ ] UI Feedback: The Builder UI does not display the currently selected territory value for a layer, making it impossible for the user to know what `value` is set.
-- [ ] Interactivity: Input fields in the second layer (e.g., Point layer added after a Flag layer) appear to be difficult to interact with programmatically and potentially for users, often timing out or not registering changes.
-- [ ] UX/Workflow: The "Code" view does not update automatically when switching tabs; the user must manually click "Sync from Builder", which is error-prone.
-- [ ] Point Layer Persistence: Changes made to the Point layer (Label, Position) in the Builder are not reflected in the generated code after a sync, suggesting state management issues.
-
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
   - [x] Flags (already exist, but allow adding any attribute, not just label, note and GADM code)
@@ -74,10 +67,12 @@ Basic extensions
   Wherever something is a bit complicated for the user to know how to set---e.g. color sequences and color maps, or icons for Point; there should be a little info tooltip with helpful documentation.
 - [x] Exporting map JSON and HTML
 - [x] Loading a previously-built map. I think the best way to do this will be to keep the state of the Builder and Code synchronized two-way and just export/import the code both ways.
+  - [ ] Code generation is quite buggy.
+    - [ ] One issue I've observed: for rivers it creates a random attribute source_type for River objects, which doesn't exist. This is not necessary, the value is already either naturalearth() or overpass()---you just need to make sure these are imported at the top.
 
 Features
 - [x] Visual ways to draw Paths, picking locations for Texts and Points.
-  - [ ] Amazing, well done. Just one thing: show some visual cues on the map when picking points or drawing paths and polygons; like actually show the path or polygon being drawn.
+  - [ ] Amazing, well done. Just one thing: show some visual cues on the map when picking points or drawing paths and polygons; i.e. actually show/preview the path or polygon being drawn.
     - [ ] I think a previous AI agent attempted to implement this, but has failed: no visual cues appear.
   - [ ] Also allow a user to undo the last point by pressing backspace.
     - [ ] This doesn't seem to be working either.
@@ -94,6 +89,7 @@ Features
   - [x] Predefined territories should be a section under the Code tab, also in the form of a code field. For any existing territory in the Flags, there should be a button to add it to pre-existing territories.
   - [x] `polygon` should, in addition to just typing out co-ordinates manually, have a visual way to draw it on the map---by picking points or tracing them out if some key is held.
   - [ ] Still need to implement the ability to actually *use* pre-defined territories in the territory-making (i.e. as an option in the dropdown alongside GADM and polygon).
+    - [ ] a previous AI agent has attempted to do this, but it doesn't really work: the pre-defined territories do not seem to contribute to the computed territories at all.
     - [ ] then there should be autocomplete search for entering pre-defined territories in the pre-defined territory option
     - [ ] xatra.territory_library should be imported in the Pre-defined territories code, and available in the list of pre-defined territories (for autocomplete search)
 - [x] The user should be able to create AN auxillary "Picker map" for visualizing and selecting admin features and pre-defined territories. The map panel should be tabbed, so the user can create a new (or switch to THE) Picker Map tab---when they create a new Picker Map tab, they will get to set any number of countries whose admin maps (at any level) to load, or instead to create a map with .AdminRivers(), or instead to load the pre-defined territories for visualization.
@@ -104,7 +100,7 @@ Features
   - [ ] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields.
   - [ ] And also selecting rivers
 - [x] Code editor should be nice, not just a simple text editor.
-  - [ ] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported.
+  - [ ] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported. Maybe can use an actual code editor plugin or something.
 
 Minor changes
 - [ ] "Rivers" in the add Layers panel should be "All Rivers".
@@ -118,5 +114,6 @@ For eventually publishing this as an app
 - [ ] User accounts
   - [ ] saving and publishing maps on platform (publishing can be for paid users only)
   - [ ] publishing territory libraries and CSS
-- [ ] AI map-maker --- only for paid users
+  - [ ] importing existing map content, territory libraries and CSS into project
+- [ ] AI agent --- only for paid users
   - [ ]

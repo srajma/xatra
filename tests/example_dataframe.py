@@ -37,3 +37,4 @@ map.Dataframe(df)
 
 
 map.show(out_json="tests/map_dataframe.json", out_html="tests/map_dataframe.html")
+
