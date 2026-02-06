@@ -30,8 +30,12 @@ def build_gadm_index():
     
     try:
         index = []
+        seen_gids = set()
         if os.path.exists(GADM_DIR):
-            for f in os.listdir(GADM_DIR):
+            # Sort files by level so we process level 0, then 1, etc.
+            # This helps if we want to prioritize something, though with seen_gids it's first-come-first-served
+            files = sorted(os.listdir(GADM_DIR))
+            for f in files:
                 if not f.endswith(".json") or not f.startswith("gadm41_"): continue
                 
                 parts = f.replace(".json", "").split("_")
@@ -56,6 +60,10 @@ def build_gadm_index():
                                 # Strip _1 suffix as it's not used by xatra
                                 if gid.endswith("_1"):
                                     gid = gid[:-2]
+                                
+                                if gid in seen_gids:
+                                    continue
+                                seen_gids.add(gid)
                                     
                                 entry = {
                                     "gid": gid,
@@ -123,10 +131,13 @@ def search_gadm(q: str):
         elif item["country"] and q in item["country"].lower(): score = 30
         
         if score > 0:
-            results.append((score, item))
+            # Penalty for longer GIDs to prefer parent levels when prefix matching
+            tie_breaker = -len(gid)
+            results.append((score, tie_breaker, item))
             
-    results.sort(key=lambda x: x[0], reverse=True)
-    return [r[1] for r in results[:limit]]
+    # Sort by score desc, then by tie_breaker desc (shorter strings first)
+    results.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    return [r[2] for r in results[:limit]]
 
 class CodeRequest(BaseModel):
     code: str
