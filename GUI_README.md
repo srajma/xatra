@@ -29,7 +29,7 @@ Basic extensions
   - [x] Flags (already exist, but allow adding any attribute, not just label, note and GADM code)
   - [x] Rivers
     - [x] Needs to allow overpass() rivers as well---let the user choose overpass or natural earth, and enter the ID. Also it should not say "NE ID / Name", only ID works (for now at least). You can use naturalearth("1159122643") (Ganga) as a sample example.
-    - [ ] Do not prefill the ID with the text "Ganga". Instead prefill with "1159122643" for Naturalearth and "1159233" for Overpass.
+    - [ ] Do not prefill the ID with the text "Ganges". Instead prefill with "1159122643" for Naturalearth and "1159233" for Overpass.
   - [x] Admin
   - [x] AdminRivers
   - [x] Path, Point, Text.
@@ -41,9 +41,7 @@ Basic extensions
     - [X] .TitleBox() (this already exists, but it should be a multiline textbox instead of a single line, it should be called "TitleBox (HTML)" instead of "Map Title", and the font for the content should be monospace)
       - [x] Thanks for fixing the other things, but change this to "TitleBox (HTML) please, not just "Title (HTML)".
     - [x] .CSS() --- the interface for this should be as follows: we have a list of classes (record all the classes used in rendering the map and use them here, and also add any custom CSS classes the user added for any element he added); each row is a pair of a dropdown (containing that list of classes) and the corresponding style for it in a text field. The user can add or delete rows, or change the class from that dropdown.
-      - [ ] Thank you, this is quite nice, however there are more classes used in xatra, which should be in the dropdown. See render.py for more.
-        - [ ] This is broken---the list doesn't show up at all (though I can write it in as text now, but I want the list, since users won't know what CSS classes are available)
-      - [ ] Also add a "Custom..." option
+      - [ ] Right now this is implemented in a weird way where the input is a text field prefilled with ".flag" and the options appear as autocomplete options. I think this is unintuitive for users---instead, make it an actual dropdown, with a "Custom..." option which if selected lets the user input any custom class/CSS selector.
     - [x] Base Layers: allow adding any number of base layers, and selecting one as default.
       - [x] Fixed. But the UI is a bit clumsy. Instead, just have the list of available base layers as checkboxes (where checking a box means it will be included in the base layer options) and include buttons next to them to make default (it should only be possible to make one default).
     - [ ] FlagColorSequence, AdminColorSequence, DataColormap --- think through the interface for this carefully; users should be able to set the obvious ones easily, or create their own color sequence or map, just like in the package itself (see the README for details). [This still needs to be done better].
