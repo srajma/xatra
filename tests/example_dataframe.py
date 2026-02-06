@@ -23,6 +23,13 @@ df = pd.DataFrame({
     '2021_note': ['2021_ooga', '2021_booga', '2021_mooga'],
     '2022': [120, 220, 340]
 })
+### ALT MAP
+df = pd.DataFrame({
+    'GID': ['IND', 'AFG'],
+    '2010': [100, 200],
+    '2020': [200, 100]
+    # '2021': [100, 200, 150, 100],
+})
 
 df.set_index('GID', inplace=True)
 # map.DataColormap(plt.cm.viridis)

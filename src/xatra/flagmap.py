@@ -1836,21 +1836,33 @@ class Map:
                             if not gadm_geojson.get("features"):
                                 continue
                             
-                            # Filter features that match our GIDs
+                            # For country-level GID (e.g. "IND"), include all features from the file
+                            # (including disputed territories), same as Flag map and Admin. For
+                            # subdivision GIDs, filter to features matching the GID.
+                            is_country_level = "." not in gadm_key
                             matching_features = []
                             for feature in gadm_geojson.get("features", []):
                                 props = feature.get("properties", {}) or {}
-                                # Check if this feature matches any of our GIDs
-                                for gid in gids:
-                                    if self._feature_matches_gid(feature, gid):
-                                        # Add data value to feature properties
-                                        feature_copy = feature.copy()
-                                        feature_copy["properties"] = props.copy()
-                                        feature_copy["properties"]["_dataframe_value"] = dataframe_data[gid]
-                                        feature_copy["properties"]["_dataframe_gid"] = gid
-                                        if gid in dataframe_notes:
-                                            feature_copy["properties"]["_dataframe_note"] = dataframe_notes[gid]
-                                        matching_features.append(feature_copy)
+                                if is_country_level:
+                                    # One country-level GID per group; use its data for all features
+                                    gid = gids[0]
+                                    feature_copy = feature.copy()
+                                    feature_copy["properties"] = props.copy()
+                                    feature_copy["properties"]["_dataframe_value"] = dataframe_data[gid]
+                                    feature_copy["properties"]["_dataframe_gid"] = gid
+                                    if gid in dataframe_notes:
+                                        feature_copy["properties"]["_dataframe_note"] = dataframe_notes[gid]
+                                    matching_features.append(feature_copy)
+                                else:
+                                    for gid in gids:
+                                        if self._feature_matches_gid(feature, gid):
+                                            feature_copy = feature.copy()
+                                            feature_copy["properties"] = props.copy()
+                                            feature_copy["properties"]["_dataframe_value"] = dataframe_data[gid]
+                                            feature_copy["properties"]["_dataframe_gid"] = gid
+                                            if gid in dataframe_notes:
+                                                feature_copy["properties"]["_dataframe_note"] = dataframe_notes[gid]
+                                            matching_features.append(feature_copy)
                             
                             if matching_features:
                                 dataframes_serialized.append({
@@ -1923,21 +1935,31 @@ class Map:
                             if not gadm_geojson.get("features"):
                                 continue
                             
-                            # Filter features that match our GIDs
+                            # For country-level GID (e.g. "IND"), include all features from the file
+                            # (including disputed territories), same as Flag map and Admin.
+                            is_country_level = "." not in gadm_key
                             matching_features = []
                             for feature in gadm_geojson.get("features", []):
                                 props = feature.get("properties", {}) or {}
-                                # Check if this feature matches any of our GIDs
-                                for gid in gids:
-                                    if self._feature_matches_gid(feature, gid):
-                                        # Add time-series data to feature properties
-                                        feature_copy = feature.copy()
-                                        feature_copy["properties"] = props.copy()
-                                        feature_copy["properties"]["_dataframe_data"] = dataframe_data[gid]
-                                        feature_copy["properties"]["_dataframe_gid"] = gid
-                                        if gid in dataframe_notes:
-                                            feature_copy["properties"]["_dataframe_notes"] = dataframe_notes[gid]
-                                        matching_features.append(feature_copy)
+                                if is_country_level:
+                                    gid = gids[0]
+                                    feature_copy = feature.copy()
+                                    feature_copy["properties"] = props.copy()
+                                    feature_copy["properties"]["_dataframe_data"] = dataframe_data[gid]
+                                    feature_copy["properties"]["_dataframe_gid"] = gid
+                                    if gid in dataframe_notes:
+                                        feature_copy["properties"]["_dataframe_notes"] = dataframe_notes[gid]
+                                    matching_features.append(feature_copy)
+                                else:
+                                    for gid in gids:
+                                        if self._feature_matches_gid(feature, gid):
+                                            feature_copy = feature.copy()
+                                            feature_copy["properties"] = props.copy()
+                                            feature_copy["properties"]["_dataframe_data"] = dataframe_data[gid]
+                                            feature_copy["properties"]["_dataframe_gid"] = gid
+                                            if gid in dataframe_notes:
+                                                feature_copy["properties"]["_dataframe_notes"] = dataframe_notes[gid]
+                                            matching_features.append(feature_copy)
                             
                             if matching_features:
                                 dataframes_serialized.append({
