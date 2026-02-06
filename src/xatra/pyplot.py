@@ -118,14 +118,14 @@ def Path(label: str, value: List[List[float]], note: Optional[str] = None, class
     get_current_map().Path(label, value, note, classes, period, show_label)
 
 
-def Point(label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False) -> None:
+def Point(label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False) -> None:
     """Add a point of interest to the current map."""
-    get_current_map().Point(label, position, period, icon, show_label)
+    get_current_map().Point(label, position, note, period, icon, show_label)
 
 
-def Text(label: str, position: List[float], classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+def Text(label: str, position: List[float], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
     """Add a text label to the current map."""
-    get_current_map().Text(label, position, classes, period)
+    get_current_map().Text(label, position, note, classes, period)
 
 
 def TitleBox(html: str, period: Optional[List[int]] = None) -> None:
