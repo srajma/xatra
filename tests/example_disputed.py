@@ -13,7 +13,7 @@ map.BaseOption("Esri.WorldImagery")
 map.BaseOption("OpenTopoMap")
 map.BaseOption("Esri.WorldPhysical")
 
-# map.Admin(gadm="IND", level=0)
+map.Admin(gadm="IND", level=0)
 # map.Admin(gadm="IND", level=0)
 # map.Admin(gadm="Z01.14", level=3) # , find_in_gadm=["IND"]
 # map.Flag(label="India", value=gadm("IND"))
@@ -21,7 +21,7 @@ map.BaseOption("Esri.WorldPhysical")
 # map.Data(gadm="IND", value=100)
 # map.Data(gadm="Z01.14", value=100) # , find_in_gadm=["IND"]
 
-map.Flag(label="Z01", value=Z01)
+# map.Flag(label="Z01", value=Z01)
 # map.Data(gadm="Z01", value=100)
 
 # Generate the map
