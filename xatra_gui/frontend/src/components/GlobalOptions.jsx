@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2, Crosshair, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Crosshair, Info, X } from 'lucide-react';
 
 const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
   const [showMore, setShowMore] = useState(false);
@@ -126,23 +126,51 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                          <button onClick={addCssRule} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"><Plus size={12}/> Add Rule</button>
                     </div>
                     <div className="space-y-2">
-                        {(options.css_rules || []).map((rule, idx) => (
+                        {(options.css_rules || []).map((rule, idx) => {
+                             const availableClasses = getAvailableClasses().map(c => c.startsWith('.') ? c : '.' + c);
+                             const isCustom = !availableClasses.includes(rule.selector);
+
+                             return (
                              <div key={idx} className="flex gap-2 items-start bg-gray-50 p-2 rounded">
                                  <div className="flex-1 space-y-1">
                                      <div className="flex gap-1">
                                          <div className="w-1/3 relative">
-                                            <input
-                                                list="classes-list"
-                                                value={rule.selector}
-                                                onChange={(e) => updateCssRule(idx, 'selector', e.target.value)}
-                                                className="w-full text-xs p-1 border rounded font-mono"
-                                                placeholder=".class"
-                                            />
-                                            <datalist id="classes-list">
-                                                {getAvailableClasses().map(c => (
-                                                    <option key={c} value={c.startsWith('.') ? c : '.' + c} />
-                                                ))}
-                                            </datalist>
+                                            {isCustom ? (
+                                                <div className="flex gap-1 items-center">
+                                                    <input
+                                                        type="text"
+                                                        value={rule.selector}
+                                                        onChange={(e) => updateCssRule(idx, 'selector', e.target.value)}
+                                                        className="w-full text-xs p-1 border rounded font-mono"
+                                                        placeholder=".class"
+                                                        autoFocus
+                                                    />
+                                                    <button 
+                                                        onClick={() => updateCssRule(idx, 'selector', availableClasses[0] || '.flag')} 
+                                                        className="text-gray-400 hover:text-gray-600 p-1"
+                                                        title="Back to list"
+                                                    >
+                                                        <X size={10}/>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <select
+                                                    value={rule.selector}
+                                                    onChange={(e) => {
+                                                        if (e.target.value === '__custom__') {
+                                                            updateCssRule(idx, 'selector', '');
+                                                        } else {
+                                                            updateCssRule(idx, 'selector', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="w-full text-xs p-1 border rounded font-mono"
+                                                >
+                                                    {availableClasses.map(c => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                    <option value="__custom__">Custom...</option>
+                                                </select>
+                                            )}
                                          </div>
                                           <input 
                                             type="text"
@@ -155,13 +183,29 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                  </div>
                                  <button onClick={() => removeCssRule(idx)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={12}/></button>
                              </div>
-                        ))}
+                             );
+                        })}
                     </div>
                 </div>
 
                 {/* Slider */}
                 <div>
-                    <label className="text-xs font-medium text-gray-700 mb-2 block">Time Slider</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-medium text-gray-700">Time Slider</label>
+                         {(options.slider?.start !== undefined || options.slider?.end !== undefined) && (
+                            <button 
+                                onClick={() => {
+                                    const newOptions = { ...options };
+                                    delete newOptions.slider;
+                                    setOptions(newOptions);
+                                }}
+                                className="text-gray-400 hover:text-gray-600 p-1"
+                                title="Clear Slider"
+                            >
+                                <X size={10}/>
+                            </button>
+                         )}
+                    </div>
                     <div className="grid grid-cols-3 gap-2">
                          <div>
                             <label className="block text-[10px] text-gray-500">Start Year</label>
@@ -208,12 +252,28 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                 <div>
                      <div className="flex justify-between items-center mb-2">
                         <label className="text-xs font-medium text-gray-700">Initial View</label>
-                        <button 
-                            onClick={onGetCurrentView}
-                            className="text-blue-600 hover:text-blue-800 text-[10px] flex items-center gap-1 font-medium bg-blue-50 px-1.5 py-0.5 rounded"
-                        >
-                            <Crosshair size={10}/> Use Current
-                        </button>
+                        <div className="flex gap-1">
+                            {(options.zoom !== undefined || options.focus) && (
+                                <button 
+                                    onClick={() => {
+                                        const newOptions = { ...options };
+                                        delete newOptions.zoom;
+                                        delete newOptions.focus;
+                                        setOptions(newOptions);
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600 p-1"
+                                    title="Clear View"
+                                >
+                                    <X size={10}/>
+                                </button>
+                            )}
+                            <button 
+                                onClick={onGetCurrentView}
+                                className="text-blue-600 hover:text-blue-800 text-[10px] flex items-center gap-1 font-medium bg-blue-50 px-1.5 py-0.5 rounded"
+                            >
+                                <Crosshair size={10}/> Use Current
+                            </button>
+                        </div>
                      </div>
                      <div className="grid grid-cols-3 gap-2">
                          <div>
@@ -230,8 +290,12 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                              <input
                                 type="number"
                                 step="any"
-                                value={options.focus?.[0] !== undefined ? options.focus[0] : ''}
-                                onChange={(e) => updateOption('focus', [parseFloat(e.target.value), options.focus?.[1] || 0])}
+                                value={options.focus?.[0] !== undefined && options.focus?.[0] !== null ? options.focus[0] : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                    const currentLon = options.focus?.[1] ?? null;
+                                    updateOption('focus', [val, currentLon]);
+                                }}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
                         </div>
@@ -240,8 +304,12 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                              <input
                                 type="number"
                                 step="any"
-                                value={options.focus?.[1] !== undefined ? options.focus[1] : ''}
-                                onChange={(e) => updateOption('focus', [options.focus?.[0] || 0, parseFloat(e.target.value)])}
+                                value={options.focus?.[1] !== undefined && options.focus?.[1] !== null ? options.focus[1] : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                    const currentLat = options.focus?.[0] ?? null;
+                                    updateOption('focus', [currentLat, val]);
+                                }}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
                         </div>

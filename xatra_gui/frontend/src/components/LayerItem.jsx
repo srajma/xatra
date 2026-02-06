@@ -3,7 +3,7 @@ import { Trash2, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 import TerritoryBuilder from './TerritoryBuilder';
 
-const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) => {
+const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, removeElement }) => {
   const [showMore, setShowMore] = useState(false);
 
   const renderSpecificFields = () => {
@@ -48,7 +48,15 @@ const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) 
                     <label className="block text-xs text-gray-500 mb-1">Source</label>
                     <select
                         value={element.args?.source_type || 'naturalearth'}
-                        onChange={(e) => updateArg(index, 'source_type', e.target.value)}
+                        onChange={(e) => {
+                             const newType = e.target.value;
+                             const newValue = newType === 'overpass' ? '1159233' : '1159122643';
+                             replaceElement(index, {
+                                 ...element,
+                                 value: newValue,
+                                 args: { ...element.args, source_type: newType }
+                             });
+                        }}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
                     >
                         <option value="naturalearth">Natural Earth</option>

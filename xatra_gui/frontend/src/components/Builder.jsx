@@ -18,7 +18,7 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView 
         newElement.value = [];
         break;
       case 'river':
-        newElement.value = 'Ganges';
+        newElement.value = '1159122643';
         newElement.args = { source_type: 'naturalearth' };
         break;
       case 'point':
@@ -60,6 +60,12 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView 
   const updateArg = (index, key, value) => {
     const newElements = [...elements];
     newElements[index].args = { ...newElements[index].args, [key]: value };
+    setElements(newElements);
+  };
+
+  const replaceElement = (index, newElement) => {
+    const newElements = [...elements];
+    newElements[index] = newElement;
     setElements(newElements);
   };
 
@@ -111,7 +117,8 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView 
               element={el} 
               index={index} 
               updateElement={updateElement} 
-              updateArg={updateArg} 
+              updateArg={updateArg}
+              replaceElement={replaceElement}
               removeElement={removeElement} 
             />
           ))}
