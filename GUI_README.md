@@ -30,6 +30,11 @@ Bugs
   - [x] While the feature has been implemented, it doesn't solve the underlying problem, which is that the server is itself in an error state, so no other operation runs afterward. It should stop the underlying Python process that is in error. 
   - [x] Also in general errors should always break the process, right (I might be talking nonsense, IDK)? Why does the execution not return things to normal upon these errors? 
 - [x] In all the forms there should be something to ensure when the contents are cleared, it is treated exactly as it would be exactly as if it were never edited. E.g. when I enter something into the Flag Color Sequence box and then remove it, I get an error while generating the map "Error: name 'parse_color_sequence' is not defined" even though its contents are clear again.
+- [ ] territories don't get stored correctly if they themselves contain pre-computed territories. I.e. if I define a new Flag and build a territory for it KURU | gadm("IND.31") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]), it will just get stored as: india =  |  |  |  - gadm("IND.12") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]).
+- [ ] Bugs with the code editor
+  - [ ] Weird bug: Every time I switch away from the Code window and then back to it, another copy of each item in the autocomplete appears. So when one first clicks out and back, there are two copies of "xatra" in the autocomplete menu, and if you type `xatra.` then there are two copies of `Admin` etc.; do it again and there are three copies of each, etc.
+  - [ ] Code editor is weirdly smaller vertically than the space available in the boxes for them 
+  - [ ] This tip: `Type xatra. or map. for map methods. Use Ctrl+Space for suggestions.` should not say `map.`, it should just be `Type xatra. for map methods. Use Ctrl+Space for suggestions.`
 
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
@@ -46,7 +51,6 @@ Basic extensions
     - [x] Remove the "Find in GADM" field. Even in the original package it's kind of irrelevant.
     - [x] plotting data doesn't really work for some reason, it generates the following error.
     - [ ] We should not need to enter the data and year columns manually.
-    - [ ] disputed territories don't plot correctly [this might be an issue with the package itself, I'll have to see]
 
   - [x] NOTE: allow adding any attribute to those objects, not just label, note and GADM code. Period is especially important. The less important attributes could be hidden under a "More..."
     - [x] "Period" should not be under a "More Options" It is optional, but should still be accessible without clicking "More Options". All the other things under "More Options" are fine there.
@@ -69,14 +73,13 @@ Basic extensions
 
 Features
 - [x] Visual ways to draw Paths, picking locations for Texts and Points.
-  - [ ] Amazing, well done. Just one thing: show some visual cues on the map when picking points or drawing paths and polygons; i.e. actually show/preview the path or polygon being drawn.
-    - [ ] I think a previous AI agent attempted to implement this, but has failed: no visual cues appear.
+  - [x] Amazing, well done. Just one thing: show some visual cues on the map when picking points or drawing paths and polygons; i.e. actually show/preview the path or polygon being drawn.
   - [ ] Also allow a user to undo the last point by pressing backspace.
-    - [ ] This doesn't seem to be working either.
-  - [ ] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode.
-    - [ ] Nor this.
-  - [ ] Display these tips (backspace, freehand mode)
-    - [ ] These tips should be shown in a blaring message on the map while picker mode is on, not underneath the box like it currently is.
+    - [ ] I think a previous AI agent attempted to implement this, but has failed.
+  - [ ] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode (and then you can continue clicking points normally).
+    - [ ] I think a previous AI agent attempted to implement this, but has failed.
+  - [x] Display these tips (backspace, freehand mode)
+    - [x] These tips should be shown in a blaring message on the map while picker mode is on, not underneath the box like it currently is.
   - [x] One problem is that the user may forget to un-click the picker and leave it on while picking other co-ordinates. To avoid this, only one picker should be turned on at a time: clicking another picker should turn off all the other ones (and show this visually too).
   - [x] Oh, and for Path the co-ordinates should not be pre-filled with [[28.6, 77.2], [19.0, 72.8]] like they are now: it should start out blank, like polygon does.
 - [x] Better Territory setting interface---right now it just lets you pick one individual GADM for a flag, rather than any complex territory. Instead, we should have a fancier system: where you can compose the territory with the | and - operations (so you have buttons "add" and "subtract" which let you define a new step of the operation); in each component you can select `gadm`, Predefined territory or `polygon`.
@@ -85,10 +88,10 @@ Features
       - [x] No, no no---you fixed this wrong. I didn't ask you to strip `_1` from the input field if the user inputs it (please revert this), I asked you to strip it out in the list of GIDs that we search.
   - [x] Predefined territories should be a section under the Code tab, also in the form of a code field. For any existing territory in the Flags, there should be a button to add it to pre-existing territories.
   - [x] `polygon` should, in addition to just typing out co-ordinates manually, have a visual way to draw it on the map---by picking points or tracing them out if some key is held.
-  - [ ] Still need to implement the ability to actually *use* pre-defined territories in the territory-making (i.e. as an option in the dropdown alongside GADM and polygon).
-    - [ ] a previous AI agent has attempted to do this, but it doesn't really work: the pre-defined territories do not seem to contribute to the computed territories at all.
-    - [ ] then there should be autocomplete search for entering pre-defined territories in the pre-defined territory option
-    - [ ] xatra.territory_library should be imported in the Pre-defined territories code, and available in the list of pre-defined territories (for autocomplete search)
+  - [x] Still need to implement the ability to actually *use* pre-defined territories in the territory-making (i.e. as an option in the dropdown alongside GADM and polygon).
+    - [x] a previous AI agent has attempted to do this, but it doesn't really work: the pre-defined territories do not seem to contribute to the computed territories at all.
+    - [x] then there should be autocomplete search for entering pre-defined territories in the pre-defined territory option
+    - [x] xatra.territory_library should be imported in the Pre-defined territories code, and available in the list of pre-defined territories (for autocomplete search)
 - [x] The user should be able to create AN auxillary "Picker map" for visualizing and selecting admin features and pre-defined territories. The map panel should be tabbed, so the user can create a new (or switch to THE) Picker Map tab---when they create a new Picker Map tab, they will get to set any number of countries whose admin maps (at any level) to load, or instead to create a map with .AdminRivers(), or instead to load the pre-defined territories for visualization.
   - [x] Nice, I like the implementation. However, instead of just one field for Countries and one field for Level, the user should be able to add multiple rows, one for each country and set the level for each. So e.g. I can have IND: 2: PAK: 3.
     - [x] Nice. However, the box and its contents are a bit weirdly-sized (the contents don't fit the box which causes a horizontal scrollbar to appear)
@@ -97,15 +100,23 @@ Features
   - [ ] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields.
   - [ ] And also selecting rivers
 - [x] Code editor should be nice, not just a simple text editor.
-  - [ ] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported. Maybe can use an actual code editor plugin or something.
+  - [x] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported. Maybe can use an actual code editor plugin or something.
 - [x] Loading a previously-built map. I think the best way to do this will be to keep the state of the Builder and Code synchronized two-way and just export/import the code both ways.
   - [ ] Code generation is quite buggy.
-    - [ ] One issue I've observed: for rivers it creates a random attribute source_type for River objects, which doesn't exist. This is not necessary, the value is already either naturalearth() or overpass()---you just need to make sure these are imported at the top.
+    - [x] One issue I've observed: for rivers it creates a random attribute source_type for River objects, which doesn't exist. This is not necessary, the value is already either naturalearth() or overpass()---you just need to make sure these are imported at the top.
     - [ ] Eventually we should also implement reverse-syncing the code to the builder, so might be worth thinking about how to better store the state
+    - [ ] Also need to make sure any changes to the pre-defined territories code will update the stored territories.
+  - [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
+    - [ ] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
 
 Minor changes
-- [ ] "Rivers" in the add Layers panel should be "All Rivers".
-- [ ] "Picker Map" should be called "Reference Map" instead.
+- [x] "Rivers" in the add Layers panel should be "All Rivers".
+- [x] "Picker Map" should be called "Reference Map" instead.
+- [ ] The panel for adding layers should be at the *bottom* of the layer list, so that new layers just get added on top of it (while scrolling just to compensate for the new element to ensure the panel is still in view) rather than having to scroll all the way to the bottom like it is now.
+- [ ] should be able to reorder the lines of the territory builder (the operations) around by dragging them (and it should also reorder them in the internal state)
+- [ ] when you save a territory to library, it should be case-sensitive, i.e. if you store the territory of a flag called "India" its variable name should be "India" and not "india".
+- [ ] We now have visual cues for drawing paths and polygons, thank you---just one thing: the *vertices* of paths and polygons should also be shown in this visual cue, with dots, so that even the first point drawn can be seen on the map before any actual line is drawn.
+- [ ] The "Note" field should have monospaced font.
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
