@@ -120,7 +120,7 @@ Minor changes
 - [x] should be able to reorder the lines of the territory builder (the operations) around by dragging them (and it should also reorder them in the internal state)
 - [x] when you save a territory to library, it should be case-sensitive, i.e. if you store the territory of a flag called "India" its variable name should be "India" and not "india".
 - [x] We now have visual cues for drawing paths and polygons, thank you---just one thing: the *vertices* of paths and polygons should also be shown in this visual cue, with dots, so that even the first point drawn can be seen on the map before any actual line is drawn.
-  - [ ] Also implement this for points. When a point has a pre-existing value for Position and you hit the "Click on map" button, it should show that little point on that map with the same sort of dot.
+  - [ ] Also implement this for Points and Texts. When a point has a pre-existing value for Position and you hit the "Click on map" button, it should show that little point on that map with the same sort of dot.
 - [x] The "Note" field should have monospaced font.
 
 Development difficulties
