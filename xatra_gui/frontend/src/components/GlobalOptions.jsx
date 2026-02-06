@@ -128,23 +128,60 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                          <button onClick={addCssRule} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"><Plus size={12}/> Add Rule</button>
                     </div>
                     <div className="space-y-2">
-                        {(options.css_rules || []).map((rule, idx) => (
+                        {(options.css_rules || []).map((rule, idx) => {
+                             // Logic to determine if we show input or select
+                             
+                             const showCustomInput = rule._isCustom || (!getAvailableClasses().includes(rule.selector) && rule.selector !== '');
+                             
+                             return (
                              <div key={idx} className="flex gap-2 items-start bg-gray-50 p-2 rounded">
                                  <div className="flex-1 space-y-1">
                                      <div className="flex gap-1">
-                                         <div className="w-1/3 relative">
-                                            <input
-                                                list={`classes-list-${idx}`}
-                                                value={rule.selector}
-                                                onChange={(e) => updateCssRule(idx, 'selector', e.target.value)}
-                                                className="w-full text-xs p-1 border rounded font-mono"
-                                                placeholder=".class"
-                                            />
-                                            <datalist id={`classes-list-${idx}`}>
-                                                {getAvailableClasses().map(c => (
-                                                    <option key={c} value={c.startsWith('.') ? c : '.' + c} />
-                                                ))}
-                                            </datalist>
+                                         <div className="w-1/3">
+                                            {showCustomInput ? (
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={rule.selector}
+                                                        onChange={(e) => updateCssRule(idx, 'selector', e.target.value)}
+                                                        className="w-full text-xs p-1 border rounded font-mono pr-5"
+                                                        placeholder=".class"
+                                                        autoFocus
+                                                    />
+                                                    <button 
+                                                        onClick={() => {
+                                                            const newRules = [...options.css_rules];
+                                                            newRules[idx]._isCustom = false;
+                                                            newRules[idx].selector = '';
+                                                            setOptions({ ...options, css_rules: newRules });
+                                                        }}
+                                                        className="absolute right-1 top-1.5 text-gray-400 hover:text-red-500"
+                                                    >
+                                                        <X size={10}/>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <select
+                                                    value={rule.selector}
+                                                    onChange={(e) => {
+                                                        if (e.target.value === 'custom_option_marker') {
+                                                            const newRules = [...options.css_rules];
+                                                            newRules[idx]._isCustom = true;
+                                                            newRules[idx].selector = '';
+                                                            setOptions({ ...options, css_rules: newRules });
+                                                        } else {
+                                                            updateCssRule(idx, 'selector', e.target.value);
+                                                        }
+                                                    }}
+                                                    className="w-full text-xs p-1 border rounded font-mono bg-white"
+                                                >
+                                                    <option value="" disabled>Select...</option>
+                                                    {getAvailableClasses().map(c => (
+                                                        <option key={c} value={c.startsWith('.') ? c : '.' + c}>{c.startsWith('.') ? c : '.' + c}</option>
+                                                    ))}
+                                                    <option value="custom_option_marker" className="font-bold text-blue-600">Custom...</option>
+                                                </select>
+                                            )}
                                          </div>
                                           <input 
                                             type="text"
@@ -157,7 +194,8 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                  </div>
                                  <button onClick={() => removeCssRule(idx)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={12}/></button>
                              </div>
-                        ))}
+                             );
+                        })}
                     </div>
                 </div>
 

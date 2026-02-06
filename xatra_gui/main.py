@@ -54,11 +54,15 @@ def build_gadm_index():
                             
                             if gid:
                                 # Strip _1 suffix as it's not used by xatra
+                                # Also strip generic _\d+ if present? No, standard GADM is _1 usually.
+                                # But we want to strip it for the index key so user searches "IND.31" and finds it.
+                                # The entry gid should be the stripped one so when user selects it, we get clean ID.
+                                clean_gid = gid
                                 if gid.endswith("_1"):
-                                    gid = gid[:-2]
+                                    clean_gid = gid[:-2]
                                     
                                 entry = {
-                                    "gid": gid,
+                                    "gid": clean_gid,
                                     "name": name,
                                     "country": country,
                                     "level": level
@@ -81,15 +85,13 @@ def build_gadm_index():
     finally:
         INDEX_BUILDING = False
 
-# Load cache if exists
+# Force rebuild on startup to fix any stale index issues
 if os.path.exists("gadm_index.json"):
     try:
-        with open("gadm_index.json", "r") as f:
-            GADM_INDEX = json.load(f)
+        os.remove("gadm_index.json")
     except:
-        threading.Thread(target=build_gadm_index).start()
-else:
-    threading.Thread(target=build_gadm_index).start()
+        pass
+threading.Thread(target=build_gadm_index).start()
 
 app = FastAPI()
 
