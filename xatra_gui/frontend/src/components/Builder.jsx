@@ -18,7 +18,7 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView 
         newElement.value = [];
         break;
       case 'river':
-        newElement.value = 'Ganges';
+        newElement.value = '1159122643';
         newElement.args = { source_type: 'naturalearth' };
         break;
       case 'point':

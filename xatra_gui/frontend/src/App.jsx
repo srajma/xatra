@@ -35,8 +35,7 @@ xatra.TitleBox("<b>My Map</b>")
 
   // Picker State
   const [pickerOptions, setPickerOptions] = useState({
-    countries: ['IND'],
-    level: 1,
+    layers: [{ country: 'IND', level: 1 }],
     adminRivers: true
   });
 
@@ -336,54 +335,79 @@ xatra.TitleBox("<b>My Map</b>")
         </div>
 
         {activePreviewTab === 'picker' && (
-            <div className="absolute top-16 right-4 z-20 w-64 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4">
-                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b pb-2">
-                    Picker Options
-                </h3>
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Countries (GADM)</label>
+            <div className="absolute top-16 right-4 z-20 w-80 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                    <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                        Picker Options
+                    </h3>
+                    <button 
+                        onClick={() => setPickerOptions({ ...pickerOptions, layers: [...pickerOptions.layers, { country: '', level: 1 }] })}
+                        className="text-blue-600 hover:text-blue-800 text-[10px] font-bold flex items-center gap-1"
+                    >
+                        <Plus size={12}/> Add Country
+                    </button>
+                </div>
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    {pickerOptions.layers.map((layer, idx) => (
+                        <div key={idx} className="flex gap-2 items-start bg-gray-50 p-2 rounded border border-gray-100 group">
+                            <div className="flex-1 space-y-2">
+                                <div>
+                                    <label className="block text-[9px] font-bold text-gray-400 uppercase">Country (GADM)</label>
+                                    <AutocompleteInput 
+                                        value={layer.country}
+                                        onChange={(val) => {
+                                            const newLayers = [...pickerOptions.layers];
+                                            newLayers[idx].country = val;
+                                            setPickerOptions({ ...pickerOptions, layers: newLayers });
+                                        }}
+                                        className="w-full text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                        placeholder="IND, PAK..."
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase whitespace-nowrap">Level</label>
+                                    <input 
+                                        type="number" 
+                                        value={layer.level}
+                                        onChange={(e) => {
+                                            const newLayers = [...pickerOptions.layers];
+                                            newLayers[idx].level = parseInt(e.target.value);
+                                            setPickerOptions({ ...pickerOptions, layers: newLayers });
+                                        }}
+                                        className="w-16 text-xs p-1 border rounded bg-white shadow-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                        min="0" max="3"
+                                    />
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setPickerOptions({ ...pickerOptions, layers: pickerOptions.layers.filter((_, i) => i !== idx) })}
+                                className="text-gray-300 hover:text-red-500 p-1 mt-4"
+                            >
+                                <X size={14}/>
+                            </button>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t">
+                    <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
                         <input 
-                            type="text" 
-                            value={pickerOptions.countries.join(', ')}
-                            onChange={(e) => setPickerOptions({ ...pickerOptions, countries: e.target.value.split(',').map(s => s.trim()) })}
-                            className="w-full text-xs p-2 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="IND, PAK..."
+                            type="checkbox"
+                            checked={pickerOptions.adminRivers}
+                            onChange={(e) => setPickerOptions({ ...pickerOptions, adminRivers: e.target.checked })}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
-                    </div>
-                    <div className="flex gap-4">
-                        <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Level</label>
-                            <input 
-                                type="number" 
-                                value={pickerOptions.level}
-                                onChange={(e) => setPickerOptions({ ...pickerOptions, level: parseInt(e.target.value) })}
-                                className="w-full text-xs p-2 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                min="0" max="3"
-                            />
-                        </div>
-                        <div className="flex items-end pb-2">
-                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
-                                <input 
-                                    type="checkbox"
-                                    checked={pickerOptions.adminRivers}
-                                    onChange={(e) => setPickerOptions({ ...pickerOptions, adminRivers: e.target.checked })}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                Rivers
-                            </label>
-                        </div>
-                    </div>
+                        Include Rivers
+                    </label>
                     <button 
                         onClick={renderPickerMap}
                         disabled={loading}
-                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors disabled:opacity-50"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors disabled:opacity-50"
                     >
-                        Update Picker Map
+                        Update Map
                     </button>
                 </div>
-                <div className="text-[10px] text-gray-400 bg-gray-50 p-2 rounded italic">
-                    Tip: Use the picker map to find GADM codes or coordinates. You can still use "Use Current View" in Global Options while this tab is active.
+                <div className="text-[10px] text-gray-400 bg-blue-50 p-2 rounded leading-relaxed border border-blue-100">
+                    <strong>Tip:</strong> Find GADM codes and coordinates here. Click points on the map to see coordinates.
                 </div>
             </div>
         )}

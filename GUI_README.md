@@ -49,8 +49,8 @@ Basic extensions
     - [ ] FlagColorSequence, AdminColorSequence, DataColormap --- think through the interface for this carefully; users should be able to set the obvious ones easily, or create their own color sequence or map, just like in the package itself (see the README for details). [This still needs to be done better].
     - [x] zoom and focus
       - [x] this should include a button to just use the current zoom and focus levels at the map is at
-      - [ ] there's a weird bug where I can't clear the contents of Initial focus manually because if I clear Latitude, Longitude becomes filled again (with 0) and if I clear Longitude, Latitude gets filled again. Fix that.
-      - [ ] Add a little clear button to the Initial View and Time slider buttons to reset their contents to emptiness.
+      - [x] there's a weird bug where I can't clear the contents of Initial focus manually because if I clear Latitude, Longitude becomes filled again (with 0) and if I clear Longitude, Latitude gets filled again. Fix that.
+      - [x] Add a little clear button to the Initial View and Time slider buttons to reset their contents to emptiness.
     - [x] slider()
       - [x] It has the same bug of not allowing 0 as a year
   Wherever something is a bit complicated for the user to know how to set---e.g. color sequences and color maps, or icons for Point; there should be a little info tooltip with helpful documentation.

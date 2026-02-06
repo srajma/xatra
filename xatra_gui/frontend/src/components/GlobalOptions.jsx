@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2, Crosshair, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Crosshair, Info, X } from 'lucide-react';
 
 const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
   const [showMore, setShowMore] = useState(false);
@@ -11,7 +11,9 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
   const getAvailableClasses = () => {
       const classes = new Set([
         'flag', 'river', 'path', 'point', 'admin', 'admin-river', 'data',
-        'text-label', 'path-label', 'river-label', 'admin-river-label', 'point-label', 'flag-label', 'vassal-label'
+        'text-label', 'path-label', 'river-label', 'admin-river-label', 'point-label', 'flag-label', 'vassal-label',
+        'text-label-container', 'path-label-container', 'river-label-container', 'admin-river-label-container', 
+        'point-label-container', 'flag-label-container'
       ]);
       elements.forEach(el => {
           if (el.args?.classes) {
@@ -73,7 +75,7 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
         {showMore && (
             <div className="space-y-6 pt-2 border-t border-gray-100">
                 
-                {/* Base Maps */}
+                {/* Base Layers */}
                 <div>
                     <label className="text-xs font-medium text-gray-700 mb-2 block">Base Layers</label>
                     <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-2 bg-gray-50">
@@ -132,13 +134,13 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                      <div className="flex gap-1">
                                          <div className="w-1/3 relative">
                                             <input
-                                                list="classes-list"
+                                                list={`classes-list-${idx}`}
                                                 value={rule.selector}
                                                 onChange={(e) => updateCssRule(idx, 'selector', e.target.value)}
                                                 className="w-full text-xs p-1 border rounded font-mono"
                                                 placeholder=".class"
                                             />
-                                            <datalist id="classes-list">
+                                            <datalist id={`classes-list-${idx}`}>
                                                 {getAvailableClasses().map(c => (
                                                     <option key={c} value={c.startsWith('.') ? c : '.' + c} />
                                                 ))}
@@ -161,7 +163,15 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
 
                 {/* Slider */}
                 <div>
-                    <label className="text-xs font-medium text-gray-700 mb-2 block">Time Slider</label>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-medium text-gray-700">Time Slider</label>
+                        <button 
+                            onClick={() => updateOption('slider', null)}
+                            className="text-gray-400 hover:text-red-500 text-[10px] flex items-center gap-1"
+                        >
+                            <X size={10}/> Clear
+                        </button>
+                    </div>
                     <div className="grid grid-cols-3 gap-2">
                          <div>
                             <label className="block text-[10px] text-gray-500">Start Year</label>
@@ -170,8 +180,8 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                 value={options.slider?.start !== undefined && options.slider?.start !== null ? options.slider.start : ''}
                                 onChange={(e) => {
                                     const val = e.target.value === '' ? null : parseInt(e.target.value);
-                                    if (e.target.value === '' || !isNaN(val)) {
-                                        updateOption('slider', { ...options.slider, start: val });
+                                    if (e.target.value === '' || e.target.value === '-' || !isNaN(val)) {
+                                        updateOption('slider', { ...options.slider, start: e.target.value === '' ? null : (isNaN(val) ? e.target.value : val) });
                                     }
                                 }}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded font-mono"
@@ -184,8 +194,8 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                 value={options.slider?.end !== undefined && options.slider?.end !== null ? options.slider.end : ''}
                                 onChange={(e) => {
                                     const val = e.target.value === '' ? null : parseInt(e.target.value);
-                                    if (e.target.value === '' || !isNaN(val)) {
-                                        updateOption('slider', { ...options.slider, end: val });
+                                    if (e.target.value === '' || e.target.value === '-' || !isNaN(val)) {
+                                        updateOption('slider', { ...options.slider, end: e.target.value === '' ? null : (isNaN(val) ? e.target.value : val) });
                                     }
                                 }}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded font-mono"
@@ -208,19 +218,30 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                 <div>
                      <div className="flex justify-between items-center mb-2">
                         <label className="text-xs font-medium text-gray-700">Initial View</label>
-                        <button 
-                            onClick={onGetCurrentView}
-                            className="text-blue-600 hover:text-blue-800 text-[10px] flex items-center gap-1 font-medium bg-blue-50 px-1.5 py-0.5 rounded"
-                        >
-                            <Crosshair size={10}/> Use Current
-                        </button>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={onGetCurrentView}
+                                className="text-blue-600 hover:text-blue-800 text-[10px] flex items-center gap-1 font-medium bg-blue-50 px-1.5 py-0.5 rounded"
+                            >
+                                <Crosshair size={10}/> Use Current
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    updateOption('zoom', null);
+                                    updateOption('focus', null);
+                                }}
+                                className="text-gray-400 hover:text-red-500 text-[10px] flex items-center gap-1"
+                            >
+                                <X size={10}/> Clear
+                            </button>
+                        </div>
                      </div>
                      <div className="grid grid-cols-3 gap-2">
                          <div>
                             <label className="block text-[10px] text-gray-500">Zoom (0-18)</label>
                             <input
                                 type="number"
-                                value={options.zoom || ''}
+                                value={options.zoom !== null && options.zoom !== undefined ? options.zoom : ''}
                                 onChange={(e) => updateOption('zoom', e.target.value === '' ? null : parseInt(e.target.value))}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
@@ -228,20 +249,26 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                          <div>
                             <label className="block text-[10px] text-gray-500">Focus Lat</label>
                              <input
-                                type="number"
-                                step="any"
-                                value={options.focus?.[0] !== undefined ? options.focus[0] : ''}
-                                onChange={(e) => updateOption('focus', [parseFloat(e.target.value), options.focus?.[1] || 0])}
+                                type="text"
+                                value={options.focus?.[0] !== undefined && options.focus?.[0] !== null ? options.focus[0] : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                    const lon = options.focus?.[1] !== undefined ? options.focus[1] : null;
+                                    updateOption('focus', [e.target.value === '' ? null : (isNaN(val) ? e.target.value : val), lon]);
+                                }}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
                         </div>
                          <div>
                             <label className="block text-[10px] text-gray-500">Focus Lon</label>
                              <input
-                                type="number"
-                                step="any"
-                                value={options.focus?.[1] !== undefined ? options.focus[1] : ''}
-                                onChange={(e) => updateOption('focus', [options.focus?.[0] || 0, parseFloat(e.target.value)])}
+                                type="text"
+                                value={options.focus?.[1] !== undefined && options.focus?.[1] !== null ? options.focus[1] : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                    const lat = options.focus?.[0] !== undefined ? options.focus[0] : null;
+                                    updateOption('focus', [lat, e.target.value === '' ? null : (isNaN(val) ? e.target.value : val)]);
+                                }}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
                         </div>

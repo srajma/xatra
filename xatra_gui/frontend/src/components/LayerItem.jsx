@@ -226,6 +226,23 @@ const LayerItem = ({ element, index, updateElement, updateArg, removeElement }) 
                         <Info size={12} className="text-blue-500 cursor-help"/>
                     </span>
                 </label>
+                <div className="flex gap-1 mb-2">
+                    {['city', 'fort', 'port', 'temple'].map(icon => (
+                        <button 
+                            key={icon}
+                            onClick={() => updateArg(index, 'icon', icon)}
+                            className="text-[10px] px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 rounded border border-gray-200 transition-colors"
+                        >
+                            {icon}
+                        </button>
+                    ))}
+                    <button 
+                        onClick={() => updateArg(index, 'icon', { shape: 'circle', color: 'red', size: 6 })}
+                        className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-600 hover:bg-red-100 rounded border border-red-100 transition-colors"
+                    >
+                        Red Circle
+                    </button>
+                </div>
                  <input
                     type="text"
                     value={element.args?.icon ? (typeof element.args.icon === 'string' ? element.args.icon : JSON.stringify(element.args.icon)) : ''}

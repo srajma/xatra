@@ -141,9 +141,12 @@ class BuilderRequest(BaseModel):
     elements: List[MapElement]
     options: Dict[str, Any] = {}
 
-class PickerRequest(BaseModel):
-    countries: List[str]
+class PickerLayer(BaseModel):
+    country: str
     level: int = 1
+
+class PickerRequest(BaseModel):
+    layers: List[PickerLayer]
     adminRivers: bool = False
 
 @app.get("/health")
@@ -158,8 +161,8 @@ def render_picker(request: PickerRequest):
         
         m.BaseOption("Esri.WorldTopoMap", default=True)
         
-        for country in request.countries:
-            m.Admin(gadm=country, level=request.level)
+        for layer in request.layers:
+            m.Admin(gadm=layer.country, level=layer.level)
             
         if request.adminRivers:
             m.AdminRivers()
