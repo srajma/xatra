@@ -23,6 +23,7 @@ import xatra
 from xatra.loaders import gadm, naturalearth, polygon, GADM_DIR
 from xatra.render import export_html_string
 from xatra.colorseq import Color, RotatingColorSequence, color_sequences
+from xatra.icon import Icon
 
 # Global variable to track the current rendering process
 current_process = None
@@ -153,6 +154,7 @@ class MapElement(BaseModel):
 class BuilderRequest(BaseModel):
     elements: List[MapElement]
     options: Dict[str, Any] = {}
+    predefined_code: Optional[str] = None
 
 class PickerEntry(BaseModel):
     country: str
@@ -161,6 +163,29 @@ class PickerEntry(BaseModel):
 class PickerRequest(BaseModel):
     entries: List[PickerEntry]
     adminRivers: bool = False
+
+@app.get("/icons/list")
+def list_icons():
+    """Return list of built-in icon filenames for Point icon picker."""
+    try:
+        icons_dir = Path(xatra.__file__).parent / "icons"
+        if not icons_dir.exists():
+            return []
+        return sorted(
+            f.name for f in icons_dir.iterdir()
+            if f.is_file() and not f.name.startswith(".") and f.suffix.lower() in (".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp")
+        )
+    except Exception:
+        return []
+
+@app.get("/territory_library/names")
+def territory_library_names():
+    """Return public names from xatra.territory_library for autocomplete in Pre-defined territories."""
+    try:
+        import xatra.territory_library as tl
+        return [n for n in dir(tl) if not n.startswith("_")]
+    except Exception:
+        return []
 
 @app.get("/health")
 def health():
@@ -272,7 +297,26 @@ def run_rendering_task(task_type, data, result_queue):
                     
             if "data_colormap" in data.options and data.options["data_colormap"]:
                 m.DataColormap(data.options["data_colormap"])
-                
+
+            # Execute predefined territory code so Flag parts of type "predefined" can use them
+            predefined_namespace = {}
+            if getattr(data, "predefined_code", None) and data.predefined_code.strip():
+                try:
+                    import xatra.territory_library as territory_library
+                    exec_globals = {
+                        "gadm": xatra.loaders.gadm,
+                        "polygon": xatra.loaders.polygon,
+                        "naturalearth": xatra.loaders.naturalearth,
+                        "overpass": xatra.loaders.overpass,
+                    }
+                    for name in dir(territory_library):
+                        if not name.startswith("_"):
+                            exec_globals[name] = getattr(territory_library, name)
+                    exec(data.predefined_code.strip(), exec_globals)
+                    predefined_namespace = {k: v for k, v in exec_globals.items() if k not in ("gadm", "polygon", "naturalearth", "overpass") and not k.startswith("_")}
+                except Exception:
+                    predefined_namespace = {}
+
             for el in data.elements:
                 args = el.args.copy()
                 if el.label:
@@ -296,6 +340,10 @@ def run_rendering_task(task_type, data, result_queue):
                                          coords = json.loads(val) if isinstance(val, str) else val
                                          part_terr = xatra.loaders.polygon(coords)
                                      except: pass
+                                 elif ptype == "predefined" and val and predefined_namespace:
+                                     part_terr = predefined_namespace.get(val)
+                                 else:
+                                     part_terr = None
                                  
                                  if part_terr:
                                      if territory is None: territory = part_terr
@@ -326,6 +374,29 @@ def run_rendering_task(task_type, data, result_queue):
                     if isinstance(pos, str):
                         try: pos = json.loads(pos)
                         except: continue
+                    icon_arg = args.pop("icon", None)
+                    if icon_arg is not None and icon_arg != "":
+                        try:
+                            if isinstance(icon_arg, str):
+                                args["icon"] = Icon.builtin(icon_arg)
+                            elif isinstance(icon_arg, dict):
+                                if "shape" in icon_arg:
+                                    args["icon"] = Icon.geometric(
+                                        icon_arg.get("shape", "circle"),
+                                        color=icon_arg.get("color", "#3388ff"),
+                                        size=int(icon_arg.get("size", 24)),
+                                        border_color=icon_arg.get("border_color"),
+                                        border_width=int(icon_arg.get("border_width", 0)),
+                                    )
+                                elif "icon_url" in icon_arg or "iconUrl" in icon_arg:
+                                    url = icon_arg.get("icon_url") or icon_arg.get("iconUrl")
+                                    args["icon"] = Icon(
+                                        icon_url=url,
+                                        icon_size=tuple(icon_arg.get("icon_size", icon_arg.get("iconSize", (25, 41)))),
+                                        icon_anchor=tuple(icon_arg.get("icon_anchor", icon_arg.get("iconAnchor", (12, 41)))),
+                                    )
+                        except Exception:
+                            pass
                     m.Point(position=pos, **args)
                     
                 elif el.type == "text":

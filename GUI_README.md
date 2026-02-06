@@ -108,7 +108,8 @@ Minor changes
 - [ ] "Picker Map" should be called "Reference Map" instead.
 
 Development difficulties
-- [ ] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
+- [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
+  - See "Development / Synchrony" section below.
 
 For eventually publishing this as an app
 - [ ] Sandboxing code (like in those online coding assessment platforms)
@@ -118,3 +119,19 @@ For eventually publishing this as an app
   - [ ] importing existing map content, territory libraries and CSS into project
 - [ ] AI agent --- only for paid users
   - [ ]
+
+---
+
+## Development / Synchrony
+
+When changing behaviour that is shared between frontend and backend or between Builder and Code, keep these in sync:
+
+| If you change… | Also change… |
+|----------------|---------------|
+| **Builder payload** (elements/options shape) | `xatra_gui/main.py` `run_rendering_task` for `task_type == 'builder'`, and any code generation in `App.jsx` `generatePythonCode`. |
+| **River element** (source_type, value) | Backend: `main.py` river branch (naturalearth/overpass); Frontend: `generatePythonCode` (no `source_type` in generated code, use `naturalearth(...)` or `overpass(...)`). |
+| **Point icon** (builtin / geometric / custom) | Backend: `main.py` point branch (resolve `args.icon` to `Icon`); Frontend: `LayerItem.jsx` icon UI and `generatePythonCode` (emit `Icon.builtin` / `Icon.geometric` / `Icon(...)`). |
+| **Flag territory** (parts: gadm / polygon / predefined) | Backend: `main.py` Flag branch and `predefined_namespace` from `predefined_code`; Frontend: `TerritoryBuilder.jsx` and `formatTerritory` in `App.jsx`. |
+| **Pre-defined territories** (variable names) | Backend: exec `predefined_code` with `territory_library` in scope; Frontend: send `predefined_code` in builder request; `TerritoryBuilder` uses parsed names + `GET /territory_library/names` for autocomplete. |
+| **Draft overlay** (path/polygon/point on map) | Frontend: `postMessage({ type: 'setDraft', points, shapeType })` (use `shapeType` not `type`); Backend: `src/xatra/render.py` message handler `setDraft` uses `shapeType`. |
+| **Rename in UI** (e.g. "Rivers" → "All Rivers", "Picker Map" → "Reference Map") | `Builder.jsx` (button/label), `App.jsx` (tab and panel titles). |

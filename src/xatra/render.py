@@ -561,16 +561,19 @@ HTML_TEMPLATE = Template(
             zoom: zoom
           }, '*');
         } else if (event.data && event.data.type === 'setDraft') {
-            if (draftLayer) map.removeLayer(draftLayer);
-            const { points, type } = event.data;
+            if (draftLayer) { map.removeLayer(draftLayer); draftLayer = null; }
+            const { points, shapeType } = event.data;
             if (!points || points.length === 0) return;
-            
-            if (type === 'point' || type === 'text') {
-                draftLayer = L.circleMarker(points[0], { color: 'red', radius: 5 }).addTo(map);
-            } else if (type === 'path') {
-                draftLayer = L.polyline(points, { color: 'red', weight: 3, dashArray: '5, 5' }).addTo(map);
-            } else if (type === 'polygon') {
-                draftLayer = L.polygon(points, { color: 'red', weight: 2, fillOpacity: 0.2, dashArray: '5, 5' }).addTo(map);
+            const t = shapeType || event.data.type;
+            if (t === 'point' || t === 'text') {
+                const pt = points[0];
+                draftLayer = L.circleMarker(Array.isArray(pt) ? pt : [pt.lat, pt.lng], { color: 'red', radius: 8, weight: 2, fillOpacity: 0.7 }).addTo(map);
+            } else if (t === 'path') {
+                const latlngs = points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]);
+                draftLayer = L.polyline(latlngs, { color: '#dc2626', weight: 4, dashArray: '8, 8', opacity: 0.9 }).addTo(map);
+            } else if (t === 'polygon') {
+                const latlngs = points.map(p => Array.isArray(p) ? p : [p.lat, p.lng]);
+                draftLayer = L.polygon(latlngs, { color: '#dc2626', weight: 3, fillColor: '#dc2626', fillOpacity: 0.25, dashArray: '6, 6' }).addTo(map);
             }
         }
       });

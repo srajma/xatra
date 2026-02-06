@@ -86,6 +86,14 @@ const TerritoryBuilder = ({
     onChange(newParts);
   };
 
+  const [territoryLibraryNames, setTerritoryLibraryNames] = useState([]);
+  useEffect(() => {
+    fetch('http://localhost:8088/territory_library/names')
+      .then(r => r.json())
+      .then(setTerritoryLibraryNames)
+      .catch(() => setTerritoryLibraryNames([]));
+  }, []);
+
   const predefinedVariables = useMemo(() => {
       if (!predefinedCode) return [];
       const regex = /^(\w+)\s*=/gm;
@@ -97,13 +105,11 @@ const TerritoryBuilder = ({
       return matches;
   }, [predefinedCode]);
 
-  // Mock search for predefined variables
-  const searchPredefined = async (q) => {
-      if (!q) return predefinedVariables.map(v => ({ gid: v, name: v, country: 'Predefined', level: '-' }));
-      return predefinedVariables
-          .filter(v => v.toLowerCase().includes(q.toLowerCase()))
-          .map(v => ({ gid: v, name: v, country: 'Predefined', level: '-' }));
-  };
+  const allPredefinedOptions = useMemo(() => {
+    const fromCode = predefinedVariables;
+    const fromLib = territoryLibraryNames.filter(n => !fromCode.includes(n));
+    return [...fromCode, ...fromLib];
+  }, [predefinedVariables, territoryLibraryNames]);
 
   if (parts.length === 0) {
       return (
@@ -161,11 +167,11 @@ const TerritoryBuilder = ({
                            value={part.value}
                            onChange={(e) => updatePart(idx, 'value', e.target.value)}
                            className="w-full text-xs p-1 border rounded bg-white"
-                           placeholder="Variable name..."
-                           list={`predefined-list-${idx}`}
+                           placeholder="e.g. maurya or NORTH_INDIA"
+                           list={`predefined-list-${parentId}-${idx}`}
                        />
-                       <datalist id={`predefined-list-${idx}`}>
-                           {predefinedVariables.map(v => (
+                       <datalist id={`predefined-list-${parentId}-${idx}`}>
+                           {allPredefinedOptions.map(v => (
                                <option key={v} value={v} />
                            ))}
                        </datalist>

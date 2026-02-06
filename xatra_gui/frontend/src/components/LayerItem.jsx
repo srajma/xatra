@@ -3,12 +3,15 @@ import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2, Save } from 'lucid
 import AutocompleteInput from './AutocompleteInput';
 import TerritoryBuilder from './TerritoryBuilder';
 
+const BUILTIN_ICON_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'cross', 'plus', 'star', 'hexagon', 'pentagon', 'octagon'];
+
 const LayerItem = ({ 
   element, index, updateElement, updateArg, replaceElement, removeElement, 
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
   onSaveTerritory, predefinedCode
 }) => {
   const [showMore, setShowMore] = useState(false);
+  const [builtinIconsList, setBuiltinIconsList] = useState([]);
   
   const isPicking = activePicker && activePicker.id === index && activePicker.context === 'layer';
 
@@ -18,6 +21,15 @@ const LayerItem = ({
   useEffect(() => {
       setPeriodText(element.args?.period ? element.args.period.join(', ') : '');
   }, [element.args?.period]);
+
+  useEffect(() => {
+    if (element.type === 'point') {
+      fetch('http://localhost:8088/icons/list')
+        .then(r => r.json())
+        .then(setBuiltinIconsList)
+        .catch(() => setBuiltinIconsList([]));
+    }
+  }, [element.type]);
 
   useEffect(() => {
       if (isPicking && lastMapClick) {
@@ -169,8 +181,10 @@ const LayerItem = ({
           </div>
         );
       case 'point':
-      case 'text':
-         return (
+      case 'text': {
+        const iconArg = element.args?.icon;
+        const iconMode = !iconArg ? 'default' : typeof iconArg === 'string' ? 'builtin' : iconArg.shape ? 'geometric' : 'custom';
+        return (
            <div className="grid grid-cols-2 gap-3 mb-2">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Label</label>
@@ -201,8 +215,88 @@ const LayerItem = ({
                   </button>
               </div>
             </div>
+            {element.type === 'point' && (
+              <div className="col-span-2 space-y-2 pt-1 border-t border-gray-100">
+                <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1">
+                  Icon
+                  <span title="Built-in: package icons. Geometric: circle, star, etc. Custom: any image URL.">
+                    <Info size={12} className="text-blue-500 cursor-help"/>
+                  </span>
+                </label>
+                <div className="flex flex-wrap gap-2 items-end">
+                  <select
+                    value={iconMode}
+                    onChange={(e) => {
+                      const m = e.target.value;
+                      if (m === 'default') updateArg(index, 'icon', null);
+                      else if (m === 'builtin') updateArg(index, 'icon', builtinIconsList[0] || 'star.svg');
+                      else if (m === 'geometric') updateArg(index, 'icon', { shape: 'circle', color: '#3388ff', size: 24 });
+                      else updateArg(index, 'icon', { icon_url: '' });
+                    }}
+                    className="text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="default">Default marker</option>
+                    <option value="builtin">Built-in icon</option>
+                    <option value="geometric">Geometric shape</option>
+                    <option value="custom">Custom URL</option>
+                  </select>
+                  {iconMode === 'builtin' && (
+                    <select
+                      value={typeof iconArg === 'string' ? iconArg : ''}
+                      onChange={(e) => updateArg(index, 'icon', e.target.value || null)}
+                      className="text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-2 focus:ring-blue-500 outline-none max-w-[180px]"
+                    >
+                      <option value="">—</option>
+                      {builtinIconsList.map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                  )}
+                  {iconMode === 'geometric' && (
+                    <>
+                      <select
+                        value={iconArg?.shape || 'circle'}
+                        onChange={(e) => updateArg(index, 'icon', { ...iconArg, shape: e.target.value })}
+                        className="text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      >
+                        {BUILTIN_ICON_SHAPES.map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={iconArg?.color || '#3388ff'}
+                        onChange={(e) => updateArg(index, 'icon', { ...iconArg, color: e.target.value })}
+                        placeholder="Color"
+                        className="w-20 text-xs px-2 py-1.5 border border-gray-200 rounded font-mono"
+                        title="CSS color, e.g. red or #ff0000"
+                      />
+                      <input
+                        type="number"
+                        min={8}
+                        max={64}
+                        value={iconArg?.size ?? 24}
+                        onChange={(e) => updateArg(index, 'icon', { ...iconArg, size: parseInt(e.target.value) || 24 })}
+                        className="w-14 text-xs px-2 py-1.5 border border-gray-200 rounded"
+                        title="Size in pixels"
+                      />
+                    </>
+                  )}
+                  {iconMode === 'custom' && (
+                    <input
+                      type="text"
+                      value={iconArg?.icon_url || iconArg?.iconUrl || ''}
+                      onChange={(e) => updateArg(index, 'icon', { ...iconArg, icon_url: e.target.value })}
+                      placeholder="https://... or data:..."
+                      className="flex-1 min-w-[160px] text-xs px-2 py-1.5 border border-gray-200 rounded font-mono"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
+      }
        case 'path':
          return (
            <div className="grid grid-cols-2 gap-3 mb-2">
@@ -396,30 +490,7 @@ const LayerItem = ({
             </div>
         )}
 
-         {element.type === 'point' && (
-             <div className="col-span-2">
-                <label className="block text-xs text-gray-500 mb-1 flex items-center gap-1">
-                    Icon Options (JSON) 
-                    <span title='Supports xatra.Icon() args: e.g. {"iconUrl": "...", "iconSize": [32, 32]}. Built-in icons: "city", "fort", "port", "temple", etc. Geometric: {"shape": "circle", "color": "red"}'>
-                        <Info size={12} className="text-blue-500 cursor-help"/>
-                    </span>
-                </label>
-                 <input
-                    type="text"
-                    value={element.args?.icon ? (typeof element.args.icon === 'string' ? element.args.icon : JSON.stringify(element.args.icon)) : ''}
-                    onChange={(e) => {
-                         const val = e.target.value;
-                         try {
-                                updateArg(index, 'icon', JSON.parse(val));
-                            } catch {
-                                updateArg(index, 'icon', val);
-                            }
-                        }}
-                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                        placeholder='e.g. "city" or {"shape": "star"}'
-                    />
-                </div>
-            )}
+         {/* Point icon is configured in the main form */}
         </div>
     );
   };

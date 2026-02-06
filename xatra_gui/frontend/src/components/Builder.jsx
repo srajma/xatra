@@ -39,7 +39,7 @@ const Builder = ({
         newElement.args = { level: 1 };
         break;
       case 'admin_rivers':
-        newElement.label = 'Rivers'; // AdminRivers doesn't really have a label arg in MapElement but useful for UI
+        newElement.label = 'All Rivers'; // AdminRivers doesn't really have a label arg in MapElement but useful for UI
         newElement.value = '["naturalearth"]';
         break;
       case 'dataframe':
@@ -115,7 +115,7 @@ const Builder = ({
                <Users size={14}/> Admin
              </button>
              <button onClick={() => addElement('admin_rivers')} className="flex flex-col items-center justify-center p-2 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 text-[10px] gap-1 border border-teal-100">
-               <span className="text-lg leading-3">≈</span> Rivers
+               <span className="text-lg leading-3">≈</span> All Rivers
              </button>
              <button onClick={() => addElement('dataframe')} className="flex flex-col items-center justify-center p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 text-[10px] gap-1 border border-green-100">
                <Table size={14}/> Data

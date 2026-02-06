@@ -34,8 +34,11 @@ xatra.Flag(label="India", value=gadm("IND"), note="Republic of India")
 xatra.TitleBox("<b>My Map</b>")
 `);
 
-  const [predefinedCode, setPredefinedCode] = useState(`# Define reusable territories here
-# e.g. maurya = gadm("IND") | gadm("PAK")
+  const [predefinedCode, setPredefinedCode] = useState(`# Pre-defined territories (use in Flag territory builder as "Predefined")
+# xatra.territory_library names (NORTH_INDIA, etc.) are available when rendering.
+# Example:
+# maurya = gadm("IND") | gadm("PAK")
+# north = NORTH_INDIA  # from territory_library
 `);
 
   // Picker State
@@ -53,10 +56,10 @@ xatra.TitleBox("<b>My Map</b>")
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
 
-  const updateDraft = (points, type) => {
+  const updateDraft = (points, shapeType) => {
       const ref = activePreviewTab === 'main' ? iframeRef : pickerIframeRef;
       if (ref.current && ref.current.contentWindow) {
-          ref.current.contentWindow.postMessage({ type: 'setDraft', points, type }, '*');
+          ref.current.contentWindow.postMessage({ type: 'setDraft', points, shapeType }, '*');
       }
   };
 
@@ -71,7 +74,7 @@ xatra.TitleBox("<b>My Map</b>")
   useEffect(() => {
     const handleKeyDown = (e) => {
         if (!activePicker) return;
-        
+        if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
         if (e.key === 'Backspace') {
             e.preventDefault();
             setDraftPoints(prev => {
@@ -178,7 +181,7 @@ xatra.TitleBox("<b>My Map</b>")
       const endpoint = activeTab === 'code' ? '/render/code' : '/render/builder';
       const body = activeTab === 'code' 
         ? { code } 
-        : { elements: builderElements, options: builderOptions };
+        : { elements: builderElements, options: builderOptions, predefined_code: predefinedCode || undefined };
 
       const response = await fetch(`http://localhost:8088${endpoint}`, {
         method: 'POST',
@@ -267,9 +270,11 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   const generatePythonCode = () => {
+    const needsIconImport = builderElements.some(el => el.type === 'point' && el.args?.icon);
     let lines = [
         'import xatra',
         'from xatra.loaders import gadm, naturalearth, polygon, overpass',
+        ...(needsIconImport ? ['from xatra.icon import Icon', ''] : []),
         '',
         predefinedCode,
         ''
@@ -321,9 +326,35 @@ xatra.TitleBox("<b>My Map</b>")
             lines.push(`xatra.Flag(value=${formatTerritory(el.value)}${argsStr})`);
         } else if (el.type === 'river') {
             const func = el.args?.source_type === 'overpass' ? 'overpass' : 'naturalearth';
-            lines.push(`xatra.River(value=${func}("${el.value}")${argsStr})`);
+            const riverArgs = { ...args };
+            delete riverArgs.source_type;
+            const riverArgsStr = Object.entries(riverArgs)
+                .map(([k, v]) => `${k}=${JSON.stringify(v).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}`)
+                .join(', ');
+            const riverArgsStrFormatted = riverArgsStr ? ', ' + riverArgsStr : '';
+            lines.push(`xatra.River(value=${func}("${el.value}")${riverArgsStrFormatted})`);
         } else if (el.type === 'point') {
-            lines.push(`xatra.Point(position=${el.value}${argsStr})`);
+            const pointArgs = { ...args };
+            const iconVal = pointArgs.icon;
+            delete pointArgs.icon;
+            let pointArgsStr = Object.entries(pointArgs)
+                .map(([k, v]) => `${k}=${JSON.stringify(v).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}`)
+                .join(', ');
+            let iconPy = '';
+            if (iconVal != null && iconVal !== '') {
+                if (typeof iconVal === 'string') {
+                    iconPy = `icon=Icon.builtin("${iconVal}")`;
+                } else if (iconVal.shape) {
+                    const c = (iconVal.color || '#3388ff').replace(/'/g, "\\'");
+                    iconPy = `icon=Icon.geometric("${iconVal.shape}", color="${c}", size=${iconVal.size ?? 24})`;
+                } else if (iconVal.icon_url || iconVal.iconUrl) {
+                    const url = (iconVal.icon_url || iconVal.iconUrl).replace(/"/g, '\\"');
+                    iconPy = `icon=Icon(icon_url="${url}")`;
+                }
+            }
+            if (iconPy) pointArgsStr = pointArgsStr ? `${pointArgsStr}, ${iconPy}` : iconPy;
+            const pointArgsFormatted = pointArgsStr ? `, ${pointArgsStr}` : '';
+            lines.push(`xatra.Point(position=${el.value}${pointArgsFormatted})`);
         } else if (el.type === 'text') {
             lines.push(`xatra.Text(position=${el.value}${argsStr})`);
         } else if (el.type === 'path') {
@@ -457,14 +488,14 @@ xatra.TitleBox("<b>My Map</b>")
                 onClick={() => setActivePreviewTab('picker')}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'picker' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
-                Picker Map
+                Reference Map
             </button>
         </div>
 
         {activePreviewTab === 'picker' && (
             <div className="absolute top-16 right-4 z-20 w-72 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b pb-2">
-                    Picker Options
+                    Reference Map Options
                 </h3>
                 <div className="space-y-3">
                     <div className="space-y-2">
@@ -529,16 +560,30 @@ xatra.TitleBox("<b>My Map</b>")
                         disabled={loading}
                         className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors disabled:opacity-50"
                     >
-                        Update Picker Map
+                        Update Reference Map
                     </button>
                 </div>
                 <div className="text-[10px] text-gray-400 bg-gray-50 p-2 rounded italic">
-                    Tip: Use the picker map to find GADM codes or coordinates.
+                    Tip: Use the reference map to find GADM codes or coordinates.
                 </div>
             </div>
         )}
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative">
+            {activePicker && (
+                <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
+                    <div className="bg-amber-500 text-white px-6 py-4 rounded-lg shadow-2xl border-2 border-amber-600 font-semibold text-center max-w-md animate-pulse">
+                        <div className="text-sm mb-1">Click map to add points</div>
+                        <div className="text-xs font-normal opacity-95">
+                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Backspace</kbd> undo last point
+                            {' · '}
+                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Space</kbd> + drag freehand
+                            {' · '}
+                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Esc</kbd> cancel
+                        </div>
+                    </div>
+                </div>
+            )}
             {activePreviewTab === 'main' ? (
                 <MapPreview html={mapHtml} loading={loading} iframeRef={iframeRef} />
             ) : (
