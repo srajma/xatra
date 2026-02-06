@@ -3,7 +3,11 @@ import { Map, Users, MapPin, Type, GitMerge, Table } from 'lucide-react';
 import LayerItem from './LayerItem';
 import GlobalOptions from './GlobalOptions';
 
-const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView, lastMapClick }) => {
+const Builder = ({ 
+  elements, setElements, options, setOptions, onGetCurrentView, 
+  lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
+  onSaveTerritory
+}) => {
   const addElement = (type) => {
     let newElement = { 
       type, 
@@ -129,6 +133,11 @@ const Builder = ({ elements, setElements, options, setOptions, onGetCurrentView,
               replaceElement={replaceElement}
               removeElement={removeElement}
               lastMapClick={lastMapClick}
+              activePicker={activePicker}
+              setActivePicker={setActivePicker}
+              draftPoints={draftPoints}
+              setDraftPoints={setDraftPoints}
+              onSaveTerritory={onSaveTerritory}
             />
           ))}
           

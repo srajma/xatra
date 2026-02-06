@@ -144,6 +144,37 @@ HTML_TEMPLATE = Template(
         }
       });
       
+      map.on('mousedown', function(e) {
+          if (window.parent) {
+              window.parent.postMessage({
+                  type: 'mapMouseDown',
+                  lat: e.latlng.lat,
+                  lng: e.latlng.lng
+              }, '*');
+          }
+      });
+      
+      map.on('mousemove', function(e) {
+          updateMultiTooltip(e);
+          if (window.parent) {
+              window.parent.postMessage({
+                  type: 'mapMouseMove',
+                  lat: e.latlng.lat,
+                  lng: e.latlng.lng
+              }, '*');
+          }
+      });
+      
+      map.on('mouseup', function(e) {
+          if (window.parent) {
+              window.parent.postMessage({
+                  type: 'mapMouseUp',
+                  lat: e.latlng.lat,
+                  lng: e.latlng.lng
+              }, '*');
+          }
+      });
+      
       // Debug mode - set to true to show centroid markers
       const DEBUG_CENTROIDS = false;
       
@@ -519,6 +550,7 @@ HTML_TEMPLATE = Template(
       map.on('mousemove', updateMultiTooltip);
 
       // Listener for parent window messages (Studio integration)
+      let draftLayer = null;
       window.addEventListener('message', function(event) {
         if (event.data === 'getCurrentView') {
           const center = map.getCenter();
@@ -528,6 +560,18 @@ HTML_TEMPLATE = Template(
             center: [center.lat, center.lng],
             zoom: zoom
           }, '*');
+        } else if (event.data && event.data.type === 'setDraft') {
+            if (draftLayer) map.removeLayer(draftLayer);
+            const { points, type } = event.data;
+            if (!points || points.length === 0) return;
+            
+            if (type === 'point' || type === 'text') {
+                draftLayer = L.circleMarker(points[0], { color: 'red', radius: 5 }).addTo(map);
+            } else if (type === 'path') {
+                draftLayer = L.polyline(points, { color: 'red', weight: 3, dashArray: '5, 5' }).addTo(map);
+            } else if (type === 'polygon') {
+                draftLayer = L.polygon(points, { color: 'red', weight: 2, fillOpacity: 0.2, dashArray: '5, 5' }).addTo(map);
+            }
         }
       });
 

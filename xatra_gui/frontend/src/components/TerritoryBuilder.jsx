@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, MousePointer2 } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 
-const TerritoryBuilder = ({ value, onChange, lastMapClick }) => {
+const TerritoryBuilder = ({ 
+  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId 
+}) => {
   // Normalize value to list of objects
   let parts = [];
   if (Array.isArray(value)) {
@@ -15,42 +17,56 @@ const TerritoryBuilder = ({ value, onChange, lastMapClick }) => {
       parts = [{ op: 'union', type: 'gadm', value: value }];
   }
 
-  const [pickingState, setPickingState] = useState({ index: -1, start: 0 });
+  const getPickingIndex = () => {
+      if (activePicker && activePicker.context === `territory-${parentId}`) {
+          return activePicker.id;
+      }
+      return -1;
+  };
+
+  const pickingIndex = getPickingIndex();
 
   useEffect(() => {
-      if (pickingState.index >= 0 && lastMapClick && lastMapClick.ts > pickingState.start) {
-        const idx = pickingState.index;
+      if (pickingIndex >= 0 && lastMapClick) {
+        const idx = pickingIndex;
         const lat = parseFloat(lastMapClick.lat.toFixed(4));
         const lng = parseFloat(lastMapClick.lng.toFixed(4));
         const point = [lat, lng];
 
         const part = parts[idx];
         if (part && part.type === 'polygon') {
-             try {
-                let current = [];
-                if (part.value) {
-                    try { current = JSON.parse(part.value); } catch {}
-                }
-                if (!Array.isArray(current)) current = [];
-                current.push(point);
-                
-                const newParts = [...parts];
-                newParts[idx] = { ...part, value: JSON.stringify(current) };
-                onChange(newParts);
-            } catch (e) {
-                const newParts = [...parts];
-                newParts[idx] = { ...part, value: JSON.stringify([point]) };
-                onChange(newParts);
-            }
+            const newPoints = [...draftPoints, point];
+            setDraftPoints(newPoints);
+            
+            const newParts = [...parts];
+            newParts[idx] = { ...part, value: JSON.stringify(newPoints) };
+            onChange(newParts);
         }
       }
   }, [lastMapClick]);
 
+  // Sync draftPoints when entering picking mode
+  useEffect(() => {
+      if (pickingIndex >= 0) {
+          const part = parts[pickingIndex];
+          if (part && part.type === 'polygon') {
+              try {
+                  const current = JSON.parse(part.value || '[]');
+                  setDraftPoints(Array.isArray(current) ? current : []);
+              } catch(e) {
+                  setDraftPoints([]);
+              }
+          }
+      }
+  }, [pickingIndex]);
+
   const togglePicking = (index) => {
-      if (pickingState.index === index) {
-          setPickingState({ index: -1, start: 0 });
+      if (pickingIndex === index) {
+          setActivePicker(null);
+          setDraftPoints([]);
       } else {
-          setPickingState({ index: index, start: Date.now() });
+          setActivePicker({ id: index, type: 'polygon', context: `territory-${parentId}` });
+          setDraftPoints([]);
       }
   };
 
@@ -128,8 +144,8 @@ const TerritoryBuilder = ({ value, onChange, lastMapClick }) => {
                        />
                        <button 
                             onClick={() => togglePicking(idx)}
-                            className={`p-1 border rounded flex-shrink-0 transition-colors ${pickingState.index === idx ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-300'}`}
-                            title={pickingState.index === idx ? "Click on map to append points" : "Draw polygon on map"}
+                            className={`p-1 border rounded flex-shrink-0 transition-colors ${pickingIndex === idx ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-300'}`}
+                            title={pickingIndex === idx ? "Click on map to append points (Backspace to undo, Esc to stop)" : "Draw polygon on map"}
                         >
                             <MousePointer2 size={12}/>
                         </button>

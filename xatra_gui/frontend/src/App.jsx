@@ -33,6 +33,10 @@ xatra.Flag(label="India", value=gadm("IND"), note="Republic of India")
 xatra.TitleBox("<b>My Map</b>")
 `);
 
+  const [predefinedCode, setPredefinedCode] = useState(`# Define reusable territories here
+# e.g. maurya = gadm("IND") | gadm("PAK")
+`);
+
   // Picker State
   const [pickerOptions, setPickerOptions] = useState({
     entries: [{ country: 'IND', level: 1 }],
@@ -40,9 +44,70 @@ xatra.TitleBox("<b>My Map</b>")
   });
   
   const [lastMapClick, setLastMapClick] = useState(null);
+  const [activePicker, setActivePicker] = useState(null); // { id, type, context }
+  const [draftPoints, setDraftPoints] = useState([]);
+  const [isFreehand, setIsFreehand] = useState(false);
+  const [isMouseDown, setIsMouseDown] = useState(false);
 
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
+
+  const updateDraft = (points, type) => {
+      const ref = activePreviewTab === 'main' ? iframeRef : pickerIframeRef;
+      if (ref.current && ref.current.contentWindow) {
+          ref.current.contentWindow.postMessage({ type: 'setDraft', points, type }, '*');
+      }
+  };
+
+  useEffect(() => {
+      if (activePicker) {
+          updateDraft(draftPoints, activePicker.type);
+      } else {
+          updateDraft([], null);
+      }
+  }, [draftPoints, activePicker, activePreviewTab]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+        if (!activePicker) return;
+        
+        if (e.key === 'Backspace') {
+            e.preventDefault();
+            setDraftPoints(prev => {
+                const newPoints = prev.slice(0, -1);
+                updateElementFromDraft(newPoints);
+                return newPoints;
+            });
+        } else if (e.key === ' ') {
+            e.preventDefault();
+            setIsFreehand(true);
+        } else if (e.key === 'Escape') {
+            setActivePicker(null);
+            setDraftPoints([]);
+        }
+    };
+    const handleKeyUp = (e) => {
+        if (e.key === ' ') {
+            setIsFreehand(false);
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [activePicker]);
+
+  const updateElementFromDraft = (points) => {
+      if (!activePicker) return;
+      if (activePicker.context === 'layer') {
+          const idx = activePicker.id;
+          const newElements = [...builderElements];
+          newElements[idx].value = JSON.stringify(points);
+          setBuilderElements(newElements);
+      }
+  };
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -60,11 +125,26 @@ xatra.TitleBox("<b>My Map</b>")
         }
       } else if (event.data && event.data.type === 'mapClick') {
           setLastMapClick({ lat: event.data.lat, lng: event.data.lng, ts: Date.now() });
+      } else if (event.data && event.data.type === 'mapMouseDown') {
+          setIsMouseDown(true);
+      } else if (event.data && event.data.type === 'mapMouseUp') {
+          setIsMouseDown(false);
+      } else if (event.data && event.data.type === 'mapMouseMove') {
+          if (activePicker && isFreehand && isMouseDown) {
+              const point = [parseFloat(event.data.lat.toFixed(4)), parseFloat(event.data.lng.toFixed(4))];
+              setDraftPoints(prev => {
+                  const last = prev[prev.length - 1];
+                  if (last && Math.abs(last[0] - point[0]) < 0.0001 && Math.abs(last[1] - point[1]) < 0.0001) return prev;
+                  const newPoints = [...prev, point];
+                  updateElementFromDraft(newPoints);
+                  return newPoints;
+              });
+          }
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [activePreviewTab]);
+  }, [activePreviewTab, activePicker, isFreehand, isMouseDown, builderElements]);
 
   const handleGetCurrentView = () => {
     const ref = activePreviewTab === 'picker' ? pickerIframeRef : iframeRef;
@@ -137,7 +217,7 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   const handleSaveProject = () => {
-    const project = { elements: builderElements, options: builderOptions };
+    const project = { elements: builderElements, options: builderOptions, predefinedCode };
     downloadFile(JSON.stringify(project, null, 2), "project.json", "application/json");
   };
 
@@ -151,6 +231,7 @@ xatra.TitleBox("<b>My Map</b>")
           if (project.elements && project.options) {
              setBuilderElements(project.elements);
              setBuilderOptions(project.options);
+             if (project.predefinedCode) setPredefinedCode(project.predefinedCode);
           }
         } catch (err) {
           setError("Failed to load project: " + err.message);
@@ -162,10 +243,34 @@ xatra.TitleBox("<b>My Map</b>")
     e.target.value = null;
   };
 
+  const formatTerritory = (value) => {
+      if (Array.isArray(value)) {
+          const ops = { union: '|', difference: '-', intersection: '&' };
+          return value.map((part, i) => {
+              let pStr = '';
+              if (part.type === 'gadm') pStr = `gadm("${part.value}")`;
+              else if (part.type === 'polygon') pStr = `polygon(${part.value})`;
+              
+              if (i === 0) return pStr;
+              return ` ${ops[part.op] || '|'} ${pStr}`;
+          }).join('');
+      }
+      return `gadm("${value}")`;
+  };
+
+  const handleSaveTerritoryToLibrary = (element) => {
+      const name = element.label.toLowerCase().replace(/\s+/g, '_');
+      const terrStr = formatTerritory(element.value);
+      setPredefinedCode(prev => prev + `\n${name} = ${terrStr}\n`);
+      setActiveTab('code');
+  };
+
   const generatePythonCode = () => {
     let lines = [
         'import xatra',
-        'from xatra.loaders import gadm, naturalearth, polygon',
+        'from xatra.loaders import gadm, naturalearth, polygon, overpass',
+        '',
+        predefinedCode,
         ''
     ];
 
@@ -212,22 +317,7 @@ xatra.TitleBox("<b>My Map</b>")
         if (argsStr) argsStr = ', ' + argsStr;
 
         if (el.type === 'flag') {
-            let valStr = 'None';
-            if (Array.isArray(el.value)) {
-                // Complex territory
-                const ops = { union: '|', difference: '-', intersection: '&' };
-                valStr = el.value.map((part, i) => {
-                    let pStr = '';
-                    if (part.type === 'gadm') pStr = `gadm("${part.value}")`;
-                    else if (part.type === 'polygon') pStr = `polygon(${part.value})`;
-                    
-                    if (i === 0) return pStr;
-                    return ` ${ops[part.op] || '|'} ${pStr}`;
-                }).join('');
-            } else {
-                valStr = `gadm("${el.value}")`;
-            }
-            lines.push(`xatra.Flag(value=${valStr}${argsStr})`);
+            lines.push(`xatra.Flag(value=${formatTerritory(el.value)}${argsStr})`);
         } else if (el.type === 'river') {
             const func = el.args?.source_type === 'overpass' ? 'overpass' : 'naturalearth';
             lines.push(`xatra.River(value=${func}("${el.value}")${argsStr})`);
@@ -241,6 +331,12 @@ xatra.TitleBox("<b>My Map</b>")
             lines.push(`xatra.Admin(gadm="${el.value}"${argsStr})`);
         } else if (el.type === 'admin_rivers') {
             lines.push(`xatra.AdminRivers(sources=${el.value}${argsStr})`);
+        } else if (el.type === 'dataframe') {
+            lines.push(`# DataFrame handling requires local CSV file or manual implementation in code mode`);
+            lines.push(`import pandas as pd`);
+            lines.push(`import io`);
+            lines.push(`df = pd.read_csv(io.StringIO("""${el.value}"""))`);
+            lines.push(`xatra.Dataframe(df${argsStr})`);
         }
     });
 
@@ -299,9 +395,18 @@ xatra.TitleBox("<b>My Map</b>")
               setOptions={setBuilderOptions}
               onGetCurrentView={handleGetCurrentView}
               lastMapClick={lastMapClick}
+              activePicker={activePicker}
+              setActivePicker={setActivePicker}
+              draftPoints={draftPoints}
+              setDraftPoints={setDraftPoints}
+              onSaveTerritory={handleSaveTerritoryToLibrary}
             />
           ) : (
-            <CodeEditor code={code} setCode={setCode} onSync={generatePythonCode} />
+            <CodeEditor 
+                code={code} setCode={setCode} 
+                predefinedCode={predefinedCode} setPredefinedCode={setPredefinedCode}
+                onSync={generatePythonCode} 
+            />
           )}
         </div>
 
@@ -340,7 +445,7 @@ xatra.TitleBox("<b>My Map</b>")
         </div>
 
         {activePreviewTab === 'picker' && (
-            <div className="absolute top-16 right-4 z-20 w-64 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto">
+            <div className="absolute top-16 right-4 z-20 w-72 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b pb-2">
                     Picker Options
                 </h3>
@@ -348,7 +453,7 @@ xatra.TitleBox("<b>My Map</b>")
                     <div className="space-y-2">
                          <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Countries</label>
                          {pickerOptions.entries.map((entry, idx) => (
-                             <div key={idx} className="flex gap-2 items-center">
+                             <div key={idx} className="flex gap-1.5 items-center">
                                  <input 
                                      type="text" 
                                      value={entry.country}
@@ -357,7 +462,7 @@ xatra.TitleBox("<b>My Map</b>")
                                          newEntries[idx].country = e.target.value;
                                          setPickerOptions({...pickerOptions, entries: newEntries});
                                      }}
-                                     className="flex-1 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase"
+                                     className="w-20 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase"
                                      placeholder="IND"
                                  />
                                  <input 
@@ -377,7 +482,7 @@ xatra.TitleBox("<b>My Map</b>")
                                          newEntries.splice(idx, 1);
                                          setPickerOptions({...pickerOptions, entries: newEntries});
                                      }}
-                                     className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                                     className="p-1.5 text-red-500 hover:bg-red-50 rounded flex-shrink-0"
                                  >
                                      <Trash2 size={12}/>
                                  </button>

@@ -1,43 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2 } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2, Save } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 import TerritoryBuilder from './TerritoryBuilder';
 
-const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, removeElement, lastMapClick }) => {
+const LayerItem = ({ 
+  element, index, updateElement, updateArg, replaceElement, removeElement, 
+  lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
+  onSaveTerritory
+}) => {
   const [showMore, setShowMore] = useState(false);
-  const [pickingStart, setPickingStart] = useState(0);
+  
+  const isPicking = activePicker && activePicker.id === index && activePicker.context === 'layer';
+
+  const [periodText, setPeriodText] = useState(element.args?.period ? element.args.period.join(', ') : '');
+
+  // Sync periodText when element changes (e.g. project load)
+  useEffect(() => {
+      setPeriodText(element.args?.period ? element.args.period.join(', ') : '');
+  }, [element.args?.period]);
 
   useEffect(() => {
-      if (pickingStart > 0 && lastMapClick && lastMapClick.ts > pickingStart) {
+      if (isPicking && lastMapClick) {
         const lat = parseFloat(lastMapClick.lat.toFixed(4));
         const lng = parseFloat(lastMapClick.lng.toFixed(4));
         const point = [lat, lng];
 
         if (element.type === 'point' || element.type === 'text') {
             updateElement(index, 'value', JSON.stringify(point));
-            setPickingStart(0); // Stop picking
+            setDraftPoints([point]);
+            setActivePicker(null); // Stop picking
         } else if (element.type === 'path') {
-            // Append point
-             try {
-                let current = [];
-                if (element.value) {
-                    try { current = JSON.parse(element.value); } catch {}
-                }
-                if (!Array.isArray(current)) current = [];
-                
-                current.push(point);
-                updateElement(index, 'value', JSON.stringify(current));
-                // Continue picking for path
-            } catch (e) {
-                updateElement(index, 'value', JSON.stringify([point]));
-            }
+            const newPoints = [...draftPoints, point];
+            setDraftPoints(newPoints);
+            updateElement(index, 'value', JSON.stringify(newPoints));
         }
       }
   }, [lastMapClick]);
 
+  // Sync draftPoints when entering picking mode for path
+  useEffect(() => {
+      if (isPicking && element.type === 'path') {
+          try {
+              const current = JSON.parse(element.value || '[]');
+              setDraftPoints(Array.isArray(current) ? current : []);
+          } catch(e) {
+              setDraftPoints([]);
+          }
+      }
+  }, [isPicking]);
+
   const togglePicking = () => {
-      if (pickingStart > 0) setPickingStart(0);
-      else setPickingStart(Date.now());
+      if (isPicking) {
+          setActivePicker(null);
+          setDraftPoints([]);
+      } else {
+          setActivePicker({ id: index, type: element.type, context: 'layer' });
+          setDraftPoints([]);
+      }
+  };
+
+  const handlePeriodChange = (val) => {
+    setPeriodText(val);
+    if (val === "") {
+      updateArg(index, 'period', null);
+      return;
+    }
+    
+    // Support [-320, -180] or -320, -180
+    let clean = val.split('[').join('').split(']').join('');
+    const parts = clean.split(',').map(s => s.trim());      
+    if (parts.length === 2) {
+        const start = parseInt(parts[0]);
+        const end = parseInt(parts[1]);
+        if (!isNaN(start) && !isNaN(end)) {
+            updateArg(index, 'period', [start, end]);
+        }
+    }
   };
 
   const renderSpecificFields = () => {
@@ -56,11 +94,25 @@ const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, r
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Territory</label>
+              <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs text-gray-500">Territory</label>
+                  <button 
+                    onClick={() => onSaveTerritory(element)}
+                    className="text-[10px] text-blue-600 hover:text-blue-800 flex items-center gap-1 font-bold"
+                    title="Save territory to predefined library"
+                  >
+                    <Save size={10}/> Save to Library
+                  </button>
+              </div>
               <TerritoryBuilder
                 value={element.value}
                 onChange={(val) => updateElement(index, 'value', val)}
                 lastMapClick={lastMapClick}
+                activePicker={activePicker}
+                setActivePicker={setActivePicker}
+                draftPoints={draftPoints}
+                setDraftPoints={setDraftPoints}
+                parentId={index}
               />
             </div>
           </div>
@@ -141,8 +193,8 @@ const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, r
                   />
                   <button 
                     onClick={togglePicking}
-                    className={`p-1.5 border rounded flex-shrink-0 transition-colors ${pickingStart > 0 ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
-                    title={pickingStart > 0 ? "Click on map to pick location" : "Pick from map"}
+                    className={`p-1.5 border rounded flex-shrink-0 transition-colors ${isPicking ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
+                    title={isPicking ? "Click on map to pick location (Esc to cancel)" : "Pick from map"}
                   >
                     <MousePointer2 size={16}/>
                   </button>
@@ -174,8 +226,8 @@ const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, r
                   />
                   <button 
                     onClick={togglePicking}
-                    className={`p-1.5 border rounded flex-shrink-0 transition-colors ${pickingStart > 0 ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
-                    title={pickingStart > 0 ? "Click on map to append points. Click again to stop." : "Draw path on map"}
+                    className={`p-1.5 border rounded flex-shrink-0 transition-colors ${isPicking ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
+                    title={isPicking ? "Click on map to append points (Backspace to undo, Esc to stop)" : "Draw path on map"}
                   >
                     <MousePointer2 size={16}/>
                   </button>
@@ -366,39 +418,18 @@ const LayerItem = ({ element, index, updateElement, updateArg, replaceElement, r
                     onChange={(e) => {
                          const val = e.target.value;
                          try {
-                                                 updateArg(index, 'icon', JSON.parse(val));
-                                              } catch {
-                                                  updateArg(index, 'icon', val);
-                                              }
-                                         }}
-                                         className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                                         placeholder='e.g. "city" or {"shape": "star"}'
-                                     />
-                                 </div>
-                              )}
-                             </div>
-                             );
-                             };
-                             
-                             const [periodText, setPeriodText] = useState(element.args?.period ? element.args.period.join(', ') : '');
-                             
-                             const handlePeriodChange = (val) => {
-                             setPeriodText(val);
-                             if (val === "") {
-                               updateArg(index, 'period', null);
-                               return;
-                             }
-                             
-                             // Support [-320, -180] or -320, -180
-                             let clean = val.split('[').join('').split(']').join('');
-                             const parts = clean.split(',').map(s => s.trim());      
-      if (parts.length === 2) {
-          const start = parseInt(parts[0]);
-          const end = parseInt(parts[1]);
-          if (!isNaN(start) && !isNaN(end)) {
-              updateArg(index, 'period', [start, end]);
-          }
-      }
+                                updateArg(index, 'icon', JSON.parse(val));
+                            } catch {
+                                updateArg(index, 'icon', val);
+                            }
+                        }}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
+                        placeholder='e.g. "city" or {"shape": "star"}'
+                    />
+                </div>
+            )}
+        </div>
+    );
   };
 
   return (

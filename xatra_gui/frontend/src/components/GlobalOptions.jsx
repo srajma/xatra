@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Plus, Trash2, Crosshair, Info, X } from 'lucide-react';
 
 const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
@@ -47,6 +47,30 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
       { id: 'Esri.WorldPhysical', name: 'Esri World Physical' },
       { id: 'Stadia.OSMBright', name: 'Stadia OSM Bright' },
   ];
+
+  // Local state for slider inputs to allow intermediate typing (minus signs etc)
+  const [sliderStart, setSliderStart] = useState(options.slider?.start?.toString() || '');
+  const [sliderEnd, setSliderEnd] = useState(options.slider?.end?.toString() || '');
+  const [sliderSpeed, setSliderSpeed] = useState(options.slider?.speed?.toString() || '5.0');
+
+  useEffect(() => {
+      setSliderStart(options.slider?.start?.toString() || '');
+      setSliderEnd(options.slider?.end?.toString() || '');
+      setSliderSpeed(options.slider?.speed?.toString() || '5.0');
+  }, [options.slider]);
+
+  const handleSliderChange = (field, val) => {
+      if (field === 'start') setSliderStart(val);
+      if (field === 'end') setSliderEnd(val);
+      if (field === 'speed') setSliderSpeed(val);
+
+      const parsed = field === 'speed' ? parseFloat(val) : parseInt(val);
+      if (val === '' || val === '-') {
+          updateOption('slider', { ...options.slider, [field]: null });
+      } else if (!isNaN(parsed)) {
+          updateOption('slider', { ...options.slider, [field]: parsed });
+      }
+  };
 
   return (
     <section className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -211,37 +235,28 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                             <label className="block text-[10px] text-gray-500">Start Year</label>
                             <input
                                 type="text"
-                                value={options.slider?.start !== undefined && options.slider?.start !== null ? options.slider.start : ''}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? null : parseInt(e.target.value);
-                                    if (e.target.value === '' || !isNaN(val)) {
-                                        updateOption('slider', { ...options.slider, start: val });
-                                    }
-                                }}
+                                value={sliderStart}
+                                onChange={(e) => handleSliderChange('start', e.target.value)}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded font-mono"
+                                placeholder="e.g. -320"
                             />
                         </div>
                          <div>
                             <label className="block text-[10px] text-gray-500">End Year</label>
                              <input
                                 type="text"
-                                value={options.slider?.end !== undefined && options.slider?.end !== null ? options.slider.end : ''}
-                                onChange={(e) => {
-                                    const val = e.target.value === '' ? null : parseInt(e.target.value);
-                                    if (e.target.value === '' || !isNaN(val)) {
-                                        updateOption('slider', { ...options.slider, end: val });
-                                    }
-                                }}
+                                value={sliderEnd}
+                                onChange={(e) => handleSliderChange('end', e.target.value)}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded font-mono"
+                                placeholder="e.g. 2024"
                             />
                         </div>
                          <div>
                             <label className="block text-[10px] text-gray-500">Speed</label>
                              <input
-                                type="number"
-                                step="0.1"
-                                value={options.slider?.speed !== undefined ? options.slider.speed : 5.0}
-                                onChange={(e) => updateOption('slider', { ...options.slider, speed: parseFloat(e.target.value) })}
+                                type="text"
+                                value={sliderSpeed}
+                                onChange={(e) => handleSliderChange('speed', e.target.value)}
                                 className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
                             />
                         </div>
