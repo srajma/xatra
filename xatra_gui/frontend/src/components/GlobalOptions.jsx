@@ -65,8 +65,10 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
       if (field === 'speed') setSliderSpeed(val);
 
       const parsed = field === 'speed' ? parseFloat(val) : parseInt(val);
-      if (val === '' || val === '-') {
+      if (val === '') {
           updateOption('slider', { ...options.slider, [field]: null });
+      } else if (val === '-') {
+          // Do not update global options for intermediate state, keep local state
       } else if (!isNaN(parsed)) {
           updateOption('slider', { ...options.slider, [field]: parsed });
       }

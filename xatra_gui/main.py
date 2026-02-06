@@ -162,13 +162,6 @@ class PickerRequest(BaseModel):
     entries: List[PickerEntry]
     adminRivers: bool = False
 
-def parse_color_sequence(val):
-    if not val or not isinstance(val, str) or not val.strip():
-        return None
-    if val.replace('_', '').isalnum():
-        return val.strip()
-    return [c.strip() for c in val.split(',') if c.strip()]
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -185,6 +178,13 @@ def stop_generation():
     return {"status": "no process running"}
 
 def run_rendering_task(task_type, data, result_queue):
+    def parse_color_sequence(val):
+        if not val or not isinstance(val, str) or not val.strip():
+            return None
+        if val.replace('_', '').isalnum():
+            return val.strip()
+        return [c.strip() for c in val.split(',') if c.strip()]
+
     try:
         # Re-import xatra inside the process just in case, though imports are inherited on fork (mostly)
         # But we need fresh map state

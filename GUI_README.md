@@ -23,14 +23,16 @@ Bugs
 - [x] Period field has a bug: it doesn't allow commas, so I cannot actually enter a range. It also doesn't seem to allow minus signs (which is how we enter BC dates---in fact, the example shown should be something like [-320, -180] and the "format" helper should explicitly say "use negative numbers for BC years".), or for the first entry to be 0 (which should be possible since these are years). This applies to all elements.
 - [x] Admin and AdminRivers elements have a bug: Error: Map.Admin() got an unexpected keyword argument 'label'.
 - [x] I get an Error: object of type 'int' has no len() sometimes ... leave this issue for now, I think fixing the Period field will fix it.
-- [ ] Start year end year fields for the Time Slider in Global Options are broken again
-  - [ ] This is still broken, entering "-" leaves it blank.
+- [x] Start year end year fields for the Time Slider in Global Options are broken again
+  - [x] This is still broken, entering "-" leaves it blank.
 - [x] Code Editor is broken (shows a blank page)
 - [x] In case of any error where the map runs into "Rendering..." "Generating map..." forever, there should be something to let the user stop the generation. Sometimes even reloading the page doesn't work.
   - [x] While the feature has been implemented, it doesn't solve the underlying problem, which is that the server is itself in an error state, so no other operation runs afterward. It should stop the underlying Python process that is in error. 
   - [x] Also in general errors should always break the process, right (I might be talking nonsense, IDK)? Why does the execution not return things to normal upon these errors? 
 - [x] In all the forms there should be something to ensure when the contents are cleared, it is treated exactly as it would be exactly as if it were never edited. E.g. when I enter something into the Flag Color Sequence box and then remove it, I get an error while generating the map "Error: name 'parse_color_sequence' is not defined" even though its contents are clear again.
-  - [ ] This does not apply just to color. There are numerous instances throughout the interface where this occurs.
+
+Bugs caught by AI
+- 
 
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
@@ -46,7 +48,7 @@ Basic extensions
     - [x] The sample example prefilled when adding a dataframe has the GID column titled "gadm". This is wrong, it should be "GID".
     - [x] Remove the "Find in GADM" field. Even in the original package it's kind of irrelevant.
     - [x] plotting data doesn't really work for some reason, it generates the following error.
-    - [ ] 
+    - [ ] We should not need to enter the data and year columns manually.
     - [ ] disputed territories don't plot correctly [this might be an issue with the package itself, I'll have to see]
 
   - [x] NOTE: allow adding any attribute to those objects, not just label, note and GADM code. Period is especially important. The less important attributes could be hidden under a "More..."
