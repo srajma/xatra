@@ -113,9 +113,9 @@ def River(label: str, value: Dict[str, Any], note: Optional[str] = None, classes
     get_current_map().River(label, value, note, classes, period, show_label)
 
 
-def Path(label: str, value: List[List[float]], classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
+def Path(label: str, value: List[List[float]], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
     """Add a path/route to the current map."""
-    get_current_map().Path(label, value, classes, period, show_label)
+    get_current_map().Path(label, value, note, classes, period, show_label)
 
 
 def Point(label: str, position: List[float], period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False) -> None:
