@@ -66,9 +66,6 @@ Basic extensions
       - [x] It has the same bug of not allowing 0 as a year
   Wherever something is a bit complicated for the user to know how to set---e.g. color sequences and color maps, or icons for Point; there should be a little info tooltip with helpful documentation.
 - [x] Exporting map JSON and HTML
-- [x] Loading a previously-built map. I think the best way to do this will be to keep the state of the Builder and Code synchronized two-way and just export/import the code both ways.
-  - [ ] Code generation is quite buggy.
-    - [ ] One issue I've observed: for rivers it creates a random attribute source_type for River objects, which doesn't exist. This is not necessary, the value is already either naturalearth() or overpass()---you just need to make sure these are imported at the top.
 
 Features
 - [x] Visual ways to draw Paths, picking locations for Texts and Points.
@@ -101,6 +98,10 @@ Features
   - [ ] And also selecting rivers
 - [x] Code editor should be nice, not just a simple text editor.
   - [ ] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported. Maybe can use an actual code editor plugin or something.
+- [x] Loading a previously-built map. I think the best way to do this will be to keep the state of the Builder and Code synchronized two-way and just export/import the code both ways.
+  - [ ] Code generation is quite buggy.
+    - [ ] One issue I've observed: for rivers it creates a random attribute source_type for River objects, which doesn't exist. This is not necessary, the value is already either naturalearth() or overpass()---you just need to make sure these are imported at the top.
+    - [ ] Eventually we should also implement reverse-syncing the code to the builder, so might be worth thinking about how to better store the state
 
 Minor changes
 - [ ] "Rivers" in the add Layers panel should be "All Rivers".
