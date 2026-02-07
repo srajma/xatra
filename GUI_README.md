@@ -175,7 +175,9 @@ Minor changes
   - [x] Also, the levels entry field should be a dropdown with all the admin levels available for their country (these should be pre-computed and kept in an index).
 - [ ] The Keyboard Shortcuts panel should have a little icon to toggle it so the user can see the keyboard shortcuts list even if he doesn't already know that `?` does the job.
 - [ ] Clicking "Render Map" (from either Builder or Code) should set the tab (which can currently be "Map Preview" or "Refernece Map") to "Map Preview".
+- [ ] The picker icons for picking GADMs and Rivers from the Reference Map, and for picking territories from the Territory library map, should match the nicer icon that is used for picking co-ordinates from the map for Points/Texts/Paths/Polygons.
 - [ ] Better words and tips for Flag, label etc. I need to think about this, don't do anything yet.
+  - Under the title "Flag" in a Flag layer, there should be a small note: A <b>Flag</b> asserts the reign of a State over a Territory (perhaps for a particular period of time). Flag layers with the same State name are rendered as the same geometry.
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"

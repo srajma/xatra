@@ -37,6 +37,20 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
       return Array.from(classes).sort();
   };
 
+  const getCustomAdminClasses = () => {
+      const classes = new Set();
+      elements.forEach((el) => {
+          if (el.type !== 'admin') return;
+          const raw = el.args?.classes;
+          if (!raw || typeof raw !== 'string') return;
+          raw.split(' ').forEach((cls) => {
+              const trimmed = cls.trim();
+              if (trimmed) classes.add(trimmed);
+          });
+      });
+      return Array.from(classes).sort();
+  };
+
   const addCssRule = () => {
       const current = options.css_rules || [];
       setOptions({ ...options, css_rules: [...current, { selector: '.flag', style: '' }] });
@@ -95,8 +109,14 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     step_s: 0.0,
     step_l: 0.0,
   };
-  const ADMIN_SEQ_PRESETS = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds', 'tab20'];
-  const DATA_CMAP_PRESETS = ['viridis', 'plasma', 'inferno', 'magma', 'cividis', 'RdYlGn', 'RdYlBu', 'Spectral'];
+  const DEFAULT_ADMIN_SEQUENCE_ROW = {
+    class_name: '',
+    colors: '',
+    step_h: 1.6180339887,
+    step_s: 0.0,
+    step_l: 0.0,
+  };
+  const DATA_CMAP_PRESETS = ['LinearSegmented', 'viridis', 'plasma', 'inferno', 'magma', 'cividis', 'RdYlGn', 'RdYlBu', 'Spectral'];
 
   const flagColorRows = Array.isArray(options.flag_color_sequences)
     ? options.flag_color_sequences
@@ -123,6 +143,39 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     rows.splice(index, 1);
     setFlagColorRows(rows.length ? rows : [{ ...DEFAULT_FLAG_SEQUENCE_ROW }]);
   };
+
+  const adminColorRows = Array.isArray(options.admin_color_sequences)
+    ? options.admin_color_sequences
+    : (options.admin_colors ? [{ ...DEFAULT_ADMIN_SEQUENCE_ROW, colors: options.admin_colors }] : [{ ...DEFAULT_ADMIN_SEQUENCE_ROW }]);
+
+  const setAdminColorRows = (rows) => {
+    setOptions({
+      ...options,
+      admin_color_sequences: rows,
+      admin_colors: undefined,
+    });
+  };
+
+  const updateAdminColorRow = (index, field, value) => {
+    const rows = [...adminColorRows];
+    rows[index] = { ...rows[index], [field]: value };
+    setAdminColorRows(rows);
+  };
+
+  const addAdminColorRow = () => setAdminColorRows([...adminColorRows, { ...DEFAULT_ADMIN_SEQUENCE_ROW }]);
+
+  const removeAdminColorRow = (index) => {
+    const rows = [...adminColorRows];
+    rows.splice(index, 1);
+    setAdminColorRows(rows.length ? rows : [{ ...DEFAULT_ADMIN_SEQUENCE_ROW }]);
+  };
+
+  const DEFAULT_DATA_COLORMAP = { type: 'LinearSegmented', colors: 'yellow,orange,red' };
+  const dataColormap = typeof options.data_colormap === 'object' && options.data_colormap !== null
+    ? { ...DEFAULT_DATA_COLORMAP, ...options.data_colormap }
+    : (typeof options.data_colormap === 'string' && options.data_colormap.trim()
+      ? { type: options.data_colormap, colors: 'yellow,orange,red' }
+      : DEFAULT_DATA_COLORMAP);
 
   return (
     <section className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -397,65 +450,65 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                              </label>
                              <div className="space-y-2">
                                 {flagColorRows.map((row, idx) => (
-                                  <div key={idx} className="grid grid-cols-[120px_1fr_80px_80px_80px_24px] gap-1 items-center">
-                                    <select
-                                      value={row.class_name || ''}
-                                      onChange={(e) => updateFlagColorRow(idx, 'class_name', e.target.value)}
-                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono bg-white"
-                                    >
-                                      <option value="">(all flags)</option>
-                                      {getCustomFlagClasses().map((cls) => (
-                                        <option key={cls} value={cls}>{cls}</option>
-                                      ))}
-                                    </select>
-                                    <input
-                                      type="text"
-                                      value={row.colors || ''}
-                                      onChange={(e) => updateFlagColorRow(idx, 'colors', e.target.value)}
-                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                      placeholder="#1f77b4,#ff7f0e or red,blue"
-                                    />
-                                    <input
-                                      type="number"
-                                      step="any"
-                                      value={row.step_h ?? DEFAULT_FLAG_SEQUENCE_ROW.step_h}
-                                      onChange={(e) => updateFlagColorRow(idx, 'step_h', e.target.value)}
-                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                      title="Hue step"
-                                    />
-                                    <input
-                                      type="number"
-                                      step="any"
-                                      value={row.step_s ?? DEFAULT_FLAG_SEQUENCE_ROW.step_s}
-                                      onChange={(e) => updateFlagColorRow(idx, 'step_s', e.target.value)}
-                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                      title="Saturation step"
-                                    />
-                                    <input
-                                      type="number"
-                                      step="any"
-                                      value={row.step_l ?? DEFAULT_FLAG_SEQUENCE_ROW.step_l}
-                                      onChange={(e) => updateFlagColorRow(idx, 'step_l', e.target.value)}
-                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                      title="Lightness step"
-                                    />
-                                    <button
-                                      onClick={() => removeFlagColorRow(idx)}
-                                      className="text-red-400 hover:text-red-600 p-1"
-                                      title="Remove row"
-                                    >
-                                      <Trash2 size={12}/>
-                                    </button>
+                                  <div key={idx} className="bg-gray-50 border border-gray-200 rounded p-2 space-y-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-[130px_1fr_24px] gap-1 items-center">
+                                      <select
+                                        value={row.class_name || ''}
+                                        onChange={(e) => updateFlagColorRow(idx, 'class_name', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono bg-white"
+                                      >
+                                        <option value="">(all flags)</option>
+                                        {getCustomFlagClasses().map((cls) => (
+                                          <option key={cls} value={cls}>{cls}</option>
+                                        ))}
+                                      </select>
+                                      <input
+                                        type="text"
+                                        value={row.colors || ''}
+                                        onChange={(e) => updateFlagColorRow(idx, 'colors', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        placeholder="#1f77b4,#ff7f0e or red,blue"
+                                      />
+                                      <button
+                                        onClick={() => removeFlagColorRow(idx)}
+                                        className="text-red-400 hover:text-red-600 p-1 justify-self-end"
+                                        title="Remove row"
+                                      >
+                                        <Trash2 size={12}/>
+                                      </button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1">
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        value={row.step_h ?? DEFAULT_FLAG_SEQUENCE_ROW.step_h}
+                                        onChange={(e) => updateFlagColorRow(idx, 'step_h', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        title="Hue step"
+                                        placeholder="Step H"
+                                      />
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        value={row.step_s ?? DEFAULT_FLAG_SEQUENCE_ROW.step_s}
+                                        onChange={(e) => updateFlagColorRow(idx, 'step_s', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        title="Saturation step"
+                                        placeholder="Step S"
+                                      />
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        value={row.step_l ?? DEFAULT_FLAG_SEQUENCE_ROW.step_l}
+                                        onChange={(e) => updateFlagColorRow(idx, 'step_l', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        title="Lightness step"
+                                        placeholder="Step L"
+                                      />
+                                    </div>
                                   </div>
                                 ))}
-                                <div className="grid grid-cols-[120px_1fr_80px_80px_80px_24px] gap-1 text-[10px] text-gray-500 px-0.5">
-                                  <div>Class</div>
-                                  <div>Seed colors (optional)</div>
-                                  <div>Step H</div>
-                                  <div>Step S</div>
-                                  <div>Step L</div>
-                                  <div />
-                                </div>
+                                <div className="text-[10px] text-gray-500">Each row: class filter (optional), seed colors (optional), then H/S/L step.</div>
                                 <button onClick={addFlagColorRow} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
                                   <Plus size={12}/> Add Sequence
                                 </button>
@@ -464,55 +517,101 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                          <div>
                              <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
                                 Admin Color Sequence
-                                <span title="Matplotlib palette name (e.g. Blues) or comma-separated colors.">
+                                <span title="Same LinearColorSequence controls as flags.">
                                     <Info size={10} className="text-blue-500 cursor-help"/>
                                 </span>
                              </label>
-                             <div className="flex gap-1">
-                                <input
-                                    type="text"
-                                    value={options.admin_colors || ''}
-                                    onChange={(e) => updateOption('admin_colors', e.target.value)}
-                                    className="flex-1 px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                    placeholder="#ff0000, #00ff00..."
-                                />
-                                <select 
-                                    className="text-[10px] border rounded px-1 bg-white"
-                                    onChange={(e) => updateOption('admin_colors', e.target.value)}
-                                    value=""
-                                >
-                                    <option value="" disabled>Presets</option>
-                                    {ADMIN_SEQ_PRESETS.map((preset) => (
-                                      <option key={preset} value={preset}>{preset}</option>
-                                    ))}
-                                </select>
+                             <div className="space-y-2">
+                                {adminColorRows.map((row, idx) => (
+                                  <div key={idx} className="bg-gray-50 border border-gray-200 rounded p-2 space-y-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-[130px_1fr_24px] gap-1 items-center">
+                                      <select
+                                        value={row.class_name || ''}
+                                        onChange={(e) => updateAdminColorRow(idx, 'class_name', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono bg-white"
+                                      >
+                                        <option value="">(default admins)</option>
+                                        {getCustomAdminClasses().map((cls) => (
+                                          <option key={cls} value={cls}>{cls}</option>
+                                        ))}
+                                      </select>
+                                      <input
+                                        type="text"
+                                        value={row.colors || ''}
+                                        onChange={(e) => updateAdminColorRow(idx, 'colors', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        placeholder="#bbbbbb,#666666 or lightgray,gray"
+                                      />
+                                      <button
+                                        onClick={() => removeAdminColorRow(idx)}
+                                        className="text-red-400 hover:text-red-600 p-1 justify-self-end"
+                                        title="Remove row"
+                                      >
+                                        <Trash2 size={12}/>
+                                      </button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1">
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        value={row.step_h ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_h}
+                                        onChange={(e) => updateAdminColorRow(idx, 'step_h', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        title="Hue step"
+                                        placeholder="Step H"
+                                      />
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        value={row.step_s ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_s}
+                                        onChange={(e) => updateAdminColorRow(idx, 'step_s', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        title="Saturation step"
+                                        placeholder="Step S"
+                                      />
+                                      <input
+                                        type="number"
+                                        step="any"
+                                        value={row.step_l ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_l}
+                                        onChange={(e) => updateAdminColorRow(idx, 'step_l', e.target.value)}
+                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                        title="Lightness step"
+                                        placeholder="Step L"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                                <button onClick={addAdminColorRow} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
+                                  <Plus size={12}/> Add Sequence
+                                </button>
                              </div>
                          </div>
                          <div>
                              <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
                                 Data Colormap
-                                <span title="Matplotlib colormap name (e.g. viridis, plasma).">
+                                <span title="Choose a matplotlib colormap, or LinearSegmented with custom colors.">
                                     <Info size={10} className="text-blue-500 cursor-help"/>
                                 </span>
                              </label>
-                             <div className="flex gap-1">
-                                <input
-                                    type="text"
-                                    value={options.data_colormap || ''}
-                                    onChange={(e) => updateOption('data_colormap', e.target.value)}
-                                    className="flex-1 px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                    placeholder="viridis, plasma, or #color1, #color2..."
-                                />
-                                <select 
-                                    className="text-[10px] border rounded px-1 bg-white"
-                                    onChange={(e) => updateOption('data_colormap', e.target.value)}
-                                    value=""
+                             <div className="space-y-2">
+                                <select
+                                  value={dataColormap.type}
+                                  onChange={(e) => updateOption('data_colormap', { ...dataColormap, type: e.target.value })}
+                                  className="w-full px-2 py-1 border border-gray-200 rounded text-[11px] bg-white"
                                 >
-                                    <option value="" disabled>Presets</option>
-                                    {DATA_CMAP_PRESETS.map((preset) => (
-                                      <option key={preset} value={preset}>{preset}</option>
-                                    ))}
+                                  {DATA_CMAP_PRESETS.map((preset) => (
+                                    <option key={preset} value={preset}>{preset}</option>
+                                  ))}
                                 </select>
+                                {dataColormap.type === 'LinearSegmented' && (
+                                  <input
+                                    type="text"
+                                    value={dataColormap.colors}
+                                    onChange={(e) => updateOption('data_colormap', { ...dataColormap, colors: e.target.value })}
+                                    className="w-full px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                    placeholder="yellow,orange,red"
+                                  />
+                                )}
                              </div>
                          </div>
                      </div>

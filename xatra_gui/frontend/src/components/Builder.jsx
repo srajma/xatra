@@ -6,12 +6,13 @@ import GlobalOptions from './GlobalOptions';
 const Builder = ({ 
   elements, setElements, options, setOptions, onGetCurrentView, 
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
-  onSaveTerritory, predefinedCode, onStartReferencePick
+  onSaveTerritory, predefinedCode, onStartReferencePick, addLayerSignal
 }) => {
   const layersEndRef = useRef(null);
   const prevElementsLengthRef = useRef(elements.length);
+  const pendingFocusNewLayerRef = useRef(false);
 
-  const addElement = (type) => {
+  const addElement = (type, opts = {}) => {
     let newElement = { 
       type, 
       label: 'New ' + type, 
@@ -54,15 +55,36 @@ const Builder = ({
         break;
     }
 
+    if (opts.focusFirstField) pendingFocusNewLayerRef.current = true;
     setElements([...elements, newElement]);
   };
 
   useEffect(() => {
     if (elements.length > prevElementsLengthRef.current && layersEndRef.current) {
       layersEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      if (pendingFocusNewLayerRef.current) {
+        window.setTimeout(() => {
+          const cards = document.querySelectorAll('#layers-container .xatra-layer-card');
+          const lastCard = cards[cards.length - 1];
+          if (!lastCard) return;
+          const firstField = lastCard.querySelector('input, textarea, select, button');
+          if (firstField && typeof firstField.focus === 'function') {
+            firstField.focus();
+            if (typeof firstField.select === 'function' && (firstField.tagName === 'INPUT' || firstField.tagName === 'TEXTAREA')) {
+              firstField.select();
+            }
+          }
+        }, 50);
+        pendingFocusNewLayerRef.current = false;
+      }
     }
     prevElementsLengthRef.current = elements.length;
   }, [elements.length]);
+
+  useEffect(() => {
+    if (!addLayerSignal || !addLayerSignal.type) return;
+    addElement(addLayerSignal.type, { focusFirstField: true });
+  }, [addLayerSignal]);
 
   const removeElement = (index) => {
     const newElements = [...elements];

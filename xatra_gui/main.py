@@ -242,6 +242,10 @@ class PickerRequest(BaseModel):
     entries: List[PickerEntry]
     adminRivers: bool = False
 
+class TerritoryLibraryRequest(BaseModel):
+    source: str = "builtin"  # "builtin" or "custom"
+    predefined_code: Optional[str] = None
+
 def _python_value(node: ast.AST):
     if isinstance(node, ast.Constant):
         return node.value
@@ -351,6 +355,27 @@ def _parse_admin_color_expr(node: ast.AST) -> Optional[str]:
             return ",".join(out) if out else None
     return None
 
+def _parse_data_colormap_expr(node: ast.AST) -> Optional[Dict[str, Any]]:
+    if isinstance(node, ast.Attribute):
+        # e.g. plt.cm.viridis
+        if isinstance(node.value, ast.Attribute) and isinstance(node.value.value, ast.Name):
+            if node.value.value.id == "plt" and node.value.attr == "cm":
+                return {"type": node.attr, "colors": "yellow,orange,red"}
+    if isinstance(node, ast.Call):
+        cname = _call_name(node.func)
+        if cname == "LinearSegmentedColormap.from_list":
+            if len(node.args) >= 2 and isinstance(node.args[1], ast.List):
+                out = []
+                for el in node.args[1].elts:
+                    val = _python_value(el)
+                    if isinstance(val, str) and val.strip():
+                        out.append(val.strip())
+                if out:
+                    return {"type": "LinearSegmented", "colors": ",".join(out)}
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return {"type": node.value, "colors": "yellow,orange,red"}
+    return None
+
 def _parse_css_rules(css_text: str) -> List[Dict[str, str]]:
     rules = []
     for match in re.finditer(r"([^{}]+)\{([^{}]+)\}", css_text or ""):
@@ -399,6 +424,7 @@ def sync_code_to_builder(request: CodeSyncRequest):
     elements: List[Dict[str, Any]] = []
     options: Dict[str, Any] = {"basemaps": []}
     flag_color_rows: List[Dict[str, Any]] = []
+    admin_color_rows: List[Dict[str, Any]] = []
     unsupported: List[str] = []
 
     for stmt in tree.body:
@@ -483,15 +509,25 @@ def sync_code_to_builder(request: CodeSyncRequest):
 
         if method == "AdminColorSequence":
             if call.args:
-                seq = _parse_admin_color_expr(call.args[0])
-                if seq:
-                    options["admin_colors"] = seq
+                row = _parse_linear_sequence_row_expr(call.args[0])
+                if row:
+                    admin_color_rows.append(row)
+                else:
+                    seq = _parse_admin_color_expr(call.args[0])
+                    if seq:
+                        admin_color_rows.append({
+                            "class_name": "",
+                            "colors": seq,
+                            "step_h": 1.6180339887,
+                            "step_s": 0.0,
+                            "step_l": 0.0,
+                        })
             continue
 
         if method == "DataColormap":
             if call.args:
-                cmap = _python_value(call.args[0])
-                if isinstance(cmap, str):
+                cmap = _parse_data_colormap_expr(call.args[0])
+                if cmap:
                     options["data_colormap"] = cmap
             continue
 
@@ -576,6 +612,8 @@ def sync_code_to_builder(request: CodeSyncRequest):
 
     if flag_color_rows:
         options["flag_color_sequences"] = flag_color_rows
+    if admin_color_rows:
+        options["admin_color_sequences"] = admin_color_rows
 
     if unsupported:
         return {"error": "Unsupported code constructs for Builder sync: " + ", ".join(sorted(set(unsupported)))}
@@ -676,6 +714,50 @@ def run_rendering_task(task_type, data, result_queue):
                 m.Admin(gadm=entry.country, level=entry.level)
             if data.adminRivers:
                 m.AdminRivers()
+        elif task_type == 'territory_library':
+            m.BaseOption("Esri.WorldTopoMap", default=True)
+            import xatra.territory_library as territory_library
+            source = getattr(data, "source", "builtin")
+            if source == "custom":
+                exec_globals = {
+                    "gadm": xatra.loaders.gadm,
+                    "polygon": xatra.loaders.polygon,
+                    "naturalearth": xatra.loaders.naturalearth,
+                    "overpass": xatra.loaders.overpass,
+                }
+                for name in dir(territory_library):
+                    if not name.startswith("_"):
+                        exec_globals[name] = getattr(territory_library, name)
+                code = getattr(data, "predefined_code", "") or ""
+                if code.strip():
+                    exec(code, exec_globals)
+                selected_names = []
+                try:
+                    tree = ast.parse(code)
+                    for stmt in tree.body:
+                        if isinstance(stmt, ast.Assign):
+                            for target in stmt.targets:
+                                if isinstance(target, ast.Name):
+                                    selected_names.append(target.id)
+                except Exception:
+                    selected_names = []
+                names = [n for n in selected_names if n in exec_globals and not n.startswith("_")]
+                for n in names:
+                    terr = exec_globals.get(n)
+                    if terr is not None:
+                        try:
+                            m.Flag(label=n, value=terr)
+                        except Exception:
+                            continue
+            else:
+                names = [n for n in dir(territory_library) if not n.startswith("_")]
+                for n in names:
+                    terr = getattr(territory_library, n, None)
+                    if terr is not None:
+                        try:
+                            m.Flag(label=n, value=terr)
+                        except Exception:
+                            continue
                 
         elif task_type == 'code':
             exec_globals = {
@@ -761,9 +843,31 @@ def run_rendering_task(task_type, data, result_queue):
                 seq = parse_color_list(data.options["admin_colors"])
                 if seq:
                     m.AdminColorSequence(LinearColorSequence(colors=seq, step=Color.hsl(1.6180339887, 0.0, 0.0)))
+            if "admin_color_sequences" in data.options and isinstance(data.options["admin_color_sequences"], list):
+                for row in data.options["admin_color_sequences"]:
+                    seq = build_linear_sequence_from_row(row)
+                    if seq:
+                        m.AdminColorSequence(seq)
                     
             if "data_colormap" in data.options and data.options["data_colormap"]:
-                m.DataColormap(data.options["data_colormap"])
+                dc = data.options["data_colormap"]
+                if isinstance(dc, dict):
+                    cmap_type = str(dc.get("type", "")).strip()
+                    if cmap_type == "LinearSegmented":
+                        from matplotlib.colors import LinearSegmentedColormap
+                        colors_raw = str(dc.get("colors", "yellow,orange,red"))
+                        colors = [c.strip() for c in colors_raw.split(",") if c.strip()]
+                        if not colors:
+                            colors = ["yellow", "orange", "red"]
+                        cmap = LinearSegmentedColormap.from_list("custom_cmap", colors)
+                        m.DataColormap(cmap)
+                    elif cmap_type:
+                        import matplotlib.pyplot as plt
+                        cmap = getattr(plt.cm, cmap_type, None)
+                        if cmap is not None:
+                            m.DataColormap(cmap)
+                elif isinstance(dc, str):
+                    m.DataColormap(dc)
 
             # Execute predefined territory code so Flag parts of type "predefined" can use them
             predefined_namespace = {}
@@ -951,6 +1055,13 @@ def run_in_process(task_type, data):
 @app.post("/render/picker")
 def render_picker(request: PickerRequest):
     result = run_in_process('picker', request)
+    if "error" in result:
+        return result
+    return result
+
+@app.post("/render/territory-library")
+def render_territory_library(request: TerritoryLibraryRequest):
+    result = run_in_process('territory_library', request)
     if "error" in result:
         return result
     return result

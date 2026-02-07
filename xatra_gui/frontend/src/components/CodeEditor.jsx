@@ -33,7 +33,7 @@ const XATRA_COMPLETIONS = {
   ],
 };
 
-const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, isActive }) => {
+const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }) => {
   const editorRef = useRef(null);
   const predefinedEditorRef = useRef(null);
   const completionDisposableRef = useRef(null);
@@ -128,14 +128,6 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
     setupVimiumShield(editor, predefinedKeydownCleanupRef);
   }, [setupVimiumShield]);
 
-  const focusMapEditor = useCallback(() => {
-    if (editorRef.current) {
-      editorRef.current.focus();
-    } else if (predefinedEditorRef.current) {
-      predefinedEditorRef.current.focus();
-    }
-  }, []);
-
   const mapCodeContainerRef = useRef(null);
   const predefinedCodeContainerRef = useRef(null);
   const [mapCodeHeight, setMapCodeHeight] = useState(420);
@@ -164,11 +156,6 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
     setPredefinedCodeHeight(el.clientHeight > 80 ? el.clientHeight : 200);
     return () => ro.disconnect();
   }, []);
-
-  useEffect(() => {
-    if (!isActive) return;
-    focusMapEditor();
-  }, [isActive, focusMapEditor]);
 
   return (
     <div className="h-full flex flex-col space-y-4 min-h-0">
@@ -230,7 +217,6 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
         <p className="text-xs text-gray-600">
           Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
         </p>
-        <p className="text-[10px] text-gray-500 italic">Editor container uses a Vimium-compatible input shield.</p>
       </div>
     </div>
   );

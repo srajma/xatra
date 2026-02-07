@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X } from 'lucide-react';
+import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X, Keyboard } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
 import Builder from './components/Builder';
@@ -9,10 +9,12 @@ import AutocompleteInput from './components/AutocompleteInput';
 
 function App() {
   const [activeTab, setActiveTab] = useState('builder'); // 'builder' or 'code'
-  const [activePreviewTab, setActivePreviewTab] = useState('main'); // 'main' or 'picker'
+  const [activePreviewTab, setActivePreviewTab] = useState('main'); // 'main' | 'picker' | 'library'
   const [mapHtml, setMapHtml] = useState('');
   const [mapPayload, setMapPayload] = useState(null);
   const [pickerHtml, setPickerHtml] = useState('');
+  const [territoryLibraryHtml, setTerritoryLibraryHtml] = useState('');
+  const [territoryLibrarySource, setTerritoryLibrarySource] = useState('builtin'); // builtin | custom
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,6 +26,8 @@ function App() {
     title: '<b>My Interactive Map</b>',
     basemaps: [{ url_or_provider: 'Esri.WorldTopoMap', default: true }],
     flag_color_sequences: [{ class_name: '', colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
+    admin_color_sequences: [{ class_name: '', colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
+    data_colormap: { type: 'LinearSegmented', colors: 'yellow,orange,red' },
   });
 
   // Code State
@@ -55,13 +59,15 @@ xatra.TitleBox("<b>My Map</b>")
   const [referencePickTarget, setReferencePickTarget] = useState(null); // { kind: 'gadm'|'river', flagIndex?, layerIndex? }
   const [countryLevelOptions, setCountryLevelOptions] = useState({});
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const [addLayerSignal, setAddLayerSignal] = useState(null);
   const hoverPickRef = useRef('');
 
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
+  const territoryLibraryIframeRef = useRef(null);
 
   const updateDraft = (points, shapeType) => {
-      const ref = activePreviewTab === 'main' ? iframeRef : pickerIframeRef;
+      const ref = activePreviewTab === 'picker' ? pickerIframeRef : iframeRef;
       if (ref.current && ref.current.contentWindow) {
           ref.current.contentWindow.postMessage({ type: 'setDraft', points, shapeType }, '*');
       }
@@ -347,27 +353,48 @@ xatra.TitleBox("<b>My Map</b>")
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
+      const lowerKey = String(e.key || '').toLowerCase();
+      const isMeta = e.ctrlKey || e.metaKey;
       if (e.key === '?') {
         e.preventDefault();
         setShowShortcutHelp((prev) => !prev);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '1') {
+      } else if (isMeta && e.key === '1') {
         e.preventDefault();
         handleTabChange('builder');
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+      } else if (isMeta && e.key === '2') {
         e.preventDefault();
         handleTabChange('code');
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        renderMap();
-      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
+      } else if (isMeta && e.shiftKey && e.key === 'Enter') {
         e.preventDefault();
         handleStop();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '3') {
+      } else if (isMeta && e.key === 'Enter') {
+        e.preventDefault();
+        renderMap();
+      } else if (isMeta && e.key === '3') {
         e.preventDefault();
         setActivePreviewTab('main');
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '4') {
+      } else if (isMeta && e.key === '4') {
         e.preventDefault();
         setActivePreviewTab('picker');
+      } else if (isMeta && e.key === '5') {
+        e.preventDefault();
+        setActivePreviewTab('library');
+      } else if (activeTab === 'builder' && isMeta && e.shiftKey) {
+        const layerByKey = {
+          f: 'flag',
+          r: 'river',
+          p: 'point',
+          t: 'text',
+          h: 'path',
+          a: 'admin',
+          l: 'admin_rivers',
+          d: 'dataframe',
+        };
+        const layerType = layerByKey[lowerKey];
+        if (layerType) {
+          e.preventDefault();
+          setAddLayerSignal({ type: layerType, nonce: Date.now() });
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -375,7 +402,7 @@ xatra.TitleBox("<b>My Map</b>")
   }, [activeTab, code, predefinedCode, builderElements, builderOptions]);
 
   const handleGetCurrentView = () => {
-    const ref = activePreviewTab === 'picker' ? pickerIframeRef : iframeRef;
+    const ref = activePreviewTab === 'picker' ? pickerIframeRef : activePreviewTab === 'library' ? territoryLibraryIframeRef : iframeRef;
     if (ref.current && ref.current.contentWindow) {
       ref.current.contentWindow.postMessage('getCurrentView', '*');
     }
@@ -391,6 +418,30 @@ xatra.TitleBox("<b>My Map</b>")
           });
           const data = await response.json();
           if (data.html) setPickerHtml(data.html);
+      } catch (err) {
+          setError(err.message);
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const renderTerritoryLibrary = async (source = territoryLibrarySource) => {
+      setLoading(true);
+      try {
+          const response = await fetch('http://localhost:8088/render/territory-library', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                source,
+                predefined_code: predefinedCode || '',
+              }),
+          });
+          const data = await response.json();
+          if (data.error) {
+              setError(data.error);
+          } else if (data.html) {
+              setTerritoryLibraryHtml(data.html);
+          }
       } catch (err) {
           setError(err.message);
       } finally {
@@ -502,8 +553,15 @@ xatra.TitleBox("<b>My Map</b>")
   const generatePythonCode = () => {
     const needsIconImport = builderElements.some(el => el.type === 'point' && el.args?.icon);
     const hasFlagColorOptions = Array.isArray(builderOptions.flag_color_sequences) || !!builderOptions.flag_colors;
-    const hasAdminColorOptions = !!builderOptions.admin_colors;
+    const hasAdminColorOptions = Array.isArray(builderOptions.admin_color_sequences) || !!builderOptions.admin_colors;
     const needsColorSeqImport = hasFlagColorOptions || hasAdminColorOptions;
+    const dataColormapOpt = (builderOptions.data_colormap && typeof builderOptions.data_colormap === 'object')
+      ? builderOptions.data_colormap
+      : (typeof builderOptions.data_colormap === 'string' && builderOptions.data_colormap
+        ? { type: builderOptions.data_colormap, colors: 'yellow,orange,red' }
+        : null);
+    const needsPyplotImport = !!(dataColormapOpt && dataColormapOpt.type && dataColormapOpt.type !== 'LinearSegmented');
+    const needsLinearSegmentedImport = !!(dataColormapOpt && dataColormapOpt.type === 'LinearSegmented');
     const pyVal = (v) => {
         if (v == null || v === '') return 'None';
         if (typeof v === 'boolean') return v ? 'True' : 'False';
@@ -532,7 +590,9 @@ xatra.TitleBox("<b>My Map</b>")
         'import xatra',
         'from xatra.loaders import gadm, naturalearth, polygon, overpass',
         ...(needsIconImport ? ['from xatra.icon import Icon', ''] : []),
-        ...(needsColorSeqImport ? ['from xatra.colorseq import Color, LinearColorSequence, RotatingColorSequence', ''] : []),
+        ...(needsColorSeqImport ? ['from xatra.colorseq import Color, LinearColorSequence', ''] : []),
+        ...(needsPyplotImport ? ['import matplotlib.pyplot as plt', ''] : []),
+        ...(needsLinearSegmentedImport ? ['from matplotlib.colors import LinearSegmentedColormap', ''] : []),
         '',
         predefinedCode,
         ''
@@ -583,18 +643,32 @@ xatra.TitleBox("<b>My Map</b>")
         lines.push(`xatra.FlagColorSequence(LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(1.6180339887, 0.0, 0.0)))`);
     }
 
-    if (builderOptions.admin_colors) {
-        const raw = String(builderOptions.admin_colors || '').trim();
-        const seqExpr = colorSequenceExpr(raw);
-        if (seqExpr) {
-            lines.push(`xatra.AdminColorSequence(LinearColorSequence(colors=${seqExpr}, step=Color.hsl(1.6180339887, 0.0, 0.0)))`);
-        } else if (raw) {
-            lines.push(`xatra.AdminColorSequence(RotatingColorSequence().from_matplotlib_color_sequence(${pyVal(raw)}))`);
-        }
+    if (Array.isArray(builderOptions.admin_color_sequences)) {
+        builderOptions.admin_color_sequences.forEach((row) => {
+            const stepH = Number.isFinite(Number(row?.step_h)) ? Number(row.step_h) : 1.6180339887;
+            const stepS = Number.isFinite(Number(row?.step_s)) ? Number(row.step_s) : 0.0;
+            const stepL = Number.isFinite(Number(row?.step_l)) ? Number(row.step_l) : 0.0;
+            const colorsExpr = colorSequenceExpr(row?.colors || '') || 'None';
+            const seqExpr = `LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(${stepH}, ${stepS}, ${stepL}))`;
+            lines.push(`xatra.AdminColorSequence(${seqExpr})`);
+        });
+    } else if (builderOptions.admin_colors) {
+        const colorsExpr = colorSequenceExpr(builderOptions.admin_colors) || 'None';
+        lines.push(`xatra.AdminColorSequence(LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(1.6180339887, 0.0, 0.0)))`);
     }
 
-    if (builderOptions.data_colormap) {
-        lines.push(`xatra.DataColormap(${pyVal(builderOptions.data_colormap)})`);
+    if (dataColormapOpt && dataColormapOpt.type) {
+        if (dataColormapOpt.type === 'LinearSegmented') {
+            const colors = String(dataColormapOpt.colors || 'yellow,orange,red')
+              .split(',')
+              .map((x) => x.trim())
+              .filter(Boolean)
+              .map((c) => pyVal(c))
+              .join(', ');
+            lines.push(`xatra.DataColormap(LinearSegmentedColormap.from_list("custom_cmap", [${colors || '"yellow", "orange", "red"'}]))`);
+        } else {
+            lines.push(`xatra.DataColormap(plt.cm.${String(dataColormapOpt.type).replace(/[^A-Za-z0-9_]/g, '')})`);
+        }
     }
 
     lines.push('');
@@ -715,6 +789,13 @@ xatra.TitleBox("<b>My Map</b>")
     renderMap();
   }, []);
 
+  useEffect(() => {
+    if (activePreviewTab !== 'library') return;
+    if (!territoryLibraryHtml) {
+      renderTerritoryLibrary(territoryLibrarySource);
+    }
+  }, [activePreviewTab, territoryLibrarySource, territoryLibraryHtml]);
+
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       {/* Sidebar */}
@@ -769,13 +850,13 @@ xatra.TitleBox("<b>My Map</b>")
               onSaveTerritory={handleSaveTerritoryToLibrary}
               predefinedCode={predefinedCode}
               onStartReferencePick={handleStartReferencePick}
+              addLayerSignal={addLayerSignal}
             />
           ) : (
             <CodeEditor 
                 code={code} setCode={setCode} 
                 predefinedCode={predefinedCode} setPredefinedCode={setPredefinedCode}
                 onSync={generatePythonCode}
-                isActive={activeTab === 'code'}
             />
           )}
         </div>
@@ -818,6 +899,12 @@ xatra.TitleBox("<b>My Map</b>")
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'picker' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
                 Reference Map
+            </button>
+            <button 
+                onClick={() => setActivePreviewTab('library')}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'library' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+                Territory Library
             </button>
         </div>
 
@@ -972,18 +1059,64 @@ xatra.TitleBox("<b>My Map</b>")
                 </div>
             </div>
         )}
+        {activePreviewTab === 'library' && (
+            <div className="absolute top-16 right-4 z-20 w-72 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-3 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden">
+                <h3 className="text-sm font-bold text-gray-800 border-b pb-2">Territory Library</h3>
+                <div className="grid grid-cols-2 gap-1">
+                    <button
+                        onClick={() => setTerritoryLibrarySource('builtin')}
+                        className={`py-1.5 px-2 text-xs rounded border ${territoryLibrarySource === 'builtin' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                    >
+                        xatra.territory_library
+                    </button>
+                    <button
+                        onClick={() => setTerritoryLibrarySource('custom')}
+                        className={`py-1.5 px-2 text-xs rounded border ${territoryLibrarySource === 'custom' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                    >
+                        Custom Library
+                    </button>
+                </div>
+                <button 
+                    onClick={() => renderTerritoryLibrary(territoryLibrarySource)}
+                    disabled={loading}
+                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors disabled:opacity-50"
+                >
+                    Update Territory Library Map
+                </button>
+                <div className="text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
+                    `Ctrl/Cmd+5` opens this tab. `Custom Library` uses the code from the Code tab's Territory library editor.
+                </div>
+            </div>
+        )}
 
         <div className="flex-1 overflow-hidden relative">
+            <button
+                type="button"
+                onClick={() => setShowShortcutHelp((prev) => !prev)}
+                className="absolute top-4 right-4 z-40 bg-white/95 border border-gray-200 rounded-full shadow p-2 text-gray-600 hover:text-blue-700 hover:border-blue-300"
+                title="Toggle keyboard shortcuts"
+            >
+                <Keyboard size={16} />
+            </button>
             {showShortcutHelp && (
-                <div className="absolute top-4 right-4 z-40 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 text-xs text-gray-700 w-56">
+                <div className="absolute top-16 right-4 z-40 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 text-xs text-gray-700 w-64">
                     <div className="font-semibold text-gray-800 mb-2">Shortcuts</div>
                     <div>`?` toggle this panel</div>
                     <div>`Ctrl/Cmd+1` Builder tab</div>
                     <div>`Ctrl/Cmd+2` Code tab</div>
                     <div>`Ctrl/Cmd+3` Map Preview</div>
                     <div>`Ctrl/Cmd+4` Reference Map</div>
+                    <div>`Ctrl/Cmd+5` Territory Library</div>
                     <div>`Ctrl/Cmd+Enter` Render map</div>
                     <div>`Ctrl/Cmd+Shift+Enter` Stop generation</div>
+                    <div className="mt-2 pt-2 border-t border-gray-200">`Ctrl/Cmd+Shift+F` add Flag</div>
+                    <div>`Ctrl/Cmd+Shift+R` add River</div>
+                    <div>`Ctrl/Cmd+Shift+P` add Point</div>
+                    <div>`Ctrl/Cmd+Shift+T` add Text</div>
+                    <div>`Ctrl/Cmd+Shift+H` add Path</div>
+                    <div>`Ctrl/Cmd+Shift+A` add Admin</div>
+                    <div>`Ctrl/Cmd+Shift+L` add All Rivers</div>
+                    <div>`Ctrl/Cmd+Shift+D` add Data</div>
                 </div>
             )}
             {activePicker && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-')) && (
@@ -1002,8 +1135,10 @@ xatra.TitleBox("<b>My Map</b>")
             )}
             {activePreviewTab === 'main' ? (
                 <MapPreview html={mapHtml} loading={loading} iframeRef={iframeRef} />
-            ) : (
+            ) : activePreviewTab === 'picker' ? (
                 <MapPreview html={pickerHtml} loading={loading} iframeRef={pickerIframeRef} />
+            ) : (
+                <MapPreview html={territoryLibraryHtml} loading={loading} iframeRef={territoryLibraryIframeRef} />
             )}
         </div>
       </div>
