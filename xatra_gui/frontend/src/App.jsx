@@ -7,6 +7,8 @@ import CodeEditor from './components/CodeEditor';
 import MapPreview from './components/MapPreview';
 import AutocompleteInput from './components/AutocompleteInput';
 
+const isTerritoryPolygonPicker = (ctx) => /^territory-\d+$/.test(String(ctx || ''));
+
 function App() {
   const [activeTab, setActiveTab] = useState('builder'); // 'builder' or 'code'
   const [activePreviewTab, setActivePreviewTab] = useState('main'); // 'main' | 'picker' | 'library'
@@ -48,7 +50,15 @@ xatra.TitleBox("<b>My Map</b>")
 
   // Picker State
   const [pickerOptions, setPickerOptions] = useState({
-    entries: [{ country: 'IND', level: 1 }],
+    entries: [
+      { country: 'IND', level: 2 },
+      { country: 'PAK', level: 3 },
+      { country: 'BGD', level: 2 },
+      { country: 'NPL', level: 3 },
+      { country: 'BTN', level: 1 },
+      { country: 'LKA', level: 1 },
+      { country: 'AFG', level: 2 },
+    ],
     adminRivers: true
   });
   
@@ -65,6 +75,7 @@ xatra.TitleBox("<b>My Map</b>")
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [addLayerSignal, setAddLayerSignal] = useState(null);
   const hoverPickRef = useRef('');
+  const didPrefetchReferenceRef = useRef(false);
 
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
@@ -78,7 +89,7 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   useEffect(() => {
-      const isDraftPicker = !!(activePicker && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-')));
+      const isDraftPicker = !!(activePicker && (activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context)));
       if (isDraftPicker) {
           updateDraft(draftPoints, activePicker.type);
       } else {
@@ -90,7 +101,7 @@ xatra.TitleBox("<b>My Map</b>")
     const handleKeyDown = (e) => {
         if (!activePicker) return;
         if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
-        const isDraftPicker = activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-');
+        const isDraftPicker = activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context);
         if (!isDraftPicker) return;
         if (e.key === 'Control' || e.key === 'Meta') {
             setFreehandModifierPressed(true);
@@ -127,7 +138,7 @@ xatra.TitleBox("<b>My Map</b>")
           const newElements = [...builderElements];
           newElements[idx].value = JSON.stringify(points);
           setBuilderElements(newElements);
-      } else if (typeof activePicker.context === 'string' && activePicker.context.startsWith('territory-')) {
+      } else if (isTerritoryPolygonPicker(activePicker.context)) {
           const parentId = parseInt(activePicker.context.replace('territory-', ''), 10);
           if (Number.isNaN(parentId)) return;
           const el = builderElements[parentId];
@@ -166,7 +177,7 @@ xatra.TitleBox("<b>My Map</b>")
       } else if (event.data && event.data.type === 'mapMouseUp') {
           setIsMouseDown(false);
       } else if (event.data && event.data.type === 'mapMouseMove') {
-          if (activePicker && freehandModifierPressed && isMouseDown && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-'))) {
+          if (activePicker && freehandModifierPressed && isMouseDown && (activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context))) {
               const point = [parseFloat(event.data.lat.toFixed(4)), parseFloat(event.data.lng.toFixed(4))];
               setDraftPoints(prev => {
                   const last = prev[prev.length - 1];
@@ -180,7 +191,7 @@ xatra.TitleBox("<b>My Map</b>")
           // Keys forwarded from map iframe (when user clicked map, focus is in iframe)
           const key = event.data.key;
           if (!activePicker) return;
-          const isDraftPicker = activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-');
+          const isDraftPicker = activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context);
           if (key === 'Backspace' && isDraftPicker) {
             setDraftPoints(prev => {
               const newPoints = prev.slice(0, -1);
@@ -332,10 +343,22 @@ xatra.TitleBox("<b>My Map</b>")
       target,
     });
     setActivePreviewTab(isTerritoryPick ? 'library' : 'picker');
-    if (isTerritoryPick) {
+    if (isTerritoryPick && !territoryLibraryHtml) {
       renderTerritoryLibrary(territoryLibrarySource);
     }
   };
+
+  const normalizeFlagPartsForApply = (rawValue) => {
+    if (Array.isArray(rawValue)) return [...rawValue];
+    if (!rawValue) return [];
+    return [{ op: 'union', type: 'gadm', value: rawValue }];
+  };
+
+  const isBlankTerritoryPart = (part, type) => (
+    !!part &&
+    part.type === type &&
+    (part.value == null || String(part.value).trim() === '')
+  );
 
   const applyPickedGadmsToTarget = (op) => {
     if (!pickedGadmSelection.length || referencePickTarget?.kind !== 'gadm') return;
@@ -347,9 +370,7 @@ xatra.TitleBox("<b>My Map</b>")
       const next = [...prev];
       const target = next[targetFlagIndex];
       if (!target || target.type !== 'flag') return prev;
-      const currentParts = Array.isArray(target.value)
-        ? [...target.value]
-        : (target.value ? [{ op: 'union', type: 'gadm', value: target.value }] : []);
+      const currentParts = normalizeFlagPartsForApply(target.value).filter((part) => !isBlankTerritoryPart(part, 'gadm'));
       picked.forEach((item) => {
         const nextOp = currentParts.length === 0 ? 'union' : op;
         currentParts.push({ op: nextOp, type: 'gadm', value: item.gid });
@@ -372,9 +393,7 @@ xatra.TitleBox("<b>My Map</b>")
       const next = [...prev];
       const target = next[targetFlagIndex];
       if (!target || target.type !== 'flag') return prev;
-      const currentParts = Array.isArray(target.value)
-        ? [...target.value]
-        : (target.value ? [{ op: 'union', type: 'gadm', value: target.value }] : []);
+      const currentParts = normalizeFlagPartsForApply(target.value).filter((part) => !isBlankTerritoryPart(part, 'predefined'));
       picked.forEach((name) => {
         const nextOp = currentParts.length === 0 ? 'union' : op;
         currentParts.push({ op: nextOp, type: 'predefined', value: name });
@@ -474,8 +493,8 @@ xatra.TitleBox("<b>My Map</b>")
     }
   };
 
-  const renderPickerMap = async () => {
-      setLoading(true);
+  const renderPickerMap = async ({ background = false } = {}) => {
+      if (!background) setLoading(true);
       try {
           const response = await fetch(`http://localhost:8088/render/picker`, {
               method: 'POST',
@@ -487,7 +506,7 @@ xatra.TitleBox("<b>My Map</b>")
       } catch (err) {
           setError(err.message);
       } finally {
-          setLoading(false);
+          if (!background) setLoading(false);
       }
   };
 
@@ -889,14 +908,15 @@ xatra.TitleBox("<b>My Map</b>")
   }, []);
 
   useEffect(() => {
-    if (activePreviewTab !== 'library') return;
-    loadTerritoryLibraryCatalog(territoryLibrarySource);
-  }, [activePreviewTab, territoryLibrarySource, predefinedCode]);
+    if (didPrefetchReferenceRef.current || !mapHtml) return;
+    didPrefetchReferenceRef.current = true;
+    renderPickerMap({ background: true });
+  }, [mapHtml]);
 
   useEffect(() => {
     if (activePreviewTab !== 'library') return;
-    renderTerritoryLibrary(territoryLibrarySource);
-  }, [activePreviewTab, territoryLibrarySource, selectedTerritoryNames]);
+    loadTerritoryLibraryCatalog(territoryLibrarySource);
+  }, [activePreviewTab, territoryLibrarySource, predefinedCode]);
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
@@ -1026,20 +1046,20 @@ xatra.TitleBox("<b>My Map</b>")
                              <div key={idx} className="flex gap-1.5 items-center">
                                  <AutocompleteInput 
                                      value={entry.country}
-                                     endpoint="http://localhost:8088/search/countries"
+                                     endpoint="http://localhost:8088/search/gadm"
                                      onChange={(val) => {
                                          const newEntries = [...pickerOptions.entries];
                                          newEntries[idx].country = val;
                                          setPickerOptions({...pickerOptions, entries: newEntries});
                                      }}
                                      onSelectSuggestion={(item) => {
-                                         const code = String(item.country_code || item.gid || item.country || '').toUpperCase().split('.')[0];
+                                         const code = String(item.gid || item.country_code || item.country || '');
                                          const newEntries = [...pickerOptions.entries];
                                          newEntries[idx].country = code;
                                          setPickerOptions({...pickerOptions, entries: newEntries});
                                      }}
-                                     className="w-20 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
-                                     placeholder="IND"
+                                     className="w-32 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                                     placeholder="e.g. IND.20"
                                  />
                                  <select
                                      value={entry.level}
@@ -1318,7 +1338,7 @@ xatra.TitleBox("<b>My Map</b>")
                     <div>`Ctrl/Cmd+Shift+D` add Data</div>
                 </div>
             )}
-            {activePicker && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-')) && (
+            {activePicker && (activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context)) && (
                 <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
                     <div className="bg-amber-500 text-white px-6 py-4 rounded-lg shadow-2xl border-2 border-amber-600 font-semibold text-center max-w-md animate-pulse">
                         <div className="text-sm mb-1">Click map to add points</div>

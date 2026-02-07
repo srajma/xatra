@@ -63,18 +63,20 @@ const Builder = ({
     if (elements.length > prevElementsLengthRef.current && layersEndRef.current) {
       layersEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
       if (pendingFocusNewLayerRef.current) {
-        window.setTimeout(() => {
-          const cards = document.querySelectorAll('#layers-container .xatra-layer-card');
-          const lastCard = cards[cards.length - 1];
-          if (!lastCard) return;
-          const firstField = lastCard.querySelector('[data-focus-primary="true"], input, textarea, select');
-          if (firstField && typeof firstField.focus === 'function') {
-            firstField.focus();
-            if (typeof firstField.select === 'function' && (firstField.tagName === 'INPUT' || firstField.tagName === 'TEXTAREA')) {
-              firstField.select();
+        [0, 40, 120, 240].forEach((delay) => {
+          window.setTimeout(() => {
+            const cards = document.querySelectorAll('#layers-container .xatra-layer-card');
+            const lastCard = cards[cards.length - 1];
+            if (!lastCard) return;
+            const firstField = lastCard.querySelector('[data-focus-primary="true"], input, textarea, select');
+            if (firstField && typeof firstField.focus === 'function') {
+              firstField.focus();
+              if (typeof firstField.select === 'function' && (firstField.tagName === 'INPUT' || firstField.tagName === 'TEXTAREA')) {
+                firstField.select();
+              }
             }
-          }
-        }, 50);
+          }, delay);
+        });
         pendingFocusNewLayerRef.current = false;
       }
     }

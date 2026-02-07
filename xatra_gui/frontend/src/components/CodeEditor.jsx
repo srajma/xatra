@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { RefreshCw, Crosshair } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 
 const XATRA_COMPLETIONS = {
@@ -37,23 +37,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
   const editorRef = useRef(null);
   const predefinedEditorRef = useRef(null);
   const completionDisposableRef = useRef(null);
-  const lastFocusedEditorRef = useRef('map');
-  const [forceFocusMode, setForceFocusMode] = useState(false);
-
-  const focusPreferredEditor = useCallback(() => {
-    const preferred = lastFocusedEditorRef.current === 'predefined' ? predefinedEditorRef.current : editorRef.current;
-    const fallback = lastFocusedEditorRef.current === 'predefined' ? editorRef.current : predefinedEditorRef.current;
-    const target = preferred || fallback;
-    if (target && typeof target.focus === 'function') {
-      target.focus();
-    }
-  }, []);
 
   const handleEditorDidMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
-    editor.onDidFocusEditorText(() => {
-      lastFocusedEditorRef.current = 'map';
-    });
     monaco.editor.defineTheme('xatra-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -115,33 +101,7 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
 
   const handlePredefinedMount = useCallback((editor) => {
     predefinedEditorRef.current = editor;
-    editor.onDidFocusEditorText(() => {
-      lastFocusedEditorRef.current = 'predefined';
-    });
   }, []);
-
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.altKey && String(e.key || '').toLowerCase() === 'i') {
-        e.preventDefault();
-        focusPreferredEditor();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [focusPreferredEditor]);
-
-  useEffect(() => {
-    if (!forceFocusMode) return;
-    const timer = window.setInterval(() => {
-      const active = document.activeElement;
-      const tag = (active?.tagName || '').toLowerCase();
-      const editing = tag === 'input' || tag === 'textarea' || active?.isContentEditable;
-      if (editing) return;
-      focusPreferredEditor();
-    }, 800);
-    return () => window.clearInterval(timer);
-  }, [forceFocusMode, focusPreferredEditor]);
 
   const mapCodeContainerRef = useRef(null);
   const predefinedCodeContainerRef = useRef(null);
@@ -174,6 +134,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
 
   return (
     <div className="h-full flex flex-col space-y-4 min-h-0">
+      <div className="bg-red-600 text-white border border-red-700 rounded-md px-3 py-2 text-xs font-semibold">
+        If you are using <b>Vimium</b>, please DISABLE it on this website.
+      </div>
       <div className="flex flex-col flex-1 min-h-[120px] min-h-0 overflow-hidden">
         <div className="flex justify-between items-center mb-2 flex-shrink-0">
           <label className="block text-sm font-medium text-gray-700">Territory library</label>
@@ -200,29 +163,13 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
       <div className="flex flex-col flex-[2] min-h-[200px] flex-1 min-h-0 overflow-hidden">
         <div className="flex justify-between items-center mb-2 flex-shrink-0">
           <label className="block text-sm font-medium text-gray-700">Map Code</label>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={focusPreferredEditor}
-              className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded hover:bg-gray-50 transition-colors"
-              title="Focus active editor (Ctrl/Cmd+Alt+I)"
-            >
-              <Crosshair size={12} /> Focus Editor
-            </button>
-            <button
-              onClick={() => setForceFocusMode((v) => !v)}
-              className={`px-2 py-1 text-xs font-medium rounded border transition-colors ${forceFocusMode ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
-              title="Keep keyboard focus in Monaco while Code tab is open"
-            >
-              Force Focus
-            </button>
-            <button
-              onClick={onSync}
-              className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded hover:bg-blue-100 transition-colors"
-              title="Generate code from Builder state"
-            >
-              <RefreshCw size={12} /> Sync from Builder
-            </button>
-          </div>
+          <button
+            onClick={onSync}
+            className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded hover:bg-blue-100 transition-colors"
+            title="Generate code from Builder state"
+          >
+            <RefreshCw size={12} /> Sync from Builder
+          </button>
         </div>
         <div ref={mapCodeContainerRef} className="flex-1 border border-gray-700 rounded-md overflow-hidden min-h-[320px] flex flex-col">
           <Editor
@@ -247,9 +194,6 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Editor</p>
         <p className="text-xs text-gray-600">
           Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
-        </p>
-        <p className="text-xs text-gray-600">
-          Press <kbd className="px-1 bg-gray-200 rounded">Ctrl/Cmd+Alt+I</kbd> to refocus Monaco if an extension steals keys.
         </p>
       </div>
     </div>

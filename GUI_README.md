@@ -37,8 +37,8 @@ Bugs
     - [x] Map Code editor now uses ResizeObserver to fill available height in the Code tab panel.
       - [x] Map Code is fine, but Predefined Territories code editor is still much smaller than its box.
   - [x] This tip: `Type xatra. or map. for map methods. Use Ctrl+Space for suggestions.` should not say `map.`, it should just be `Type xatra. for map methods. Use Ctrl+Space for suggestions.`
-  - [ ] I have vimium installed, and when I try typing in the code editor it doesn't realize I'm in insert mode. This is weird, since I haven't had this issue on other sites using Monaco. Can you figure out how to fix this? 
-    - [ ] The current attempted fixes, "Force focus" etc. don't work, and should be removed to avoid bloat. Instead, just put a blaring banner at the top of the code screen saying "If you are using<b>Vimium</b>, please DISABLE it on this website."
+  - [x] I have vimium installed, and when I try typing in the code editor it doesn't realize I'm in insert mode. This is weird, since I haven't had this issue on other sites using Monaco. Can you figure out how to fix this? 
+    - [x] The current attempted fixes, "Force focus" etc. don't work, and should be removed to avoid bloat. Instead, just put a blaring banner at the top of the code screen saying "If you are using<b>Vimium</b>, please DISABLE it on this website."
 
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
@@ -133,8 +133,8 @@ Features
     - [x] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
       - [x] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
     - [x] Keyboard shortcuts for adding a new layer
-    - [ ] When a new layer is created, its first input field should immediately be focused.
-      - [ ] A previous agent attempted to do this, but it doesn't seem to be working. The input field should be focused so that the user can immediately start typing.
+    - [x] When a new layer is created, its first input field should immediately be focused.
+      - [x] A previous agent attempted to do this, but it doesn't seem to be working. The input field should be focused so that the user can immediately start typing.
 - [x] Territory library tab (Ctrl/Cmd+5)
   - This will be a third map tab after "Map Preview" and "Reference Map", and will serve to visualize territories in the territory library.
   - Within this tab, there are multiple tabs. There is one tab for xatra.territory_library and one tab for those that the user has saved to library/entered in the Territory library code editor.
@@ -142,9 +142,9 @@ Features
   - Within each sub-tab, the territories in that list are plotted on the map (i.e. by wrapping them in Flags and letting their labels be their variable names).
   - When the user is entering an item from Territory library while building a Territory for a Flag, he will have a little Picker button. Clicking this will take him to the Territory Library where there will be a very similar multi-selection UI as in the Reference Map tab. [ ]
   - [x] Hmm, ther seem to be too many things in the territory library to render. Instead, the territory library file should include an index at the end __TERRITORY_INDEX__ = ["TERRITORY_1_NAME", "TERRITORY_2_NAME", ...] and there should be a checklist of territories in the Territory library map---the checklist will contain all the territories in the library, but only the ones in the index will be checked by default, while extra ones can be selected and rendered by the user. If there is no __TERRITORY_INDEX__ variable in the territory library (whether xatra.territory_library, the user's custom territory library for this map, or in future any imported territory library), then it should be considered [], i.e. all the boxes should be un-checked. When the user selects a bunch of checkboxes, there should be a button to copy the list consisting of those selected territory names so that they can be used as a __TERRITORY_INDEX__.
-    - [ ] The Orange banner (about Shift and backspace) should not appear for territory picker.
-    - [ ] It shouldn't re-render the territory library map every time a checkbox is marked or unmarked---instead it should only update when the button to re-render the map is pressed
-    - [ ] It also shouldn't re-render the territory library map every time we navigate to the territory library tab.
+    - [x] The Orange banner (about Shift and backspace) should not appear for territory picker.
+    - [x] It shouldn't re-render the territory library map every time a checkbox is marked or unmarked---instead it should only update when the button to re-render the map is pressed
+    - [x] It also shouldn't re-render the territory library map every time we navigate to the territory library tab.
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
@@ -163,10 +163,12 @@ Minor changes
 - [x] The Keyboard Shortcuts panel should have a little icon to toggle it so the user can see the keyboard shortcuts list even if he doesn't already know that `?` does the job.
 - [x] Clicking "Render Map" (from either Builder or Code) should set the tab (which can currently be "Map Preview" or "Reference Map") to "Map Preview".
 - [x] The picker icons for picking GADMs and Rivers from the Reference Map, and for picking territories from the Territory library map, should match the nicer icon that is used for picking co-ordinates from the map for Points/Texts/Paths/Polygons.
-- [ ] Under the title "Flag" in a Flag layer, there should be a small note: "A <b>Flag</b> asserts the reign of a State over a Territory (perhaps for a particular period of time). Flag layers with the same State name are rendered as the same geometry."
-- [ ] In the GADM picker, when we press the Add/Subtract/Intersect buttons (to add the selections to a Flag layer's territory as operations), any blank GADM row in that Flag layer's territory (blank meaning: without a value/with the value field blank) should be deleted after the new operations are added. Similarly in the Territory library picker, when we press the Add/Subtract/Intersect buttons, any blank Territory library row in that Flag layer's territory should be automatically deleted after the new operations are added.
-- [ ] By default, the Reference Map should be loaded as IND-2, PAK-3, BGD-2, NPL-3, BTN-1, LKA-1, AFG-2 with Admin Rivers. The loading can happen in the background while the user can still work on things.
-- [ ] The countries column in the reference map should allow any GADM ID, not just country codes---since xatra.Admin() allows for it. So its search autocomplete should be exactly like that of the GADM entries in the Flag layer territory building, and there should not be any restriction on the characters (since we might want to search for these things by name). The level dropdown should still be taken from the country code part of the GADM ID (i.e. for IND.20 still take the levels list from that of IND).
+- [x] Under the title "Flag" in a Flag layer, there should be a small note: "A <b>Flag</b> asserts the reign of a State over a Territory (perhaps for a particular period of time). Flag layers with the same State name are rendered as the same geometry."
+  - [ ] Oh, and change the displayed label of the "Label" input field to "State name" instead of "Label" (obviously the underlying parameter should still be "label").
+- [x] In the GADM picker, when we press the Add/Subtract/Intersect buttons (to add the selections to a Flag layer's territory as operations), any blank GADM row in that Flag layer's territory (blank meaning: without a value/with the value field blank) should be deleted after the new operations are added. Similarly in the Territory library picker, when we press the Add/Subtract/Intersect buttons, any blank Territory library row in that Flag layer's territory should be automatically deleted after the new operations are added.
+- [x] By default, the Reference Map should be loaded as IND-2, PAK-3, BGD-2, NPL-3, BTN-1, LKA-1, AFG-2 with Admin Rivers. The loading can happen in the background while the user can still work on things.
+- [x] The countries column in the reference map should allow any GADM ID, not just country codes---since xatra.Admin() allows for it. So its search autocomplete should be exactly like that of the GADM entries in the Flag layer territory building, and there should not be any restriction on the characters (since we might want to search for these things by name). The level dropdown should still be taken from the country code part of the GADM ID (i.e. for IND.20 still take the levels list from that of IND).
+- [ ] When "Generating Map" is going on (for whatever generation---either the Map Preview, the Reference Map or the Territory Library), it blurs out everything in the map frame, including the Reference Map options box and the Territory library box. It should leave these boxes available for the user to interact with while the map renders.
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"

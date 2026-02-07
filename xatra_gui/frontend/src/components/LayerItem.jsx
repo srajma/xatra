@@ -118,6 +118,9 @@ const LayerItem = ({
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
                 placeholder="Name"
               />
+              <div className="mt-1 text-[10px] text-gray-500 leading-snug">
+                A <b>Flag</b> asserts the reign of a State over a Territory (perhaps for a particular period of time). Flag layers with the same State name are rendered as the same geometry.
+              </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
