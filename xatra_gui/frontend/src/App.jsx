@@ -34,11 +34,8 @@ xatra.Flag(label="India", value=gadm("IND"), note="Republic of India")
 xatra.TitleBox("<b>My Map</b>")
 `);
 
-  const [predefinedCode, setPredefinedCode] = useState(`# Pre-defined territories (use in Flag territory builder as "Predefined")
-# xatra.territory_library names (NORTH_INDIA, etc.) are available when rendering.
-# Example:
-# maurya = gadm("IND") | gadm("PAK")
-# north = NORTH_INDIA  # from territory_library
+  const [predefinedCode, setPredefinedCode] = useState(`from xatra.territory_library import *  # https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py
+
 `);
 
   // Picker State
@@ -48,6 +45,8 @@ xatra.TitleBox("<b>My Map</b>")
   });
   
   const [lastMapClick, setLastMapClick] = useState(null);
+  const [lastPickedGadm, setLastPickedGadm] = useState(null);
+  const [lastPickedRiver, setLastPickedRiver] = useState(null);
   const [activePicker, setActivePicker] = useState(null); // { id, type, context }
   const [draftPoints, setDraftPoints] = useState([]);
   const [isFreehand, setIsFreehand] = useState(false);
@@ -82,24 +81,18 @@ xatra.TitleBox("<b>My Map</b>")
                 updateElementFromDraft(newPoints);
                 return newPoints;
             });
-        } else if (e.key === ' ') {
+        } else if (e.key === ' ' && !e.repeat) {
             e.preventDefault();
-            setIsFreehand(true);
+            setIsFreehand(prev => !prev);
         } else if (e.key === 'Escape') {
             setActivePicker(null);
             setDraftPoints([]);
-        }
-    };
-    const handleKeyUp = (e) => {
-        if (e.key === ' ') {
             setIsFreehand(false);
         }
     };
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
     return () => {
         window.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('keyup', handleKeyUp);
     };
   }, [activePicker]);
 
@@ -172,11 +165,22 @@ xatra.TitleBox("<b>My Map</b>")
           } else if (key === 'Escape') {
             setActivePicker(null);
             setDraftPoints([]);
-          } else if (key === ' ') {
-            setIsFreehand(true);
+            setIsFreehand(false);
+          } else if (key === ' ' && !event.data.repeat) {
+            setIsFreehand(prev => !prev);
           }
-      } else if (event.data && event.data.type === 'mapKeyUp' && event.data.key === ' ') {
-          setIsFreehand(false);
+      } else if (event.data && event.data.type === 'mapFeaturePick') {
+          const data = event.data || {};
+          if (data.featureType === 'gadm' && data.gid) {
+              setLastPickedGadm({ gid: data.gid, name: data.name || '', ts: Date.now() });
+          } else if (data.featureType === 'river' && data.id) {
+              setLastPickedRiver({
+                  id: String(data.id),
+                  source_type: data.source_type || 'naturalearth',
+                  name: data.name || '',
+                  ts: Date.now()
+              });
+          }
       }
     };
     window.addEventListener('message', handleMessage);
@@ -281,18 +285,22 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   const formatTerritory = (value) => {
+      if (value == null || (Array.isArray(value) && value.length === 0)) return 'None';
       if (Array.isArray(value)) {
           const ops = { union: '|', difference: '-', intersection: '&' };
-          return value.map((part, i) => {
+          const parts = value.map((part, i) => {
               let pStr = '';
-              if (part.type === 'gadm') pStr = `gadm("${part.value}")`;
-              else if (part.type === 'polygon') pStr = `polygon(${part.value})`;
+              if (part.type === 'gadm' && part.value != null && part.value !== '') pStr = `gadm("${part.value}")`;
+              else if (part.type === 'polygon' && part.value != null && part.value !== '') pStr = `polygon(${part.value})`;
               else if (part.type === 'predefined' && part.value) pStr = part.value;
-              
+              else return null;
               if (i === 0) return pStr;
               return ` ${ops[part.op] || '|'} ${pStr}`;
-          }).join('');
+          }).filter(Boolean);
+          if (parts.length === 0) return 'None';
+          return parts.join('');
       }
+      if (value === '') return 'None';
       return `gadm("${value}")`;
   };
 
@@ -305,10 +313,42 @@ xatra.TitleBox("<b>My Map</b>")
 
   const generatePythonCode = () => {
     const needsIconImport = builderElements.some(el => el.type === 'point' && el.args?.icon);
+    const hasFlagColorOptions =
+      (Array.isArray(builderOptions.flag_color_sequences) && builderOptions.flag_color_sequences.some((row) => (row?.value || '').trim() !== '')) ||
+      !!builderOptions.flag_colors;
+    const hasAdminColorOptions = !!builderOptions.admin_colors;
+    const needsColorSeqImport = hasFlagColorOptions || hasAdminColorOptions;
+    const pyVal = (v) => {
+        if (v == null || v === '') return 'None';
+        if (typeof v === 'boolean') return v ? 'True' : 'False';
+        if (typeof v === 'string') return `"${v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+        if (Array.isArray(v)) return JSON.stringify(v);
+        return JSON.stringify(v).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False');
+    };
+    const colorSequenceExpr = (raw) => {
+        if (typeof raw !== 'string') return null;
+        const val = raw.trim();
+        if (!val) return null;
+        if (!val.includes(',')) {
+            return `RotatingColorSequence().from_matplotlib_color_sequence(${pyVal(val)})`;
+        }
+        const parts = val
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .map((p) => (
+            p.startsWith('#')
+              ? `Color.hex(${pyVal(p)})`
+              : `Color.named(${pyVal(p.toLowerCase())})`
+          ));
+        if (parts.length === 0) return null;
+        return `RotatingColorSequence([${parts.join(', ')}])`;
+    };
     let lines = [
         'import xatra',
         'from xatra.loaders import gadm, naturalearth, polygon, overpass',
         ...(needsIconImport ? ['from xatra.icon import Icon', ''] : []),
+        ...(needsColorSeqImport ? ['from xatra.colorseq import Color, RotatingColorSequence', ''] : []),
         '',
         predefinedCode,
         ''
@@ -343,18 +383,46 @@ xatra.TitleBox("<b>My Map</b>")
         lines.push(`xatra.slider(start=${start ?? 'None'}, end=${end ?? 'None'}, speed=${speed ?? 5.0})`);
     }
 
+    if (Array.isArray(builderOptions.flag_color_sequences)) {
+        builderOptions.flag_color_sequences.forEach((row) => {
+            const val = (row?.value || '').trim();
+            if (!val) return;
+            const className = (row?.class_name || '').trim();
+            const seqExpr = colorSequenceExpr(val);
+            if (!seqExpr) return;
+            if (className) lines.push(`xatra.FlagColorSequence(${seqExpr}, class_name=${pyVal(className)})`);
+            else lines.push(`xatra.FlagColorSequence(${seqExpr})`);
+        });
+    } else if (builderOptions.flag_colors) {
+        const seqExpr = colorSequenceExpr(builderOptions.flag_colors);
+        if (seqExpr) lines.push(`xatra.FlagColorSequence(${seqExpr})`);
+    }
+
+    if (builderOptions.admin_colors) {
+        const seqExpr = colorSequenceExpr(builderOptions.admin_colors);
+        if (seqExpr) lines.push(`xatra.AdminColorSequence(${seqExpr})`);
+    }
+
+    if (builderOptions.data_colormap) {
+        lines.push(`xatra.DataColormap(${pyVal(builderOptions.data_colormap)})`);
+    }
+
     lines.push('');
+    const argsEntries = (obj) => Object.entries(obj || {}).filter(([, v]) => {
+        if (v == null || v === '') return false;
+        if (Array.isArray(v) && v.length === 0) return false;
+        return true;
+    });
+    const argsToStr = (args) => {
+        const parts = argsEntries(args).map(([k, v]) => `${k}=${typeof v === 'string' ? pyVal(v) : pyVal(v)}`);
+        return parts.length ? ', ' + parts.join(', ') : '';
+    };
 
     // Elements
     builderElements.forEach(el => {
         const args = { ...el.args };
-        if (el.label) args.label = el.label;
-        
-        let argsStr = Object.entries(args)
-            .map(([k, v]) => `${k}=${JSON.stringify(v).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}`)
-            .join(', ');
-        
-        if (argsStr) argsStr = ', ' + argsStr;
+        if (el.label != null && el.label !== '') args.label = el.label;
+        const argsStr = argsToStr(args);
 
         if (el.type === 'flag') {
             lines.push(`xatra.Flag(value=${formatTerritory(el.value)}${argsStr})`);
@@ -362,18 +430,14 @@ xatra.TitleBox("<b>My Map</b>")
             const func = el.args?.source_type === 'overpass' ? 'overpass' : 'naturalearth';
             const riverArgs = { ...args };
             delete riverArgs.source_type;
-            const riverArgsStr = Object.entries(riverArgs)
-                .map(([k, v]) => `${k}=${JSON.stringify(v).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}`)
-                .join(', ');
-            const riverArgsStrFormatted = riverArgsStr ? ', ' + riverArgsStr : '';
-            lines.push(`xatra.River(value=${func}("${el.value}")${riverArgsStrFormatted})`);
+            const riverArgsStrFormatted = argsToStr(riverArgs);
+            const riverVal = (el.value != null && el.value !== '') ? `${func}("${String(el.value).replace(/"/g, '\\"')}")` : 'None';
+            lines.push(`xatra.River(value=${riverVal}${riverArgsStrFormatted})`);
         } else if (el.type === 'point') {
             const pointArgs = { ...args };
             const iconVal = pointArgs.icon;
             delete pointArgs.icon;
-            let pointArgsStr = Object.entries(pointArgs)
-                .map(([k, v]) => `${k}=${JSON.stringify(v).replace(/"/g, "'").replace(/null/g, 'None').replace(/true/g, 'True').replace(/false/g, 'False')}`)
-                .join(', ');
+            let pointArgsStr = argsToStr(pointArgs);
             let iconPy = '';
             if (iconVal != null && iconVal !== '') {
                 if (typeof iconVal === 'string') {
@@ -386,22 +450,27 @@ xatra.TitleBox("<b>My Map</b>")
                     iconPy = `icon=Icon(icon_url="${url}")`;
                 }
             }
-            if (iconPy) pointArgsStr = pointArgsStr ? `${pointArgsStr}, ${iconPy}` : iconPy;
-            const pointArgsFormatted = pointArgsStr ? `, ${pointArgsStr}` : '';
-            lines.push(`xatra.Point(position=${el.value}${pointArgsFormatted})`);
+            if (iconPy) pointArgsStr = pointArgsStr ? `${pointArgsStr}, ${iconPy}` : `, ${iconPy}`;
+            const pos = (el.value != null && el.value !== '') ? (Array.isArray(el.value) ? JSON.stringify(el.value) : el.value) : 'None';
+            lines.push(`xatra.Point(position=${pos}${pointArgsStr})`);
         } else if (el.type === 'text') {
-            lines.push(`xatra.Text(position=${el.value}${argsStr})`);
+            const pos = (el.value != null && el.value !== '') ? (Array.isArray(el.value) ? JSON.stringify(el.value) : el.value) : 'None';
+            lines.push(`xatra.Text(position=${pos}${argsStr})`);
         } else if (el.type === 'path') {
-            lines.push(`xatra.Path(value=${el.value}${argsStr})`);
+            const pathVal = (el.value != null && el.value !== '') ? (typeof el.value === 'string' ? el.value : JSON.stringify(el.value)) : 'None';
+            lines.push(`xatra.Path(value=${pathVal}${argsStr})`);
         } else if (el.type === 'admin') {
-            lines.push(`xatra.Admin(gadm="${el.value}"${argsStr})`);
+            const gadmVal = (el.value != null && el.value !== '') ? `"${String(el.value).replace(/"/g, '\\"')}"` : 'None';
+            lines.push(`xatra.Admin(gadm=${gadmVal}${argsStr})`);
         } else if (el.type === 'admin_rivers') {
-            lines.push(`xatra.AdminRivers(sources=${el.value}${argsStr})`);
+            const sourcesVal = (el.value != null && el.value !== '') ? el.value : 'None';
+            lines.push(`xatra.AdminRivers(sources=${typeof sourcesVal === 'object' ? JSON.stringify(sourcesVal) : sourcesVal}${argsStr})`);
         } else if (el.type === 'dataframe') {
             lines.push(`# DataFrame handling requires local CSV file or manual implementation in code mode`);
             lines.push(`import pandas as pd`);
             lines.push(`import io`);
-            lines.push(`df = pd.read_csv(io.StringIO("""${el.value}"""))`);
+            const csvContent = (el.value != null && el.value !== '') ? String(el.value).replace(/"""/g, '\\"\\"\\"') : '';
+            lines.push(`df = pd.read_csv(io.StringIO("""${csvContent}"""))`);
             lines.push(`xatra.Dataframe(df${argsStr})`);
         }
     });
@@ -475,6 +544,8 @@ xatra.TitleBox("<b>My Map</b>")
               setDraftPoints={setDraftPoints}
               onSaveTerritory={handleSaveTerritoryToLibrary}
               predefinedCode={predefinedCode}
+              lastPickedGadm={lastPickedGadm}
+              lastPickedRiver={lastPickedRiver}
             />
           ) : (
             <CodeEditor 
@@ -533,7 +604,11 @@ xatra.TitleBox("<b>My Map</b>")
                 </h3>
                 <div className="space-y-3">
                     <div className="space-y-2">
-                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Countries</label>
+                         <div className="grid grid-cols-[1fr_64px_24px] gap-1.5 items-center">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Countries</label>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Admin Level</label>
+                            <div />
+                         </div>
                          {pickerOptions.entries.map((entry, idx) => (
                              <div key={idx} className="flex gap-1.5 items-center">
                                  <AutocompleteInput 
@@ -596,6 +671,21 @@ xatra.TitleBox("<b>My Map</b>")
                     >
                         Update Reference Map
                     </button>
+                    {(lastPickedGadm || lastPickedRiver) && (
+                        <div className="space-y-1 border-t border-gray-100 pt-2 text-[11px]">
+                            <div className="font-semibold text-gray-600">Last Picked From Reference Map</div>
+                            {lastPickedGadm && (
+                                <div className="font-mono text-gray-700">
+                                    GADM: {lastPickedGadm.gid}{lastPickedGadm.name ? ` (${lastPickedGadm.name})` : ''}
+                                </div>
+                            )}
+                            {lastPickedRiver && (
+                                <div className="font-mono text-gray-700">
+                                    River: {lastPickedRiver.source_type}:{lastPickedRiver.id}{lastPickedRiver.name ? ` (${lastPickedRiver.name})` : ''}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <div className="text-[10px] text-gray-400 bg-gray-50 p-2 rounded italic">
                     Tip: Use the reference map to find GADM codes or coordinates.
@@ -611,7 +701,7 @@ xatra.TitleBox("<b>My Map</b>")
                         <div className="text-xs font-normal opacity-95">
                             <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Backspace</kbd> undo last point
                             {' · '}
-                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Space</kbd> + drag freehand
+                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Space</kbd> toggle freehand, then drag
                             {' · '}
                             <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Esc</kbd> cancel
                         </div>

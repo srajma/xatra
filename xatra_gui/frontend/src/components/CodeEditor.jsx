@@ -104,7 +104,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
   }, []);
 
   const mapCodeContainerRef = useRef(null);
+  const predefinedCodeContainerRef = useRef(null);
   const [mapCodeHeight, setMapCodeHeight] = useState(420);
+  const [predefinedCodeHeight, setPredefinedCodeHeight] = useState(200);
 
   useEffect(() => {
     const el = mapCodeContainerRef.current;
@@ -118,15 +120,27 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    const el = predefinedCodeContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const h = el.clientHeight;
+      if (h > 80) setPredefinedCodeHeight(h);
+    });
+    ro.observe(el);
+    setPredefinedCodeHeight(el.clientHeight > 80 ? el.clientHeight : 200);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <div className="h-full flex flex-col space-y-4 min-h-0">
-      <div className="flex flex-col flex-1 min-h-[150px]">
-        <div className="flex justify-between items-center mb-2">
-          <label className="block text-sm font-medium text-gray-700">Predefined Territories</label>
+      <div className="flex flex-col flex-1 min-h-[120px] min-h-0 overflow-hidden">
+        <div className="flex justify-between items-center mb-2 flex-shrink-0">
+          <label className="block text-sm font-medium text-gray-700">Territory library</label>
         </div>
-        <div className="flex-1 border border-gray-700 rounded-md overflow-hidden min-h-[120px]">
+        <div ref={predefinedCodeContainerRef} className="flex-1 border border-gray-700 rounded-md overflow-hidden min-h-[120px] flex flex-col">
           <Editor
-            height="120px"
+            height={predefinedCodeHeight}
             defaultLanguage="python"
             value={predefinedCode || ''}
             onChange={(v) => setPredefinedCode(v ?? '')}
@@ -173,10 +187,13 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
         </div>
       </div>
 
-      <div className="p-2 bg-gray-50 border rounded">
+      <div className="p-2 bg-gray-50 border rounded space-y-1">
         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Autocomplete</p>
         <p className="text-xs text-gray-600">
           Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
+        </p>
+        <p className="text-[10px] text-gray-500 italic">
+          Using Vimium? Disable it for this site or press <kbd className="px-0.5 bg-gray-200 rounded">i</kbd> to focus the editor before typing.
         </p>
       </div>
     </div>

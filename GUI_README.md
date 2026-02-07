@@ -35,9 +35,9 @@ Bugs
   - [x] Weird bug: Every time I switch away from the Code window and then back to it, another copy of each item in the autocomplete appears. So when one first clicks out and back, there are two copies of "xatra" in the autocomplete menu, and if you type `xatra.` then there are two copies of `Admin` etc.; do it again and there are three copies of each, etc.
   - [x] Code editor is weirdly smaller vertically than the space available in the boxes for them 
     - [x] Map Code editor now uses ResizeObserver to fill available height in the Code tab panel.
-      - [ ] Map Code is fine, but Predefined Territories code editor is still much smaller than its box.
+      - [x] Map Code is fine, but Predefined Territories code editor is still much smaller than its box.
   - [x] This tip: `Type xatra. or map. for map methods. Use Ctrl+Space for suggestions.` should not say `map.`, it should just be `Type xatra. for map methods. Use Ctrl+Space for suggestions.`
-  - [ ] I have vimium installed, and when I try typing in the code editor it doesn't realize I'm in insert mode---I guess it doesn't understand that clicking in the code editor puts you in a "textbox"---and so it interprets "x" as me trying to close the tab. IDK if this is easy to fix; if not we can just tell users to disable vimium for this website, but if there's an easy fix, do it.
+  - [ ] I have vimium installed, and when I try typing in the code editor it doesn't realize I'm in insert mode. This is weird, since I haven't had this issue on other sites using Monaco. Can you figure out how to fix this? 
 
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
@@ -48,12 +48,13 @@ Basic extensions
   - [x] Admin
   - [x] AdminRivers
   - [x] Path, Point, Text.
-    - [ ] For Point, think carefully about how to implement the icon choice UI (whatever is supported by .Icon() in the library---both the in-built icons, geometric and any custom ones).
+    - [x] For Point, think carefully about how to implement the icon choice UI (whatever is supported by .Icon() in the library---both the in-built icons, geometric and any custom ones).
   - [x] Dataframes will be complicated, but at least the user should be able to upload a CSV. (See README.md for the format of the pandas dataframe)
     - [x] The sample example prefilled when adding a dataframe has the GID column titled "gadm". This is wrong, it should be "GID".
     - [x] Remove the "Find in GADM" field. Even in the original package it's kind of irrelevant.
     - [x] plotting data doesn't really work for some reason, it generates the following error.
-    - [ ] We should not need to enter the data and year columns manually.
+    - [x] We should not need to enter the data and year columns manually.
+      - [ ] Actually just remove the fields for entering data and year columns entirely, we don't need them.
 
   - [x] NOTE: allow adding any attribute to those objects, not just label, note and GADM code. Period is especially important. The less important attributes could be hidden under a "More..."
     - [x] "Period" should not be under a "More Options" It is optional, but should still be accessible without clicking "More Options". All the other things under "More Options" are fine there.
@@ -64,13 +65,14 @@ Basic extensions
       - [x] Right now this is implemented in a weird way where the input is a text field prefilled with ".flag" and the options appear as autocomplete options. I think this is unintuitive for users---instead, make it an actual dropdown, with a "Custom..." option which if selected lets the user input any custom class/CSS selector.
     - [x] Base Layers: allow adding any number of base layers, and selecting one as default.
       - [x] Fixed. But the UI is a bit clumsy. Instead, just have the list of available base layers as checkboxes (where checking a box means it will be included in the base layer options) and include buttons next to them to make default (it should only be possible to make one default).
-    - [ ] FlagColorSequence, AdminColorSequence, DataColormap --- think through the interface for this carefully; users should be able to set the obvious ones easily, or create their own color sequence or map, just like in the package itself (see the README for details). [This still needs to be done better---also it should be possible to set multiple color sequences for different classes].
-    - [x] zoom and focus
-      - [x] this should include a button to just use the current zoom and focus levels at the map is at
-      - [x] there's a weird bug where I can't clear the contents of Initial focus manually because if I clear Latitude, Longitude becomes filled again (with 0) and if I clear Longitude, Latitude gets filled again. Fix that.
-      - [x] Add a little clear button to the Initial View and Time slider buttons to reset their contents to emptiness.
-    - [x] slider()
-      - [x] It has the same bug of not allowing 0 as a year
+  - [x] FlagColorSequence, AdminColorSequence, DataColormap --- think through the interface for this carefully; users should be able to set the obvious ones easily, or create their own color sequence or map, just like in the package itself (see the README for details). [This still needs to be done better---also it should be possible to set multiple color sequences for different classes].
+    - [ ] Nah this is still wrong. Also trying to add a new FlagColorSequence does nothing.
+  - [x] zoom and focus
+    - [x] this should include a button to just use the current zoom and focus levels at the map is at
+    - [x] there's a weird bug where I can't clear the contents of Initial focus manually because if I clear Latitude, Longitude becomes filled again (with 0) and if I clear Longitude, Latitude gets filled again. Fix that.
+    - [x] Add a little clear button to the Initial View and Time slider buttons to reset their contents to emptiness.
+  - [x] slider()
+    - [x] It has the same bug of not allowing 0 as a year
   Wherever something is a bit complicated for the user to know how to set---e.g. color sequences and color maps, or icons for Point; there should be a little info tooltip with helpful documentation.
 - [x] Exporting map JSON and HTML
 
@@ -80,8 +82,8 @@ Features
   - [x] Also allow a user to undo the last point by pressing backspace.
     - [x] I think a previous AI agent attempted to implement this, but has failed.
       - [x] Fixed by forwarding Backspace/Escape/Space from the map iframe to the parent (focus is in iframe when user clicks map)
-  - [ ] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode (and then you can continue clicking points normally).
-    - [ ] I think a previous AI agent attempted to implement this, but has failed.
+  - [x] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode (and then you can continue clicking points normally).
+    - [ ] Ok, one issue: holding and dragging *also* moves the map around at the same time. Maybe instead of pressing spacebar + dragging, we should change it to holding shift and dragging, and prevent Leaflet from moving the map when shift is pressed.
   - [x] Display these tips (backspace, freehand mode)
     - [x] These tips should be shown in a blaring message on the map while picker mode is on, not underneath the box like it currently is.
   - [x] One problem is that the user may forget to un-click the picker and leave it on while picking other co-ordinates. To avoid this, only one picker should be turned on at a time: clicking another picker should turn off all the other ones (and show this visually too).
@@ -100,19 +102,21 @@ Features
   - [x] Nice, I like the implementation. However, instead of just one field for Countries and one field for Level, the user should be able to add multiple rows, one for each country and set the level for each. So e.g. I can have IND: 2: PAK: 3.
     - [x] Nice. However, the box and its contents are a bit weirdly-sized (the contents don't fit the box which causes a horizontal scrollbar to appear)
     - [x] The user should be able to search for their country (either by GID or by country name) when entering a country code--just like they can while entering GADM territories for Flags.
-  - [ ] Then they will be able to select gadm territories from an admin Picker map.
-  - [ ] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields.
-  - [ ] And also selecting rivers
+  - [x] Then they will be able to select gadm territories from an admin Picker map.
+  - [ ] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields. This will need some re-thinking of how the solution is currently implemented.
+  - [x] And also selecting rivers
 - [x] Code editor should be nice, not just a simple text editor.
   - [x] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported. Maybe can use an actual code editor plugin or something.
 - [x] Loading a previously-built map. I think the best way to do this will be to keep the state of the Builder and Code synchronized two-way and just export/import the code both ways.
   - [ ] Code generation is quite buggy.
     - [x] One issue I've observed: for rivers it creates a random attribute source_type for River objects, which doesn't exist. This is not necessary, the value is already either naturalearth() or overpass()---you just need to make sure these are imported at the top.
-    - [ ] When a Flag has a blank value (i.e. nothing has been built in Territory) or anything else is blank, it should default be converted to None in the code, not just left empty causing a syntax error.
+    - [x] When a Flag has a blank value (i.e. nothing has been built in Territory) or anything else is blank, it should default be converted to None in the code, not just left empty causing a syntax error.
     - [ ] Eventually we should also implement reverse-syncing the code to the builder, so might be worth thinking about how to better store the state
     - [ ] Also need to make sure any changes to the pre-defined territories code will update the stored territories.
-  - [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
-    - [ ] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
+    - [ ] Once we have arranged the two-way synchronization perfectly, the Builder-Code syncing should be modified to happen automatically upon switching from Builder to Code and vice versa, rather than manually clicking Sync from Builder
+- [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
+    - [x] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
+      - [ ] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
@@ -124,8 +128,10 @@ Minor changes
 - [x] We now have visual cues for drawing paths and polygons, thank you---just one thing: the *vertices* of paths and polygons should also be shown in this visual cue, with dots, so that even the first point drawn can be seen on the map before any actual line is drawn.
   - [x] Also implement this for Points and Texts. When a point has a pre-existing value for Position and you hit the "Click on map" button, it should show that little point on that map with the same sort of dot.
 - [x] The "Note" field should have monospaced font.
-- [ ] Everywhere we use the term "Pre-defined territory", use "Territory library" instead.
-  - [ ] And include a from xatra.territory_library import * line at the top, since all those territories are included in our library---and in a comment right next to it, link to https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py. Remove all the other junk comments pre-filled there by default.
+- [x] Everywhere we use the term "Pre-defined territory", use "Territory library" instead.
+  - [x] And include a from xatra.territory_library import * line at the top, since all those territories are included in our library---and in a comment right next to it, link to https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py. Remove all the other junk comments pre-filled there by default.
+- [x] In "Reference Map Options", just like there's a label "Countries" for the country field there should be a label "Admin Level" for the Admin Level field.
+  - [ ] Also, the levels entry field should be a dropdown with all the admin levels available for their country (these should be pre-computed and kept in an index).
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
@@ -133,7 +139,7 @@ Development difficulties
 
 For eventually publishing this as an app
 - [ ] Sandboxing code (like in those online coding assessment platforms)
-- [ ] User accounts
+- [ ] Database of user accounts, maps created by them etc.
   - [ ] saving and publishing maps on platform (publishing can be for paid users only)
   - [ ] publishing territory libraries and CSS
   - [ ] importing existing map content, territory libraries and CSS into project
@@ -141,6 +147,39 @@ For eventually publishing this as an app
   - [ ]
 
 ---
+
+## Implementation plans for remaining roadmap items
+
+### 1) Vimium/editor insert mode
+- Add an optional "Force editor focus" mode that keeps focus in Monaco while the Code tab is active.
+- Add a fallback keyboard shortcut in-app (e.g. `Ctrl+Alt+I`) that focuses the active editor without mouse.
+- Document hard limit: browser extensions can still intercept keys globally before page handlers.
+
+### 2) Reverse sync (Code -> Builder) and predefined-territory sync
+- Define a canonical intermediate JSON schema for map state (elements, options, predefined territories).
+- Build a Python AST parser pipeline for supported `xatra.*` calls and loader expressions (`gadm`, `polygon`, `naturalearth`, `overpass`).
+- Parse `predefined_code` assignments into structured territory expressions and update in-memory territory namespace used by builder render requests.
+- Add conflict reporting when code contains unsupported dynamic constructs (loops/functions) and keep those in code-only mode.
+
+### 3) Reference map multi-select for GADM and bulk add/subtract
+- Add a reference-picker mode with explicit target flag + operator (`union`/`difference`).
+- Support modifier-key multi-select on map (Ctrl/Cmd) and maintain a selected-GADM chip list.
+- Add "Apply selected to territory" action that appends ordered operations into `TerritoryBuilder` state.
+
+### 4) Keyboard navigation completeness
+- Add global command palette / shortcut map (`?` overlay) for tab switch, render, stop, and picker toggles.
+- Ensure picker controls, layer cards, and operation rows are fully reachable via Tab/Shift+Tab with visible focus rings.
+- Add keyboard reordering for territory rows (`Alt+ArrowUp/Down`) in addition to drag-and-drop.
+
+### 5) Production platform features (sandboxing/accounts/publishing/AI)
+- Sandbox:
+  Use isolated worker containers (Firecracker/containers), strict CPU/memory/timeouts, blocked outbound network by default, signed artifact export only.
+- Accounts + projects:
+  Introduce auth (OIDC + sessions), project ownership, versioned saves, and RBAC tiers (free/paid).
+- Publishing:
+  Store published HTML/JSON + assets in object storage with immutable versions and moderated public links.
+- AI agent:
+  Add paid-tier feature gate, request quotas, audited tool execution logs, and policy-enforced prompt/tool sandboxing.
 
 ## Development / Synchrony
 

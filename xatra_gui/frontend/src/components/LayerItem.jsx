@@ -8,7 +8,7 @@ const BUILTIN_ICON_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'cross',
 const LayerItem = ({ 
   element, index, updateElement, updateArg, replaceElement, removeElement, 
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
-  onSaveTerritory, predefinedCode
+  onSaveTerritory, predefinedCode, lastPickedGadm, lastPickedRiver
 }) => {
   const [showMore, setShowMore] = useState(false);
   const [builtinIconsList, setBuiltinIconsList] = useState([]);
@@ -121,7 +121,7 @@ const LayerItem = ({
                   <button 
                     onClick={() => onSaveTerritory(element)}
                     className="text-[10px] text-blue-600 hover:text-blue-800 flex items-center gap-1 font-bold"
-                    title="Save territory to predefined library"
+                    title="Save territory to Territory library"
                   >
                     <Save size={10}/> Save to Library
                   </button>
@@ -136,6 +136,7 @@ const LayerItem = ({
                 setDraftPoints={setDraftPoints}
                 parentId={index}
                 predefinedCode={predefinedCode}
+                lastPickedGadm={lastPickedGadm}
               />
             </div>
           </div>
@@ -176,13 +177,31 @@ const LayerItem = ({
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">ID</label>
-              <input
-                type="text"
-                value={element.value || ''}
-                onChange={(e) => updateElement(index, 'value', e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                placeholder={element.args?.source_type === 'overpass' ? 'e.g. 1159122643' : 'e.g. Ganges'}
-              />
+              <div className="flex gap-1">
+                <input
+                  type="text"
+                  value={element.value || ''}
+                  onChange={(e) => updateElement(index, 'value', e.target.value)}
+                  className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
+                  placeholder={element.args?.source_type === 'overpass' ? 'e.g. 1159122643' : 'e.g. Ganges'}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!lastPickedRiver) return;
+                    replaceElement(index, {
+                      ...element,
+                      value: lastPickedRiver.id,
+                      args: { ...element.args, source_type: lastPickedRiver.source_type || 'naturalearth' }
+                    });
+                  }}
+                  disabled={!lastPickedRiver}
+                  className="px-2 py-1.5 text-[10px] border rounded bg-white text-blue-700 border-blue-200 hover:bg-blue-50 disabled:text-gray-400 disabled:border-gray-200 disabled:hover:bg-white"
+                  title="Use last river picked on the Reference Map"
+                >
+                  Use Picked
+                </button>
+              </div>
               <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
                   <Info size={10}/> 
                   {element.args?.source_type === 'overpass' ? 'OSM Way/Relation ID' : 'Natural Earth ID or Name'}
@@ -339,7 +358,7 @@ const LayerItem = ({
               </div>
               {isPicking && (
                   <div className="text-[10px] text-gray-500 mt-1 italic flex gap-2">
-                      <span>␣ Hold Spacebar to draw freehand</span>
+                      <span>␣ Space toggles freehand mode</span>
                       <span>⌫ Backspace to undo</span>
                   </div>
               )}
@@ -384,7 +403,8 @@ const LayerItem = ({
                         value={element.args?.data_column || ''}
                         onChange={(e) => updateArg(index, 'data_column', e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-                        placeholder="value"
+                        placeholder="Leave blank to auto-detect"
+                        title="Column name for values. Leave blank to auto-detect from CSV."
                     />
                 </div>
                  <div>
@@ -398,7 +418,8 @@ const LayerItem = ({
                              else updateArg(index, 'year_columns', val.split(',').map(s => s.trim()));
                         }}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-                        placeholder="2000, 2010"
+                        placeholder="Leave blank to auto-detect"
+                        title="Year columns for time-series. Leave blank to auto-detect."
                     />
                 </div>
             </div>

@@ -180,7 +180,7 @@ def list_icons():
 
 @app.get("/territory_library/names")
 def territory_library_names():
-    """Return public names from xatra.territory_library for autocomplete in Pre-defined territories."""
+    """Return public names from xatra.territory_library for autocomplete in Territory library."""
     try:
         import xatra.territory_library as tl
         return [n for n in dir(tl) if not n.startswith("_")]
@@ -285,7 +285,20 @@ def run_rendering_task(task_type, data, result_queue):
                      try: m.focus(float(focus[0]), float(focus[1]))
                      except: pass
 
-            if "flag_colors" in data.options:
+            if "flag_color_sequences" in data.options and isinstance(data.options["flag_color_sequences"], list):
+                for row in data.options["flag_color_sequences"]:
+                    if not isinstance(row, dict):
+                        continue
+                    seq = parse_color_sequence(row.get("value"))
+                    if not seq:
+                        continue
+                    class_name = row.get("class_name")
+                    if isinstance(class_name, str):
+                        class_name = class_name.strip() or None
+                    else:
+                        class_name = None
+                    m.FlagColorSequence(seq, class_name=class_name)
+            elif "flag_colors" in data.options:
                 seq = parse_color_sequence(data.options["flag_colors"])
                 if seq:
                     m.FlagColorSequence(seq)
@@ -435,6 +448,8 @@ def run_rendering_task(task_type, data, result_queue):
                         else:
                              df = pd.read_csv(io.StringIO(val))
                         if "label" in args: del args["label"]
+                        if args.get("data_column") in (None, ""): args.pop("data_column", None)
+                        if args.get("year_columns") in (None, [], ""): args.pop("year_columns", None)
                         m.Dataframe(df, **args)
 
         payload = m._export_json()

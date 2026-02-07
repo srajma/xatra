@@ -551,6 +551,21 @@ HTML_TEMPLATE = Template(
 
       // Listener for parent window messages (Studio integration)
       let draftLayer = null;
+      function normalizeGadmCode(code) {
+        if (!code || typeof code !== 'string') return '';
+        return code.replace(/_\d+$/, '');
+      }
+      function extractRiverIdFromProps(props) {
+        if (!props) return null;
+        if (props._source === 'naturalearth' && props._ne_id != null) return String(props._ne_id);
+        if (props._source === 'overpass') {
+          if (props._id != null) return String(props._id);
+          const filename = props._filename ? String(props._filename) : '';
+          const match = filename.match(/(\d+)/);
+          if (match) return match[1];
+        }
+        return null;
+      }
       window.addEventListener('message', function(event) {
         if (event.data === 'getCurrentView') {
           const center = map.getCenter();
@@ -589,7 +604,7 @@ HTML_TEMPLATE = Template(
         if (!window.parent) return;
         if (e.key === 'Backspace' || e.key === 'Escape' || e.key === ' ') {
           e.preventDefault();
-          window.parent.postMessage({ type: 'mapKeyDown', key: e.key }, '*');
+          window.parent.postMessage({ type: 'mapKeyDown', key: e.key, repeat: e.repeat === true }, '*');
         }
       });
       document.addEventListener('keyup', function(e) {
@@ -1415,6 +1430,21 @@ HTML_TEMPLATE = Template(
               if (tooltip) {
                 registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
+
+              layer.on('click', function() {
+                if (!window.parent) return;
+                const pickedGid = normalizeGadmCode(
+                  props.GID_3 || props.GID_2 || props.GID_1 || props.GID_0 || ''
+                );
+                if (!pickedGid) return;
+                const pickedName = props.NAME_3 || props.NAME_2 || props.NAME_1 || props.COUNTRY || '';
+                window.parent.postMessage({
+                  type: 'mapFeaturePick',
+                  featureType: 'gadm',
+                  gid: pickedGid,
+                  name: pickedName
+                }, '*');
+              });
             }
           });
           
@@ -1477,6 +1507,19 @@ HTML_TEMPLATE = Template(
               if (tooltip) {
                 registerLayerTooltip(layer, 'Admin River', tooltip, 10);
               }
+
+              layer.on('click', function() {
+                if (!window.parent) return;
+                const riverId = extractRiverIdFromProps(props);
+                if (!riverId) return;
+                window.parent.postMessage({
+                  type: 'mapFeaturePick',
+                  featureType: 'river',
+                  id: riverId,
+                  source_type: props._source || 'naturalearth',
+                  name: props.name || props.NAME || ''
+                }, '*');
+              });
             }
           });
           
@@ -2237,6 +2280,21 @@ HTML_TEMPLATE = Template(
               if (tooltip) {
                 registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
+
+              layer.on('click', function() {
+                if (!window.parent) return;
+                const pickedGid = normalizeGadmCode(
+                  props.GID_3 || props.GID_2 || props.GID_1 || props.GID_0 || ''
+                );
+                if (!pickedGid) return;
+                const pickedName = props.NAME_3 || props.NAME_2 || props.NAME_1 || props.COUNTRY || '';
+                window.parent.postMessage({
+                  type: 'mapFeaturePick',
+                  featureType: 'gadm',
+                  gid: pickedGid,
+                  name: pickedName
+                }, '*');
+              });
             }
           });
           
@@ -2309,6 +2367,19 @@ HTML_TEMPLATE = Template(
               if (tooltip) {
                 registerLayerTooltip(layer, 'Admin River', tooltip, 10);
               }
+
+              layer.on('click', function() {
+                if (!window.parent) return;
+                const riverId = extractRiverIdFromProps(props);
+                if (!riverId) return;
+                window.parent.postMessage({
+                  type: 'mapFeaturePick',
+                  featureType: 'river',
+                  id: riverId,
+                  source_type: props._source || 'naturalearth',
+                  name: props.name || props.NAME || ''
+                }, '*');
+              });
             }
           });
           

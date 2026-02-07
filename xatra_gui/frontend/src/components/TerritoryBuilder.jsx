@@ -3,7 +3,7 @@ import { Plus, Trash2, MousePointer2, GripVertical } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 
 const TerritoryBuilder = ({ 
-  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId, predefinedCode 
+  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId, predefinedCode, lastPickedGadm
 }) => {
   // Normalize value to list of objects
   let parts = [];
@@ -196,18 +196,31 @@ const TerritoryBuilder = ({
            >
              <option value="gadm">GADM</option>
              <option value="polygon">Polygon</option>
-             <option value="predefined">Predefined</option>
+             <option value="predefined">Territory library</option>
            </select>
 
            {/* Value */}
            <div className="flex-1 min-w-0">
                {part.type === 'gadm' ? (
-                   <AutocompleteInput
-                     value={part.value}
-                     onChange={(val) => updatePart(idx, 'value', val)}
-                     className="w-full text-xs p-1 border rounded bg-white"
-                     placeholder="Search GADM..."
-                   />
+                  <div className="flex gap-1">
+                    <AutocompleteInput
+                      value={part.value}
+                      onChange={(val) => updatePart(idx, 'value', val)}
+                      className="w-full text-xs p-1 border rounded bg-white"
+                      placeholder="Search GADM..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (lastPickedGadm?.gid) updatePart(idx, 'value', lastPickedGadm.gid);
+                      }}
+                      disabled={!lastPickedGadm?.gid}
+                      className="px-2 py-1 text-[10px] border rounded bg-white text-blue-700 border-blue-200 hover:bg-blue-50 disabled:text-gray-400 disabled:border-gray-200 disabled:hover:bg-white"
+                      title="Use last GADM region picked on the Reference Map"
+                    >
+                      Use Picked
+                    </button>
+                  </div>
                ) : part.type === 'predefined' ? (
                    <div className="relative">
                        <input 
@@ -215,7 +228,7 @@ const TerritoryBuilder = ({
                            value={part.value}
                            onChange={(e) => updatePart(idx, 'value', e.target.value)}
                            className="w-full text-xs p-1 border rounded bg-white"
-                           placeholder="e.g. maurya or NORTH_INDIA"
+                           placeholder="e.g. maurya or NORTH_INDIA (from territory library)"
                            list={`predefined-list-${parentId}-${idx}`}
                        />
                        <datalist id={`predefined-list-${parentId}-${idx}`}>

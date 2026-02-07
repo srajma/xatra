@@ -74,6 +74,37 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
       }
   };
 
+  const FLAG_SEQ_PRESETS = ['Pastel1', 'Set1', 'Set3', 'tab10', 'Accent', 'Dark2', 'Paired'];
+  const ADMIN_SEQ_PRESETS = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds', 'tab20'];
+  const DATA_CMAP_PRESETS = ['viridis', 'plasma', 'inferno', 'magma', 'cividis', 'RdYlGn', 'RdYlBu', 'Spectral'];
+
+  const flagColorRows = Array.isArray(options.flag_color_sequences)
+    ? options.flag_color_sequences
+    : (options.flag_colors ? [{ class_name: '', value: options.flag_colors }] : []);
+
+  const setFlagColorRows = (rows) => {
+    const cleaned = rows.filter((r) => (r?.value || '').trim() !== '' || (r?.class_name || '').trim() !== '');
+    setOptions({
+      ...options,
+      flag_color_sequences: cleaned,
+      flag_colors: undefined,
+    });
+  };
+
+  const updateFlagColorRow = (index, field, value) => {
+    const rows = [...flagColorRows];
+    rows[index] = { ...rows[index], [field]: value };
+    setFlagColorRows(rows);
+  };
+
+  const addFlagColorRow = () => setFlagColorRows([...flagColorRows, { class_name: '', value: '' }]);
+
+  const removeFlagColorRow = (index) => {
+    const rows = [...flagColorRows];
+    rows.splice(index, 1);
+    setFlagColorRows(rows);
+  };
+
   return (
     <section className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Global Options</h3>
@@ -340,36 +371,61 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                      <div className="space-y-3">
                          <div>
                              <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
-                                Flag Color Sequence
-                                <span title="List of hex colors separated by commas, or a Matplotlib palette name (e.g. 'Pastel1', 'tab10', 'Set3').">
+                                Flag Color Sequences
+                                <span title="Set one or more rows. Optional class name applies sequence only to flags with that CSS class. Sequence can be a matplotlib palette name or comma-separated colors.">
                                     <Info size={10} className="text-blue-500 cursor-help"/>
                                 </span>
                              </label>
-                             <div className="flex gap-1">
-                                <input
-                                    type="text"
-                                    value={options.flag_colors || ''}
-                                    onChange={(e) => updateOption('flag_colors', e.target.value)}
-                                    className="flex-1 px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                    placeholder="#ff0000, #00ff00... or 'Pastel1'"
-                                />
-                                <select 
-                                    className="text-[10px] border rounded px-1 bg-white"
-                                    onChange={(e) => updateOption('flag_colors', e.target.value)}
-                                    value=""
-                                >
-                                    <option value="" disabled>Presets</option>
-                                    <option value="Pastel1">Pastel1</option>
-                                    <option value="Set1">Set1</option>
-                                    <option value="Set3">Set3</option>
-                                    <option value="tab10">tab10</option>
-                                    <option value="Accent">Accent</option>
-                                </select>
+                             <div className="space-y-2">
+                                {flagColorRows.length === 0 && (
+                                  <div className="text-[10px] text-gray-400 italic">No custom rows. Add one below.</div>
+                                )}
+                                {flagColorRows.map((row, idx) => (
+                                  <div key={idx} className="grid grid-cols-[120px_1fr_90px_24px] gap-1 items-center">
+                                    <input
+                                      type="text"
+                                      value={row.class_name || ''}
+                                      onChange={(e) => updateFlagColorRow(idx, 'class_name', e.target.value)}
+                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                      placeholder="class (optional)"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={row.value || ''}
+                                      onChange={(e) => updateFlagColorRow(idx, 'value', e.target.value)}
+                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                      placeholder="Pastel1 or #f00,#0f0,#00f"
+                                    />
+                                    <select
+                                      className="text-[10px] border rounded px-1 bg-white"
+                                      onChange={(e) => updateFlagColorRow(idx, 'value', e.target.value)}
+                                      value=""
+                                    >
+                                      <option value="" disabled>Preset</option>
+                                      {FLAG_SEQ_PRESETS.map((preset) => (
+                                        <option key={preset} value={preset}>{preset}</option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      onClick={() => removeFlagColorRow(idx)}
+                                      className="text-red-400 hover:text-red-600 p-1"
+                                      title="Remove row"
+                                    >
+                                      <Trash2 size={12}/>
+                                    </button>
+                                  </div>
+                                ))}
+                                <button onClick={addFlagColorRow} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
+                                  <Plus size={12}/> Add Sequence
+                                </button>
                              </div>
                          </div>
                          <div>
                              <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
                                 Admin Color Sequence
+                                <span title="Matplotlib palette name (e.g. Blues) or comma-separated colors.">
+                                    <Info size={10} className="text-blue-500 cursor-help"/>
+                                </span>
                              </label>
                              <div className="flex gap-1">
                                 <input
@@ -385,16 +441,18 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                     value=""
                                 >
                                     <option value="" disabled>Presets</option>
-                                    <option value="Greys">Greys</option>
-                                    <option value="Purples">Purples</option>
-                                    <option value="Blues">Blues</option>
-                                    <option value="Greens">Greens</option>
+                                    {ADMIN_SEQ_PRESETS.map((preset) => (
+                                      <option key={preset} value={preset}>{preset}</option>
+                                    ))}
                                 </select>
                              </div>
                          </div>
                          <div>
                              <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
                                 Data Colormap
+                                <span title="Matplotlib colormap name (e.g. viridis, plasma).">
+                                    <Info size={10} className="text-blue-500 cursor-help"/>
+                                </span>
                              </label>
                              <div className="flex gap-1">
                                 <input
@@ -410,13 +468,9 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                     value=""
                                 >
                                     <option value="" disabled>Presets</option>
-                                    <option value="viridis">viridis</option>
-                                    <option value="plasma">plasma</option>
-                                    <option value="inferno">inferno</option>
-                                    <option value="magma">magma</option>
-                                    <option value="cividis">cividis</option>
-                                    <option value="RdYlGn">RdYlGn</option>
-                                    <option value="Spectral">RdYlBu</option>
+                                    {DATA_CMAP_PRESETS.map((preset) => (
+                                      <option key={preset} value={preset}>{preset}</option>
+                                    ))}
                                 </select>
                              </div>
                          </div>
