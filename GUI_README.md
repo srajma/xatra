@@ -152,12 +152,13 @@ Features
       - [x] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
     - [ ] Keyboard shortcuts for adding a new layer
     - [ ] When a new layer is created, its first input field should immediately be focused.
-- [ ] Territory library tab (Ctrl/Cmd+5)
+- [x] Territory library tab (Ctrl/Cmd+5)
   - This will be a third map tab after "Map Preview" and "Reference Map", and will serve to visualize territories in the territory library.
   - Within this tab, there are multiple tabs. There is one tab for xatra.territory_library and one tab for those that the user has saved to library/entered in the Territory library code editor.
     - [ ] In future, when we have multiple territory libraries (i.e. when it's a proper website where people can publish their own territory libraries), it will show 
   - Within each sub-tab, the territories in that list are plotted on the map (i.e. by wrapping them in Flags and letting their labels be their variable names).
   - When the user is entering an item from Territory library while building a Territory for a Flag, he will have a little Picker button. Clicking this will take him to the Territory Library where there will be a very similar multi-selection UI as in the Reference Map tab.
+  - [ ] Hmm, ther seem to be too many things in the territory library to render. Instead, the territory library file should include an index at the end __TERRITORY_INDEX__ = ["TERRITORY_1_NAME", "TERRITORY_2_NAME", ...] and there should be a checklist of territories in the Territory library map---the checklist will contain all the territories in the library, but only the ones in the index will be checked by default, while extra ones can be selected and rendered by the user. If there is no __TERRITORY_INDEX__ variable in the territory library (whether xatra.territory_library, the user's custom territory library for this map, or in future any imported territory library), then it should be considered [], i.e. all the boxes should be un-checked. When the user selects a bunch of checkboxes, there should be a button to copy the list consisting of those selected territory names so that they can be used as a __TERRITORY_INDEX__.
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
