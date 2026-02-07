@@ -33,10 +33,11 @@ const XATRA_COMPLETIONS = {
   ],
 };
 
-const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }) => {
+const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, isActive }) => {
   const editorRef = useRef(null);
   const predefinedEditorRef = useRef(null);
   const completionDisposableRef = useRef(null);
+  const [forceEditorFocus, setForceEditorFocus] = useState(false);
 
   const handleEditorDidMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
@@ -103,6 +104,14 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
     predefinedEditorRef.current = editor;
   }, []);
 
+  const focusMapEditor = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    } else if (predefinedEditorRef.current) {
+      predefinedEditorRef.current.focus();
+    }
+  }, []);
+
   const mapCodeContainerRef = useRef(null);
   const predefinedCodeContainerRef = useRef(null);
   const [mapCodeHeight, setMapCodeHeight] = useState(420);
@@ -131,6 +140,29 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
     setPredefinedCodeHeight(el.clientHeight > 80 ? el.clientHeight : 200);
     return () => ro.disconnect();
   }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!isActive) return;
+      if (e.ctrlKey && e.altKey && (e.key === 'i' || e.key === 'I')) {
+        e.preventDefault();
+        focusMapEditor();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isActive, focusMapEditor]);
+
+  useEffect(() => {
+    if (!isActive || !forceEditorFocus) return;
+    focusMapEditor();
+    const interval = window.setInterval(() => {
+      if (editorRef.current && !editorRef.current.hasTextFocus()) {
+        focusMapEditor();
+      }
+    }, 1200);
+    return () => window.clearInterval(interval);
+  }, [isActive, forceEditorFocus, focusMapEditor]);
 
   return (
     <div className="h-full flex flex-col space-y-4 min-h-0">
@@ -193,8 +225,17 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
           Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
         </p>
         <p className="text-[10px] text-gray-500 italic">
-          Using Vimium? Disable it for this site or press <kbd className="px-0.5 bg-gray-200 rounded">i</kbd> to focus the editor before typing.
+          Use <kbd className="px-0.5 bg-gray-200 rounded">Ctrl+Alt+I</kbd> to focus editor input if extensions steal focus.
         </p>
+        <label className="inline-flex items-center gap-2 text-[11px] text-gray-600">
+          <input
+            type="checkbox"
+            checked={forceEditorFocus}
+            onChange={(e) => setForceEditorFocus(e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          Force editor focus while Code tab is active
+        </label>
       </div>
     </div>
   );

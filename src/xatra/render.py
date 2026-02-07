@@ -599,17 +599,41 @@ HTML_TEMPLATE = Template(
         }
       });
 
-      // Forward key events to parent so Backspace/Space/Escape work when map iframe has focus
+      // Forward key events to parent so picker shortcuts work when map iframe has focus
       document.addEventListener('keydown', function(e) {
         if (!window.parent) return;
-        if (e.key === 'Backspace' || e.key === 'Escape' || e.key === ' ') {
+        if (e.key === 'Shift' && map && map.dragging) {
+          map.dragging.disable();
+        }
+        if (e.key === 'Backspace' || e.key === 'Escape' || e.key === 'Shift') {
           e.preventDefault();
           window.parent.postMessage({ type: 'mapKeyDown', key: e.key, repeat: e.repeat === true }, '*');
         }
       });
       document.addEventListener('keyup', function(e) {
         if (!window.parent) return;
-        if (e.key === ' ') {
+        if (e.key === 'Shift' && map && map.dragging) {
+          map.dragging.enable();
+          e.preventDefault();
+          window.parent.postMessage({ type: 'mapKeyUp', key: e.key }, '*');
+        }
+      });
+      window.addEventListener('blur', function() {
+        if (map && map.dragging) {
+          map.dragging.enable();
+        }
+        if (window.parent) {
+          window.parent.postMessage({ type: 'mapKeyUp', key: 'Shift' }, '*');
+        }
+      });
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden && map && map.dragging) {
+          map.dragging.enable();
+        }
+      });
+      document.addEventListener('keyup', function(e) {
+        if (!window.parent) return;
+        if (e.key === 'Backspace' || e.key === 'Escape') {
           e.preventDefault();
           window.parent.postMessage({ type: 'mapKeyUp', key: e.key }, '*');
         }
@@ -1431,18 +1455,23 @@ HTML_TEMPLATE = Template(
                 registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
 
-              layer.on('click', function() {
+              layer.on('click', function(e) {
                 if (!window.parent) return;
                 const pickedGid = normalizeGadmCode(
                   props.GID_3 || props.GID_2 || props.GID_1 || props.GID_0 || ''
                 );
                 if (!pickedGid) return;
                 const pickedName = props.NAME_3 || props.NAME_2 || props.NAME_1 || props.COUNTRY || '';
+                const originalEvent = (e && e.originalEvent) ? e.originalEvent : {};
                 window.parent.postMessage({
                   type: 'mapFeaturePick',
                   featureType: 'gadm',
                   gid: pickedGid,
-                  name: pickedName
+                  name: pickedName,
+                  shiftKey: !!originalEvent.shiftKey,
+                  ctrlKey: !!originalEvent.ctrlKey,
+                  metaKey: !!originalEvent.metaKey,
+                  multiSelect: !!(originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey),
                 }, '*');
               });
             }
@@ -2281,18 +2310,23 @@ HTML_TEMPLATE = Template(
                 registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
 
-              layer.on('click', function() {
+              layer.on('click', function(e) {
                 if (!window.parent) return;
                 const pickedGid = normalizeGadmCode(
                   props.GID_3 || props.GID_2 || props.GID_1 || props.GID_0 || ''
                 );
                 if (!pickedGid) return;
                 const pickedName = props.NAME_3 || props.NAME_2 || props.NAME_1 || props.COUNTRY || '';
+                const originalEvent = (e && e.originalEvent) ? e.originalEvent : {};
                 window.parent.postMessage({
                   type: 'mapFeaturePick',
                   featureType: 'gadm',
                   gid: pickedGid,
-                  name: pickedName
+                  name: pickedName,
+                  shiftKey: !!originalEvent.shiftKey,
+                  ctrlKey: !!originalEvent.ctrlKey,
+                  metaKey: !!originalEvent.metaKey,
+                  multiSelect: !!(originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey),
                 }, '*');
               });
             }

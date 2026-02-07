@@ -32,6 +32,42 @@ process_lock = threading.Lock()
 # GADM Indexing
 GADM_INDEX = []
 INDEX_BUILDING = False
+COUNTRY_LEVELS_INDEX = {}
+COUNTRY_SEARCH_INDEX = []
+
+def rebuild_country_indexes():
+    global COUNTRY_LEVELS_INDEX, COUNTRY_SEARCH_INDEX
+    levels_map = {}
+    names_map = {}
+
+    for item in GADM_INDEX:
+        gid = item.get("gid")
+        if not gid:
+            continue
+        country_code = gid.split(".")[0]
+        level = item.get("level")
+        if level is None:
+            continue
+        levels_map.setdefault(country_code, set()).add(int(level))
+        country_name = (item.get("country") or "").strip()
+        if country_name and country_code not in names_map:
+            names_map[country_code] = country_name
+
+    COUNTRY_LEVELS_INDEX = {
+        code: sorted(list(levels))
+        for code, levels in levels_map.items()
+    }
+    COUNTRY_SEARCH_INDEX = sorted(
+        [
+            {
+                "country_code": code,
+                "country": names_map.get(code, code),
+                "max_level": max(levels) if levels else 0,
+            }
+            for code, levels in COUNTRY_LEVELS_INDEX.items()
+        ],
+        key=lambda x: x["country_code"],
+    )
 
 def build_gadm_index():
     global INDEX_BUILDING, GADM_INDEX
@@ -87,6 +123,7 @@ def build_gadm_index():
                     pass
         
         GADM_INDEX = index
+        rebuild_country_indexes()
         with open("gadm_index.json", "w") as f:
             json.dump(index, f)
         print(f"GADM index built: {len(index)} entries")
@@ -100,6 +137,7 @@ if os.path.exists("gadm_index.json"):
     try:
         with open("gadm_index.json", "r") as f:
             GADM_INDEX = json.load(f)
+        rebuild_country_indexes()
     except:
         threading.Thread(target=build_gadm_index).start()
 else:
@@ -141,6 +179,40 @@ def search_gadm(q: str):
             
     results.sort(key=lambda x: (x[0], x[1]), reverse=True)
     return [r[2] for r in results[:limit]]
+
+@app.get("/search/countries")
+def search_countries(q: str):
+    if not q:
+        return COUNTRY_SEARCH_INDEX[:20]
+    q = q.lower().strip()
+    results = []
+
+    for item in COUNTRY_SEARCH_INDEX:
+        code = item["country_code"].lower()
+        name = item["country"].lower()
+        score = 0
+        if code == q:
+            score = 100
+        elif code.startswith(q):
+            score = 90
+        elif name == q:
+            score = 80
+        elif name.startswith(q):
+            score = 70
+        elif q in name:
+            score = 60
+        if score > 0:
+            results.append((score, item))
+
+    results.sort(key=lambda x: x[0], reverse=True)
+    return [r[1] for r in results[:20]]
+
+@app.get("/gadm/levels")
+def gadm_levels(country: str):
+    if not country:
+        return []
+    country_code = country.strip().upper().split(".")[0]
+    return COUNTRY_LEVELS_INDEX.get(country_code, [0, 1, 2, 3, 4])
 
 class CodeRequest(BaseModel):
     code: str

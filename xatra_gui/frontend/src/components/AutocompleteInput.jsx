@@ -1,12 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const AutocompleteInput = ({ value, onChange, placeholder, className }) => {
+const AutocompleteInput = ({
+  value,
+  onChange,
+  placeholder,
+  className,
+  endpoint = 'http://localhost:8088/search/gadm',
+  minChars = 2,
+  onSelectSuggestion,
+}) => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const wrapperRef = useRef(null);
   const timerRef = useRef(null);
+  const listRef = useRef(null);
+  const itemRefs = useRef([]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -19,14 +29,14 @@ const AutocompleteInput = ({ value, onChange, placeholder, className }) => {
   }, [wrapperRef]);
 
   const fetchSuggestions = async (query) => {
-    if (!query || query.length < 2) {
+    if (!query || query.length < minChars) {
       setSuggestions([]);
       setActiveIndex(-1);
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8088/search/gadm?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setSuggestions(data);
       setShowSuggestions(true);
@@ -50,7 +60,11 @@ const AutocompleteInput = ({ value, onChange, placeholder, className }) => {
   };
 
   const handleSelect = (item) => {
-    onChange(item.gid);
+    if (typeof onSelectSuggestion === 'function') {
+      onSelectSuggestion(item);
+    } else {
+      onChange(item.gid || item.country_code || item.country || '');
+    }
     setShowSuggestions(false);
     setActiveIndex(-1);
   };
@@ -85,6 +99,13 @@ const AutocompleteInput = ({ value, onChange, placeholder, className }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const listEl = listRef.current;
+    const activeEl = itemRefs.current[activeIndex];
+    if (!listEl || !activeEl) return;
+    activeEl.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
+
   return (
     <div className="relative" ref={wrapperRef}>
       <input
@@ -97,18 +118,30 @@ const AutocompleteInput = ({ value, onChange, placeholder, className }) => {
         placeholder={placeholder}
       />
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div ref={listRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
           {suggestions.map((item, idx) => (
             <div
-              key={item.gid}
+              key={`${item.gid || item.country_code || item.country || 'item'}-${idx}`}
+              ref={(el) => { itemRefs.current[idx] = el; }}
               onClick={() => handleSelect(item)}
               onMouseEnter={() => setActiveIndex(idx)}
               className={`px-3 py-2 cursor-pointer text-xs border-b border-gray-50 last:border-none ${
                 idx === activeIndex ? 'bg-blue-50' : 'hover:bg-gray-100'
               }`}
             >
-              <div className="font-semibold">{item.name} <span className="text-gray-400 font-normal">({item.gid})</span></div>
-              <div className="text-gray-500 text-[10px]">{item.country} • Level {item.level}</div>
+              <div className="font-semibold">
+                {item.name || item.country || item.country_code || 'Unknown'}
+                {(item.gid || item.country_code) && (
+                  <span className="text-gray-400 font-normal"> ({item.gid || item.country_code})</span>
+                )}
+              </div>
+              {(item.country || item.level != null || item.max_level != null) && (
+                <div className="text-gray-500 text-[10px]">
+                  {item.country || item.country_code}
+                  {item.level != null ? ` • Level ${item.level}` : ''}
+                  {item.max_level != null ? ` • Max ${item.max_level}` : ''}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -83,10 +83,9 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     : (options.flag_colors ? [{ class_name: '', value: options.flag_colors }] : []);
 
   const setFlagColorRows = (rows) => {
-    const cleaned = rows.filter((r) => (r?.value || '').trim() !== '' || (r?.class_name || '').trim() !== '');
     setOptions({
       ...options,
-      flag_color_sequences: cleaned,
+      flag_color_sequences: rows,
       flag_colors: undefined,
     });
   };
@@ -382,13 +381,16 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                 )}
                                 {flagColorRows.map((row, idx) => (
                                   <div key={idx} className="grid grid-cols-[120px_1fr_90px_24px] gap-1 items-center">
-                                    <input
-                                      type="text"
+                                    <select
                                       value={row.class_name || ''}
                                       onChange={(e) => updateFlagColorRow(idx, 'class_name', e.target.value)}
-                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                      placeholder="class (optional)"
-                                    />
+                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono bg-white"
+                                    >
+                                      <option value="">(all flags)</option>
+                                      {getAvailableClasses().map((cls) => (
+                                        <option key={cls} value={cls}>{cls}</option>
+                                      ))}
+                                    </select>
                                     <input
                                       type="text"
                                       value={row.value || ''}

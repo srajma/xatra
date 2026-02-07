@@ -66,7 +66,7 @@ Basic extensions
     - [x] Base Layers: allow adding any number of base layers, and selecting one as default.
       - [x] Fixed. But the UI is a bit clumsy. Instead, just have the list of available base layers as checkboxes (where checking a box means it will be included in the base layer options) and include buttons next to them to make default (it should only be possible to make one default).
   - [x] FlagColorSequence, AdminColorSequence, DataColormap --- think through the interface for this carefully; users should be able to set the obvious ones easily, or create their own color sequence or map, just like in the package itself (see the README for details). [This still needs to be done better---also it should be possible to set multiple color sequences for different classes].
-    - [ ] Nah this is still wrong. Also trying to add a new FlagColorSequence does nothing.
+    - [ ] Nah the FlagColorSequence interface is still wrong. See the colorseq.py file, and figure out the appropriate way to enter the sort of color sequences we are interested in (also display the default color sequence we use, by default)
   - [x] zoom and focus
     - [x] this should include a button to just use the current zoom and focus levels at the map is at
     - [x] there's a weird bug where I can't clear the contents of Initial focus manually because if I clear Latitude, Longitude becomes filled again (with 0) and if I clear Longitude, Latitude gets filled again. Fix that.
@@ -83,7 +83,8 @@ Features
     - [x] I think a previous AI agent attempted to implement this, but has failed.
       - [x] Fixed by forwarding Backspace/Escape/Space from the map iframe to the parent (focus is in iframe when user clicks map)
   - [x] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode (and then you can continue clicking points normally).
-    - [ ] Ok, one issue: holding and dragging *also* moves the map around at the same time. Maybe instead of pressing spacebar + dragging, we should change it to holding shift and dragging, and prevent Leaflet from moving the map when shift is pressed.
+    - [x] Ok, one issue: holding and dragging *also* moves the map around at the same time. Maybe instead of pressing spacebar + dragging, we should change it to holding shift and dragging, and prevent Leaflet from moving the map when shift is pressed.
+      - [ ] Fixed. However, Shift is actually also used for zooming in to maps, so another conflict. Can we switch to Ctrl+dragging (Cmd should also work for Mac users)?
   - [x] Display these tips (backspace, freehand mode)
     - [x] These tips should be shown in a blaring message on the map while picker mode is on, not underneath the box like it currently is.
   - [x] One problem is that the user may forget to un-click the picker and leave it on while picking other co-ordinates. To avoid this, only one picker should be turned on at a time: clicking another picker should turn off all the other ones (and show this visually too).
@@ -103,7 +104,16 @@ Features
     - [x] Nice. However, the box and its contents are a bit weirdly-sized (the contents don't fit the box which causes a horizontal scrollbar to appear)
     - [x] The user should be able to search for their country (either by GID or by country name) when entering a country code--just like they can while entering GADM territories for Flags.
   - [x] Then they will be able to select gadm territories from an admin Picker map.
-  - [ ] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields. This will need some re-thinking of how the solution is currently implemented.
+  - [x] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields. This will need some re-thinking of how the solution is currently implemented.
+    - [ ] Very nice implementation. However, I want this to be implemented a bit differently, because there can actually be multiple flag layers with the same label (and this is an important aspect of the app). So instead:
+      - The GADM territories have a pick button (use the little arrow icon instead of "Use Picked" text), and that sets the flag layer being selected for to this particular element and also switches the view to Reference Map.
+      - The user should not be able to select this flag layer from a dropdown in the Reference Map Options box like they are now (it's too confusing), however it should lightly display the flag name and a number representing which layer with that Flag label is being selected for (e.g. 15 if the 15th instance of that Flag label in the Layers list is being selected for).
+      - Clicking a territory should add it to the list of territories being multi-selected, or remove it if it is already in the list. No need for Ctrl/Cmd/Shift, since we're going to do away with the separate single selections feature anyway. Holding Ctrl and moving the mouse should select all territories it moves over (no undoing already-selected territories in this mode); holding Alt and moving the mouse should unselect all territories it moves over. There should be a little tip mentioning this in the Reference Map Options.
+      - Instead of choosing +, -, & from a dropdown, let us just have three buttons for us to choose how to add these selections to our territory. Keep the Clear button as it is. These are added/subtracted/intersected to our territory based on the operation button chosen.
+      - The divisions in our selection list should be visually indicated on the map.
+      - River selection should also just have a pick icon and we pick a river on the Admin Rivers.
+      - We can then do away with the legacy "Last picked" and "Use Picked" features.
+      - In all of this, make sure these new Pick buttons have the same "exclusivity" as the existing Pick buttons (for paths, points, polygons and texts)---only one is allowed to be on at a time, clicking it turns off the previous Picker.
   - [x] And also selecting rivers
 - [x] Code editor should be nice, not just a simple text editor.
   - [x] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported. Maybe can use an actual code editor plugin or something.
@@ -116,7 +126,7 @@ Features
     - [ ] Once we have arranged the two-way synchronization perfectly, the Builder-Code syncing should be modified to happen automatically upon switching from Builder to Code and vice versa, rather than manually clicking Sync from Builder
 - [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
     - [x] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
-      - [ ] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
+      - [x] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
@@ -131,7 +141,7 @@ Minor changes
 - [x] Everywhere we use the term "Pre-defined territory", use "Territory library" instead.
   - [x] And include a from xatra.territory_library import * line at the top, since all those territories are included in our library---and in a comment right next to it, link to https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py. Remove all the other junk comments pre-filled there by default.
 - [x] In "Reference Map Options", just like there's a label "Countries" for the country field there should be a label "Admin Level" for the Admin Level field.
-  - [ ] Also, the levels entry field should be a dropdown with all the admin levels available for their country (these should be pre-computed and kept in an index).
+  - [x] Also, the levels entry field should be a dropdown with all the admin levels available for their country (these should be pre-computed and kept in an index).
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"

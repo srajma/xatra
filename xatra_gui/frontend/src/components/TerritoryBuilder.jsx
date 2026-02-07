@@ -122,6 +122,17 @@ const TerritoryBuilder = ({
     setDragOverIndex(null);
   };
 
+  const handleRowKeyDown = (e, index) => {
+    if (!e.altKey) return;
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      movePart(index, Math.max(0, index - 1));
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      movePart(index, Math.min(parts.length - 1, index + 1));
+    }
+  };
+
   const [territoryLibraryNames, setTerritoryLibraryNames] = useState([]);
   useEffect(() => {
     fetch('http://localhost:8088/territory_library/names')
@@ -163,11 +174,13 @@ const TerritoryBuilder = ({
         <div
           key={idx}
           draggable
+          tabIndex={0}
           onDragStart={(e) => handleDragStart(e, idx)}
           onDragOver={(e) => handleDragOver(e, idx)}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, idx)}
           onDragEnd={handleDragEnd}
+          onKeyDown={(e) => handleRowKeyDown(e, idx)}
           className={`flex gap-2 items-start bg-gray-50 p-2 rounded border transition-colors ${draggedIndex === idx ? 'opacity-50' : ''} ${dragOverIndex === idx ? 'border-blue-400 ring-1 ring-blue-200' : 'border-gray-200'}`}
         >
            <div className="flex items-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 flex-shrink-0" title="Drag to reorder">

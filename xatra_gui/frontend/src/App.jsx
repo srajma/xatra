@@ -49,8 +49,12 @@ xatra.TitleBox("<b>My Map</b>")
   const [lastPickedRiver, setLastPickedRiver] = useState(null);
   const [activePicker, setActivePicker] = useState(null); // { id, type, context }
   const [draftPoints, setDraftPoints] = useState([]);
-  const [isFreehand, setIsFreehand] = useState(false);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isMouseDown, setIsMouseDown] = useState(false);
+  const [pickedGadmSelection, setPickedGadmSelection] = useState([]);
+  const [bulkTargetFlagIndex, setBulkTargetFlagIndex] = useState(null);
+  const [bulkOperator, setBulkOperator] = useState('union');
+  const [countryLevelOptions, setCountryLevelOptions] = useState({});
 
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
@@ -74,6 +78,10 @@ xatra.TitleBox("<b>My Map</b>")
     const handleKeyDown = (e) => {
         if (!activePicker) return;
         if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
+        if (e.key === 'Shift') {
+            setIsShiftPressed(true);
+            return;
+        }
         if (e.key === 'Backspace') {
             e.preventDefault();
             setDraftPoints(prev => {
@@ -81,18 +89,20 @@ xatra.TitleBox("<b>My Map</b>")
                 updateElementFromDraft(newPoints);
                 return newPoints;
             });
-        } else if (e.key === ' ' && !e.repeat) {
-            e.preventDefault();
-            setIsFreehand(prev => !prev);
         } else if (e.key === 'Escape') {
             setActivePicker(null);
             setDraftPoints([]);
-            setIsFreehand(false);
+            setIsShiftPressed(false);
         }
     };
+    const handleKeyUp = (e) => {
+      if (e.key === 'Shift') setIsShiftPressed(false);
+    };
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     return () => {
         window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
     };
   }, [activePicker]);
 
@@ -142,7 +152,7 @@ xatra.TitleBox("<b>My Map</b>")
       } else if (event.data && event.data.type === 'mapMouseUp') {
           setIsMouseDown(false);
       } else if (event.data && event.data.type === 'mapMouseMove') {
-          if (activePicker && isFreehand && isMouseDown) {
+          if (activePicker && isShiftPressed && isMouseDown) {
               const point = [parseFloat(event.data.lat.toFixed(4)), parseFloat(event.data.lng.toFixed(4))];
               setDraftPoints(prev => {
                   const last = prev[prev.length - 1];
@@ -165,14 +175,26 @@ xatra.TitleBox("<b>My Map</b>")
           } else if (key === 'Escape') {
             setActivePicker(null);
             setDraftPoints([]);
-            setIsFreehand(false);
-          } else if (key === ' ' && !event.data.repeat) {
-            setIsFreehand(prev => !prev);
+            setIsShiftPressed(false);
+          } else if (key === 'Shift') {
+            setIsShiftPressed(true);
           }
+      } else if (event.data && event.data.type === 'mapKeyUp') {
+          if (event.data.key === 'Shift') setIsShiftPressed(false);
       } else if (event.data && event.data.type === 'mapFeaturePick') {
           const data = event.data || {};
           if (data.featureType === 'gadm' && data.gid) {
               setLastPickedGadm({ gid: data.gid, name: data.name || '', ts: Date.now() });
+              const isMulti = !!(data.shiftKey || data.ctrlKey || data.metaKey || data.multiSelect);
+              if (isMulti) {
+                setPickedGadmSelection((prev) => {
+                  const exists = prev.some((x) => x.gid === data.gid);
+                  if (exists) return prev.filter((x) => x.gid !== data.gid);
+                  return [...prev, { gid: data.gid, name: data.name || '' }];
+                });
+              } else {
+                setPickedGadmSelection([{ gid: data.gid, name: data.name || '' }]);
+              }
           } else if (data.featureType === 'river' && data.id) {
               setLastPickedRiver({
                   id: String(data.id),
@@ -185,7 +207,52 @@ xatra.TitleBox("<b>My Map</b>")
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [activePreviewTab, activePicker, isFreehand, isMouseDown, builderElements]);
+  }, [activePreviewTab, activePicker, isShiftPressed, isMouseDown, builderElements]);
+
+  useEffect(() => {
+    const flagIndices = builderElements
+      .map((el, idx) => ({ el, idx }))
+      .filter(({ el }) => el.type === 'flag')
+      .map(({ idx }) => idx);
+    if (flagIndices.length === 0) {
+      setBulkTargetFlagIndex(null);
+      return;
+    }
+    if (bulkTargetFlagIndex == null || !flagIndices.includes(bulkTargetFlagIndex)) {
+      setBulkTargetFlagIndex(flagIndices[0]);
+    }
+  }, [builderElements, bulkTargetFlagIndex]);
+
+  useEffect(() => {
+    const uniqueCountries = Array.from(
+      new Set(
+        (pickerOptions.entries || [])
+          .map((entry) => String(entry.country || '').trim().toUpperCase().split('.')[0])
+          .filter(Boolean)
+      )
+    );
+    if (uniqueCountries.length === 0) {
+      setCountryLevelOptions({});
+      return;
+    }
+    Promise.all(
+      uniqueCountries.map(async (country) => {
+        try {
+          const res = await fetch(`http://localhost:8088/gadm/levels?country=${encodeURIComponent(country)}`);
+          const levels = await res.json();
+          return [country, Array.isArray(levels) && levels.length ? levels : [0, 1, 2, 3, 4]];
+        } catch (e) {
+          return [country, [0, 1, 2, 3, 4]];
+        }
+      })
+    ).then((pairs) => {
+      const next = {};
+      pairs.forEach(([country, levels]) => {
+        next[country] = levels;
+      });
+      setCountryLevelOptions(next);
+    });
+  }, [pickerOptions.entries]);
 
   const handleGetCurrentView = () => {
     const ref = activePreviewTab === 'picker' ? pickerIframeRef : iframeRef;
@@ -478,6 +545,33 @@ xatra.TitleBox("<b>My Map</b>")
     setCode(lines.join('\n'));
   };
 
+  useEffect(() => {
+    if (activeTab === 'code') generatePythonCode();
+  }, [activeTab]);
+
+  const applyPickedGadmsToFlag = () => {
+    if (!pickedGadmSelection.length || bulkTargetFlagIndex == null) return;
+    setBuilderElements((prev) => {
+      const next = [...prev];
+      const target = next[bulkTargetFlagIndex];
+      if (!target || target.type !== 'flag') return prev;
+      const currentParts = Array.isArray(target.value)
+        ? [...target.value]
+        : (target.value ? [{ op: 'union', type: 'gadm', value: target.value }] : []);
+      pickedGadmSelection.forEach((picked, idx) => {
+        if (!picked?.gid) return;
+        if (currentParts.length === 0 && idx === 0) {
+          currentParts.push({ op: 'union', type: 'gadm', value: picked.gid });
+        } else {
+          currentParts.push({ op: bulkOperator, type: 'gadm', value: picked.gid });
+        }
+      });
+      next[bulkTargetFlagIndex] = { ...target, value: currentParts };
+      return next;
+    });
+    setPickedGadmSelection([]);
+  };
+
   const handleStop = async () => {
       // Force stop loading on frontend
       setLoading(false);
@@ -551,7 +645,8 @@ xatra.TitleBox("<b>My Map</b>")
             <CodeEditor 
                 code={code} setCode={setCode} 
                 predefinedCode={predefinedCode} setPredefinedCode={setPredefinedCode}
-                onSync={generatePythonCode} 
+                onSync={generatePythonCode}
+                isActive={activeTab === 'code'}
             />
           )}
         </div>
@@ -613,25 +708,34 @@ xatra.TitleBox("<b>My Map</b>")
                              <div key={idx} className="flex gap-1.5 items-center">
                                  <AutocompleteInput 
                                      value={entry.country}
+                                     endpoint="http://localhost:8088/search/countries"
                                      onChange={(val) => {
                                          const newEntries = [...pickerOptions.entries];
                                          newEntries[idx].country = val;
                                          setPickerOptions({...pickerOptions, entries: newEntries});
                                      }}
+                                     onSelectSuggestion={(item) => {
+                                         const code = String(item.country_code || item.gid || item.country || '').toUpperCase().split('.')[0];
+                                         const newEntries = [...pickerOptions.entries];
+                                         newEntries[idx].country = code;
+                                         setPickerOptions({...pickerOptions, entries: newEntries});
+                                     }}
                                      className="w-20 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono uppercase"
                                      placeholder="IND"
                                  />
-                                 <input 
-                                     type="number" 
+                                 <select
                                      value={entry.level}
                                      onChange={(e) => {
                                          const newEntries = [...pickerOptions.entries];
                                          newEntries[idx].level = parseInt(e.target.value);
                                          setPickerOptions({...pickerOptions, entries: newEntries});
                                      }}
-                                     className="w-12 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                     min="0" max="4"
-                                 />
+                                     className="w-16 text-xs p-1.5 border rounded bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                 >
+                                     {(countryLevelOptions[String(entry.country || '').toUpperCase().split('.')[0]] || [0, 1, 2, 3, 4]).map((level) => (
+                                       <option key={level} value={level}>{level}</option>
+                                     ))}
+                                 </select>
                                  <button 
                                      onClick={() => {
                                          const newEntries = [...pickerOptions.entries];
@@ -686,6 +790,56 @@ xatra.TitleBox("<b>My Map</b>")
                             )}
                         </div>
                     )}
+                    <div className="space-y-2 border-t border-gray-100 pt-2 text-[11px]">
+                        <div className="font-semibold text-gray-600">Selected GADM (multi-pick with Shift/Ctrl/Cmd click)</div>
+                        {pickedGadmSelection.length === 0 ? (
+                          <div className="text-gray-400 italic">No selections yet.</div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {pickedGadmSelection.map((picked) => (
+                              <span key={picked.gid} className="px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-mono">
+                                {picked.gid}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-1.5 items-center">
+                          <select
+                            value={bulkTargetFlagIndex ?? ''}
+                            onChange={(e) => setBulkTargetFlagIndex(parseInt(e.target.value))}
+                            className="text-[11px] p-1 border rounded bg-white"
+                          >
+                            {builderElements.map((el, idx) => (
+                              el.type === 'flag' ? <option key={idx} value={idx}>Flag: {el.label || `#${idx + 1}`}</option> : null
+                            ))}
+                          </select>
+                          <select
+                            value={bulkOperator}
+                            onChange={(e) => setBulkOperator(e.target.value)}
+                            className="text-[11px] p-1 border rounded bg-white"
+                          >
+                            <option value="union">Union (+)</option>
+                            <option value="difference">Subtract (-)</option>
+                            <option value="intersection">Intersect (&)</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={applyPickedGadmsToFlag}
+                            disabled={!pickedGadmSelection.length || bulkTargetFlagIndex == null}
+                            className="flex-1 py-1 px-2 text-[11px] bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+                          >
+                            Apply to Territory
+                          </button>
+                          <button
+                            onClick={() => setPickedGadmSelection([])}
+                            disabled={!pickedGadmSelection.length}
+                            className="py-1 px-2 text-[11px] border rounded bg-white hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                    </div>
                 </div>
                 <div className="text-[10px] text-gray-400 bg-gray-50 p-2 rounded italic">
                     Tip: Use the reference map to find GADM codes or coordinates.
@@ -701,7 +855,7 @@ xatra.TitleBox("<b>My Map</b>")
                         <div className="text-xs font-normal opacity-95">
                             <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Backspace</kbd> undo last point
                             {' · '}
-                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Space</kbd> toggle freehand, then drag
+                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Shift</kbd> hold + drag for freehand
                             {' · '}
                             <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Esc</kbd> cancel
                         </div>

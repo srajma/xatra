@@ -183,7 +183,7 @@ const LayerItem = ({
                   value={element.value || ''}
                   onChange={(e) => updateElement(index, 'value', e.target.value)}
                   className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                  placeholder={element.args?.source_type === 'overpass' ? 'e.g. 1159122643' : 'e.g. Ganges'}
+                  placeholder={element.args?.source_type === 'overpass' ? 'e.g. 1159233' : 'e.g. 1159122643'}
                 />
                 <button
                   type="button"
@@ -204,7 +204,7 @@ const LayerItem = ({
               </div>
               <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
                   <Info size={10}/> 
-                  {element.args?.source_type === 'overpass' ? 'OSM Way/Relation ID' : 'Natural Earth ID or Name'}
+                  {element.args?.source_type === 'overpass' ? 'OSM Way/Relation ID' : 'Natural Earth ID'}
               </div>
             </div>
           </div>
@@ -358,7 +358,7 @@ const LayerItem = ({
               </div>
               {isPicking && (
                   <div className="text-[10px] text-gray-500 mt-1 italic flex gap-2">
-                      <span>␣ Space toggles freehand mode</span>
+                      <span>Hold Shift + drag for freehand</span>
                       <span>⌫ Backspace to undo</span>
                   </div>
               )}
@@ -394,34 +394,8 @@ const LayerItem = ({
                  />
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-                 <div>
-                    <label className="block text-xs text-gray-500 mb-1">Data Column</label>
-                    <input
-                        type="text"
-                        value={element.args?.data_column || ''}
-                        onChange={(e) => updateArg(index, 'data_column', e.target.value)}
-                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-                        placeholder="Leave blank to auto-detect"
-                        title="Column name for values. Leave blank to auto-detect from CSV."
-                    />
-                </div>
-                 <div>
-                    <label className="block text-xs text-gray-500 mb-1">Year Columns (comma sep)</label>
-                    <input
-                        type="text"
-                        value={element.args?.year_columns ? element.args.year_columns.join(',') : ''}
-                        onChange={(e) => {
-                             const val = e.target.value;
-                             if (!val) updateArg(index, 'year_columns', null);
-                             else updateArg(index, 'year_columns', val.split(',').map(s => s.trim()));
-                        }}
-                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-                        placeholder="Leave blank to auto-detect"
-                        title="Year columns for time-series. Leave blank to auto-detect."
-                    />
-                </div>
+            <div className="text-[10px] text-gray-500 italic">
+              `GID` and data/year columns are auto-detected from CSV.
             </div>
           </div>
         );
