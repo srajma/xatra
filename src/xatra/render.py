@@ -584,6 +584,22 @@ HTML_TEMPLATE = Template(
         }
       });
 
+      // Forward key events to parent so Backspace/Space/Escape work when map iframe has focus
+      document.addEventListener('keydown', function(e) {
+        if (!window.parent) return;
+        if (e.key === 'Backspace' || e.key === 'Escape' || e.key === ' ') {
+          e.preventDefault();
+          window.parent.postMessage({ type: 'mapKeyDown', key: e.key }, '*');
+        }
+      });
+      document.addEventListener('keyup', function(e) {
+        if (!window.parent) return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          window.parent.postMessage({ type: 'mapKeyUp', key: e.key }, '*');
+        }
+      });
+
       function getCentroid(geometry) {
         // Proper geometric centroid calculation
         if (geometry.type === 'Polygon') {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Map, Users, MapPin, Type, GitMerge, Table } from 'lucide-react';
 import LayerItem from './LayerItem';
 import GlobalOptions from './GlobalOptions';
@@ -8,6 +8,9 @@ const Builder = ({
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
   onSaveTerritory, predefinedCode
 }) => {
+  const layersEndRef = useRef(null);
+  const prevElementsLengthRef = useRef(elements.length);
+
   const addElement = (type) => {
     let newElement = { 
       type, 
@@ -54,6 +57,13 @@ const Builder = ({
     setElements([...elements, newElement]);
   };
 
+  useEffect(() => {
+    if (elements.length > prevElementsLengthRef.current && layersEndRef.current) {
+      layersEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+    prevElementsLengthRef.current = elements.length;
+  }, [elements.length]);
+
   const removeElement = (index) => {
     const newElements = [...elements];
     newElements.splice(index, 1);
@@ -94,7 +104,7 @@ const Builder = ({
           <h3 className="text-sm font-semibold text-gray-900">Layers</h3>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-auto max-h-[70vh]" id="layers-container">
           {elements.map((el, index) => (
             <LayerItem 
               key={index} 
@@ -121,7 +131,7 @@ const Builder = ({
           )}
 
           {/* Add layer panel at bottom so new layers appear above it */}
-          <div className="grid grid-cols-4 gap-2 pt-2">
+          <div ref={layersEndRef} className="grid grid-cols-4 gap-2 pt-2">
              <button onClick={() => addElement('flag')} className="flex flex-col items-center justify-center p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-[10px] gap-1 border border-blue-100">
                <Map size={14}/> Flag
              </button>

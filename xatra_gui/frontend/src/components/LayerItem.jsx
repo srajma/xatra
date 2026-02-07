@@ -67,6 +67,16 @@ const LayerItem = ({
           setDraftPoints([]);
       } else {
           setActivePicker({ id: index, type: element.type, context: 'layer' });
+          // For point/text, show existing position as dot when entering picker mode
+          if (element.type === 'point' || element.type === 'text') {
+              try {
+                  const pos = typeof element.value === 'string' ? JSON.parse(element.value || '[]') : element.value;
+                  if (Array.isArray(pos) && pos.length >= 2 && typeof pos[0] === 'number' && typeof pos[1] === 'number') {
+                      setDraftPoints([pos]);
+                      return;
+                  }
+              } catch (_) {}
+          }
           setDraftPoints([]);
       }
   };

@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 
@@ -103,8 +103,23 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
     predefinedEditorRef.current = editor;
   }, []);
 
+  const mapCodeContainerRef = useRef(null);
+  const [mapCodeHeight, setMapCodeHeight] = useState(420);
+
+  useEffect(() => {
+    const el = mapCodeContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const h = el.clientHeight;
+      if (h > 100) setMapCodeHeight(h);
+    });
+    ro.observe(el);
+    setMapCodeHeight(el.clientHeight > 100 ? el.clientHeight : 420);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <div className="h-full flex flex-col space-y-4">
+    <div className="h-full flex flex-col space-y-4 min-h-0">
       <div className="flex flex-col flex-1 min-h-[150px]">
         <div className="flex justify-between items-center mb-2">
           <label className="block text-sm font-medium text-gray-700">Predefined Territories</label>
@@ -128,8 +143,8 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
         </div>
       </div>
 
-      <div className="flex flex-col flex-[2] min-h-[200px] flex-1">
-        <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-col flex-[2] min-h-[200px] flex-1 min-h-0 overflow-hidden">
+        <div className="flex justify-between items-center mb-2 flex-shrink-0">
           <label className="block text-sm font-medium text-gray-700">Map Code</label>
           <button
             onClick={onSync}
@@ -139,9 +154,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
             <RefreshCw size={12} /> Sync from Builder
           </button>
         </div>
-        <div className="flex-1 border border-gray-700 rounded-md overflow-hidden min-h-[380px] flex flex-col">
+        <div ref={mapCodeContainerRef} className="flex-1 border border-gray-700 rounded-md overflow-hidden min-h-[320px] flex flex-col">
           <Editor
-            height="380px"
+            height={mapCodeHeight}
             defaultLanguage="python"
             value={code || ''}
             onChange={(v) => setCode(v ?? '')}

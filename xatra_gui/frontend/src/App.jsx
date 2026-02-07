@@ -159,6 +159,24 @@ xatra.TitleBox("<b>My Map</b>")
                   return newPoints;
               });
           }
+      } else if (event.data && event.data.type === 'mapKeyDown') {
+          // Keys forwarded from map iframe (when user clicked map, focus is in iframe)
+          const key = event.data.key;
+          if (!activePicker) return;
+          if (key === 'Backspace') {
+            setDraftPoints(prev => {
+              const newPoints = prev.slice(0, -1);
+              updateElementFromDraft(newPoints);
+              return newPoints;
+            });
+          } else if (key === 'Escape') {
+            setActivePicker(null);
+            setDraftPoints([]);
+          } else if (key === ' ') {
+            setIsFreehand(true);
+          }
+      } else if (event.data && event.data.type === 'mapKeyUp' && event.data.key === ' ') {
+          setIsFreehand(false);
       }
     };
     window.addEventListener('message', handleMessage);
