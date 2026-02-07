@@ -37,20 +37,6 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
       return Array.from(classes).sort();
   };
 
-  const getCustomAdminClasses = () => {
-      const classes = new Set();
-      elements.forEach((el) => {
-          if (el.type !== 'admin') return;
-          const raw = el.args?.classes;
-          if (!raw || typeof raw !== 'string') return;
-          raw.split(' ').forEach((cls) => {
-              const trimmed = cls.trim();
-              if (trimmed) classes.add(trimmed);
-          });
-      });
-      return Array.from(classes).sort();
-  };
-
   const addCssRule = () => {
       const current = options.css_rules || [];
       setOptions({ ...options, css_rules: [...current, { selector: '.flag', style: '' }] });
@@ -110,7 +96,6 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     step_l: 0.0,
   };
   const DEFAULT_ADMIN_SEQUENCE_ROW = {
-    class_name: '',
     colors: '',
     step_h: 1.6180339887,
     step_s: 0.0,
@@ -144,30 +129,17 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     setFlagColorRows(rows.length ? rows : [{ ...DEFAULT_FLAG_SEQUENCE_ROW }]);
   };
 
-  const adminColorRows = Array.isArray(options.admin_color_sequences)
-    ? options.admin_color_sequences
-    : (options.admin_colors ? [{ ...DEFAULT_ADMIN_SEQUENCE_ROW, colors: options.admin_colors }] : [{ ...DEFAULT_ADMIN_SEQUENCE_ROW }]);
+  const adminColorRow = (Array.isArray(options.admin_color_sequences) && options.admin_color_sequences.length > 0)
+    ? options.admin_color_sequences[0]
+    : (options.admin_colors ? { ...DEFAULT_ADMIN_SEQUENCE_ROW, colors: options.admin_colors } : { ...DEFAULT_ADMIN_SEQUENCE_ROW });
 
-  const setAdminColorRows = (rows) => {
+  const updateAdminColorRow = (field, value) => {
+    const nextRow = { ...(adminColorRow || DEFAULT_ADMIN_SEQUENCE_ROW), [field]: value };
     setOptions({
       ...options,
-      admin_color_sequences: rows,
+      admin_color_sequences: [nextRow],
       admin_colors: undefined,
     });
-  };
-
-  const updateAdminColorRow = (index, field, value) => {
-    const rows = [...adminColorRows];
-    rows[index] = { ...rows[index], [field]: value };
-    setAdminColorRows(rows);
-  };
-
-  const addAdminColorRow = () => setAdminColorRows([...adminColorRows, { ...DEFAULT_ADMIN_SEQUENCE_ROW }]);
-
-  const removeAdminColorRow = (index) => {
-    const rows = [...adminColorRows];
-    rows.splice(index, 1);
-    setAdminColorRows(rows.length ? rows : [{ ...DEFAULT_ADMIN_SEQUENCE_ROW }]);
   };
 
   const DEFAULT_DATA_COLORMAP = { type: 'LinearSegmented', colors: 'yellow,orange,red' };
@@ -521,69 +493,43 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                     <Info size={10} className="text-blue-500 cursor-help"/>
                                 </span>
                              </label>
-                             <div className="space-y-2">
-                                {adminColorRows.map((row, idx) => (
-                                  <div key={idx} className="bg-gray-50 border border-gray-200 rounded p-2 space-y-2">
-                                    <div className="grid grid-cols-1 sm:grid-cols-[130px_1fr_24px] gap-1 items-center">
-                                      <select
-                                        value={row.class_name || ''}
-                                        onChange={(e) => updateAdminColorRow(idx, 'class_name', e.target.value)}
-                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono bg-white"
-                                      >
-                                        <option value="">(default admins)</option>
-                                        {getCustomAdminClasses().map((cls) => (
-                                          <option key={cls} value={cls}>{cls}</option>
-                                        ))}
-                                      </select>
-                                      <input
-                                        type="text"
-                                        value={row.colors || ''}
-                                        onChange={(e) => updateAdminColorRow(idx, 'colors', e.target.value)}
-                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                        placeholder="#bbbbbb,#666666 or lightgray,gray"
-                                      />
-                                      <button
-                                        onClick={() => removeAdminColorRow(idx)}
-                                        className="text-red-400 hover:text-red-600 p-1 justify-self-end"
-                                        title="Remove row"
-                                      >
-                                        <Trash2 size={12}/>
-                                      </button>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-1">
-                                      <input
-                                        type="number"
-                                        step="any"
-                                        value={row.step_h ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_h}
-                                        onChange={(e) => updateAdminColorRow(idx, 'step_h', e.target.value)}
-                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                        title="Hue step"
-                                        placeholder="Step H"
-                                      />
-                                      <input
-                                        type="number"
-                                        step="any"
-                                        value={row.step_s ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_s}
-                                        onChange={(e) => updateAdminColorRow(idx, 'step_s', e.target.value)}
-                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                        title="Saturation step"
-                                        placeholder="Step S"
-                                      />
-                                      <input
-                                        type="number"
-                                        step="any"
-                                        value={row.step_l ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_l}
-                                        onChange={(e) => updateAdminColorRow(idx, 'step_l', e.target.value)}
-                                        className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                        title="Lightness step"
-                                        placeholder="Step L"
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                                <button onClick={addAdminColorRow} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
-                                  <Plus size={12}/> Add Sequence
-                                </button>
+                             <div className="bg-gray-50 border border-gray-200 rounded p-2 space-y-2">
+                                <input
+                                  type="text"
+                                  value={adminColorRow.colors || ''}
+                                  onChange={(e) => updateAdminColorRow('colors', e.target.value)}
+                                  className="w-full px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                  placeholder="#bbbbbb,#666666 or lightgray,gray"
+                                />
+                                <div className="grid grid-cols-3 gap-1">
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={adminColorRow.step_h ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_h}
+                                    onChange={(e) => updateAdminColorRow('step_h', e.target.value)}
+                                    className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                    title="Hue step"
+                                    placeholder="Step H"
+                                  />
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={adminColorRow.step_s ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_s}
+                                    onChange={(e) => updateAdminColorRow('step_s', e.target.value)}
+                                    className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                    title="Saturation step"
+                                    placeholder="Step S"
+                                  />
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={adminColorRow.step_l ?? DEFAULT_ADMIN_SEQUENCE_ROW.step_l}
+                                    onChange={(e) => updateAdminColorRow('step_l', e.target.value)}
+                                    className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                    title="Lightness step"
+                                    placeholder="Step L"
+                                  />
+                                </div>
                              </div>
                          </div>
                          <div>

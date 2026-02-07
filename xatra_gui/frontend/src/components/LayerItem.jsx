@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2, Save, ArrowRight } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2, Save } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 import TerritoryBuilder from './TerritoryBuilder';
 
@@ -114,6 +114,7 @@ const LayerItem = ({
                 type="text"
                 value={element.label || ''}
                 onChange={(e) => updateElement(index, 'label', e.target.value)}
+                data-focus-primary="true"
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
                 placeholder="Name"
               />
@@ -140,6 +141,7 @@ const LayerItem = ({
                 parentId={index}
                 predefinedCode={predefinedCode}
                 onStartReferencePick={onStartReferencePick}
+                onStartTerritoryLibraryPick={onStartReferencePick}
               />
             </div>
           </div>
@@ -154,6 +156,7 @@ const LayerItem = ({
                     type="text"
                     value={element.label || ''}
                     onChange={(e) => updateElement(index, 'label', e.target.value)}
+                    data-focus-primary="true"
                     className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
                     placeholder="River Name"
                 />
@@ -197,10 +200,10 @@ const LayerItem = ({
                     }
                     onStartReferencePick({ kind: 'river', layerIndex: index, label: element.label || '' });
                   }}
-                  className={`px-2 py-1.5 text-[10px] border rounded bg-white flex items-center gap-1 ${isRiverReferencePicking ? 'text-blue-700 border-blue-300 bg-blue-50' : 'text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                  className={`p-1.5 border rounded flex-shrink-0 transition-colors ${isRiverReferencePicking ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
                   title={isRiverReferencePicking ? 'Cancel river picking' : 'Pick river from Reference Map'}
                 >
-                  <ArrowRight size={12} />
+                  <MousePointer2 size={14} />
                 </button>
               </div>
               <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
@@ -218,10 +221,11 @@ const LayerItem = ({
            <div className="grid grid-cols-2 gap-3 mb-2">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Label</label>
-              <input
+                <input
                 type="text"
                 value={element.label || ''}
                 onChange={(e) => updateElement(index, 'label', e.target.value)}
+                data-focus-primary="true"
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
                 placeholder="Label"
               />
@@ -336,6 +340,7 @@ const LayerItem = ({
                 type="text"
                 value={element.label || ''}
                 onChange={(e) => updateElement(index, 'label', e.target.value)}
+                data-focus-primary="true"
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
                 placeholder="Route Name"
               />
@@ -374,6 +379,7 @@ const LayerItem = ({
               <textarea
                 value={element.value || ''}
                 onChange={(e) => updateElement(index, 'value', e.target.value)}
+                data-focus-primary="true"
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono h-24 resize-y text-xs"
                 placeholder="GID,value\nIND,100"
               />
@@ -408,6 +414,7 @@ const LayerItem = ({
               <AutocompleteInput
                 value={element.value || ''}
                 onChange={(val) => updateElement(index, 'value', val)}
+                inputProps={{ 'data-focus-primary': 'true' }}
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
                 placeholder="e.g. IND"
               />
@@ -431,6 +438,7 @@ const LayerItem = ({
                 type="text"
                 value={element.value || '["naturalearth"]'}
                 onChange={(e) => updateElement(index, 'value', e.target.value)}
+                data-focus-primary="true"
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
                 placeholder='["naturalearth"]'
               />

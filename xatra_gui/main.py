@@ -245,6 +245,7 @@ class PickerRequest(BaseModel):
 class TerritoryLibraryRequest(BaseModel):
     source: str = "builtin"  # "builtin" or "custom"
     predefined_code: Optional[str] = None
+    selected_names: Optional[List[str]] = None
 
 def _python_value(node: ast.AST):
     if isinstance(node, ast.Constant):
@@ -647,6 +648,74 @@ def territory_library_names():
     except Exception:
         return []
 
+def _extract_assigned_names(code: str) -> List[str]:
+    names: List[str] = []
+    if not code or not code.strip():
+        return names
+    try:
+        tree = ast.parse(code)
+    except Exception:
+        return names
+    for stmt in tree.body:
+        if not isinstance(stmt, ast.Assign):
+            continue
+        for target in stmt.targets:
+            if isinstance(target, ast.Name):
+                names.append(target.id)
+    return names
+
+def _get_territory_catalog(source: str, predefined_code: str) -> Dict[str, List[str]]:
+    import xatra.territory_library as territory_library
+
+    if source == "custom":
+        assigned = [n for n in _extract_assigned_names(predefined_code) if n != "__TERRITORY_INDEX__"]
+        names = []
+        seen = set()
+        for name in assigned:
+            if name.startswith("_") or name in seen:
+                continue
+            seen.add(name)
+            names.append(name)
+        index_names: List[str] = []
+        if predefined_code and predefined_code.strip():
+            try:
+                exec_globals = {
+                    "gadm": xatra.loaders.gadm,
+                    "polygon": xatra.loaders.polygon,
+                    "naturalearth": xatra.loaders.naturalearth,
+                    "overpass": xatra.loaders.overpass,
+                }
+                for name in dir(territory_library):
+                    if not name.startswith("_"):
+                        exec_globals[name] = getattr(territory_library, name)
+                exec(predefined_code, exec_globals)
+                idx = exec_globals.get("__TERRITORY_INDEX__", [])
+                if isinstance(idx, (list, tuple)):
+                    index_names = [str(n) for n in idx if isinstance(n, str)]
+            except Exception:
+                index_names = []
+        return {
+            "names": names,
+            "index_names": [n for n in index_names if n in names],
+        }
+
+    names = [n for n in dir(territory_library) if not n.startswith("_")]
+    idx = getattr(territory_library, "__TERRITORY_INDEX__", [])
+    index_names = [str(n) for n in idx if isinstance(n, str)] if isinstance(idx, (list, tuple)) else []
+    return {
+        "names": names,
+        "index_names": [n for n in index_names if n in names],
+    }
+
+@app.post("/territory_library/catalog")
+def territory_library_catalog(request: TerritoryLibraryRequest):
+    try:
+        source = (request.source or "builtin").strip().lower()
+        catalog = _get_territory_catalog(source, request.predefined_code or "")
+        return catalog
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -717,7 +786,16 @@ def run_rendering_task(task_type, data, result_queue):
         elif task_type == 'territory_library':
             m.BaseOption("Esri.WorldTopoMap", default=True)
             import xatra.territory_library as territory_library
-            source = getattr(data, "source", "builtin")
+            source = (getattr(data, "source", "builtin") or "builtin").strip().lower()
+            code = getattr(data, "predefined_code", "") or ""
+            catalog = _get_territory_catalog(source, code)
+            selected_input = getattr(data, "selected_names", None)
+            if isinstance(selected_input, list):
+                selected_names = [str(n) for n in selected_input if isinstance(n, str)]
+            else:
+                selected_names = catalog.get("index_names", [])
+            selected_names = [n for n in selected_names if n in catalog.get("names", [])]
+
             if source == "custom":
                 exec_globals = {
                     "gadm": xatra.loaders.gadm,
@@ -728,21 +806,9 @@ def run_rendering_task(task_type, data, result_queue):
                 for name in dir(territory_library):
                     if not name.startswith("_"):
                         exec_globals[name] = getattr(territory_library, name)
-                code = getattr(data, "predefined_code", "") or ""
                 if code.strip():
                     exec(code, exec_globals)
-                selected_names = []
-                try:
-                    tree = ast.parse(code)
-                    for stmt in tree.body:
-                        if isinstance(stmt, ast.Assign):
-                            for target in stmt.targets:
-                                if isinstance(target, ast.Name):
-                                    selected_names.append(target.id)
-                except Exception:
-                    selected_names = []
-                names = [n for n in selected_names if n in exec_globals and not n.startswith("_")]
-                for n in names:
+                for n in selected_names:
                     terr = exec_globals.get(n)
                     if terr is not None:
                         try:
@@ -750,8 +816,7 @@ def run_rendering_task(task_type, data, result_queue):
                         except Exception:
                             continue
             else:
-                names = [n for n in dir(territory_library) if not n.startswith("_")]
-                for n in names:
+                for n in selected_names:
                     terr = getattr(territory_library, n, None)
                     if terr is not None:
                         try:
@@ -1012,7 +1077,14 @@ def run_rendering_task(task_type, data, result_queue):
 
         payload = m._export_json()
         html = export_html_string(payload)
-        result_queue.put({"html": html, "payload": payload})
+        result = {"html": html, "payload": payload}
+        if task_type == 'territory_library':
+            source = (getattr(data, "source", "builtin") or "builtin").strip().lower()
+            code = getattr(data, "predefined_code", "") or ""
+            catalog = _get_territory_catalog(source, code)
+            result["available_names"] = catalog.get("names", [])
+            result["index_names"] = catalog.get("index_names", [])
+        result_queue.put(result)
         
     except Exception as e:
         result_queue.put({"error": str(e), "traceback": traceback.format_exc()})

@@ -15,6 +15,9 @@ function App() {
   const [pickerHtml, setPickerHtml] = useState('');
   const [territoryLibraryHtml, setTerritoryLibraryHtml] = useState('');
   const [territoryLibrarySource, setTerritoryLibrarySource] = useState('builtin'); // builtin | custom
+  const [territoryLibraryNames, setTerritoryLibraryNames] = useState([]);
+  const [territoryLibraryIndexNames, setTerritoryLibraryIndexNames] = useState([]);
+  const [selectedTerritoryNames, setSelectedTerritoryNames] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -26,7 +29,7 @@ function App() {
     title: '<b>My Interactive Map</b>',
     basemaps: [{ url_or_provider: 'Esri.WorldTopoMap', default: true }],
     flag_color_sequences: [{ class_name: '', colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
-    admin_color_sequences: [{ class_name: '', colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
+    admin_color_sequences: [{ colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
     data_colormap: { type: 'LinearSegmented', colors: 'yellow,orange,red' },
   });
 
@@ -55,8 +58,9 @@ xatra.TitleBox("<b>My Map</b>")
   const [freehandModifierPressed, setFreehandModifierPressed] = useState(false);
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [pickedGadmSelection, setPickedGadmSelection] = useState([]);
+  const [pickedTerritorySelection, setPickedTerritorySelection] = useState([]);
   const [selectionBatches, setSelectionBatches] = useState([]);
-  const [referencePickTarget, setReferencePickTarget] = useState(null); // { kind: 'gadm'|'river', flagIndex?, layerIndex? }
+  const [referencePickTarget, setReferencePickTarget] = useState(null); // { kind: 'gadm'|'river'|'territory', flagIndex?, layerIndex?, partIndex? }
   const [countryLevelOptions, setCountryLevelOptions] = useState({});
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [addLayerSignal, setAddLayerSignal] = useState(null);
@@ -233,6 +237,13 @@ xatra.TitleBox("<b>My Map</b>")
               setActivePicker(null);
               setReferencePickTarget(null);
               setActivePreviewTab('main');
+          } else if (data.featureType === 'territory' && data.name && activePicker?.context === 'territory-library' && referencePickTarget?.kind === 'territory') {
+              const name = String(data.name);
+              setPickedTerritorySelection((prev) => {
+                const exists = prev.includes(name);
+                if (exists) return prev.filter((x) => x !== name);
+                return [...prev, name];
+              });
           }
       }
     };
@@ -281,6 +292,16 @@ xatra.TitleBox("<b>My Map</b>")
     ref.contentWindow.postMessage({ type: 'setSelectionOverlay', groups }, '*');
   }, [selectionBatches, pickedGadmSelection, pickerHtml]);
 
+  useEffect(() => {
+    const ref = territoryLibraryIframeRef.current;
+    if (!ref || !ref.contentWindow) return;
+    const groups = [
+      ...selectionBatches,
+      ...(pickedTerritorySelection.length ? [{ op: 'pending', names: pickedTerritorySelection }] : []),
+    ];
+    ref.contentWindow.postMessage({ type: 'setLabelSelectionOverlay', groups }, '*');
+  }, [selectionBatches, pickedTerritorySelection, territoryLibraryHtml]);
+
   const getFlagOccurrenceInfo = (flagIndex) => {
     const target = builderElements[flagIndex];
     if (!target || target.type !== 'flag') return null;
@@ -299,16 +320,21 @@ xatra.TitleBox("<b>My Map</b>")
     if (!target || !target.kind) return;
     setReferencePickTarget(target);
     setPickedGadmSelection([]);
+    setPickedTerritorySelection([]);
     setSelectionBatches([]);
     hoverPickRef.current = '';
     setDraftPoints([]);
+    const isTerritoryPick = target.kind === 'territory';
     setActivePicker({
       id: target.layerIndex ?? target.flagIndex ?? 0,
       type: target.kind,
-      context: target.kind === 'river' ? 'reference-river' : 'reference-gadm',
+      context: isTerritoryPick ? 'territory-library' : (target.kind === 'river' ? 'reference-river' : 'reference-gadm'),
       target,
     });
-    setActivePreviewTab('picker');
+    setActivePreviewTab(isTerritoryPick ? 'library' : 'picker');
+    if (isTerritoryPick) {
+      renderTerritoryLibrary(territoryLibrarySource);
+    }
   };
 
   const applyPickedGadmsToTarget = (op) => {
@@ -336,10 +362,50 @@ xatra.TitleBox("<b>My Map</b>")
     hoverPickRef.current = '';
   };
 
+  const applyPickedTerritoriesToTarget = (op) => {
+    if (!pickedTerritorySelection.length || referencePickTarget?.kind !== 'territory') return;
+    const targetFlagIndex = referencePickTarget.flagIndex;
+    if (targetFlagIndex == null) return;
+    const picked = pickedTerritorySelection.filter(Boolean);
+    if (!picked.length) return;
+    setBuilderElements((prev) => {
+      const next = [...prev];
+      const target = next[targetFlagIndex];
+      if (!target || target.type !== 'flag') return prev;
+      const currentParts = Array.isArray(target.value)
+        ? [...target.value]
+        : (target.value ? [{ op: 'union', type: 'gadm', value: target.value }] : []);
+      picked.forEach((name) => {
+        const nextOp = currentParts.length === 0 ? 'union' : op;
+        currentParts.push({ op: nextOp, type: 'predefined', value: name });
+      });
+      next[targetFlagIndex] = { ...target, value: currentParts };
+      return next;
+    });
+    setSelectionBatches((prev) => [...prev, { op, names: picked }]);
+    setPickedTerritorySelection([]);
+  };
+
   const clearReferenceSelection = () => {
     setPickedGadmSelection([]);
+    setPickedTerritorySelection([]);
     setSelectionBatches([]);
     hoverPickRef.current = '';
+  };
+
+  const toggleTerritoryName = (name) => {
+    setSelectedTerritoryNames((prev) => (
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]
+    ));
+  };
+
+  const copySelectedTerritoryIndex = async () => {
+    const payload = `__TERRITORY_INDEX__ = ${JSON.stringify(selectedTerritoryNames)}`;
+    try {
+      await navigator.clipboard.writeText(payload);
+    } catch (err) {
+      setError(`Failed to copy index list: ${err.message}`);
+    }
   };
 
   useEffect(() => {
@@ -425,6 +491,35 @@ xatra.TitleBox("<b>My Map</b>")
       }
   };
 
+  const loadTerritoryLibraryCatalog = async (source = territoryLibrarySource) => {
+      try {
+          const response = await fetch('http://localhost:8088/territory_library/catalog', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                source,
+                predefined_code: predefinedCode || '',
+              }),
+          });
+          const data = await response.json();
+          if (!response.ok || data.error) {
+              throw new Error(data.error || 'Failed to load territory catalog');
+          }
+          const names = Array.isArray(data.names) ? data.names : [];
+          const indexNames = Array.isArray(data.index_names) ? data.index_names : [];
+          setTerritoryLibraryNames(names);
+          setTerritoryLibraryIndexNames(indexNames);
+          setSelectedTerritoryNames((prev) => {
+            if (prev.length && prev.some((name) => names.includes(name))) {
+              return prev.filter((name) => names.includes(name));
+            }
+            return indexNames.filter((name) => names.includes(name));
+          });
+      } catch (err) {
+          setError(err.message);
+      }
+  };
+
   const renderTerritoryLibrary = async (source = territoryLibrarySource) => {
       setLoading(true);
       try {
@@ -434,6 +529,7 @@ xatra.TitleBox("<b>My Map</b>")
               body: JSON.stringify({
                 source,
                 predefined_code: predefinedCode || '',
+                selected_names: selectedTerritoryNames,
               }),
           });
           const data = await response.json();
@@ -441,6 +537,10 @@ xatra.TitleBox("<b>My Map</b>")
               setError(data.error);
           } else if (data.html) {
               setTerritoryLibraryHtml(data.html);
+              const names = Array.isArray(data.available_names) ? data.available_names : [];
+              const indexNames = Array.isArray(data.index_names) ? data.index_names : [];
+              if (names.length) setTerritoryLibraryNames(names);
+              setTerritoryLibraryIndexNames(indexNames);
           }
       } catch (err) {
           setError(err.message);
@@ -643,15 +743,14 @@ xatra.TitleBox("<b>My Map</b>")
         lines.push(`xatra.FlagColorSequence(LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(1.6180339887, 0.0, 0.0)))`);
     }
 
-    if (Array.isArray(builderOptions.admin_color_sequences)) {
-        builderOptions.admin_color_sequences.forEach((row) => {
-            const stepH = Number.isFinite(Number(row?.step_h)) ? Number(row.step_h) : 1.6180339887;
-            const stepS = Number.isFinite(Number(row?.step_s)) ? Number(row.step_s) : 0.0;
-            const stepL = Number.isFinite(Number(row?.step_l)) ? Number(row.step_l) : 0.0;
-            const colorsExpr = colorSequenceExpr(row?.colors || '') || 'None';
-            const seqExpr = `LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(${stepH}, ${stepS}, ${stepL}))`;
-            lines.push(`xatra.AdminColorSequence(${seqExpr})`);
-        });
+    if (Array.isArray(builderOptions.admin_color_sequences) && builderOptions.admin_color_sequences.length) {
+        const row = builderOptions.admin_color_sequences[0];
+        const stepH = Number.isFinite(Number(row?.step_h)) ? Number(row.step_h) : 1.6180339887;
+        const stepS = Number.isFinite(Number(row?.step_s)) ? Number(row.step_s) : 0.0;
+        const stepL = Number.isFinite(Number(row?.step_l)) ? Number(row.step_l) : 0.0;
+        const colorsExpr = colorSequenceExpr(row?.colors || '') || 'None';
+        const seqExpr = `LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(${stepH}, ${stepS}, ${stepL}))`;
+        lines.push(`xatra.AdminColorSequence(${seqExpr})`);
     } else if (builderOptions.admin_colors) {
         const colorsExpr = colorSequenceExpr(builderOptions.admin_colors) || 'None';
         lines.push(`xatra.AdminColorSequence(LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(1.6180339887, 0.0, 0.0)))`);
@@ -791,10 +890,13 @@ xatra.TitleBox("<b>My Map</b>")
 
   useEffect(() => {
     if (activePreviewTab !== 'library') return;
-    if (!territoryLibraryHtml) {
-      renderTerritoryLibrary(territoryLibrarySource);
-    }
-  }, [activePreviewTab, territoryLibrarySource, territoryLibraryHtml]);
+    loadTerritoryLibraryCatalog(territoryLibrarySource);
+  }, [activePreviewTab, territoryLibrarySource, predefinedCode]);
+
+  useEffect(() => {
+    if (activePreviewTab !== 'library') return;
+    renderTerritoryLibrary(territoryLibrarySource);
+  }, [activePreviewTab, territoryLibrarySource, selectedTerritoryNames]);
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
@@ -1064,17 +1166,114 @@ xatra.TitleBox("<b>My Map</b>")
                 <h3 className="text-sm font-bold text-gray-800 border-b pb-2">Territory Library</h3>
                 <div className="grid grid-cols-2 gap-1">
                     <button
-                        onClick={() => setTerritoryLibrarySource('builtin')}
+                        onClick={() => {
+                          setTerritoryLibrarySource('builtin');
+                          setSelectedTerritoryNames([]);
+                        }}
                         className={`py-1.5 px-2 text-xs rounded border ${territoryLibrarySource === 'builtin' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
                     >
                         xatra.territory_library
                     </button>
                     <button
-                        onClick={() => setTerritoryLibrarySource('custom')}
+                        onClick={() => {
+                          setTerritoryLibrarySource('custom');
+                          setSelectedTerritoryNames([]);
+                        }}
                         className={`py-1.5 px-2 text-xs rounded border ${territoryLibrarySource === 'custom' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
                     >
                         Custom Library
                     </button>
+                </div>
+                <div className="space-y-2 border border-gray-200 rounded p-2 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                        <div className="text-[11px] font-semibold text-gray-700">Territories to Render</div>
+                        <button
+                          onClick={copySelectedTerritoryIndex}
+                          className="text-[10px] px-1.5 py-0.5 border rounded bg-white hover:bg-gray-50"
+                          disabled={!selectedTerritoryNames.length}
+                          title="Copy selected names as __TERRITORY_INDEX__"
+                        >
+                          Copy Index
+                        </button>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto space-y-1">
+                        {territoryLibraryNames.length === 0 ? (
+                          <div className="text-[10px] text-gray-400 italic">No territories found.</div>
+                        ) : (
+                          territoryLibraryNames.map((name) => (
+                            <label key={name} className="flex items-center gap-2 text-[11px] text-gray-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedTerritoryNames.includes(name)}
+                                onChange={() => toggleTerritoryName(name)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="font-mono">{name}</span>
+                            </label>
+                          ))
+                        )}
+                    </div>
+                    {territoryLibraryIndexNames.length > 0 && (
+                      <div className="text-[10px] text-gray-500">
+                        Default index: {territoryLibraryIndexNames.join(', ')}
+                      </div>
+                    )}
+                </div>
+                <div className="space-y-2 border-t border-gray-100 pt-2 text-[11px]">
+                    <div className="font-semibold text-gray-600">Picker Target</div>
+                    {referencePickTarget?.kind === 'territory' && referencePickTarget.flagIndex != null ? (
+                      <div className="text-gray-500">
+                        {(() => {
+                          const info = getFlagOccurrenceInfo(referencePickTarget.flagIndex);
+                          if (!info) return 'No flag selected.';
+                          return `Flag "${info.label}" #${info.occurrence}${info.count > 1 ? ` of ${info.count}` : ''}`;
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 italic">Activate a Territory Library pick button in Builder.</div>
+                    )}
+                    <div className="font-semibold text-gray-600">Picked Territories</div>
+                    {pickedTerritorySelection.length === 0 ? (
+                      <div className="text-gray-400 italic">No selections yet.</div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {pickedTerritorySelection.map((name) => (
+                          <span key={name} className="px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-mono">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => applyPickedTerritoriesToTarget('union')}
+                        disabled={!pickedTerritorySelection.length || referencePickTarget?.kind !== 'territory'}
+                        className="flex-1 py-1 px-2 text-[11px] bg-green-600 hover:bg-green-700 text-white rounded disabled:opacity-50"
+                      >
+                        + Add
+                      </button>
+                      <button
+                        onClick={() => applyPickedTerritoriesToTarget('difference')}
+                        disabled={!pickedTerritorySelection.length || referencePickTarget?.kind !== 'territory'}
+                        className="flex-1 py-1 px-2 text-[11px] bg-rose-600 hover:bg-rose-700 text-white rounded disabled:opacity-50"
+                      >
+                        - Subtract
+                      </button>
+                      <button
+                        onClick={() => applyPickedTerritoriesToTarget('intersection')}
+                        disabled={!pickedTerritorySelection.length || referencePickTarget?.kind !== 'territory'}
+                        className="flex-1 py-1 px-2 text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white rounded disabled:opacity-50"
+                      >
+                        & Intersect
+                      </button>
+                      <button
+                        onClick={clearReferenceSelection}
+                        disabled={!pickedTerritorySelection.length && selectionBatches.length === 0}
+                        className="py-1 px-2 text-[11px] border rounded bg-white hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Clear
+                      </button>
+                    </div>
                 </div>
                 <button 
                     onClick={() => renderTerritoryLibrary(territoryLibrarySource)}

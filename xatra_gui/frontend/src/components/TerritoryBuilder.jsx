@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, MousePointer2, GripVertical, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, MousePointer2, GripVertical } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 
 const TerritoryBuilder = ({ 
-  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId, predefinedCode, onStartReferencePick
+  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId, predefinedCode, onStartReferencePick, onStartTerritoryLibraryPick
 }) => {
   // Normalize value to list of objects
   let parts = [];
@@ -26,6 +26,7 @@ const TerritoryBuilder = ({
 
   const pickingIndex = getPickingIndex();
   const isReferencePickingThisFlag = !!(activePicker && activePicker.context === 'reference-gadm' && activePicker.target?.flagIndex === parentId);
+  const isLibraryPickingThisPart = !!(activePicker && activePicker.context === 'territory-library' && activePicker.target?.flagIndex === parentId && activePicker.target?.partIndex != null);
 
   useEffect(() => {
       if (pickingIndex >= 0 && lastMapClick) {
@@ -232,27 +233,43 @@ const TerritoryBuilder = ({
                         }
                         onStartReferencePick({ kind: 'gadm', flagIndex: parentId, partIndex: idx });
                       }}
-                      className={`px-2 py-1 text-[10px] border rounded bg-white ${isReferencePickingThisFlag ? 'text-blue-700 border-blue-300 bg-blue-50' : 'text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                      className={`p-1 border rounded flex-shrink-0 transition-colors ${isReferencePickingThisFlag ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
                       title={isReferencePickingThisFlag ? 'Cancel GADM picking' : 'Pick GADM from Reference Map'}
                     >
-                      <ArrowRight size={12}/>
+                      <MousePointer2 size={12}/>
                     </button>
                   </div>
                ) : part.type === 'predefined' ? (
-                   <div className="relative">
-                       <input 
-                           type="text"
-                           value={part.value}
-                           onChange={(e) => updatePart(idx, 'value', e.target.value)}
-                           className="w-full text-xs p-1 border rounded bg-white"
-                           placeholder="e.g. maurya or NORTH_INDIA (from territory library)"
-                           list={`predefined-list-${parentId}-${idx}`}
-                       />
-                       <datalist id={`predefined-list-${parentId}-${idx}`}>
-                           {allPredefinedOptions.map(v => (
-                               <option key={v} value={v} />
-                           ))}
-                       </datalist>
+                   <div className="flex gap-1 items-start">
+                       <div className="relative flex-1 min-w-0">
+                           <input 
+                               type="text"
+                               value={part.value}
+                               onChange={(e) => updatePart(idx, 'value', e.target.value)}
+                               className="w-full text-xs p-1 border rounded bg-white"
+                               placeholder="e.g. maurya or NORTH_INDIA (from territory library)"
+                               list={`predefined-list-${parentId}-${idx}`}
+                           />
+                           <datalist id={`predefined-list-${parentId}-${idx}`}>
+                               {allPredefinedOptions.map(v => (
+                                   <option key={v} value={v} />
+                               ))}
+                           </datalist>
+                       </div>
+                       <button
+                         type="button"
+                         onClick={() => {
+                           if (isLibraryPickingThisPart && activePicker?.target?.partIndex === idx) {
+                             setActivePicker(null);
+                             return;
+                           }
+                           onStartTerritoryLibraryPick({ kind: 'territory', flagIndex: parentId, partIndex: idx });
+                         }}
+                         className={`p-1 border rounded flex-shrink-0 transition-colors ${isLibraryPickingThisPart && activePicker?.target?.partIndex === idx ? 'bg-blue-100 text-blue-700 border-blue-300 ring-2 ring-blue-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'}`}
+                         title={isLibraryPickingThisPart && activePicker?.target?.partIndex === idx ? 'Cancel territory library picking' : 'Pick from Territory Library map'}
+                       >
+                         <MousePointer2 size={12}/>
+                       </button>
                    </div>
                ) : (
                    <div className="flex gap-1 items-start">

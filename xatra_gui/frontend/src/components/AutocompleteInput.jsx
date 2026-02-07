@@ -8,6 +8,7 @@ const AutocompleteInput = ({
   endpoint = 'http://localhost:8088/search/gadm',
   minChars = 2,
   onSelectSuggestion,
+  inputProps = {},
 }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -116,6 +117,7 @@ const AutocompleteInput = ({
         onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
         className={className}
         placeholder={placeholder}
+        {...inputProps}
       />
       {showSuggestions && suggestions.length > 0 && (
         <div ref={listRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">

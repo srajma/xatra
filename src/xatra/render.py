@@ -552,6 +552,7 @@ HTML_TEMPLATE = Template(
       // Listener for parent window messages (Studio integration)
       let draftLayer = null;
       const highlightedLayers = new Map();
+      const highlightedLabelLayers = new Map();
       function normalizeGadmCode(code) {
         if (!code || typeof code !== 'string') return '';
         return code.replace(/_\d+$/, '');
@@ -604,6 +605,65 @@ HTML_TEMPLATE = Template(
           });
         });
       }
+      function resetLabelSelectionOverlay() {
+        highlightedLabelLayers.forEach((original, layer) => {
+          if (!layer) return;
+          if (layer.setStyle && original.style) {
+            layer.setStyle(original.style);
+          }
+          if (typeof layer.setOpacity === 'function' && original.opacity != null) {
+            layer.setOpacity(original.opacity);
+          }
+        });
+        highlightedLabelLayers.clear();
+      }
+      function applyLabelSelectionOverlay(groups) {
+        resetLabelSelectionOverlay();
+        if (!Array.isArray(groups) || groups.length === 0) return;
+        const styles = {
+          union: { color: '#16a34a', fillColor: '#16a34a', fillOpacity: 0.2, weight: 3, opacity: 1.0 },
+          difference: { color: '#e11d48', fillColor: '#e11d48', fillOpacity: 0.2, weight: 3, opacity: 1.0 },
+          intersection: { color: '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.2, weight: 3, opacity: 1.0 },
+          pending: { color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.2, weight: 3, opacity: 1.0 },
+        };
+        const labelToStyle = new Map();
+        groups.forEach((group) => {
+          const op = (group && group.op) ? String(group.op) : 'pending';
+          const style = styles[op] || styles.pending;
+          (group && Array.isArray(group.names) ? group.names : []).forEach((name) => {
+            labelToStyle.set(String(name), style);
+          });
+        });
+        if (labelToStyle.size === 0) return;
+        layers.flags.forEach((layer) => {
+          const label = layer?._flagData?.label;
+          if (!label || !labelToStyle.has(label)) return;
+          const style = labelToStyle.get(label);
+          if (layer.setStyle) {
+            if (!highlightedLabelLayers.has(layer)) {
+              highlightedLabelLayers.set(layer, {
+                style: {
+                  color: layer.options?.color,
+                  fillColor: layer.options?.fillColor,
+                  fillOpacity: layer.options?.fillOpacity,
+                  weight: layer.options?.weight,
+                  dashArray: layer.options?.dashArray,
+                },
+                opacity: null,
+              });
+            }
+            layer.setStyle(style);
+          } else if (typeof layer.setOpacity === 'function') {
+            if (!highlightedLabelLayers.has(layer)) {
+              highlightedLabelLayers.set(layer, {
+                style: null,
+                opacity: layer.options?.opacity ?? 1.0,
+              });
+            }
+            layer.setOpacity(1.0);
+          }
+        });
+      }
       function extractRiverIdFromProps(props) {
         if (!props) return null;
         if (props._source === 'naturalearth' && props._ne_id != null) return String(props._ne_id);
@@ -647,6 +707,8 @@ HTML_TEMPLATE = Template(
             }
         } else if (event.data && event.data.type === 'setSelectionOverlay') {
             applySelectionOverlay(event.data.groups || []);
+        } else if (event.data && event.data.type === 'setLabelSelectionOverlay') {
+            applyLabelSelectionOverlay(event.data.groups || []);
         }
       });
 
@@ -1077,6 +1139,14 @@ HTML_TEMPLATE = Template(
               onEachFeature: function(feature, subLayer) {
                 // Register with multi-tooltip system
                 registerLayerTooltip(subLayer, 'Flag', flagTooltip);
+                subLayer.on('click', function() {
+                  if (!window.parent) return;
+                  window.parent.postMessage({
+                    type: 'mapFeaturePick',
+                    featureType: 'territory',
+                    name: f.label || ''
+                  }, '*');
+                });
               }
             });
             
@@ -1089,6 +1159,8 @@ HTML_TEMPLATE = Template(
               });
             }
             
+            layer._flagData = { label: f.label, snapshot: snapshot.year };
+
             // Add label at centroid
             const centroid = f.centroid || getCentroid(f.geometry);
             if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
@@ -1173,7 +1245,6 @@ HTML_TEMPLATE = Template(
               const labelLayer = L.marker(centroid, { icon: labelDiv });
               
               // Store metadata for visibility management
-              layer._flagData = { label: f.label, snapshot: snapshot.year };
               labelLayer._flagData = { label: f.label, snapshot: snapshot.year };
               
               layers.flags.push(layer, labelLayer);
@@ -1932,6 +2003,14 @@ HTML_TEMPLATE = Template(
             onEachFeature: function(feature, subLayer) {
               // Register with multi-tooltip system
               registerLayerTooltip(subLayer, 'Flag', flagTooltip);
+              subLayer.on('click', function() {
+                if (!window.parent) return;
+                window.parent.postMessage({
+                  type: 'mapFeaturePick',
+                  featureType: 'territory',
+                  name: f.label || ''
+                }, '*');
+              });
             }
           }).addTo(map);
           
@@ -1945,6 +2024,7 @@ HTML_TEMPLATE = Template(
             });
           }
           
+          layer._flagData = { label: f.label };
           layers.flags.push(layer);
           
           // Add label at centroid (use pre-computed centroid if available)
@@ -2033,6 +2113,7 @@ HTML_TEMPLATE = Template(
               iconAnchor: [0, 0]
             });
             const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
+            labelLayer._flagData = { label: f.label };
             layers.flags.push(labelLayer);
             
             // Debug: Add visible marker for centroid
