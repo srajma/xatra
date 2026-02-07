@@ -23,6 +23,20 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
       return Array.from(classes).sort();
   };
 
+  const getCustomFlagClasses = () => {
+      const classes = new Set();
+      elements.forEach((el) => {
+          if (el.type !== 'flag') return;
+          const raw = el.args?.classes;
+          if (!raw || typeof raw !== 'string') return;
+          raw.split(' ').forEach((cls) => {
+              const trimmed = cls.trim();
+              if (trimmed) classes.add(trimmed);
+          });
+      });
+      return Array.from(classes).sort();
+  };
+
   const addCssRule = () => {
       const current = options.css_rules || [];
       setOptions({ ...options, css_rules: [...current, { selector: '.flag', style: '' }] });
@@ -74,13 +88,19 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
       }
   };
 
-  const FLAG_SEQ_PRESETS = ['Pastel1', 'Set1', 'Set3', 'tab10', 'Accent', 'Dark2', 'Paired'];
+  const DEFAULT_FLAG_SEQUENCE_ROW = {
+    class_name: '',
+    colors: '',
+    step_h: 1.6180339887,
+    step_s: 0.0,
+    step_l: 0.0,
+  };
   const ADMIN_SEQ_PRESETS = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds', 'tab20'];
   const DATA_CMAP_PRESETS = ['viridis', 'plasma', 'inferno', 'magma', 'cividis', 'RdYlGn', 'RdYlBu', 'Spectral'];
 
   const flagColorRows = Array.isArray(options.flag_color_sequences)
     ? options.flag_color_sequences
-    : (options.flag_colors ? [{ class_name: '', value: options.flag_colors }] : []);
+    : (options.flag_colors ? [{ ...DEFAULT_FLAG_SEQUENCE_ROW, colors: options.flag_colors }] : [DEFAULT_FLAG_SEQUENCE_ROW]);
 
   const setFlagColorRows = (rows) => {
     setOptions({
@@ -96,12 +116,12 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     setFlagColorRows(rows);
   };
 
-  const addFlagColorRow = () => setFlagColorRows([...flagColorRows, { class_name: '', value: '' }]);
+  const addFlagColorRow = () => setFlagColorRows([...flagColorRows, { ...DEFAULT_FLAG_SEQUENCE_ROW }]);
 
   const removeFlagColorRow = (index) => {
     const rows = [...flagColorRows];
     rows.splice(index, 1);
-    setFlagColorRows(rows);
+    setFlagColorRows(rows.length ? rows : [{ ...DEFAULT_FLAG_SEQUENCE_ROW }]);
   };
 
   return (
@@ -371,45 +391,54 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                          <div>
                              <label className="block text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1">
                                 Flag Color Sequences
-                                <span title="Set one or more rows. Optional class name applies sequence only to flags with that CSS class. Sequence can be a matplotlib palette name or comma-separated colors.">
+                                <span title="Build a LinearColorSequence. Set H/S/L step and optionally seed colors (comma-separated CSS names or hex).">
                                     <Info size={10} className="text-blue-500 cursor-help"/>
                                 </span>
                              </label>
                              <div className="space-y-2">
-                                {flagColorRows.length === 0 && (
-                                  <div className="text-[10px] text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1">
-                                    Default map behavior: `LinearColorSequence()` from xatra (auto-generated contrasting colors). Add rows only to override.
-                                  </div>
-                                )}
                                 {flagColorRows.map((row, idx) => (
-                                  <div key={idx} className="grid grid-cols-[120px_1fr_90px_24px] gap-1 items-center">
+                                  <div key={idx} className="grid grid-cols-[120px_1fr_80px_80px_80px_24px] gap-1 items-center">
                                     <select
                                       value={row.class_name || ''}
                                       onChange={(e) => updateFlagColorRow(idx, 'class_name', e.target.value)}
                                       className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono bg-white"
                                     >
                                       <option value="">(all flags)</option>
-                                      {getAvailableClasses().map((cls) => (
+                                      {getCustomFlagClasses().map((cls) => (
                                         <option key={cls} value={cls}>{cls}</option>
                                       ))}
                                     </select>
                                     <input
                                       type="text"
-                                      value={row.value || ''}
-                                      onChange={(e) => updateFlagColorRow(idx, 'value', e.target.value)}
+                                      value={row.colors || ''}
+                                      onChange={(e) => updateFlagColorRow(idx, 'colors', e.target.value)}
                                       className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                      placeholder="tab10 or #ff0000,#00ff00,#0000ff"
+                                      placeholder="#1f77b4,#ff7f0e or red,blue"
                                     />
-                                    <select
-                                      className="text-[10px] border rounded px-1 bg-white"
-                                      onChange={(e) => updateFlagColorRow(idx, 'value', e.target.value)}
-                                      value=""
-                                    >
-                                      <option value="" disabled>Preset</option>
-                                      {FLAG_SEQ_PRESETS.map((preset) => (
-                                        <option key={preset} value={preset}>{preset}</option>
-                                      ))}
-                                    </select>
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={row.step_h ?? DEFAULT_FLAG_SEQUENCE_ROW.step_h}
+                                      onChange={(e) => updateFlagColorRow(idx, 'step_h', e.target.value)}
+                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                      title="Hue step"
+                                    />
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={row.step_s ?? DEFAULT_FLAG_SEQUENCE_ROW.step_s}
+                                      onChange={(e) => updateFlagColorRow(idx, 'step_s', e.target.value)}
+                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                      title="Saturation step"
+                                    />
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={row.step_l ?? DEFAULT_FLAG_SEQUENCE_ROW.step_l}
+                                      onChange={(e) => updateFlagColorRow(idx, 'step_l', e.target.value)}
+                                      className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
+                                      title="Lightness step"
+                                    />
                                     <button
                                       onClick={() => removeFlagColorRow(idx)}
                                       className="text-red-400 hover:text-red-600 p-1"
@@ -419,6 +448,14 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                     </button>
                                   </div>
                                 ))}
+                                <div className="grid grid-cols-[120px_1fr_80px_80px_80px_24px] gap-1 text-[10px] text-gray-500 px-0.5">
+                                  <div>Class</div>
+                                  <div>Seed colors (optional)</div>
+                                  <div>Step H</div>
+                                  <div>Step S</div>
+                                  <div>Step L</div>
+                                  <div />
+                                </div>
                                 <button onClick={addFlagColorRow} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
                                   <Plus size={12}/> Add Sequence
                                 </button>

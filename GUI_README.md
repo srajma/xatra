@@ -86,7 +86,10 @@ Basic extensions
     - [x] Base Layers: allow adding any number of base layers, and selecting one as default.
       - [x] Fixed. But the UI is a bit clumsy. Instead, just have the list of available base layers as checkboxes (where checking a box means it will be included in the base layer options) and include buttons next to them to make default (it should only be possible to make one default).
   - [x] FlagColorSequence, AdminColorSequence, DataColormap --- think through the interface for this carefully; users should be able to set the obvious ones easily, or create their own color sequence or map, just like in the package itself (see the README for details). [This still needs to be done better---also it should be possible to set multiple color sequences for different classes].
-    - [ ] Nah the FlagColorSequence interface is still totally wrong. See the colorseq.py file---basically we should always construct a linear color sequence, and the user should be able to enter the step-sizes in H,S,L and optionally a list of starting colors, and we initialize a LinearColorSequence(colors=those optional colors or None if not provided, step=Color.hsl(those values)). It should be pre-loaded with the default color sequence, LinearColorSequence(colors=None,step=Color.hsl(1.6180339887, 0.0, 0.0)) (and there doesn't need to be that cluttery explanatory note explaining that this is a default, like there is now). The user should also be able to restrict the color sequence to any particular class if need be, but the dropdown should not consist of all the classes present but only the custom classes that have been applied to Flags.
+    - [x] Nah the FlagColorSequence interface is still totally wrong. See the colorseq.py file---basically we should always construct a linear color sequence, and the user should be able to enter the step-sizes in H,S,L and optionally a list of starting colors, and we initialize a LinearColorSequence(colors=those optional colors or None if not provided, step=Color.hsl(those values)). It should be pre-loaded with the default color sequence, LinearColorSequence(colors=None,step=Color.hsl(1.6180339887, 0.0, 0.0)) (and there doesn't need to be that cluttery explanatory note explaining that this is a default, like there is now). The user should also be able to restrict the color sequence to any particular class if need be, but the dropdown should not consist of all the classes present but only the custom classes that have been applied to Flags.
+      - [ ] Ok, it's better now---but it doesn't fit in the horizontal space.
+      - [ ] AdminColorSequence should work the same way as FlagColorSequence.
+      - [ ] The Datacolormap UI is also weird. Instead, there should be a dropdown to select the color map (e.g. viridis etc.), and if "LinearSegmented" is selected, it should allow the user to input a list of colors. By default "LinearSegmented" should be selected, and the colors should be yellow, orange, red.
   - [x] zoom and focus
     - [x] this should include a button to just use the current zoom and focus levels at the map is at
     - [x] there's a weird bug where I can't clear the contents of Initial focus manually because if I clear Latitude, Longitude becomes filled again (with 0) and if I clear Longitude, Latitude gets filled again. Fix that.
@@ -147,8 +150,14 @@ Features
 - [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
     - [x] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
       - [x] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
-    - [ ] 
-- [ ] Territory library tab
+    - [ ] Keyboard shortcuts for adding a new layer
+    - [ ] When a new layer is created, its first input field should immediately be focused.
+- [ ] Territory library tab (Ctrl/Cmd+5)
+  - This will be a third map tab after "Map Preview" and "Reference Map", and will serve to visualize territories in the territory library.
+  - Within this tab, there are multiple tabs. There is one tab for xatra.territory_library and one tab for those that the user has saved to library/entered in the Territory library code editor.
+    - [ ] In future, when we have multiple territory libraries (i.e. when it's a proper website where people can publish their own territory libraries), it will show 
+  - Within each sub-tab, the territories in that list are plotted on the map (i.e. by wrapping them in Flags and letting their labels be their variable names).
+  - When the user is entering an item from Territory library while building a Territory for a Flag, he will have a little Picker button. Clicking this will take him to the Territory Library where there will be a very similar multi-selection UI as in the Reference Map tab.
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
@@ -164,6 +173,7 @@ Minor changes
   - [x] And include a from xatra.territory_library import * line at the top, since all those territories are included in our library---and in a comment right next to it, link to https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py. Remove all the other junk comments pre-filled there by default.
 - [x] In "Reference Map Options", just like there's a label "Countries" for the country field there should be a label "Admin Level" for the Admin Level field.
   - [x] Also, the levels entry field should be a dropdown with all the admin levels available for their country (these should be pre-computed and kept in an index).
+- [ ] The Keyboard Shortcuts panel should have a little icon to toggle it so the user can see the keyboard shortcuts list even if he doesn't already know that `?` does the job.
 - [ ] Clicking "Render Map" (from either Builder or Code) should set the tab (which can currently be "Map Preview" or "Refernece Map") to "Map Preview".
 - [ ] Better words and tips for Flag, label etc. I need to think about this, don't do anything yet.
 

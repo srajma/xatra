@@ -37,10 +37,25 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
   const editorRef = useRef(null);
   const predefinedEditorRef = useRef(null);
   const completionDisposableRef = useRef(null);
-  const [forceEditorFocus, setForceEditorFocus] = useState(false);
+  const editorKeydownCleanupRef = useRef(null);
+  const predefinedKeydownCleanupRef = useRef(null);
+
+  const setupVimiumShield = useCallback((editor, cleanupRef) => {
+    const container = editor.getContainerDomNode();
+    if (!container) return;
+    container.classList.add('mousetrap');
+    const onKeyDownCapture = (e) => {
+      e.stopPropagation();
+    };
+    container.addEventListener('keydown', onKeyDownCapture, true);
+    cleanupRef.current = () => {
+      container.removeEventListener('keydown', onKeyDownCapture, true);
+    };
+  }, []);
 
   const handleEditorDidMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
+    setupVimiumShield(editor, editorKeydownCleanupRef);
     monaco.editor.defineTheme('xatra-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -88,7 +103,7 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
         return { suggestions: items };
       },
     });
-  }, []);
+  }, [setupVimiumShield]);
 
   // Dispose completion provider on unmount to avoid duplicate registrations when switching tabs
   React.useEffect(() => {
@@ -97,12 +112,21 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
         completionDisposableRef.current.dispose();
         completionDisposableRef.current = null;
       }
+      if (editorKeydownCleanupRef.current) {
+        editorKeydownCleanupRef.current();
+        editorKeydownCleanupRef.current = null;
+      }
+      if (predefinedKeydownCleanupRef.current) {
+        predefinedKeydownCleanupRef.current();
+        predefinedKeydownCleanupRef.current = null;
+      }
     };
   }, []);
 
   const handlePredefinedMount = useCallback((editor) => {
     predefinedEditorRef.current = editor;
-  }, []);
+    setupVimiumShield(editor, predefinedKeydownCleanupRef);
+  }, [setupVimiumShield]);
 
   const focusMapEditor = useCallback(() => {
     if (editorRef.current) {
@@ -142,27 +166,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
   }, []);
 
   useEffect(() => {
-    const onKeyDown = (e) => {
-      if (!isActive) return;
-      if (e.ctrlKey && e.altKey && (e.key === 'i' || e.key === 'I')) {
-        e.preventDefault();
-        focusMapEditor();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isActive, focusMapEditor]);
-
-  useEffect(() => {
-    if (!isActive || !forceEditorFocus) return;
+    if (!isActive) return;
     focusMapEditor();
-    const interval = window.setInterval(() => {
-      if (editorRef.current && !editorRef.current.hasTextFocus()) {
-        focusMapEditor();
-      }
-    }, 1200);
-    return () => window.clearInterval(interval);
-  }, [isActive, forceEditorFocus, focusMapEditor]);
+  }, [isActive, focusMapEditor]);
 
   return (
     <div className="h-full flex flex-col space-y-4 min-h-0">
@@ -224,18 +230,7 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync, 
         <p className="text-xs text-gray-600">
           Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
         </p>
-        <p className="text-[10px] text-gray-500 italic">
-          Use <kbd className="px-0.5 bg-gray-200 rounded">Ctrl+Alt+I</kbd> to focus editor input if extensions steal focus.
-        </p>
-        <label className="inline-flex items-center gap-2 text-[11px] text-gray-600">
-          <input
-            type="checkbox"
-            checked={forceEditorFocus}
-            onChange={(e) => setForceEditorFocus(e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          Force editor focus while Code tab is active
-        </label>
+        <p className="text-[10px] text-gray-500 italic">Editor container uses a Vimium-compatible input shield.</p>
       </div>
     </div>
   );

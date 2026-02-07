@@ -22,7 +22,8 @@ function App() {
   ]);
   const [builderOptions, setBuilderOptions] = useState({
     title: '<b>My Interactive Map</b>',
-    basemaps: [{ url_or_provider: 'Esri.WorldTopoMap', default: true }]
+    basemaps: [{ url_or_provider: 'Esri.WorldTopoMap', default: true }],
+    flag_color_sequences: [{ class_name: '', colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
   });
 
   // Code State
@@ -358,6 +359,15 @@ xatra.TitleBox("<b>My Map</b>")
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         renderMap();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
+        e.preventDefault();
+        handleStop();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '3') {
+        e.preventDefault();
+        setActivePreviewTab('main');
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '4') {
+        e.preventDefault();
+        setActivePreviewTab('picker');
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -389,6 +399,7 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   const renderMap = async () => {
+    setActivePreviewTab('main');
     setLoading(true);
     setError(null);
     try {
@@ -490,9 +501,7 @@ xatra.TitleBox("<b>My Map</b>")
 
   const generatePythonCode = () => {
     const needsIconImport = builderElements.some(el => el.type === 'point' && el.args?.icon);
-    const hasFlagColorOptions =
-      (Array.isArray(builderOptions.flag_color_sequences) && builderOptions.flag_color_sequences.some((row) => (row?.value || '').trim() !== '')) ||
-      !!builderOptions.flag_colors;
+    const hasFlagColorOptions = Array.isArray(builderOptions.flag_color_sequences) || !!builderOptions.flag_colors;
     const hasAdminColorOptions = !!builderOptions.admin_colors;
     const needsColorSeqImport = hasFlagColorOptions || hasAdminColorOptions;
     const pyVal = (v) => {
@@ -506,9 +515,7 @@ xatra.TitleBox("<b>My Map</b>")
         if (typeof raw !== 'string') return null;
         const val = raw.trim();
         if (!val) return null;
-        if (!val.includes(',')) {
-            return `RotatingColorSequence().from_matplotlib_color_sequence(${pyVal(val)})`;
-        }
+        const namedColors = new Set(['red', 'green', 'blue', 'yellow', 'purple', 'orange', 'brown', 'gray', 'black', 'white', 'pink', 'cyan', 'magenta', 'lime', 'teal', 'indigo', 'violet']);
         const parts = val
           .split(',')
           .map((p) => p.trim())
@@ -516,16 +523,16 @@ xatra.TitleBox("<b>My Map</b>")
           .map((p) => (
             p.startsWith('#')
               ? `Color.hex(${pyVal(p)})`
-              : `Color.named(${pyVal(p.toLowerCase())})`
+              : (namedColors.has(p.toLowerCase()) ? `Color.named(${pyVal(p.toLowerCase())})` : null)
           ));
-        if (parts.length === 0) return null;
-        return `RotatingColorSequence([${parts.join(', ')}])`;
+        if (parts.length === 0 || parts.some((p) => p == null)) return null;
+        return `[${parts.join(', ')}]`;
     };
     let lines = [
         'import xatra',
         'from xatra.loaders import gadm, naturalearth, polygon, overpass',
         ...(needsIconImport ? ['from xatra.icon import Icon', ''] : []),
-        ...(needsColorSeqImport ? ['from xatra.colorseq import Color, RotatingColorSequence', ''] : []),
+        ...(needsColorSeqImport ? ['from xatra.colorseq import Color, LinearColorSequence, RotatingColorSequence', ''] : []),
         '',
         predefinedCode,
         ''
@@ -562,22 +569,28 @@ xatra.TitleBox("<b>My Map</b>")
 
     if (Array.isArray(builderOptions.flag_color_sequences)) {
         builderOptions.flag_color_sequences.forEach((row) => {
-            const val = (row?.value || '').trim();
-            if (!val) return;
             const className = (row?.class_name || '').trim();
-            const seqExpr = colorSequenceExpr(val);
-            if (!seqExpr) return;
+            const stepH = Number.isFinite(Number(row?.step_h)) ? Number(row.step_h) : 1.6180339887;
+            const stepS = Number.isFinite(Number(row?.step_s)) ? Number(row.step_s) : 0.0;
+            const stepL = Number.isFinite(Number(row?.step_l)) ? Number(row.step_l) : 0.0;
+            const colorsExpr = colorSequenceExpr(row?.colors || '') || 'None';
+            const seqExpr = `LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(${stepH}, ${stepS}, ${stepL}))`;
             if (className) lines.push(`xatra.FlagColorSequence(${seqExpr}, class_name=${pyVal(className)})`);
             else lines.push(`xatra.FlagColorSequence(${seqExpr})`);
         });
     } else if (builderOptions.flag_colors) {
-        const seqExpr = colorSequenceExpr(builderOptions.flag_colors);
-        if (seqExpr) lines.push(`xatra.FlagColorSequence(${seqExpr})`);
+        const colorsExpr = colorSequenceExpr(builderOptions.flag_colors) || 'None';
+        lines.push(`xatra.FlagColorSequence(LinearColorSequence(colors=${colorsExpr}, step=Color.hsl(1.6180339887, 0.0, 0.0)))`);
     }
 
     if (builderOptions.admin_colors) {
-        const seqExpr = colorSequenceExpr(builderOptions.admin_colors);
-        if (seqExpr) lines.push(`xatra.AdminColorSequence(${seqExpr})`);
+        const raw = String(builderOptions.admin_colors || '').trim();
+        const seqExpr = colorSequenceExpr(raw);
+        if (seqExpr) {
+            lines.push(`xatra.AdminColorSequence(LinearColorSequence(colors=${seqExpr}, step=Color.hsl(1.6180339887, 0.0, 0.0)))`);
+        } else if (raw) {
+            lines.push(`xatra.AdminColorSequence(RotatingColorSequence().from_matplotlib_color_sequence(${pyVal(raw)}))`);
+        }
     }
 
     if (builderOptions.data_colormap) {
@@ -967,7 +980,10 @@ xatra.TitleBox("<b>My Map</b>")
                     <div>`?` toggle this panel</div>
                     <div>`Ctrl/Cmd+1` Builder tab</div>
                     <div>`Ctrl/Cmd+2` Code tab</div>
+                    <div>`Ctrl/Cmd+3` Map Preview</div>
+                    <div>`Ctrl/Cmd+4` Reference Map</div>
                     <div>`Ctrl/Cmd+Enter` Render map</div>
+                    <div>`Ctrl/Cmd+Shift+Enter` Stop generation</div>
                 </div>
             )}
             {activePicker && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-')) && (

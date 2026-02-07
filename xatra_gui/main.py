@@ -24,7 +24,7 @@ from typing import List, Optional, Any, Dict, Union
 import xatra
 from xatra.loaders import gadm, naturalearth, polygon, GADM_DIR
 from xatra.render import export_html_string
-from xatra.colorseq import Color, RotatingColorSequence, color_sequences
+from xatra.colorseq import Color, LinearColorSequence, color_sequences
 from xatra.icon import Icon
 
 # Global variable to track the current rendering process
@@ -270,31 +270,85 @@ def _call_name(node: ast.AST) -> Optional[str]:
         return f"{base}.{node.attr}" if base else node.attr
     return None
 
-def _parse_color_sequence_expr(node: ast.AST) -> Optional[str]:
-    # RotatingColorSequence().from_matplotlib_color_sequence("Pastel1")
+def _parse_color_literal_node(node: ast.AST) -> Optional[str]:
+    if isinstance(node, ast.Call):
+        cname = _call_name(node.func)
+        if cname in ("Color.hex", "Color.named") and node.args:
+            val = _python_value(node.args[0])
+            if isinstance(val, str):
+                return val
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    return None
+
+def _parse_linear_sequence_row_expr(node: ast.AST) -> Optional[Dict[str, Any]]:
+    if not (isinstance(node, ast.Call) and _call_name(node.func) == "LinearColorSequence"):
+        return None
+
+    kwargs = {kw.arg: kw.value for kw in node.keywords if kw.arg}
+    colors_node = kwargs.get("colors")
+    step_node = kwargs.get("step")
+
+    if colors_node is None and node.args:
+        colors_node = node.args[0]
+    if step_node is None and len(node.args) >= 2:
+        step_node = node.args[1]
+
+    colors_out: List[str] = []
+    if isinstance(colors_node, ast.List):
+        for el in colors_node.elts:
+            parsed = _parse_color_literal_node(el)
+            if isinstance(parsed, str) and parsed.strip():
+                colors_out.append(parsed.strip())
+
+    step_h, step_s, step_l = 1.6180339887, 0.0, 0.0
+    if isinstance(step_node, ast.Call) and _call_name(step_node.func) == "Color.hsl" and len(step_node.args) >= 3:
+        h = _python_value(step_node.args[0])
+        s = _python_value(step_node.args[1])
+        l = _python_value(step_node.args[2])
+        if isinstance(h, (int, float)):
+            step_h = float(h)
+        if isinstance(s, (int, float)):
+            step_s = float(s)
+        if isinstance(l, (int, float)):
+            step_l = float(l)
+
+    return {
+        "class_name": "",
+        "colors": ",".join(colors_out),
+        "step_h": step_h,
+        "step_s": step_s,
+        "step_l": step_l,
+    }
+
+def _parse_admin_color_expr(node: ast.AST) -> Optional[str]:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
         if node.func.attr == "from_matplotlib_color_sequence" and node.args:
             palette = _python_value(node.args[0])
             return str(palette) if palette else None
-    # RotatingColorSequence([Color.hex("#..."), Color.named("red")])
     if isinstance(node, ast.Call) and _call_name(node.func) == "RotatingColorSequence" and node.args:
         first = node.args[0]
         if isinstance(first, ast.List):
             out = []
             for el in first.elts:
-                if isinstance(el, ast.Call):
-                    cname = _call_name(el.func)
-                    if cname == "Color.hex" and el.args:
-                        val = _python_value(el.args[0])
-                        if isinstance(val, str):
-                            out.append(val)
-                    elif cname == "Color.named" and el.args:
-                        val = _python_value(el.args[0])
-                        if isinstance(val, str):
-                            out.append(val)
+                parsed = _parse_color_literal_node(el)
+                if isinstance(parsed, str):
+                    out.append(parsed)
             return ",".join(out) if out else None
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
+    if isinstance(node, ast.Call) and _call_name(node.func) == "LinearColorSequence":
+        kwargs = {kw.arg: kw.value for kw in node.keywords if kw.arg}
+        colors_node = kwargs.get("colors")
+        if colors_node is None and node.args:
+            colors_node = node.args[0]
+        if isinstance(colors_node, ast.List):
+            out = []
+            for el in colors_node.elts:
+                parsed = _parse_color_literal_node(el)
+                if isinstance(parsed, str):
+                    out.append(parsed)
+            return ",".join(out) if out else None
     return None
 
 def _parse_css_rules(css_text: str) -> List[Dict[str, str]]:
@@ -344,7 +398,7 @@ def sync_code_to_builder(request: CodeSyncRequest):
 
     elements: List[Dict[str, Any]] = []
     options: Dict[str, Any] = {"basemaps": []}
-    flag_color_rows: List[Dict[str, str]] = []
+    flag_color_rows: List[Dict[str, Any]] = []
     unsupported: List[str] = []
 
     for stmt in tree.body:
@@ -410,15 +464,26 @@ def sync_code_to_builder(request: CodeSyncRequest):
 
         if method == "FlagColorSequence":
             if call.args:
-                seq = _parse_color_sequence_expr(call.args[0])
-                if seq:
+                row = _parse_linear_sequence_row_expr(call.args[0])
+                if row is None:
+                    legacy = _parse_admin_color_expr(call.args[0])
+                    if legacy:
+                        row = {
+                            "class_name": "",
+                            "colors": legacy,
+                            "step_h": 1.6180339887,
+                            "step_s": 0.0,
+                            "step_l": 0.0,
+                        }
+                if row:
                     class_name = _python_value(kwargs.get("class_name"))
-                    flag_color_rows.append({"class_name": class_name or "", "value": seq})
+                    row["class_name"] = class_name or ""
+                    flag_color_rows.append(row)
             continue
 
         if method == "AdminColorSequence":
             if call.args:
-                seq = _parse_color_sequence_expr(call.args[0])
+                seq = _parse_admin_color_expr(call.args[0])
                 if seq:
                     options["admin_colors"] = seq
             continue
@@ -560,12 +625,43 @@ def stop_generation():
     return {"status": "no process running"}
 
 def run_rendering_task(task_type, data, result_queue):
-    def parse_color_sequence(val):
+    def parse_color_list(val):
         if not val or not isinstance(val, str) or not val.strip():
             return None
-        if val.replace('_', '').isalnum():
-            return val.strip()
-        return [c.strip() for c in val.split(',') if c.strip()]
+        compact = val.strip()
+        if ',' not in compact and compact in color_sequences:
+            try:
+                return [Color.rgb(*rgb) for rgb in color_sequences[compact]]
+            except Exception:
+                return None
+        out = []
+        for token in [c.strip() for c in val.split(',') if c.strip()]:
+            try:
+                if token.startswith('#'):
+                    out.append(Color.hex(token))
+                else:
+                    out.append(Color.named(token.lower()))
+            except Exception:
+                continue
+        return out if out else None
+
+    def build_linear_sequence_from_row(row):
+        if not isinstance(row, dict):
+            return None
+        try:
+            step_h = float(row.get("step_h", 1.6180339887))
+        except Exception:
+            step_h = 1.6180339887
+        try:
+            step_s = float(row.get("step_s", 0.0))
+        except Exception:
+            step_s = 0.0
+        try:
+            step_l = float(row.get("step_l", 0.0))
+        except Exception:
+            step_l = 0.0
+        colors = parse_color_list(row.get("colors"))
+        return LinearColorSequence(colors=colors, step=Color.hsl(step_h, step_s, step_l))
 
     try:
         # Re-import xatra inside the process just in case, though imports are inherited on fork (mostly)
@@ -644,9 +740,7 @@ def run_rendering_task(task_type, data, result_queue):
 
             if "flag_color_sequences" in data.options and isinstance(data.options["flag_color_sequences"], list):
                 for row in data.options["flag_color_sequences"]:
-                    if not isinstance(row, dict):
-                        continue
-                    seq = parse_color_sequence(row.get("value"))
+                    seq = build_linear_sequence_from_row(row)
                     if not seq:
                         continue
                     class_name = row.get("class_name")
@@ -656,14 +750,17 @@ def run_rendering_task(task_type, data, result_queue):
                         class_name = None
                     m.FlagColorSequence(seq, class_name=class_name)
             elif "flag_colors" in data.options:
-                seq = parse_color_sequence(data.options["flag_colors"])
-                if seq:
-                    m.FlagColorSequence(seq)
+                m.FlagColorSequence(
+                    LinearColorSequence(
+                        colors=parse_color_list(data.options["flag_colors"]),
+                        step=Color.hsl(1.6180339887, 0.0, 0.0),
+                    )
+                )
             
             if "admin_colors" in data.options:
-                seq = parse_color_sequence(data.options["admin_colors"])
+                seq = parse_color_list(data.options["admin_colors"])
                 if seq:
-                    m.AdminColorSequence(seq)
+                    m.AdminColorSequence(LinearColorSequence(colors=seq, step=Color.hsl(1.6180339887, 0.0, 0.0)))
                     
             if "data_colormap" in data.options and data.options["data_colormap"]:
                 m.DataColormap(data.options["data_colormap"])
