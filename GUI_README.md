@@ -129,12 +129,13 @@ Features
     - [ ] Eventually we should also implement reverse-syncing the code to the builder, so might be worth thinking about how to better store the state
     - [ ] Also need to make sure any changes to the pre-defined territories code will update the stored territories.
     - [ ] Once we have arranged the two-way synchronization perfectly, the Builder-Code syncing should be modified to happen automatically upon switching from Builder to Code and vice versa, rather than manually clicking Sync from Builder
-- [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
+- [x] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts---these should all be documented in the little keyboard shortcuts hint panel that appears when pressing ? or clicking the button for it.
     - [x] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
       - [x] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
     - [x] Keyboard shortcuts for adding a new layer
     - [x] When a new layer is created, its first input field should immediately be focused.
       - [x] A previous agent attempted to do this, but it doesn't seem to be working. The input field should be focused so that the user can immediately start typing.
+    - [ ] Keyboard shortcut Ctrl+Space to run "Update Reference Map" if in the Reference Map tab or "Update Territory Library Map" if in the Territory Library tab
 - [x] Territory library tab (Ctrl/Cmd+5)
   - This will be a third map tab after "Map Preview" and "Reference Map", and will serve to visualize territories in the territory library.
   - Within this tab, there are multiple tabs. There is one tab for xatra.territory_library and one tab for those that the user has saved to library/entered in the Territory library code editor.
@@ -155,6 +156,8 @@ Minor changes
 - [x] when you save a territory to library, it should be case-sensitive, i.e. if you store the territory of a flag called "India" its variable name should be "India" and not "india".
 - [x] We now have visual cues for drawing paths and polygons, thank you---just one thing: the *vertices* of paths and polygons should also be shown in this visual cue, with dots, so that even the first point drawn can be seen on the map before any actual line is drawn.
   - [x] Also implement this for Points and Texts. When a point has a pre-existing value for Position and you hit the "Click on map" button, it should show that little point on that map with the same sort of dot.
+    - [ ] Also: these visual cues should appear regardless of which map (Map Preview, Reference Map, Territory Library) we're on. Right now they appear for the former two but not the last one.
+    - [ ] For points and texts, the visual cue (the dot) at the point where we click should persist for a fraction of a second after we press it, so that we can still see it even though the Picker mode is instantly turned off.
 - [x] The "Note" field should have monospaced font.
 - [x] Everywhere we use the term "Pre-defined territory", use "Territory library" instead.
   - [x] And include a from xatra.territory_library import * line at the top, since all those territories are included in our library---and in a comment right next to it, link to https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py. Remove all the other junk comments pre-filled there by default.
@@ -169,6 +172,7 @@ Minor changes
 - [x] By default, the Reference Map should be loaded as IND-2, PAK-3, BGD-2, NPL-3, BTN-1, LKA-1, AFG-2 with Admin Rivers. The loading can happen in the background while the user can still work on things.
 - [x] The countries column in the reference map should allow any GADM ID, not just country codes---since xatra.Admin() allows for it. So its search autocomplete should be exactly like that of the GADM entries in the Flag layer territory building, and there should not be any restriction on the characters (since we might want to search for these things by name). The level dropdown should still be taken from the country code part of the GADM ID (i.e. for IND.20 still take the levels list from that of IND).
 - [x] When "Generating Map" is going on (for whatever generation---either the Map Preview, the Reference Map or the Territory Library), it blurs out everything in the map frame, including the Reference Map options box and the Territory library box. It should leave these boxes available for the user to interact with while the map renders.
+- [ ] Remove this hint: `Ctrl/Cmd+5` opens this tab. `Custom Library` uses the code from the Code tab's Territory library editor.
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
