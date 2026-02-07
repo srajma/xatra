@@ -74,7 +74,7 @@ Basic extensions
     - [x] Remove the "Find in GADM" field. Even in the original package it's kind of irrelevant.
     - [x] plotting data doesn't really work for some reason, it generates the following error.
     - [x] We should not need to enter the data and year columns manually.
-      - [ ] Actually just remove the fields for entering data and year columns entirely, we don't need them.
+      - [x] Actually just remove the fields for entering data and year columns entirely, we don't need them.
 
   - [x] NOTE: allow adding any attribute to those objects, not just label, note and GADM code. Period is especially important. The less important attributes could be hidden under a "More..."
     - [x] "Period" should not be under a "More Options" It is optional, but should still be accessible without clicking "More Options". All the other things under "More Options" are fine there.
