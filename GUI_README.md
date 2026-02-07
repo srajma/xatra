@@ -127,6 +127,7 @@ Features
 - [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
     - [x] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
       - [x] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
+- [ ] Territory library tab
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
@@ -142,6 +143,7 @@ Minor changes
   - [x] And include a from xatra.territory_library import * line at the top, since all those territories are included in our library---and in a comment right next to it, link to https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py. Remove all the other junk comments pre-filled there by default.
 - [x] In "Reference Map Options", just like there's a label "Countries" for the country field there should be a label "Admin Level" for the Admin Level field.
   - [x] Also, the levels entry field should be a dropdown with all the admin levels available for their country (these should be pre-computed and kept in an index).
+- [ ] Better words and tips for Flag, label etc. I need to think about this, don't do anything yet.
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
