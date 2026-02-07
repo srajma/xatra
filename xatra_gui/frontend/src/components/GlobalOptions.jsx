@@ -377,7 +377,9 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                              </label>
                              <div className="space-y-2">
                                 {flagColorRows.length === 0 && (
-                                  <div className="text-[10px] text-gray-400 italic">No custom rows. Add one below.</div>
+                                  <div className="text-[10px] text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1">
+                                    Default map behavior: `LinearColorSequence()` from xatra (auto-generated contrasting colors). Add rows only to override.
+                                  </div>
                                 )}
                                 {flagColorRows.map((row, idx) => (
                                   <div key={idx} className="grid grid-cols-[120px_1fr_90px_24px] gap-1 items-center">
@@ -396,7 +398,7 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
                                       value={row.value || ''}
                                       onChange={(e) => updateFlagColorRow(idx, 'value', e.target.value)}
                                       className="px-2 py-1 border border-gray-200 rounded text-[11px] font-mono"
-                                      placeholder="Pastel1 or #f00,#0f0,#00f"
+                                      placeholder="tab10 or #ff0000,#00ff00,#0000ff"
                                     />
                                     <select
                                       className="text-[10px] border rounded px-1 bg-white"

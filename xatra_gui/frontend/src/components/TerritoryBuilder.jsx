@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, MousePointer2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, MousePointer2, GripVertical, ArrowRight } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 
 const TerritoryBuilder = ({ 
-  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId, predefinedCode, lastPickedGadm
+  value, onChange, lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints, parentId, predefinedCode, onStartReferencePick
 }) => {
   // Normalize value to list of objects
   let parts = [];
@@ -25,6 +25,7 @@ const TerritoryBuilder = ({
   };
 
   const pickingIndex = getPickingIndex();
+  const isReferencePickingThisFlag = !!(activePicker && activePicker.context === 'reference-gadm' && activePicker.target?.flagIndex === parentId);
 
   useEffect(() => {
       if (pickingIndex >= 0 && lastMapClick) {
@@ -53,7 +54,7 @@ const TerritoryBuilder = ({
               try {
                   const current = JSON.parse(part.value || '[]');
                   setDraftPoints(Array.isArray(current) ? current : []);
-              } catch(e) {
+              } catch {
                   setDraftPoints([]);
               }
           }
@@ -225,13 +226,16 @@ const TerritoryBuilder = ({
                     <button
                       type="button"
                       onClick={() => {
-                        if (lastPickedGadm?.gid) updatePart(idx, 'value', lastPickedGadm.gid);
+                        if (isReferencePickingThisFlag) {
+                          setActivePicker(null);
+                          return;
+                        }
+                        onStartReferencePick({ kind: 'gadm', flagIndex: parentId, partIndex: idx });
                       }}
-                      disabled={!lastPickedGadm?.gid}
-                      className="px-2 py-1 text-[10px] border rounded bg-white text-blue-700 border-blue-200 hover:bg-blue-50 disabled:text-gray-400 disabled:border-gray-200 disabled:hover:bg-white"
-                      title="Use last GADM region picked on the Reference Map"
+                      className={`px-2 py-1 text-[10px] border rounded bg-white ${isReferencePickingThisFlag ? 'text-blue-700 border-blue-300 bg-blue-50' : 'text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                      title={isReferencePickingThisFlag ? 'Cancel GADM picking' : 'Pick GADM from Reference Map'}
                     >
-                      Use Picked
+                      <ArrowRight size={12}/>
                     </button>
                   </div>
                ) : part.type === 'predefined' ? (

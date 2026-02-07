@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Code, Play, RefreshCw, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X } from 'lucide-react';
+import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
 import Builder from './components/Builder';
@@ -45,16 +45,16 @@ xatra.TitleBox("<b>My Map</b>")
   });
   
   const [lastMapClick, setLastMapClick] = useState(null);
-  const [lastPickedGadm, setLastPickedGadm] = useState(null);
-  const [lastPickedRiver, setLastPickedRiver] = useState(null);
   const [activePicker, setActivePicker] = useState(null); // { id, type, context }
   const [draftPoints, setDraftPoints] = useState([]);
-  const [isShiftPressed, setIsShiftPressed] = useState(false);
+  const [freehandModifierPressed, setFreehandModifierPressed] = useState(false);
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [pickedGadmSelection, setPickedGadmSelection] = useState([]);
-  const [bulkTargetFlagIndex, setBulkTargetFlagIndex] = useState(null);
-  const [bulkOperator, setBulkOperator] = useState('union');
+  const [selectionBatches, setSelectionBatches] = useState([]);
+  const [referencePickTarget, setReferencePickTarget] = useState(null); // { kind: 'gadm'|'river', flagIndex?, layerIndex? }
   const [countryLevelOptions, setCountryLevelOptions] = useState({});
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const hoverPickRef = useRef('');
 
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
@@ -67,19 +67,22 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   useEffect(() => {
-      if (activePicker) {
+      const isDraftPicker = !!(activePicker && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-')));
+      if (isDraftPicker) {
           updateDraft(draftPoints, activePicker.type);
       } else {
           updateDraft([], null);
       }
-  }, [draftPoints, activePicker, activePreviewTab]);
+  }, [draftPoints, activePicker, activePreviewTab, pickerHtml]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
         if (!activePicker) return;
         if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
-        if (e.key === 'Shift') {
-            setIsShiftPressed(true);
+        const isDraftPicker = activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-');
+        if (!isDraftPicker) return;
+        if (e.key === 'Control' || e.key === 'Meta') {
+            setFreehandModifierPressed(true);
             return;
         }
         if (e.key === 'Backspace') {
@@ -92,11 +95,11 @@ xatra.TitleBox("<b>My Map</b>")
         } else if (e.key === 'Escape') {
             setActivePicker(null);
             setDraftPoints([]);
-            setIsShiftPressed(false);
+            setFreehandModifierPressed(false);
         }
     };
     const handleKeyUp = (e) => {
-      if (e.key === 'Shift') setIsShiftPressed(false);
+      if (e.key === 'Control' || e.key === 'Meta') setFreehandModifierPressed(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -152,7 +155,7 @@ xatra.TitleBox("<b>My Map</b>")
       } else if (event.data && event.data.type === 'mapMouseUp') {
           setIsMouseDown(false);
       } else if (event.data && event.data.type === 'mapMouseMove') {
-          if (activePicker && isShiftPressed && isMouseDown) {
+          if (activePicker && freehandModifierPressed && isMouseDown && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-'))) {
               const point = [parseFloat(event.data.lat.toFixed(4)), parseFloat(event.data.lng.toFixed(4))];
               setDraftPoints(prev => {
                   const last = prev[prev.length - 1];
@@ -166,7 +169,8 @@ xatra.TitleBox("<b>My Map</b>")
           // Keys forwarded from map iframe (when user clicked map, focus is in iframe)
           const key = event.data.key;
           if (!activePicker) return;
-          if (key === 'Backspace') {
+          const isDraftPicker = activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-');
+          if (key === 'Backspace' && isDraftPicker) {
             setDraftPoints(prev => {
               const newPoints = prev.slice(0, -1);
               updateElementFromDraft(newPoints);
@@ -175,53 +179,59 @@ xatra.TitleBox("<b>My Map</b>")
           } else if (key === 'Escape') {
             setActivePicker(null);
             setDraftPoints([]);
-            setIsShiftPressed(false);
-          } else if (key === 'Shift') {
-            setIsShiftPressed(true);
+            setFreehandModifierPressed(false);
+          } else if (key === 'Control' || key === 'Meta') {
+            setFreehandModifierPressed(true);
           }
       } else if (event.data && event.data.type === 'mapKeyUp') {
-          if (event.data.key === 'Shift') setIsShiftPressed(false);
+          if (event.data.key === 'Control' || event.data.key === 'Meta') setFreehandModifierPressed(false);
       } else if (event.data && event.data.type === 'mapFeaturePick') {
           const data = event.data || {};
-          if (data.featureType === 'gadm' && data.gid) {
-              setLastPickedGadm({ gid: data.gid, name: data.name || '', ts: Date.now() });
-              const isMulti = !!(data.shiftKey || data.ctrlKey || data.metaKey || data.multiSelect);
-              if (isMulti) {
+          if (data.featureType === 'gadm' && data.gid && activePicker?.context === 'reference-gadm') {
+              const gid = String(data.gid);
+              if (data.hoverMode === 'add' || data.hoverMode === 'remove') {
+                const sig = `${data.hoverMode}:${gid}`;
+                if (hoverPickRef.current === sig) return;
+                hoverPickRef.current = sig;
                 setPickedGadmSelection((prev) => {
-                  const exists = prev.some((x) => x.gid === data.gid);
-                  if (exists) return prev.filter((x) => x.gid !== data.gid);
-                  return [...prev, { gid: data.gid, name: data.name || '' }];
+                  const exists = prev.some((x) => x.gid === gid);
+                  if (data.hoverMode === 'add') {
+                    return exists ? prev : [...prev, { gid, name: data.name || '' }];
+                  }
+                  return exists ? prev.filter((x) => x.gid !== gid) : prev;
                 });
               } else {
-                setPickedGadmSelection([{ gid: data.gid, name: data.name || '' }]);
+                hoverPickRef.current = '';
+                setPickedGadmSelection((prev) => {
+                  const exists = prev.some((x) => x.gid === gid);
+                  if (exists) return prev.filter((x) => x.gid !== gid);
+                  return [...prev, { gid, name: data.name || '' }];
+                });
               }
-          } else if (data.featureType === 'river' && data.id) {
-              setLastPickedRiver({
-                  id: String(data.id),
-                  source_type: data.source_type || 'naturalearth',
-                  name: data.name || '',
-                  ts: Date.now()
-              });
+          } else if (data.featureType === 'river' && data.id && activePicker?.context === 'reference-river' && referencePickTarget?.kind === 'river') {
+              const idx = referencePickTarget.layerIndex;
+              if (idx != null) {
+                setBuilderElements((prev) => {
+                  const next = [...prev];
+                  const el = next[idx];
+                  if (!el || el.type !== 'river') return prev;
+                  next[idx] = {
+                    ...el,
+                    value: String(data.id),
+                    args: { ...(el.args || {}), source_type: data.source_type || 'naturalearth' }
+                  };
+                  return next;
+                });
+              }
+              setActivePicker(null);
+              setReferencePickTarget(null);
+              setActivePreviewTab('main');
           }
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [activePreviewTab, activePicker, isShiftPressed, isMouseDown, builderElements]);
-
-  useEffect(() => {
-    const flagIndices = builderElements
-      .map((el, idx) => ({ el, idx }))
-      .filter(({ el }) => el.type === 'flag')
-      .map(({ idx }) => idx);
-    if (flagIndices.length === 0) {
-      setBulkTargetFlagIndex(null);
-      return;
-    }
-    if (bulkTargetFlagIndex == null || !flagIndices.includes(bulkTargetFlagIndex)) {
-      setBulkTargetFlagIndex(flagIndices[0]);
-    }
-  }, [builderElements, bulkTargetFlagIndex]);
+  }, [activePreviewTab, activePicker, freehandModifierPressed, isMouseDown, referencePickTarget, builderElements]);
 
   useEffect(() => {
     const uniqueCountries = Array.from(
@@ -241,7 +251,7 @@ xatra.TitleBox("<b>My Map</b>")
           const res = await fetch(`http://localhost:8088/gadm/levels?country=${encodeURIComponent(country)}`);
           const levels = await res.json();
           return [country, Array.isArray(levels) && levels.length ? levels : [0, 1, 2, 3, 4]];
-        } catch (e) {
+        } catch {
           return [country, [0, 1, 2, 3, 4]];
         }
       })
@@ -253,6 +263,106 @@ xatra.TitleBox("<b>My Map</b>")
       setCountryLevelOptions(next);
     });
   }, [pickerOptions.entries]);
+
+  useEffect(() => {
+    const ref = pickerIframeRef.current;
+    if (!ref || !ref.contentWindow) return;
+    const groups = [
+      ...selectionBatches,
+      ...(pickedGadmSelection.length ? [{ op: 'pending', gids: pickedGadmSelection.map((x) => x.gid) }] : []),
+    ];
+    ref.contentWindow.postMessage({ type: 'setSelectionOverlay', groups }, '*');
+  }, [selectionBatches, pickedGadmSelection, pickerHtml]);
+
+  const getFlagOccurrenceInfo = (flagIndex) => {
+    const target = builderElements[flagIndex];
+    if (!target || target.type !== 'flag') return null;
+    const label = target.label || '(unnamed)';
+    let occurrence = 0;
+    let count = 0;
+    builderElements.forEach((el, idx) => {
+      if (el.type !== 'flag' || (el.label || '(unnamed)') !== label) return;
+      count += 1;
+      if (idx <= flagIndex) occurrence = count;
+    });
+    return { label, occurrence, count };
+  };
+
+  const handleStartReferencePick = (target) => {
+    if (!target || !target.kind) return;
+    setReferencePickTarget(target);
+    setPickedGadmSelection([]);
+    setSelectionBatches([]);
+    hoverPickRef.current = '';
+    setDraftPoints([]);
+    setActivePicker({
+      id: target.layerIndex ?? target.flagIndex ?? 0,
+      type: target.kind,
+      context: target.kind === 'river' ? 'reference-river' : 'reference-gadm',
+      target,
+    });
+    setActivePreviewTab('picker');
+  };
+
+  const applyPickedGadmsToTarget = (op) => {
+    if (!pickedGadmSelection.length || referencePickTarget?.kind !== 'gadm') return;
+    const targetFlagIndex = referencePickTarget.flagIndex;
+    if (targetFlagIndex == null) return;
+    const picked = pickedGadmSelection.filter((x) => x?.gid);
+    if (!picked.length) return;
+    setBuilderElements((prev) => {
+      const next = [...prev];
+      const target = next[targetFlagIndex];
+      if (!target || target.type !== 'flag') return prev;
+      const currentParts = Array.isArray(target.value)
+        ? [...target.value]
+        : (target.value ? [{ op: 'union', type: 'gadm', value: target.value }] : []);
+      picked.forEach((item) => {
+        const nextOp = currentParts.length === 0 ? 'union' : op;
+        currentParts.push({ op: nextOp, type: 'gadm', value: item.gid });
+      });
+      next[targetFlagIndex] = { ...target, value: currentParts };
+      return next;
+    });
+    setSelectionBatches((prev) => [...prev, { op, gids: picked.map((x) => x.gid) }]);
+    setPickedGadmSelection([]);
+    hoverPickRef.current = '';
+  };
+
+  const clearReferenceSelection = () => {
+    setPickedGadmSelection([]);
+    setSelectionBatches([]);
+    hoverPickRef.current = '';
+  };
+
+  useEffect(() => {
+    if (!activePicker) {
+      setReferencePickTarget(null);
+      clearReferenceSelection();
+      setFreehandModifierPressed(false);
+    }
+  }, [activePicker]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
+      if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcutHelp((prev) => !prev);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '1') {
+        e.preventDefault();
+        handleTabChange('builder');
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+        e.preventDefault();
+        handleTabChange('code');
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        renderMap();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeTab, code, predefinedCode, builderElements, builderOptions]);
 
   const handleGetCurrentView = () => {
     const ref = activePreviewTab === 'picker' ? pickerIframeRef : iframeRef;
@@ -375,7 +485,7 @@ xatra.TitleBox("<b>My Map</b>")
       const name = (element.label || '').replace(/\s+/g, '_');
       const terrStr = formatTerritory(element.value);
       setPredefinedCode(prev => prev + `\n${name} = ${terrStr}\n`);
-      setActiveTab('code');
+      handleTabChange('code');
   };
 
   const generatePythonCode = () => {
@@ -545,31 +655,38 @@ xatra.TitleBox("<b>My Map</b>")
     setCode(lines.join('\n'));
   };
 
-  useEffect(() => {
-    if (activeTab === 'code') generatePythonCode();
-  }, [activeTab]);
-
-  const applyPickedGadmsToFlag = () => {
-    if (!pickedGadmSelection.length || bulkTargetFlagIndex == null) return;
-    setBuilderElements((prev) => {
-      const next = [...prev];
-      const target = next[bulkTargetFlagIndex];
-      if (!target || target.type !== 'flag') return prev;
-      const currentParts = Array.isArray(target.value)
-        ? [...target.value]
-        : (target.value ? [{ op: 'union', type: 'gadm', value: target.value }] : []);
-      pickedGadmSelection.forEach((picked, idx) => {
-        if (!picked?.gid) return;
-        if (currentParts.length === 0 && idx === 0) {
-          currentParts.push({ op: 'union', type: 'gadm', value: picked.gid });
-        } else {
-          currentParts.push({ op: bulkOperator, type: 'gadm', value: picked.gid });
-        }
-      });
-      next[bulkTargetFlagIndex] = { ...target, value: currentParts };
-      return next;
+  const parseCodeToBuilder = async () => {
+    const response = await fetch('http://localhost:8088/sync/code_to_builder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, predefined_code: predefinedCode }),
     });
-    setPickedGadmSelection([]);
+    const data = await response.json();
+    if (!response.ok || data.error) {
+      throw new Error(data.error || 'Failed to parse code into Builder state');
+    }
+    return data;
+  };
+
+  const handleTabChange = async (nextTab) => {
+    if (nextTab === activeTab) return;
+    if (nextTab === 'code') {
+      generatePythonCode();
+      setActiveTab('code');
+      return;
+    }
+    if (activeTab === 'code' && nextTab === 'builder') {
+      try {
+        const parsed = await parseCodeToBuilder();
+        if (Array.isArray(parsed.elements)) setBuilderElements(parsed.elements);
+        if (parsed.options && typeof parsed.options === 'object') setBuilderOptions(parsed.options);
+        if (typeof parsed.predefined_code === 'string') setPredefinedCode(parsed.predefined_code);
+      } catch (err) {
+        setError(`Code → Builder sync failed: ${err.message}`);
+        return;
+      }
+    }
+    setActiveTab(nextTab);
   };
 
   const handleStop = async () => {
@@ -597,13 +714,13 @@ xatra.TitleBox("<b>My Map</b>")
             </h1>
             <div className="flex bg-white rounded-lg border border-gray-300 p-0.5">
                 <button 
-                onClick={() => setActiveTab('builder')}
+                onClick={() => handleTabChange('builder')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'builder' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                 <span className="flex items-center gap-1"><Layers size={16}/> Builder</span>
                 </button>
                 <button 
-                onClick={() => setActiveTab('code')}
+                onClick={() => handleTabChange('code')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'code' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                 <span className="flex items-center gap-1"><Code size={16}/> Code</span>
@@ -638,8 +755,7 @@ xatra.TitleBox("<b>My Map</b>")
               setDraftPoints={setDraftPoints}
               onSaveTerritory={handleSaveTerritoryToLibrary}
               predefinedCode={predefinedCode}
-              lastPickedGadm={lastPickedGadm}
-              lastPickedRiver={lastPickedRiver}
+              onStartReferencePick={handleStartReferencePick}
             />
           ) : (
             <CodeEditor 
@@ -775,23 +891,26 @@ xatra.TitleBox("<b>My Map</b>")
                     >
                         Update Reference Map
                     </button>
-                    {(lastPickedGadm || lastPickedRiver) && (
-                        <div className="space-y-1 border-t border-gray-100 pt-2 text-[11px]">
-                            <div className="font-semibold text-gray-600">Last Picked From Reference Map</div>
-                            {lastPickedGadm && (
-                                <div className="font-mono text-gray-700">
-                                    GADM: {lastPickedGadm.gid}{lastPickedGadm.name ? ` (${lastPickedGadm.name})` : ''}
-                                </div>
-                            )}
-                            {lastPickedRiver && (
-                                <div className="font-mono text-gray-700">
-                                    River: {lastPickedRiver.source_type}:{lastPickedRiver.id}{lastPickedRiver.name ? ` (${lastPickedRiver.name})` : ''}
-                                </div>
-                            )}
-                        </div>
-                    )}
                     <div className="space-y-2 border-t border-gray-100 pt-2 text-[11px]">
-                        <div className="font-semibold text-gray-600">Selected GADM (multi-pick with Shift/Ctrl/Cmd click)</div>
+                        <div className="font-semibold text-gray-600">Reference Picker Target</div>
+                        {referencePickTarget?.kind === 'gadm' && referencePickTarget.flagIndex != null ? (
+                          <div className="text-[11px] text-gray-500">
+                            {(() => {
+                              const info = getFlagOccurrenceInfo(referencePickTarget.flagIndex);
+                              if (!info) return 'No flag selected.';
+                              return `Flag "${info.label}" #${info.occurrence}${info.count > 1 ? ` of ${info.count}` : ''}`;
+                            })()}
+                          </div>
+                        ) : referencePickTarget?.kind === 'river' ? (
+                          <div className="text-[11px] text-gray-500">
+                            Picking river for layer #{(referencePickTarget.layerIndex ?? 0) + 1}
+                          </div>
+                        ) : (
+                          <div className="text-gray-400 italic">Activate a pick button in Builder to target a layer.</div>
+                        )}
+                    </div>
+                    <div className="space-y-2 border-t border-gray-100 pt-2 text-[11px]">
+                        <div className="font-semibold text-gray-600">Selected GADM</div>
                         {pickedGadmSelection.length === 0 ? (
                           <div className="text-gray-400 italic">No selections yet.</div>
                         ) : (
@@ -803,37 +922,31 @@ xatra.TitleBox("<b>My Map</b>")
                             ))}
                           </div>
                         )}
-                        <div className="grid grid-cols-2 gap-1.5 items-center">
-                          <select
-                            value={bulkTargetFlagIndex ?? ''}
-                            onChange={(e) => setBulkTargetFlagIndex(parseInt(e.target.value))}
-                            className="text-[11px] p-1 border rounded bg-white"
-                          >
-                            {builderElements.map((el, idx) => (
-                              el.type === 'flag' ? <option key={idx} value={idx}>Flag: {el.label || `#${idx + 1}`}</option> : null
-                            ))}
-                          </select>
-                          <select
-                            value={bulkOperator}
-                            onChange={(e) => setBulkOperator(e.target.value)}
-                            className="text-[11px] p-1 border rounded bg-white"
-                          >
-                            <option value="union">Union (+)</option>
-                            <option value="difference">Subtract (-)</option>
-                            <option value="intersection">Intersect (&)</option>
-                          </select>
-                        </div>
                         <div className="flex gap-1.5">
                           <button
-                            onClick={applyPickedGadmsToFlag}
-                            disabled={!pickedGadmSelection.length || bulkTargetFlagIndex == null}
-                            className="flex-1 py-1 px-2 text-[11px] bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+                            onClick={() => applyPickedGadmsToTarget('union')}
+                            disabled={!pickedGadmSelection.length || referencePickTarget?.kind !== 'gadm'}
+                            className="flex-1 py-1 px-2 text-[11px] bg-green-600 hover:bg-green-700 text-white rounded disabled:opacity-50"
                           >
-                            Apply to Territory
+                            + Add
                           </button>
                           <button
-                            onClick={() => setPickedGadmSelection([])}
-                            disabled={!pickedGadmSelection.length}
+                            onClick={() => applyPickedGadmsToTarget('difference')}
+                            disabled={!pickedGadmSelection.length || referencePickTarget?.kind !== 'gadm'}
+                            className="flex-1 py-1 px-2 text-[11px] bg-rose-600 hover:bg-rose-700 text-white rounded disabled:opacity-50"
+                          >
+                            - Subtract
+                          </button>
+                          <button
+                            onClick={() => applyPickedGadmsToTarget('intersection')}
+                            disabled={!pickedGadmSelection.length || referencePickTarget?.kind !== 'gadm'}
+                            className="flex-1 py-1 px-2 text-[11px] bg-indigo-600 hover:bg-indigo-700 text-white rounded disabled:opacity-50"
+                          >
+                            & Intersect
+                          </button>
+                          <button
+                            onClick={clearReferenceSelection}
+                            disabled={!pickedGadmSelection.length && selectionBatches.length === 0}
                             className="py-1 px-2 text-[11px] border rounded bg-white hover:bg-gray-50 disabled:opacity-50"
                           >
                             Clear
@@ -842,20 +955,29 @@ xatra.TitleBox("<b>My Map</b>")
                     </div>
                 </div>
                 <div className="text-[10px] text-gray-400 bg-gray-50 p-2 rounded italic">
-                    Tip: Use the reference map to find GADM codes or coordinates.
+                    Tip: Click regions to toggle selection. Hold Ctrl/Cmd and move to paint-select, hold Alt and move to paint-unselect.
                 </div>
             </div>
         )}
 
         <div className="flex-1 overflow-hidden relative">
-            {activePicker && (
+            {showShortcutHelp && (
+                <div className="absolute top-4 right-4 z-40 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 text-xs text-gray-700 w-56">
+                    <div className="font-semibold text-gray-800 mb-2">Shortcuts</div>
+                    <div>`?` toggle this panel</div>
+                    <div>`Ctrl/Cmd+1` Builder tab</div>
+                    <div>`Ctrl/Cmd+2` Code tab</div>
+                    <div>`Ctrl/Cmd+Enter` Render map</div>
+                </div>
+            )}
+            {activePicker && (activePicker.context === 'layer' || String(activePicker.context || '').startsWith('territory-')) && (
                 <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center">
                     <div className="bg-amber-500 text-white px-6 py-4 rounded-lg shadow-2xl border-2 border-amber-600 font-semibold text-center max-w-md animate-pulse">
                         <div className="text-sm mb-1">Click map to add points</div>
                         <div className="text-xs font-normal opacity-95">
                             <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Backspace</kbd> undo last point
                             {' · '}
-                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Shift</kbd> hold + drag for freehand
+                            <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Ctrl/Cmd</kbd> hold + drag for freehand
                             {' · '}
                             <kbd className="bg-amber-600 px-1.5 py-0.5 rounded">Esc</kbd> cancel
                         </div>

@@ -38,6 +38,26 @@ Bugs
       - [x] Map Code is fine, but Predefined Territories code editor is still much smaller than its box.
   - [x] This tip: `Type xatra. or map. for map methods. Use Ctrl+Space for suggestions.` should not say `map.`, it should just be `Type xatra. for map methods. Use Ctrl+Space for suggestions.`
   - [ ] I have vimium installed, and when I try typing in the code editor it doesn't realize I'm in insert mode. This is weird, since I haven't had this issue on other sites using Monaco. Can you figure out how to fix this? 
+    - [ ] The current attempted fixes ("Force editor focus while Code tab is active", Ctrl+Alt+I) don't work, and should be removed to avoid bloat. I found the following suggestions online:
+    
+    Vimium has logic to automatically detect input fields, but it relies on specific attributes. You can sometimes "trick" Vimium into recognizing your editor container as an input by adding the class mousetrap to the container div. Vimium and several other keyboard libraries often hardcode a check for the class mousetrap to automatically disable their shortcuts when that element is focused.
+    ```
+    document.getElementById('monaco-editor-container').classList.add('mousetrap');
+    ```
+
+    Or, if that doesn't work:
+    ```
+    // Assuming 'editor' is your Monaco editor instance
+    const editorContainer = editor.getContainerDomNode();
+
+    editorContainer.addEventListener('keydown', (e) => {
+        // Check if the class indicates the editor is focused/active
+        if (editorContainer.classList.contains('monaco-editor')) {
+            // Stop the event from bubbling up to Vimium
+            e.stopPropagation();
+        }
+    }, true); // Use 'true' for capturing phase if bubbling doesn't catch it early enough
+    ```
 
 Basic extensions
 - [x] Allow adding any feature to the map, not just flags and rivers. Every single method listed under #### Methods in the main README should have an appropriate interface for adding it:
@@ -66,7 +86,7 @@ Basic extensions
     - [x] Base Layers: allow adding any number of base layers, and selecting one as default.
       - [x] Fixed. But the UI is a bit clumsy. Instead, just have the list of available base layers as checkboxes (where checking a box means it will be included in the base layer options) and include buttons next to them to make default (it should only be possible to make one default).
   - [x] FlagColorSequence, AdminColorSequence, DataColormap --- think through the interface for this carefully; users should be able to set the obvious ones easily, or create their own color sequence or map, just like in the package itself (see the README for details). [This still needs to be done better---also it should be possible to set multiple color sequences for different classes].
-    - [ ] Nah the FlagColorSequence interface is still wrong. See the colorseq.py file, and figure out the appropriate way to enter the sort of color sequences we are interested in (also display the default color sequence we use, by default)
+    - [ ] Nah the FlagColorSequence interface is still totally wrong. See the colorseq.py file---basically we should always construct a linear color sequence, and the user should be able to enter the step-sizes in H,S,L and optionally a list of starting colors, and we initialize a LinearColorSequence(colors=those optional colors or None if not provided, step=Color.hsl(those values)). It should be pre-loaded with the default color sequence, LinearColorSequence(colors=None,step=Color.hsl(1.6180339887, 0.0, 0.0)) (and there doesn't need to be that cluttery explanatory note explaining that this is a default, like there is now). The user should also be able to restrict the color sequence to any particular class if need be, but the dropdown should not consist of all the classes present but only the custom classes that have been applied to Flags.
   - [x] zoom and focus
     - [x] this should include a button to just use the current zoom and focus levels at the map is at
     - [x] there's a weird bug where I can't clear the contents of Initial focus manually because if I clear Latitude, Longitude becomes filled again (with 0) and if I clear Longitude, Latitude gets filled again. Fix that.
@@ -84,7 +104,7 @@ Features
       - [x] Fixed by forwarding Backspace/Escape/Space from the map iframe to the parent (focus is in iframe when user clicks map)
   - [x] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode (and then you can continue clicking points normally).
     - [x] Ok, one issue: holding and dragging *also* moves the map around at the same time. Maybe instead of pressing spacebar + dragging, we should change it to holding shift and dragging, and prevent Leaflet from moving the map when shift is pressed.
-      - [ ] Fixed. However, Shift is actually also used for zooming in to maps, so another conflict. Can we switch to Ctrl+dragging (Cmd should also work for Mac users)?
+      - [x] Fixed. However, Shift is actually also used for zooming in to maps, so another conflict. Can we switch to Ctrl+dragging (Cmd should also work for Mac users)?
   - [x] Display these tips (backspace, freehand mode)
     - [x] These tips should be shown in a blaring message on the map while picker mode is on, not underneath the box like it currently is.
   - [x] One problem is that the user may forget to un-click the picker and leave it on while picking other co-ordinates. To avoid this, only one picker should be turned on at a time: clicking another picker should turn off all the other ones (and show this visually too).
@@ -105,7 +125,7 @@ Features
     - [x] The user should be able to search for their country (either by GID or by country name) when entering a country code--just like they can while entering GADM territories for Flags.
   - [x] Then they will be able to select gadm territories from an admin Picker map.
   - [x] that can also be extended to select multiple gadm territories at once from the admin Picker map by pressing some key, and add them as multiple `| gadm(...)` or `- gadm(...)` fields. This will need some re-thinking of how the solution is currently implemented.
-    - [ ] Very nice implementation. However, I want this to be implemented a bit differently, because there can actually be multiple flag layers with the same label (and this is an important aspect of the app). So instead:
+    - [x] Very nice implementation. However, I want this to be implemented a bit differently, because there can actually be multiple flag layers with the same label (and this is an important aspect of the app). So instead:
       - The GADM territories have a pick button (use the little arrow icon instead of "Use Picked" text), and that sets the flag layer being selected for to this particular element and also switches the view to Reference Map.
       - The user should not be able to select this flag layer from a dropdown in the Reference Map Options box like they are now (it's too confusing), however it should lightly display the flag name and a number representing which layer with that Flag label is being selected for (e.g. 15 if the 15th instance of that Flag label in the Layers list is being selected for).
       - Clicking a territory should add it to the list of territories being multi-selected, or remove it if it is already in the list. No need for Ctrl/Cmd/Shift, since we're going to do away with the separate single selections feature anyway. Holding Ctrl and moving the mouse should select all territories it moves over (no undoing already-selected territories in this mode); holding Alt and moving the mouse should unselect all territories it moves over. There should be a little tip mentioning this in the Reference Map Options.
@@ -127,6 +147,7 @@ Features
 - [ ] Better keyboard-based navigation. This will need to be implemented very carefully and thoroughly, making sure everything is easily accessible by keyboard or has convenient keyboard shortcuts
     - [x] It should be made possible to navigate the autocomplete searches via keyboard---both in the territory GADM picker and in the Reference Map autocomplete-search for countries.
       - [x] When going down on an autocomplete search, it should scroll the autocomplete search box as necessary.
+    - [ ] 
 - [ ] Territory library tab
 
 Minor changes
@@ -143,6 +164,7 @@ Minor changes
   - [x] And include a from xatra.territory_library import * line at the top, since all those territories are included in our library---and in a comment right next to it, link to https://github.com/srajma/xatra/blob/master/src/xatra/territory_library.py. Remove all the other junk comments pre-filled there by default.
 - [x] In "Reference Map Options", just like there's a label "Countries" for the country field there should be a label "Admin Level" for the Admin Level field.
   - [x] Also, the levels entry field should be a dropdown with all the admin levels available for their country (these should be pre-computed and kept in an index).
+- [ ] Clicking "Render Map" (from either Builder or Code) should set the tab (which can currently be "Map Preview" or "Refernece Map") to "Map Preview".
 - [ ] Better words and tips for Flag, label etc. I need to think about this, don't do anything yet.
 
 Development difficulties

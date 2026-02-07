@@ -6,6 +6,8 @@ import traceback
 import threading
 import multiprocessing
 import signal
+import ast
+import re
 
 # Set matplotlib backend to Agg before importing anything else
 import matplotlib
@@ -217,6 +219,10 @@ def gadm_levels(country: str):
 class CodeRequest(BaseModel):
     code: str
 
+class CodeSyncRequest(BaseModel):
+    code: str
+    predefined_code: Optional[str] = None
+
 class MapElement(BaseModel):
     type: str
     label: Optional[str] = None
@@ -235,6 +241,285 @@ class PickerEntry(BaseModel):
 class PickerRequest(BaseModel):
     entries: List[PickerEntry]
     adminRivers: bool = False
+
+def _python_value(node: ast.AST):
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.List):
+        return [_python_value(el) for el in node.elts]
+    if isinstance(node, ast.Tuple):
+        return [_python_value(el) for el in node.elts]
+    if isinstance(node, ast.Dict):
+        return {_python_value(k): _python_value(v) for k, v in zip(node.keys, node.values)}
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub) and isinstance(node.operand, ast.Constant):
+        return -node.operand.value
+    if isinstance(node, ast.Name):
+        if node.id == "None":
+            return None
+        if node.id == "True":
+            return True
+        if node.id == "False":
+            return False
+    return None
+
+def _call_name(node: ast.AST) -> Optional[str]:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        base = _call_name(node.value)
+        return f"{base}.{node.attr}" if base else node.attr
+    return None
+
+def _parse_color_sequence_expr(node: ast.AST) -> Optional[str]:
+    # RotatingColorSequence().from_matplotlib_color_sequence("Pastel1")
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+        if node.func.attr == "from_matplotlib_color_sequence" and node.args:
+            palette = _python_value(node.args[0])
+            return str(palette) if palette else None
+    # RotatingColorSequence([Color.hex("#..."), Color.named("red")])
+    if isinstance(node, ast.Call) and _call_name(node.func) == "RotatingColorSequence" and node.args:
+        first = node.args[0]
+        if isinstance(first, ast.List):
+            out = []
+            for el in first.elts:
+                if isinstance(el, ast.Call):
+                    cname = _call_name(el.func)
+                    if cname == "Color.hex" and el.args:
+                        val = _python_value(el.args[0])
+                        if isinstance(val, str):
+                            out.append(val)
+                    elif cname == "Color.named" and el.args:
+                        val = _python_value(el.args[0])
+                        if isinstance(val, str):
+                            out.append(val)
+            return ",".join(out) if out else None
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    return None
+
+def _parse_css_rules(css_text: str) -> List[Dict[str, str]]:
+    rules = []
+    for match in re.finditer(r"([^{}]+)\{([^{}]+)\}", css_text or ""):
+        selector = match.group(1).strip()
+        style = match.group(2).strip()
+        if selector and style:
+            rules.append({"selector": selector, "style": style})
+    return rules
+
+def _parse_territory_node(node: ast.AST, parts: List[Dict[str, Any]], op: str = "union"):
+    if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.BitOr, ast.Sub, ast.BitAnd)):
+        _parse_territory_node(node.left, parts, op)
+        right_op = "union"
+        if isinstance(node.op, ast.Sub):
+            right_op = "difference"
+        elif isinstance(node.op, ast.BitAnd):
+            right_op = "intersection"
+        _parse_territory_node(node.right, parts, right_op)
+        return
+
+    part = None
+    if isinstance(node, ast.Call):
+        cname = _call_name(node.func)
+        if cname == "gadm" and node.args:
+            val = _python_value(node.args[0])
+            if isinstance(val, str):
+                part = {"type": "gadm", "value": val}
+        elif cname == "polygon" and node.args:
+            coords = _python_value(node.args[0])
+            if coords is not None:
+                part = {"type": "polygon", "value": json.dumps(coords)}
+    elif isinstance(node, ast.Name):
+        part = {"type": "predefined", "value": node.id}
+
+    if part:
+        part["op"] = "union" if len(parts) == 0 else op
+        parts.append(part)
+
+@app.post("/sync/code_to_builder")
+def sync_code_to_builder(request: CodeSyncRequest):
+    try:
+        tree = ast.parse(request.code or "")
+    except Exception as e:
+        return {"error": f"Python parse failed: {e}"}
+
+    elements: List[Dict[str, Any]] = []
+    options: Dict[str, Any] = {"basemaps": []}
+    flag_color_rows: List[Dict[str, str]] = []
+    unsupported: List[str] = []
+
+    for stmt in tree.body:
+        if isinstance(stmt, (ast.Import, ast.ImportFrom)):
+            continue
+        if isinstance(stmt, ast.Assign):
+            # Keep code-only assignments in code mode; predefined code is managed separately in UI.
+            continue
+        if not isinstance(stmt, ast.Expr) or not isinstance(stmt.value, ast.Call):
+            unsupported.append(type(stmt).__name__)
+            continue
+
+        call = stmt.value
+        name = _call_name(call.func)
+        if not (name and name.startswith("xatra.")):
+            continue
+        method = name.split(".", 1)[1]
+        kwargs = {kw.arg: kw.value for kw in call.keywords if kw.arg}
+
+        if method == "BaseOption":
+            if call.args:
+                provider = _python_value(call.args[0])
+                if isinstance(provider, str):
+                    options["basemaps"].append({
+                        "url_or_provider": provider,
+                        "name": _python_value(kwargs.get("name")) or provider,
+                        "default": bool(_python_value(kwargs.get("default"))),
+                    })
+            continue
+
+        if method == "TitleBox":
+            if call.args:
+                title = _python_value(call.args[0])
+                if isinstance(title, str):
+                    options["title"] = title
+            continue
+
+        if method == "zoom":
+            if call.args:
+                options["zoom"] = _python_value(call.args[0])
+            continue
+
+        if method == "focus":
+            if len(call.args) >= 2:
+                options["focus"] = [_python_value(call.args[0]), _python_value(call.args[1])]
+            continue
+
+        if method == "slider":
+            slider = {
+                "start": _python_value(kwargs.get("start")),
+                "end": _python_value(kwargs.get("end")),
+                "speed": _python_value(kwargs.get("speed")),
+            }
+            options["slider"] = slider
+            continue
+
+        if method == "CSS":
+            if call.args:
+                css_text = _python_value(call.args[0])
+                if isinstance(css_text, str):
+                    options["css_rules"] = _parse_css_rules(css_text)
+            continue
+
+        if method == "FlagColorSequence":
+            if call.args:
+                seq = _parse_color_sequence_expr(call.args[0])
+                if seq:
+                    class_name = _python_value(kwargs.get("class_name"))
+                    flag_color_rows.append({"class_name": class_name or "", "value": seq})
+            continue
+
+        if method == "AdminColorSequence":
+            if call.args:
+                seq = _parse_color_sequence_expr(call.args[0])
+                if seq:
+                    options["admin_colors"] = seq
+            continue
+
+        if method == "DataColormap":
+            if call.args:
+                cmap = _python_value(call.args[0])
+                if isinstance(cmap, str):
+                    options["data_colormap"] = cmap
+            continue
+
+        args_dict = {}
+        for key, node in kwargs.items():
+            args_dict[key] = _python_value(node)
+
+        if method == "Flag":
+            territory_parts: List[Dict[str, Any]] = []
+            if "value" in kwargs:
+                _parse_territory_node(kwargs["value"], territory_parts)
+            label = args_dict.pop("label", None)
+            elements.append({
+                "type": "flag",
+                "label": label,
+                "value": territory_parts if territory_parts else [],
+                "args": {k: v for k, v in args_dict.items() if k != "value"},
+            })
+            continue
+
+        if method == "River":
+            label = args_dict.pop("label", None)
+            source_type = "naturalearth"
+            value = ""
+            v_node = kwargs.get("value")
+            if isinstance(v_node, ast.Call):
+                loader = _call_name(v_node.func)
+                if loader == "overpass":
+                    source_type = "overpass"
+                if v_node.args:
+                    v = _python_value(v_node.args[0])
+                    if isinstance(v, str):
+                        value = v
+            river_args = {k: v for k, v in args_dict.items() if k != "value"}
+            river_args["source_type"] = source_type
+            elements.append({"type": "river", "label": label, "value": value, "args": river_args})
+            continue
+
+        if method in ("Point", "Text"):
+            pos = args_dict.pop("position", None)
+            label = args_dict.pop("label", None)
+            value = json.dumps(pos) if isinstance(pos, list) else (pos or "")
+            if method == "Point":
+                icon_node = kwargs.get("icon")
+                if isinstance(icon_node, ast.Call):
+                    icon_call = _call_name(icon_node.func)
+                    if icon_call == "Icon.builtin" and icon_node.args:
+                        args_dict["icon"] = _python_value(icon_node.args[0])
+                    elif icon_call == "Icon.geometric" and icon_node.args:
+                        args_dict["icon"] = {
+                            "shape": _python_value(icon_node.args[0]) or "circle",
+                            "color": _python_value(next((kw.value for kw in icon_node.keywords if kw.arg == "color"), ast.Constant(value="#3388ff"))),
+                            "size": _python_value(next((kw.value for kw in icon_node.keywords if kw.arg == "size"), ast.Constant(value=24))),
+                        }
+                    elif icon_call == "Icon":
+                        args_dict["icon"] = {
+                            "icon_url": _python_value(next((kw.value for kw in icon_node.keywords if kw.arg == "icon_url"), ast.Constant(value=""))) or ""
+                        }
+            elements.append({"type": method.lower(), "label": label, "value": value, "args": args_dict})
+            continue
+
+        if method == "Path":
+            label = args_dict.pop("label", None)
+            path_val = args_dict.pop("value", None)
+            value = json.dumps(path_val) if isinstance(path_val, list) else (path_val or "")
+            elements.append({"type": "path", "label": label, "value": value, "args": args_dict})
+            continue
+
+        if method == "Admin":
+            gadm_code = args_dict.pop("gadm", "") or ""
+            elements.append({"type": "admin", "label": None, "value": gadm_code, "args": args_dict})
+            continue
+
+        if method == "AdminRivers":
+            sources = args_dict.pop("sources", ["naturalearth"])
+            elements.append({"type": "admin_rivers", "label": "All Rivers", "value": json.dumps(sources), "args": args_dict})
+            continue
+
+        if method == "Dataframe":
+            elements.append({"type": "dataframe", "label": "Data", "value": "", "args": {}})
+            continue
+
+    if flag_color_rows:
+        options["flag_color_sequences"] = flag_color_rows
+
+    if unsupported:
+        return {"error": "Unsupported code constructs for Builder sync: " + ", ".join(sorted(set(unsupported)))}
+
+    return {
+        "elements": elements,
+        "options": options,
+        "predefined_code": request.predefined_code or "",
+    }
 
 @app.get("/icons/list")
 def list_icons():

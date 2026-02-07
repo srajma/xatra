@@ -551,9 +551,58 @@ HTML_TEMPLATE = Template(
 
       // Listener for parent window messages (Studio integration)
       let draftLayer = null;
+      const highlightedLayers = new Map();
       function normalizeGadmCode(code) {
         if (!code || typeof code !== 'string') return '';
         return code.replace(/_\d+$/, '');
+      }
+      function getFeatureGidFromProps(props) {
+        if (!props) return '';
+        return normalizeGadmCode(props.GID_3 || props.GID_2 || props.GID_1 || props.GID_0 || '');
+      }
+      function resetSelectionOverlay() {
+        highlightedLayers.forEach((original, layer) => {
+          if (!layer || !layer.setStyle) return;
+          layer.setStyle(original);
+        });
+        highlightedLayers.clear();
+      }
+      function applySelectionOverlay(groups) {
+        resetSelectionOverlay();
+        if (!Array.isArray(groups) || groups.length === 0) return;
+        const styles = {
+          union: { color: '#16a34a', fillColor: '#16a34a', fillOpacity: 0.2, weight: 3 },
+          difference: { color: '#e11d48', fillColor: '#e11d48', fillOpacity: 0.2, weight: 3 },
+          intersection: { color: '#4f46e5', fillColor: '#4f46e5', fillOpacity: 0.2, weight: 3 },
+          pending: { color: '#0ea5e9', fillColor: '#0ea5e9', fillOpacity: 0.2, weight: 3, dashArray: '6,6' },
+        };
+        const gidToStyle = new Map();
+        groups.forEach((group) => {
+          const op = (group && group.op) ? String(group.op) : 'pending';
+          const style = styles[op] || styles.pending;
+          (group && Array.isArray(group.gids) ? group.gids : []).forEach((gid) => {
+            gidToStyle.set(normalizeGadmCode(gid), style);
+          });
+        });
+        if (gidToStyle.size === 0) return;
+        layers.admins.forEach((adminLayer) => {
+          if (!adminLayer || !adminLayer.eachLayer) return;
+          adminLayer.eachLayer((subLayer) => {
+            const props = subLayer?.feature?.properties || {};
+            const gid = getFeatureGidFromProps(props);
+            if (!gid || !gidToStyle.has(gid) || !subLayer.setStyle) return;
+            if (!highlightedLayers.has(subLayer)) {
+              highlightedLayers.set(subLayer, {
+                color: subLayer.options?.color,
+                fillColor: subLayer.options?.fillColor,
+                fillOpacity: subLayer.options?.fillOpacity,
+                weight: subLayer.options?.weight,
+                dashArray: subLayer.options?.dashArray,
+              });
+            }
+            subLayer.setStyle(gidToStyle.get(gid));
+          });
+        });
       }
       function extractRiverIdFromProps(props) {
         if (!props) return null;
@@ -596,23 +645,25 @@ HTML_TEMPLATE = Template(
                 });
                 draftLayer = group.addTo(map);
             }
+        } else if (event.data && event.data.type === 'setSelectionOverlay') {
+            applySelectionOverlay(event.data.groups || []);
         }
       });
 
       // Forward key events to parent so picker shortcuts work when map iframe has focus
       document.addEventListener('keydown', function(e) {
         if (!window.parent) return;
-        if (e.key === 'Shift' && map && map.dragging) {
+        if ((e.key === 'Control' || e.key === 'Meta') && map && map.dragging) {
           map.dragging.disable();
         }
-        if (e.key === 'Backspace' || e.key === 'Escape' || e.key === 'Shift') {
+        if (e.key === 'Backspace' || e.key === 'Escape' || e.key === 'Control' || e.key === 'Meta') {
           e.preventDefault();
           window.parent.postMessage({ type: 'mapKeyDown', key: e.key, repeat: e.repeat === true }, '*');
         }
       });
       document.addEventListener('keyup', function(e) {
         if (!window.parent) return;
-        if (e.key === 'Shift' && map && map.dragging) {
+        if ((e.key === 'Control' || e.key === 'Meta') && map && map.dragging) {
           map.dragging.enable();
           e.preventDefault();
           window.parent.postMessage({ type: 'mapKeyUp', key: e.key }, '*');
@@ -623,7 +674,8 @@ HTML_TEMPLATE = Template(
           map.dragging.enable();
         }
         if (window.parent) {
-          window.parent.postMessage({ type: 'mapKeyUp', key: 'Shift' }, '*');
+          window.parent.postMessage({ type: 'mapKeyUp', key: 'Control' }, '*');
+          window.parent.postMessage({ type: 'mapKeyUp', key: 'Meta' }, '*');
         }
       });
       document.addEventListener('visibilitychange', function() {
@@ -1455,6 +1507,26 @@ HTML_TEMPLATE = Template(
                 registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
 
+              layer.on('mousemove', function(e) {
+                if (!window.parent) return;
+                const originalEvent = (e && e.originalEvent) ? e.originalEvent : {};
+                const isAddSweep = !!(originalEvent.ctrlKey || originalEvent.metaKey);
+                const isRemoveSweep = !!originalEvent.altKey;
+                if (!isAddSweep && !isRemoveSweep) return;
+                const pickedGid = normalizeGadmCode(
+                  props.GID_3 || props.GID_2 || props.GID_1 || props.GID_0 || ''
+                );
+                if (!pickedGid) return;
+                const pickedName = props.NAME_3 || props.NAME_2 || props.NAME_1 || props.COUNTRY || '';
+                window.parent.postMessage({
+                  type: 'mapFeaturePick',
+                  featureType: 'gadm',
+                  gid: pickedGid,
+                  name: pickedName,
+                  hoverMode: isRemoveSweep ? 'remove' : 'add'
+                }, '*');
+              });
+
               layer.on('click', function(e) {
                 if (!window.parent) return;
                 const pickedGid = normalizeGadmCode(
@@ -1471,6 +1543,7 @@ HTML_TEMPLATE = Template(
                   shiftKey: !!originalEvent.shiftKey,
                   ctrlKey: !!originalEvent.ctrlKey,
                   metaKey: !!originalEvent.metaKey,
+                  altKey: !!originalEvent.altKey,
                   multiSelect: !!(originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey),
                 }, '*');
               });
@@ -2310,6 +2383,26 @@ HTML_TEMPLATE = Template(
                 registerLayerTooltip(layer, 'Admin Region', tooltip);
               }
 
+              layer.on('mousemove', function(e) {
+                if (!window.parent) return;
+                const originalEvent = (e && e.originalEvent) ? e.originalEvent : {};
+                const isAddSweep = !!(originalEvent.ctrlKey || originalEvent.metaKey);
+                const isRemoveSweep = !!originalEvent.altKey;
+                if (!isAddSweep && !isRemoveSweep) return;
+                const pickedGid = normalizeGadmCode(
+                  props.GID_3 || props.GID_2 || props.GID_1 || props.GID_0 || ''
+                );
+                if (!pickedGid) return;
+                const pickedName = props.NAME_3 || props.NAME_2 || props.NAME_1 || props.COUNTRY || '';
+                window.parent.postMessage({
+                  type: 'mapFeaturePick',
+                  featureType: 'gadm',
+                  gid: pickedGid,
+                  name: pickedName,
+                  hoverMode: isRemoveSweep ? 'remove' : 'add'
+                }, '*');
+              });
+
               layer.on('click', function(e) {
                 if (!window.parent) return;
                 const pickedGid = normalizeGadmCode(
@@ -2326,6 +2419,7 @@ HTML_TEMPLATE = Template(
                   shiftKey: !!originalEvent.shiftKey,
                   ctrlKey: !!originalEvent.ctrlKey,
                   metaKey: !!originalEvent.metaKey,
+                  altKey: !!originalEvent.altKey,
                   multiSelect: !!(originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey),
                 }, '*');
               });

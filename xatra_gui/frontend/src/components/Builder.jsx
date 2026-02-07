@@ -6,7 +6,7 @@ import GlobalOptions from './GlobalOptions';
 const Builder = ({ 
   elements, setElements, options, setOptions, onGetCurrentView, 
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
-  onSaveTerritory, predefinedCode, lastPickedGadm, lastPickedRiver
+  onSaveTerritory, predefinedCode, onStartReferencePick
 }) => {
   const layersEndRef = useRef(null);
   const prevElementsLengthRef = useRef(elements.length);
@@ -121,8 +121,7 @@ const Builder = ({
               setDraftPoints={setDraftPoints}
               onSaveTerritory={onSaveTerritory}
               predefinedCode={predefinedCode}
-              lastPickedGadm={lastPickedGadm}
-              lastPickedRiver={lastPickedRiver}
+              onStartReferencePick={onStartReferencePick}
             />
           ))}
           

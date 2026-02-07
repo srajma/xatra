@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2, Save } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Info, MousePointer2, Save, ArrowRight } from 'lucide-react';
 import AutocompleteInput from './AutocompleteInput';
 import TerritoryBuilder from './TerritoryBuilder';
 
@@ -8,12 +8,13 @@ const BUILTIN_ICON_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'cross',
 const LayerItem = ({ 
   element, index, updateElement, updateArg, replaceElement, removeElement, 
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
-  onSaveTerritory, predefinedCode, lastPickedGadm, lastPickedRiver
+  onSaveTerritory, predefinedCode, onStartReferencePick
 }) => {
   const [showMore, setShowMore] = useState(false);
   const [builtinIconsList, setBuiltinIconsList] = useState([]);
   
   const isPicking = activePicker && activePicker.id === index && activePicker.context === 'layer';
+  const isRiverReferencePicking = activePicker && activePicker.id === index && activePicker.context === 'reference-river';
 
   const [periodText, setPeriodText] = useState(element.args?.period ? element.args.period.join(', ') : '');
 
@@ -55,7 +56,7 @@ const LayerItem = ({
           try {
               const current = JSON.parse(element.value || '[]');
               setDraftPoints(Array.isArray(current) ? current : []);
-          } catch(e) {
+          } catch {
               setDraftPoints([]);
           }
       }
@@ -75,7 +76,9 @@ const LayerItem = ({
                       setDraftPoints([pos]);
                       return;
                   }
-              } catch (_) {}
+              } catch {
+                // ignore malformed coordinates while entering picker mode
+              }
           }
           setDraftPoints([]);
       }
@@ -136,7 +139,7 @@ const LayerItem = ({
                 setDraftPoints={setDraftPoints}
                 parentId={index}
                 predefinedCode={predefinedCode}
-                lastPickedGadm={lastPickedGadm}
+                onStartReferencePick={onStartReferencePick}
               />
             </div>
           </div>
@@ -188,18 +191,16 @@ const LayerItem = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (!lastPickedRiver) return;
-                    replaceElement(index, {
-                      ...element,
-                      value: lastPickedRiver.id,
-                      args: { ...element.args, source_type: lastPickedRiver.source_type || 'naturalearth' }
-                    });
+                    if (isRiverReferencePicking) {
+                      setActivePicker(null);
+                      return;
+                    }
+                    onStartReferencePick({ kind: 'river', layerIndex: index, label: element.label || '' });
                   }}
-                  disabled={!lastPickedRiver}
-                  className="px-2 py-1.5 text-[10px] border rounded bg-white text-blue-700 border-blue-200 hover:bg-blue-50 disabled:text-gray-400 disabled:border-gray-200 disabled:hover:bg-white"
-                  title="Use last river picked on the Reference Map"
+                  className={`px-2 py-1.5 text-[10px] border rounded bg-white flex items-center gap-1 ${isRiverReferencePicking ? 'text-blue-700 border-blue-300 bg-blue-50' : 'text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                  title={isRiverReferencePicking ? 'Cancel river picking' : 'Pick river from Reference Map'}
                 >
-                  Use Picked
+                  <ArrowRight size={12} />
                 </button>
               </div>
               <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
@@ -358,7 +359,7 @@ const LayerItem = ({
               </div>
               {isPicking && (
                   <div className="text-[10px] text-gray-500 mt-1 italic flex gap-2">
-                      <span>Hold Shift + drag for freehand</span>
+                      <span>Hold Ctrl/Cmd + drag for freehand</span>
                       <span>⌫ Backspace to undo</span>
                   </div>
               )}
