@@ -36,10 +36,14 @@ const XATRA_COMPLETIONS = {
 const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }) => {
   const editorRef = useRef(null);
   const predefinedEditorRef = useRef(null);
+  const activeEditorRef = useRef('map');
   const completionDisposableRef = useRef(null);
 
   const handleEditorDidMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
+    editor.onDidFocusEditorText(() => {
+      activeEditorRef.current = 'map';
+    });
     monaco.editor.defineTheme('xatra-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -101,6 +105,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
 
   const handlePredefinedMount = useCallback((editor) => {
     predefinedEditorRef.current = editor;
+    editor.onDidFocusEditorText(() => {
+      activeEditorRef.current = 'predefined';
+    });
   }, []);
 
   const mapCodeContainerRef = useRef(null);
@@ -130,6 +137,22 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
     ro.observe(el);
     setPredefinedCodeHeight(el.clientHeight > 80 ? el.clientHeight : 200);
     return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const isMac = navigator.platform.toUpperCase().includes('MAC');
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+      if (!mod || !e.altKey || String(e.key).toLowerCase() !== 'i') return;
+      e.preventDefault();
+      if (activeEditorRef.current === 'predefined' && predefinedEditorRef.current) {
+        predefinedEditorRef.current.focus();
+      } else if (editorRef.current) {
+        editorRef.current.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   return (
@@ -194,6 +217,9 @@ const CodeEditor = ({ code, setCode, predefinedCode, setPredefinedCode, onSync }
         <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Editor</p>
         <p className="text-xs text-gray-600">
           Type <kbd className="px-1 bg-gray-200 rounded">xatra.</kbd> for map methods. Use <kbd className="px-1 bg-gray-200 rounded">Ctrl+Space</kbd> for suggestions.
+        </p>
+        <p className="text-xs text-gray-600">
+          Focus active editor: <kbd className="px-1 bg-gray-200 rounded">Ctrl/Cmd+Alt+I</kbd>
         </p>
       </div>
     </div>

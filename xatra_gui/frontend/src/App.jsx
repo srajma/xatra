@@ -646,17 +646,18 @@ xatra.TitleBox("<b>My Map</b>")
       if (value == null || (Array.isArray(value) && value.length === 0)) return 'None';
       if (Array.isArray(value)) {
           const ops = { union: '|', difference: '-', intersection: '&' };
-          const parts = value.map((part, i) => {
+          const emitted = [];
+          value.forEach((part) => {
               let pStr = '';
               if (part.type === 'gadm' && part.value != null && part.value !== '') pStr = `gadm("${part.value}")`;
               else if (part.type === 'polygon' && part.value != null && part.value !== '') pStr = `polygon(${part.value})`;
               else if (part.type === 'predefined' && part.value) pStr = part.value;
-              else return null;
-              if (i === 0) return pStr;
-              return ` ${ops[part.op] || '|'} ${pStr}`;
-          }).filter(Boolean);
-          if (parts.length === 0) return 'None';
-          return parts.join('');
+              else return;
+              if (emitted.length === 0) emitted.push(pStr);
+              else emitted.push(` ${ops[part.op] || '|'} ${pStr}`);
+          });
+          if (emitted.length === 0) return 'None';
+          return emitted.join('');
       }
       if (value === '') return 'None';
       return `gadm("${value}")`;
@@ -728,11 +729,16 @@ xatra.TitleBox("<b>My Map</b>")
         lines.push(`xatra.TitleBox("""${builderOptions.title}""")`);
     }
 
-    if (builderOptions.zoom) {
+    if (builderOptions.zoom !== undefined && builderOptions.zoom !== null) {
         lines.push(`xatra.zoom(${builderOptions.zoom})`);
     }
 
-    if (builderOptions.focus) {
+    if (
+      Array.isArray(builderOptions.focus) &&
+      builderOptions.focus.length === 2 &&
+      builderOptions.focus[0] != null &&
+      builderOptions.focus[1] != null
+    ) {
         lines.push(`xatra.focus(${builderOptions.focus[0]}, ${builderOptions.focus[1]})`);
     }
 

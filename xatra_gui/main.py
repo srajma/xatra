@@ -512,17 +512,17 @@ def sync_code_to_builder(request: CodeSyncRequest):
             if call.args:
                 row = _parse_linear_sequence_row_expr(call.args[0])
                 if row:
-                    admin_color_rows.append(row)
+                    admin_color_rows = [row]
                 else:
                     seq = _parse_admin_color_expr(call.args[0])
                     if seq:
-                        admin_color_rows.append({
+                        admin_color_rows = [{
                             "class_name": "",
                             "colors": seq,
                             "step_h": 1.6180339887,
                             "step_s": 0.0,
                             "step_l": 0.0,
-                        })
+                        }]
             continue
 
         if method == "DataColormap":
@@ -909,7 +909,8 @@ def run_rendering_task(task_type, data, result_queue):
                 if seq:
                     m.AdminColorSequence(LinearColorSequence(colors=seq, step=Color.hsl(1.6180339887, 0.0, 0.0)))
             if "admin_color_sequences" in data.options and isinstance(data.options["admin_color_sequences"], list):
-                for row in data.options["admin_color_sequences"]:
+                row = data.options["admin_color_sequences"][0] if data.options["admin_color_sequences"] else None
+                if row:
                     seq = build_linear_sequence_from_row(row)
                     if seq:
                         m.AdminColorSequence(seq)

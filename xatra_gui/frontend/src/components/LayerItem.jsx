@@ -109,7 +109,7 @@ const LayerItem = ({
         return (
           <div className="grid grid-cols-1 gap-3 mb-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Label</label>
+              <label className="block text-xs text-gray-500 mb-1">State name</label>
               <input
                 type="text"
                 value={element.label || ''}
