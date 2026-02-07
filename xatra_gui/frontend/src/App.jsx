@@ -82,7 +82,9 @@ xatra.TitleBox("<b>My Map</b>")
   const territoryLibraryIframeRef = useRef(null);
 
   const updateDraft = (points, shapeType) => {
-      const ref = activePreviewTab === 'picker' ? pickerIframeRef : iframeRef;
+      const ref = activePreviewTab === 'picker'
+        ? pickerIframeRef
+        : (activePreviewTab === 'library' ? territoryLibraryIframeRef : iframeRef);
       if (ref.current && ref.current.contentWindow) {
           ref.current.contentWindow.postMessage({ type: 'setDraft', points, shapeType }, '*');
       }
@@ -95,7 +97,7 @@ xatra.TitleBox("<b>My Map</b>")
       } else {
           updateDraft([], null);
       }
-  }, [draftPoints, activePicker, activePreviewTab, pickerHtml]);
+  }, [draftPoints, activePicker, activePreviewTab, pickerHtml, territoryLibraryHtml]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -464,6 +466,13 @@ xatra.TitleBox("<b>My Map</b>")
       } else if (isMeta && e.key === '5') {
         e.preventDefault();
         setActivePreviewTab('library');
+      } else if (isMeta && e.code === 'Space') {
+        e.preventDefault();
+        if (activePreviewTab === 'picker') {
+          renderPickerMap();
+        } else if (activePreviewTab === 'library') {
+          renderTerritoryLibrary(territoryLibrarySource);
+        }
       } else if (activeTab === 'builder' && isMeta && e.shiftKey) {
         const layerByKey = {
           f: 'flag',
@@ -484,7 +493,7 @@ xatra.TitleBox("<b>My Map</b>")
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeTab, code, predefinedCode, builderElements, builderOptions]);
+  }, [activeTab, code, predefinedCode, builderElements, builderOptions, activePreviewTab, territoryLibrarySource]);
 
   const handleGetCurrentView = () => {
     const ref = activePreviewTab === 'picker' ? pickerIframeRef : activePreviewTab === 'library' ? territoryLibraryIframeRef : iframeRef;
@@ -1308,9 +1317,6 @@ xatra.TitleBox("<b>My Map</b>")
                 >
                     Update Territory Library Map
                 </button>
-                <div className="text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
-                    `Ctrl/Cmd+5` opens this tab. `Custom Library` uses the code from the Code tab's Territory library editor.
-                </div>
             </div>
         )}
 
@@ -1334,6 +1340,7 @@ xatra.TitleBox("<b>My Map</b>")
                     <div>`Ctrl/Cmd+5` Territory Library</div>
                     <div>`Ctrl/Cmd+Enter` Render map</div>
                     <div>`Ctrl/Cmd+Shift+Enter` Stop generation</div>
+                    <div>`Ctrl/Cmd+Space` Update active picker map tab</div>
                     <div className="mt-2 pt-2 border-t border-gray-200">`Ctrl/Cmd+Shift+F` add Flag</div>
                     <div>`Ctrl/Cmd+Shift+R` add River</div>
                     <div>`Ctrl/Cmd+Shift+P` add Point</div>

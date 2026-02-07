@@ -41,7 +41,11 @@ const LayerItem = ({
         if (element.type === 'point' || element.type === 'text') {
             updateElement(index, 'value', JSON.stringify(point));
             setDraftPoints([point]);
-            setActivePicker(null); // Stop picking
+            // Keep cue visible briefly so the click location is perceptible after picker turns off.
+            window.setTimeout(() => {
+              setActivePicker(null);
+              setDraftPoints([]);
+            }, 240);
         } else if (element.type === 'path') {
             const newPoints = [...draftPoints, point];
             setDraftPoints(newPoints);
