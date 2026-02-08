@@ -524,8 +524,8 @@ xatra.TitleBox("<b>My Map</b>")
     }
   };
 
-  const renderPickerMap = async ({ background = false } = {}) => {
-      if (!background) setLoadingByView((prev) => ({ ...prev, picker: true }));
+  const renderPickerMap = async ({ background = false, showLoading = true } = {}) => {
+      if (showLoading) setLoadingByView((prev) => ({ ...prev, picker: true }));
       try {
           const response = await fetch(`http://localhost:8088/render/picker`, {
               method: 'POST',
@@ -537,7 +537,7 @@ xatra.TitleBox("<b>My Map</b>")
       } catch (err) {
           setError(err.message);
       } finally {
-          if (!background) setLoadingByView((prev) => ({ ...prev, picker: false }));
+          if (showLoading) setLoadingByView((prev) => ({ ...prev, picker: false }));
       }
   };
 
@@ -571,9 +571,9 @@ xatra.TitleBox("<b>My Map</b>")
 
   const renderTerritoryLibrary = async (
     source = territoryLibrarySource,
-    { background = false, useDefaultSelection = false } = {}
+    { background = false, useDefaultSelection = false, showLoading = true } = {}
   ) => {
-      if (!background) setLoadingByView((prev) => ({ ...prev, library: true }));
+      if (showLoading) setLoadingByView((prev) => ({ ...prev, library: true }));
       try {
           const body = {
             source,
@@ -598,7 +598,7 @@ xatra.TitleBox("<b>My Map</b>")
       } catch (err) {
           setError(err.message);
       } finally {
-          if (!background) setLoadingByView((prev) => ({ ...prev, library: false }));
+          if (showLoading) setLoadingByView((prev) => ({ ...prev, library: false }));
       }
   };
 
@@ -950,14 +950,16 @@ xatra.TitleBox("<b>My Map</b>")
   useEffect(() => {
     if (didPrefetchReferenceRef.current || !mapHtml) return;
     didPrefetchReferenceRef.current = true;
-    renderPickerMap({ background: true });
+    renderPickerMap({ background: true, showLoading: true });
   }, [mapHtml]);
 
   useEffect(() => {
     if (didPrefetchTerritoryRef.current || !mapHtml) return;
     didPrefetchTerritoryRef.current = true;
-    loadTerritoryLibraryCatalog('builtin');
-    renderTerritoryLibrary('builtin', { background: true, useDefaultSelection: true });
+    (async () => {
+      await loadTerritoryLibraryCatalog('builtin');
+      await renderTerritoryLibrary('builtin', { background: true, useDefaultSelection: true, showLoading: true });
+    })();
   }, [mapHtml]);
 
   useEffect(() => {

@@ -152,7 +152,8 @@ Features
     - [x] Why is there a tip saying "Default index: VRJISTHANA, VARNU, VANAVYA, APRITA, PSEUDOSATTAGYDIA_S, ..."? We don't need this, we can already see in the checklist which boxes are marked.
     - [x] The territory library checklist should have a search bar to filter and select the checkboxes based on your search term.
     - [x] The "Copy index" button should be an icon instead of text, and when it is clicked it should temporarily show a visual cue that it has been copied to clipboard.
-    
+    - [x] When it is rendering one of the maps (Map Preview, Reference Map, Territory library), why do all the other maps also need to get blurred out and blocked from interaction?
+    - [x] with regard to how the Reference Map and Territory Library render in the background when we first load the page, it is a bit misleading because it just shows "No map rendered yet" with no sign of rendering going on. Instead it should show the usual blur Generating screen over those maps. Also in the Territory Library box the checklist and everything should be fully displayed before waiting for the map to load.
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
