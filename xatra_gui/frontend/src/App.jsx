@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X, Keyboard, Copy, Check } from 'lucide-react';
+import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, Keyboard, Copy, Check } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
 import Builder from './components/Builder';
@@ -25,8 +25,8 @@ function App() {
   const [territorySearchTerm, setTerritorySearchTerm] = useState('');
   const [copyIndexCopied, setCopyIndexCopied] = useState(false);
   const [loadingByView, setLoadingByView] = useState({ main: false, picker: false, library: false });
+  const [mainRenderTask, setMainRenderTask] = useState(null); // 'code' | 'builder' | null
   const [error, setError] = useState(null);
-  const anyLoading = loadingByView.main || loadingByView.picker || loadingByView.library;
 
   // Builder State
   const [builderElements, setBuilderElements] = useState([
@@ -475,7 +475,7 @@ xatra.TitleBox("<b>My Map</b>")
         handleTabChange('code');
       } else if (isMeta && e.shiftKey && e.key === 'Enter') {
         e.preventDefault();
-        handleStop();
+        handleStop(activePreviewTab);
       } else if (isMeta && e.key === 'Enter') {
         e.preventDefault();
         renderMap();
@@ -603,7 +603,9 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   const renderMap = async () => {
+    const taskType = activeTab === 'code' ? 'code' : 'builder';
     setActivePreviewTab('main');
+    setMainRenderTask(taskType);
     setLoadingByView((prev) => ({ ...prev, main: true }));
     setError(null);
     try {
@@ -630,6 +632,7 @@ xatra.TitleBox("<b>My Map</b>")
       setError(err.message);
     } finally {
       setLoadingByView((prev) => ({ ...prev, main: false }));
+      setMainRenderTask(null);
     }
   };
 
@@ -935,12 +938,22 @@ xatra.TitleBox("<b>My Map</b>")
     setActiveTab(nextTab);
   };
 
-  const handleStop = async () => {
-      // Force stop loading on frontend
-      setLoadingByView({ main: false, picker: false, library: false });
+  const handleStop = async (view) => {
+      const stopView = view || 'main';
+      const mappedTaskTypes = (
+        stopView === 'main'
+          ? (mainRenderTask ? [mainRenderTask] : ['builder', 'code'])
+          : (stopView === 'picker' ? ['picker'] : ['territory_library'])
+      );
+      setLoadingByView((prev) => ({ ...prev, [stopView]: false }));
       try {
-          await fetch('http://localhost:8088/stop', { method: 'POST' });
+          await fetch('http://localhost:8088/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ task_types: mappedTaskTypes }),
+          });
       } catch (e) { console.error(e); }
+      if (stopView === 'main') setMainRenderTask(null);
   };
 
   // Initial render
@@ -1038,21 +1051,12 @@ xatra.TitleBox("<b>My Map</b>")
         </div>
 
         <div className="p-4 border-t border-gray-200 bg-gray-50">
-          {anyLoading ? (
-              <button
-                onClick={handleStop}
-                className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all"
-              >
-                <X size={20} /> Stop Generation
-              </button>
-          ) : (
-              <button
-                onClick={renderMap}
-                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all"
-              >
-                <Play className="w-5 h-5 fill-current" /> Render Map
-              </button>
-          )}
+          <button
+            onClick={renderMap}
+            className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all"
+          >
+            <Play className="w-5 h-5 fill-current" /> Render Map
+          </button>
           {error && (
             <div className="mt-3 p-3 bg-red-50 text-red-700 text-xs rounded border border-red-200 overflow-auto max-h-32">
               <strong>Error:</strong> {error}
@@ -1384,7 +1388,7 @@ xatra.TitleBox("<b>My Map</b>")
                     <div>`Ctrl/Cmd+4` Reference Map</div>
                     <div>`Ctrl/Cmd+5` Territory Library</div>
                     <div>`Ctrl/Cmd+Enter` Render map</div>
-                    <div>`Ctrl/Cmd+Shift+Enter` Stop generation</div>
+                    <div>`Ctrl/Cmd+Shift+Enter` Stop active preview generation</div>
                     <div>`Ctrl/Cmd+Space` Update active picker map tab</div>
                     <div className="mt-2 pt-2 border-t border-gray-200">`Ctrl/Cmd+Shift+F` add Flag</div>
                     <div>`Ctrl/Cmd+Shift+R` add River</div>
@@ -1411,11 +1415,11 @@ xatra.TitleBox("<b>My Map</b>")
                 </div>
             )}
             {activePreviewTab === 'main' ? (
-                <MapPreview html={mapHtml} loading={loadingByView.main} iframeRef={iframeRef} />
+                <MapPreview html={mapHtml} loading={loadingByView.main} iframeRef={iframeRef} onStop={() => handleStop('main')} />
             ) : activePreviewTab === 'picker' ? (
-                <MapPreview html={pickerHtml} loading={loadingByView.picker} iframeRef={pickerIframeRef} />
+                <MapPreview html={pickerHtml} loading={loadingByView.picker} iframeRef={pickerIframeRef} onStop={() => handleStop('picker')} />
             ) : (
-                <MapPreview html={territoryLibraryHtml} loading={loadingByView.library} iframeRef={territoryLibraryIframeRef} />
+                <MapPreview html={territoryLibraryHtml} loading={loadingByView.library} iframeRef={territoryLibraryIframeRef} onStop={() => handleStop('library')} />
             )}
         </div>
       </div>

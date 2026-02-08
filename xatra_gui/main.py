@@ -28,8 +28,8 @@ from xatra.render import export_html_string
 from xatra.colorseq import Color, LinearColorSequence, color_sequences
 from xatra.icon import Icon
 
-# Global variable to track the current rendering process
-current_process = None
+# Track one rendering process per task type so independent map generation can be cancelled safely.
+current_processes: Dict[str, multiprocessing.Process] = {}
 process_lock = threading.Lock()
 render_cache_lock = threading.Lock()
 RENDER_CACHE_MAX_ENTRIES = 24
@@ -250,6 +250,9 @@ class TerritoryLibraryRequest(BaseModel):
     source: str = "builtin"  # "builtin" or "custom"
     predefined_code: Optional[str] = None
     selected_names: Optional[List[str]] = None
+
+class StopRequest(BaseModel):
+    task_types: Optional[List[str]] = None
 
 def _python_value(node: ast.AST):
     if isinstance(node, ast.Constant):
@@ -726,15 +729,20 @@ def health():
     return {"status": "ok"}
 
 @app.post("/stop")
-def stop_generation():
-    global current_process
+def stop_generation(request: Optional[StopRequest] = Body(default=None)):
+    allowed_task_types = {"picker", "territory_library", "code", "builder"}
+    requested = request.task_types if request and request.task_types else list(allowed_task_types)
+    task_types = [t for t in requested if t in allowed_task_types]
+    stopped = []
     with process_lock:
-        if current_process and current_process.is_alive():
-            current_process.terminate()
-            current_process.join()
-            current_process = None
-            return {"status": "stopped"}
-    return {"status": "no process running"}
+        for task_type in task_types:
+            proc = current_processes.get(task_type)
+            if proc and proc.is_alive():
+                proc.terminate()
+                proc.join()
+                stopped.append(task_type)
+            current_processes[task_type] = None
+    return {"status": "stopped" if stopped else "no process running", "stopped_task_types": stopped}
 
 def run_rendering_task(task_type, data, result_queue):
     def parse_color_list(val):
@@ -1097,7 +1105,6 @@ def run_rendering_task(task_type, data, result_queue):
         result_queue.put({"error": str(e), "traceback": traceback.format_exc()})
 
 def run_in_process(task_type, data):
-    global current_process
     cache_key = None
     try:
         payload = data.model_dump() if hasattr(data, "model_dump") else data.dict()
@@ -1113,17 +1120,18 @@ def run_in_process(task_type, data):
                 render_cache.move_to_end(cache_key)
                 return cached
 
-    # Ensure previous process is dead
+    # Ensure previous process for this task type is dead.
     with process_lock:
-        if current_process and current_process.is_alive():
-            current_process.terminate()
-            current_process.join()
+        previous = current_processes.get(task_type)
+        if previous and previous.is_alive():
+            previous.terminate()
+            previous.join()
     
     queue = multiprocessing.Queue()
     p = multiprocessing.Process(target=run_rendering_task, args=(task_type, data, queue))
     
     with process_lock:
-        current_process = p
+        current_processes[task_type] = p
         
     p.start()
     
@@ -1141,7 +1149,7 @@ def run_in_process(task_type, data):
         p.join()
         
     with process_lock:
-        current_process = None
+        current_processes[task_type] = None
 
     if cache_key and isinstance(result, dict) and "error" not in result:
         with render_cache_lock:

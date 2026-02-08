@@ -124,7 +124,7 @@ Features
 - [x] Code editor should be nice, not just a simple text editor.
   - [x] Main thing I'd like is autocomplete---like in VS Code or in online coding sites like leetcode. It should work as though xatra is actually imported. Maybe can use an actual code editor plugin or something.
 - [x] Loading a previously-built map. I think the best way to do this will be to keep the state of the Builder and Code synchronized two-way and just export/import the code both ways.
-  - [ ] Code generation is quite buggy.
+  - [x] Code generation is quite buggy.
     - [x] One issue I've observed: for rivers it creates a random attribute source_type for River objects, which doesn't exist. This is not necessary, the value is already either naturalearth() or overpass()---you just need to make sure these are imported at the top.
     - [x] When a Flag has a blank value (i.e. nothing has been built in Territory) or anything else is blank, it should default be converted to None in the code, not just left empty causing a syntax error.
     - [x] Eventually we should also implement reverse-syncing the code to the builder, so might be worth thinking about how to better store the state
@@ -181,10 +181,15 @@ Minor changes
 - [x] The countries column in the reference map should allow any GADM ID, not just country codes---since xatra.Admin() allows for it. So its search autocomplete should be exactly like that of the GADM entries in the Flag layer territory building, and there should not be any restriction on the characters (since we might want to search for these things by name). The level dropdown should still be taken from the country code part of the GADM ID (i.e. for IND.20 still take the levels list from that of IND).
 - [x] When "Generating Map" is going on (for whatever generation---either the Map Preview, the Reference Map or the Territory Library), it blurs out everything in the map frame, including the Reference Map options box and the Territory library box. It should leave these boxes available for the user to interact with while the map renders.
 - [x] Remove this hint: `Ctrl/Cmd+5` opens this tab. `Custom Library` uses the code from the Code tab's Territory library editor.
+- [ ] TitleBox should actually not be a global element, but a layer---xatra supports adding as many "TitleBox" elements as you want, e.g. with different periods. As with the other layers, the "period" field should be present.
 
 Design improvements
 - [ ] introduce a dark mode
 - [ ] the "Xatra Studio" title is cheesy. Replace it with just xatra (lowercase), and no icon.
+
+Experiments I have to do
+- [ ] Make sure my existing maps work in this
+- [ ] experiment with some different designs
 
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
