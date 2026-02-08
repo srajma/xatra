@@ -311,7 +311,7 @@ map = Map()
 
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
-- **`Flag(label, territory=None, period=None, note=None, color=None, classes=None)`**: Add a flag (country/kingdom). Slash-separated labels like `India/Karnataka` are treated as vassals.
+- **`Flag(label, territory=None, period=None, note=None, color=None, classes=None, type=None)`**: Add a flag (country/kingdom). Use `type="vassal"` or `type="province"` for slash-separated hierarchical labels like `India/Karnataka`.
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources
@@ -658,10 +658,10 @@ Flag labels automatically use a darker, more opaque version of the flag color fo
 
 ### Vassals (Slash Labels)
 
-Flags with slash-separated labels are treated as vassals. This is useful for:
-- **Provincial divisions**: `India/Karnataka`
-- **Vassalage relationships**: `Maurya/Chola`
-- **Multi-level hierarchies**: `India/Karnataka/Bangalore`
+Use slash-separated labels plus `type=` for hierarchical relationships:
+- **Vassals**: `type="vassal"` (light HSLA overlay fill)
+- **Provinces**: `type="province"` (transparent fill + thin root-colored border)
+- **Multi-level hierarchies**: `India/Deccan/Bijapur`
 
 ```python
 import xatra
@@ -672,19 +672,23 @@ map.BaseOption("Esri.WorldTopoMap", default=True)
 
 # Parent
 map.Flag(label="India", value=gadm("IND"), note="Republic of India")
-# Vassals (overlay on top of parent territory)
-map.Flag(label="India/Karnataka", value=gadm("IND.16"))
-map.Flag(label="India/Tamil Nadu", value=gadm("IND.31"))
-map.Flag(label="India/Maharashtra", value=gadm("IND.20"))
+# Vassals
+map.Flag(label="India/Karnataka", value=gadm("IND.16"), type="vassal")
+map.Flag(label="India/Tamil Nadu", value=gadm("IND.31"), type="vassal")
+# Provinces
+map.Flag(label="India/Deccan", value=gadm("IND.2"), type="province")
+map.Flag(label="India/Deccan/Bijapur", value=gadm("IND.16"), type="province")
 
 map.show()
 ```
 
 Vassal behavior:
-- Parent is inferred from the label (`India/Karnataka` has parent `India`)
-- Vassal colors are generated as `hsla(random_hue, 100%, 90%, 0.6)`
-- Parents and children can overlap; child territories are not subtracted from parents
-- Tooltip shows `Label (vassal of Parent) — Note`
+- Parent/root-parent/depth are inferred from slash labels
+- `type="vassal"`: fill uses `hsla(random_hue, 100%, 90%, 0.6)`
+- `type="province"`: fill is transparent, border is thin with `opacity: 0.8` in root parent color
+- Children are classed as `.vassal` or `.province` for custom CSS
+- Child labels use leaf names (for example `Vidisa` for `Maurya/Avantirastra/Vidisa`)
+- Child label color matches root parent, with size scaled by `0.85^depth`
 
 ### Data Visualization with DataFrames
 

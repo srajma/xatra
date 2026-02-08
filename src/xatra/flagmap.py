@@ -37,7 +37,11 @@ class FlagEntry:
         note: Optional tooltip text for the flag
         color: Optional color for the flag (overrides color sequence)
         classes: Optional CSS classes for styling and color sequence assignment
-        parent: Optional parent label derived from slash-separated labels (e.g. "A/B")
+        parent: Optional parent label for hierarchical flags
+        type: Optional relationship type: "vassal", "province", or None
+        root_parent: Root parent label for hierarchical flags
+        display_label: Leaf label shown on the map for hierarchical flags
+        depth: Hierarchy depth (0 for non-hierarchical flags)
     """
     label: str
     territory: Territory
@@ -46,6 +50,10 @@ class FlagEntry:
     color: Optional[str] = None
     classes: Optional[str] = None
     parent: Optional[str] = None
+    type: Optional[str] = None
+    root_parent: Optional[str] = None
+    display_label: Optional[str] = None
+    depth: int = 0
 
 
 @dataclass
@@ -638,16 +646,15 @@ class Map:
         ))
 
     @time_debug("Add Flag")
-    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None) -> None:
+    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, type: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
         Flags automatically get colors from the map's color sequence. Flags with the same label
         will always use the same color. You can override this behavior by providing a custom color.
         Flags can be assigned to CSS classes for different color sequences.
         
-        A slash-separated label (e.g. "India/Karnataka") is treated as a vassal.
-        Vassals automatically receive a light HSLA overlay color, so they visually
-        tint their parent's territory rather than replacing it.
+        Hierarchical flags can be declared with slash-separated labels (e.g. "India/Karnataka")
+        and `type="vassal"` or `type="province"`.
         
         Args:
             label: Display name for the flag
@@ -656,15 +663,16 @@ class Map:
             note: Optional tooltip text for the flag
             color: Optional color for the flag (overrides color sequence) in hex code
             classes: Optional CSS classes for styling and color sequence assignment
+            type: Optional relationship type: "vassal", "province", or None
             
         Example:
             >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
             >>> map.Flag("Maurya", other_territory)  # Reuses the same color as above
             >>> map.Flag("Custom", territory, color="#ff0000")  # Custom red color
             >>> map.Flag("Empire", territory, classes="empire")  # Uses empire color sequence
-            >>> # Vassal example:
             >>> map.Flag("India", gadm("IND"), note="Republic of India")
-            >>> map.Flag("India/Karnataka", gadm("IND.16"))  # Vassal of India
+            >>> map.Flag("India/Karnataka", gadm("IND.16"), type="vassal")
+            >>> map.Flag("India/Avantirastra", gadm("IND.19"), type="province")
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -672,7 +680,19 @@ class Map:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
 
-        parent = self._derive_parent_label(label)
+        if type not in (None, "vassal", "province"):
+            raise ValueError("type must be one of: None, 'vassal', 'province'")
+
+        parent = None
+        root_parent = label
+        display_label = label
+        depth = 0
+        if type in ("vassal", "province"):
+            root_parent, parent, display_label, depth = self._derive_hierarchy(label)
+            if depth < 1:
+                raise ValueError(
+                    "Hierarchical flags with type='vassal' or type='province' must use slash-separated labels like 'Maurya/Vidisa'."
+                )
         
         # Handle color assignment
         if color is not None:
@@ -683,7 +703,7 @@ class Map:
             if label in self._label_colors:
                 # Reuse existing color for this label
                 color = self._label_colors[label]
-            elif parent is not None:
+            elif type == "vassal":
                 # Slash-labeled flags are vassals with light HSLA overlay colors.
                 color = self._get_vassal_color(label)
             else:
@@ -712,16 +732,30 @@ class Map:
                 stacklevel=2
             )
 
-        self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color, classes=classes, parent=parent))
+        self._flags.append(
+            FlagEntry(
+                label=label,
+                territory=value,
+                period=period_tuple,
+                note=note,
+                color=color,
+                classes=classes,
+                parent=parent,
+                type=type,
+                root_parent=root_parent,
+                display_label=display_label,
+                depth=depth,
+            )
+        )
 
-    def _derive_parent_label(self, label: str) -> Optional[str]:
-        """Return the parent portion of a slash-separated flag label."""
-        if "/" not in label:
-            return None
+    def _derive_hierarchy(self, label: str) -> Tuple[str, Optional[str], str, int]:
+        """Parse a slash label into (root_parent, parent, leaf_label, depth)."""
         parts = [part.strip() for part in label.split("/") if part.strip()]
-        if len(parts) < 2:
-            return None
-        return "/".join(parts[:-1])
+        if not parts:
+            return label, None, label, 0
+        if len(parts) == 1:
+            return parts[0], None, parts[0], 0
+        return parts[0], "/".join(parts[:-1]), parts[-1], len(parts) - 1
 
     def _get_vassal_color(self, label: str) -> str:
         """Generate a stable random light overlay color for slash-labeled vassals."""
@@ -1361,12 +1395,17 @@ class Map:
             if fl.period is None or restricted_period is not None:
                 flags_serialized.append({
                     "label": fl.label,
+                    "display_label": fl.display_label or fl.label,
                     "territory": fl.territory,  # Pass territory object for efficient union
                     "period": list(restricted_period) if restricted_period is not None else None,
                     "note": fl.note,
                     "color": fl.color,
                     "classes": fl.classes,
                     "parent": fl.parent,
+                    "type": fl.type,
+                    "root_parent": fl.root_parent,
+                    "root_parent_color": self._label_colors.get(fl.root_parent or fl.label),
+                    "vassal_depth": fl.depth,
                 })
 
         # Find the earliest start year from all object types

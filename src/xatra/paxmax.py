@@ -203,17 +203,27 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                     all_classes.extend(it.get("classes").split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
-            # Preserve parent info from the first item
+            # Preserve hierarchy metadata from the first item
             parent = items[0].get("parent") if items else None
+            type_ = items[0].get("type") if items else None
+            root_parent = items[0].get("root_parent") if items else None
+            root_parent_color = items[0].get("root_parent_color") if items else None
+            display_label = items[0].get("display_label") if items else label
+            vassal_depth = items[0].get("vassal_depth", 0) if items else 0
             
             out.append({
                 "label": label,
+                "display_label": display_label,
                 "geometry": geom_dict,
                 "centroid": centroid,
                 "note": "; ".join([it.get("note") for it in items if it.get("note")]) or None,
                 "color": color,
                 "classes": unique_classes,
                 "parent": parent,
+                "type": type_,
+                "root_parent": root_parent,
+                "root_parent_color": root_parent_color,
+                "vassal_depth": vassal_depth,
             })
         return {"mode": "static", "flags": out}
 
@@ -281,17 +291,27 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                     all_classes.extend(it.get("classes").split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
-            # Preserve parent info from the first active item
+            # Preserve hierarchy metadata from the first active item
             parent = active[0].get("parent") if active else None
+            type_ = active[0].get("type") if active else None
+            root_parent = active[0].get("root_parent") if active else None
+            root_parent_color = active[0].get("root_parent_color") if active else None
+            display_label = active[0].get("display_label") if active else label
+            vassal_depth = active[0].get("vassal_depth", 0) if active else 0
             
             snapshot_flags.append({
                 "label": label,
+                "display_label": display_label,
                 "geometry": geom_dict,
                 "centroid": centroid,
                 "note": "; ".join(notes) or None,
                 "color": color,
                 "classes": unique_classes,
                 "parent": parent,
+                "type": type_,
+                "root_parent": root_parent,
+                "root_parent_color": root_parent_color,
+                "vassal_depth": vassal_depth,
             })
         snapshots.append({"year": year, "flags": snapshot_flags})
 

@@ -1137,9 +1137,20 @@ HTML_TEMPLATE = Template(
             if (!f.geometry) continue;
             
             let className = 'flag';
+            if (f.type === 'vassal') className += ' vassal';
+            if (f.type === 'province') className += ' province';
             if (f.classes) className += ' ' + f.classes;
             const flagStyle = { className: className };
-            if (f.color) {
+            if (f.type === 'province') {
+              const provinceBorderColor = f.root_parent_color || f.color || '#333';
+              flagStyle.style = {
+                fillColor: provinceBorderColor,
+                fillOpacity: 0.0,
+                color: provinceBorderColor,
+                opacity: 0.8,
+                weight: 0.6
+              };
+            } else if (f.color) {
               flagStyle.style = {
                 fillColor: f.color,
                 fillOpacity: 0.4,
@@ -1149,9 +1160,11 @@ HTML_TEMPLATE = Template(
             }
             
             // Build tooltip with optional parent/vassal info
-            let flagTooltip = f.label;
+            let flagTooltip = f.display_label || f.label;
             if (f.parent) {
-              flagTooltip += ` (vassal of ${f.parent})`;
+              const relation = f.type || 'vassal';
+              const parentLabel = f.parent.includes('/') ? f.parent.split('/').slice(-1)[0] : f.parent;
+              flagTooltip += ` (${relation} of ${parentLabel})`;
             }
             if (f.note) {
               flagTooltip += ' — ' + f.note;
@@ -1173,7 +1186,16 @@ HTML_TEMPLATE = Template(
               }
             });
             
-            if (f.color) {
+            if (f.type === 'province') {
+              const provinceBorderColor = f.root_parent_color || f.color || '#333';
+              layer.setStyle({
+                fillColor: provinceBorderColor,
+                fillOpacity: 0.0,
+                color: provinceBorderColor,
+                opacity: 0.8,
+                weight: 0.6
+              });
+            } else if (f.color) {
               layer.setStyle({
                 fillColor: f.color,
                 fillOpacity: 0.4,
@@ -1188,7 +1210,10 @@ HTML_TEMPLATE = Template(
             const centroid = f.centroid || getCentroid(f.geometry);
             if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
               let labelStyle = '';
-              if (f.color) {
+              if ((f.type === 'vassal' || f.type === 'province') && (f.root_parent_color || f.color)) {
+                const baseColor = f.root_parent_color || f.color;
+                labelStyle = `color: ${baseColor};`;
+              } else if (f.color && f.color.startsWith('#')) {
                 // Convert hex to HSL and reduce luminosity, increase alpha
                 const hex = f.color.replace('#', '');
                 const r = parseInt(hex.substr(0, 2), 16) / 255;
@@ -1243,9 +1268,16 @@ HTML_TEMPLATE = Template(
                 const b3 = Math.round(b2 * 255);
                 
                 labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
+              } else if (f.color) {
+                labelStyle = `color: ${f.color};`;
               }
+              const depth = f.vassal_depth || 0;
+              const fontScale = Math.pow(0.85, depth);
+              labelStyle += ` font-size: ${14 * fontScale}px;`;
               
               let labelClassName = 'flag-label';
+              if (f.type === 'vassal') labelClassName += ' vassal';
+              if (f.type === 'province') labelClassName += ' province';
               if (f.classes) labelClassName += ' ' + f.classes;
               
               // Calculate rotation based on distant points in geometry
@@ -1256,7 +1288,7 @@ HTML_TEMPLATE = Template(
               }
               
               const labelDiv = L.divIcon({
-                html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.label}</div></div>`,
+                html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.display_label || f.label}</div></div>`,
                 className: 'flag-label-container',
                 iconSize: [1, 1],
                 iconAnchor: [0, 0]
@@ -1997,9 +2029,20 @@ HTML_TEMPLATE = Template(
           
           // Create style with flag color
           let className = 'flag';
+          if (f.type === 'vassal') className += ' vassal';
+          if (f.type === 'province') className += ' province';
           if (f.classes) className += ' ' + f.classes;
           const flagStyle = { className: className };
-          if (f.color) {
+          if (f.type === 'province') {
+            const provinceBorderColor = f.root_parent_color || f.color || '#333';
+            flagStyle.style = {
+              fillColor: provinceBorderColor,
+              fillOpacity: 0.0,
+              color: provinceBorderColor,
+              opacity: 0.8,
+              weight: 0.6
+            };
+          } else if (f.color) {
             flagStyle.style = {
               fillColor: f.color,
               fillOpacity: 0.4,
@@ -2009,9 +2052,11 @@ HTML_TEMPLATE = Template(
           }
           
           // Build tooltip with optional parent/vassal info
-          let flagTooltip = f.label;
+          let flagTooltip = f.display_label || f.label;
           if (f.parent) {
-            flagTooltip += ` (vassal of ${f.parent})`;
+            const relation = f.type || 'vassal';
+            const parentLabel = f.parent.includes('/') ? f.parent.split('/').slice(-1)[0] : f.parent;
+            flagTooltip += ` (${relation} of ${parentLabel})`;
           }
           if (f.note) {
             flagTooltip += ' — ' + f.note;
@@ -2034,7 +2079,16 @@ HTML_TEMPLATE = Template(
           }).addTo(map);
           
           // Apply color styling after layer creation
-          if (f.color) {
+          if (f.type === 'province') {
+            const provinceBorderColor = f.root_parent_color || f.color || '#333';
+            layer.setStyle({
+              fillColor: provinceBorderColor,
+              fillOpacity: 0.0,
+              color: provinceBorderColor,
+              opacity: 0.8,
+              weight: 0.6
+            });
+          } else if (f.color) {
             layer.setStyle({
               fillColor: f.color,
               fillOpacity: 0.4,
@@ -2054,7 +2108,10 @@ HTML_TEMPLATE = Template(
           if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
             // Create custom label element with flag color
             let labelStyle = '';
-            if (f.color) {
+            if ((f.type === 'vassal' || f.type === 'province') && (f.root_parent_color || f.color)) {
+              const baseColor = f.root_parent_color || f.color;
+              labelStyle = `color: ${baseColor};`;
+            } else if (f.color && f.color.startsWith('#')) {
               // Convert hex to HSL and reduce luminosity, increase alpha
               const hex = f.color.replace('#', '');
               const r = parseInt(hex.substr(0, 2), 16) / 255;
@@ -2109,9 +2166,16 @@ HTML_TEMPLATE = Template(
               const b3 = Math.round(b2 * 255);
               
               labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
+            } else if (f.color) {
+              labelStyle = `color: ${f.color};`;
             }
+            const depth = f.vassal_depth || 0;
+            const fontScale = Math.pow(0.85, depth);
+            labelStyle += ` font-size: ${14 * fontScale}px;`;
             
             let labelClassName = 'flag-label';
+            if (f.type === 'vassal') labelClassName += ' vassal';
+            if (f.type === 'province') labelClassName += ' province';
             if (f.classes) labelClassName += ' ' + f.classes;
             
             // Calculate rotation based on distant points in geometry
@@ -2122,7 +2186,7 @@ HTML_TEMPLATE = Template(
             }
             
             const labelDiv = L.divIcon({
-              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.label}</div></div>`,
+              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.display_label || f.label}</div></div>`,
               className: 'flag-label-container',
               iconSize: [1, 1],
               iconAnchor: [0, 0]
