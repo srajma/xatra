@@ -1192,13 +1192,12 @@ HTML_TEMPLATE = Template(
           for (const f of snapshot.flags) {
             if (!f.geometry) continue;
             
-            let className = 'flag';
+            let className = (f.type === 'province') ? 'province' : 'flag';
             if (f.type === 'vassal') className += ' vassal';
-            if (f.type === 'province') className += ' province';
             if (f.classes) className += ' ' + f.classes;
             const flagStyle = { className: className };
             if (f.type === 'province') {
-              const provinceBorderColor = f.root_parent_color || f.color || '#333';
+              const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
               flagStyle.style = {
                 fill: false,
                 stroke: true,
@@ -1244,7 +1243,7 @@ HTML_TEMPLATE = Template(
             });
             
             if (f.type === 'province') {
-              const provinceBorderColor = f.root_parent_color || f.color || '#333';
+              const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
               layer.setStyle({
                 fill: false,
                 stroke: true,
@@ -2031,13 +2030,12 @@ HTML_TEMPLATE = Template(
           if (!f.geometry) continue;
           
           // Create style with flag color
-          let className = 'flag';
+          let className = (f.type === 'province') ? 'province' : 'flag';
           if (f.type === 'vassal') className += ' vassal';
-          if (f.type === 'province') className += ' province';
           if (f.classes) className += ' ' + f.classes;
           const flagStyle = { className: className };
           if (f.type === 'province') {
-            const provinceBorderColor = f.root_parent_color || f.color || '#333';
+            const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
             flagStyle.style = {
               fill: false,
               stroke: true,
@@ -2084,7 +2082,7 @@ HTML_TEMPLATE = Template(
           
           // Apply color styling after layer creation
           if (f.type === 'province') {
-            const provinceBorderColor = f.root_parent_color || f.color || '#333';
+            const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
             layer.setStyle({
               fill: false,
               stroke: true,
