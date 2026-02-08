@@ -1720,26 +1720,7 @@ The timing chart shows:
 
 ## Features
 - [x] Vassals. A Flag can be a "vassal/province" of another Flag if it has an attribute "parent", e.g. Flag(name="Karnataka", parent="India") (where "India" is the name of another Flag). Doing so should, in particular, give the vassals a separate color sequence so that they are all similar colors---with a fixed lower saturation value than their parent---within the range of their parent (the exact color sequence can be adjusted within the parent's attributes children_color_seq=...), and the size of their labels will also be less and the tooltips will specify what they are a vassal of. It should also be possible for the name of the parent to be a placeholder---we'd do this to e.g. color nations belonging to the same religion with the same color. The saturation and font sizes for such nations (that are vassals of placeholder names not belonging to any actual Flag) will not be reduced.
-- [ ] Actually I don't like this implementation of vassals. Better to have vassals with slash-separated names, and something to make sure their colors don't simply add onto the layers below, but IDK---"change" their parents' color in that region somehow. Understand and plan this out properly; implement it and write a tests/example_vassals.py file to demonstrate that it works. I do _not_ want to cut the children out of their parents' terrritories etc. as that is important for other things like border highlighting and label placement. Instead I found this suggestion online, which seems to be promising:
-```
-In short: **Leaflet doesn’t have a native "negative color" property**, but you can achieve this effect using CSS **Blend Modes**.
-
-When you stack semi-transparent layers in Leaflet, the alpha values normally compound (getting darker/more opaque). To "reverse" this or create a cutout/difference effect, you need to target the Leaflet pane or the specific SVG elements.
-
-### 1. Using CSS Blend Modes
-
-Leaflet renders most vectors (paths, circles, polygons) inside an SVG element. You can apply CSS to the `.leaflet-overlay-pane` or to specific paths to change how they interact with the layers below them.
-
-* **`mix-blend-mode: difference;`**: This is the closest to a "negative." It subtracts the color of the top layer from the bottom layer.
-* **`mix-blend-mode: exclusion;`**: Similar to difference but with lower contrast.
-
-```css
-/* Apply to all vectors in the map */
-.leaflet-vector-layers {
-    mix-blend-mode: difference;
-}
-
-```
+- [ ] Actually I don't like this implementation of vassals. Better to have vassals with slash-separated names, and their colors should always be something like hsla(randomly-generated hue, 100% saturation, 90% luminosity, 60% alpha). This makes the vassals just a lightening filter over their parent's territories. Implement it and write a simple tests/example_vassals.py file (no actual pytest tests, just an example map like in tests/example.py etc.) to demonstrate that it works. I do _not_ want to cut the children out of their parents' terrritories etc. as that is important for other things like border highlighting and label placement.
 
 ### 2. The "Reverse Alpha" Problem
 
