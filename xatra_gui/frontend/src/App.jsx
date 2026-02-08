@@ -8,6 +8,9 @@ import MapPreview from './components/MapPreview';
 import AutocompleteInput from './components/AutocompleteInput';
 
 const isTerritoryPolygonPicker = (ctx) => /^territory-\d+$/.test(String(ctx || ''));
+const isEditableTarget = (target) => (
+  !!(target && typeof target.closest === 'function' && target.closest('input, textarea, [contenteditable="true"], [role="textbox"]'))
+);
 
 function App() {
   const [activeTab, setActiveTab] = useState('builder'); // 'builder' or 'code'
@@ -102,7 +105,7 @@ xatra.TitleBox("<b>My Map</b>")
   useEffect(() => {
     const handleKeyDown = (e) => {
         if (!activePicker) return;
-        if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
+        if (isEditableTarget(e.target)) return;
         const isDraftPicker = activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context);
         if (!isDraftPicker) return;
         if (e.key === 'Control' || e.key === 'Meta') {
@@ -176,10 +179,14 @@ xatra.TitleBox("<b>My Map</b>")
           setLastMapClick({ lat: event.data.lat, lng: event.data.lng, ts: Date.now() });
       } else if (event.data && event.data.type === 'mapMouseDown') {
           setIsMouseDown(true);
+          if (event.data.ctrlKey || event.data.metaKey) setFreehandModifierPressed(true);
       } else if (event.data && event.data.type === 'mapMouseUp') {
           setIsMouseDown(false);
+          if (!event.data.ctrlKey && !event.data.metaKey) setFreehandModifierPressed(false);
       } else if (event.data && event.data.type === 'mapMouseMove') {
-          if (activePicker && freehandModifierPressed && isMouseDown && (activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context))) {
+          const modifierPressed = !!(event.data.ctrlKey || event.data.metaKey || freehandModifierPressed);
+          if (modifierPressed !== freehandModifierPressed) setFreehandModifierPressed(modifierPressed);
+          if (activePicker && modifierPressed && isMouseDown && (activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context))) {
               const point = [parseFloat(event.data.lat.toFixed(4)), parseFloat(event.data.lng.toFixed(4))];
               setDraftPoints(prev => {
                   const last = prev[prev.length - 1];
@@ -209,6 +216,14 @@ xatra.TitleBox("<b>My Map</b>")
           }
       } else if (event.data && event.data.type === 'mapKeyUp') {
           if (event.data.key === 'Control' || event.data.key === 'Meta') setFreehandModifierPressed(false);
+      } else if (event.data && event.data.type === 'mapShortcut') {
+          if (event.data.shortcut === 'updatePickerMap') {
+            if (activePreviewTab === 'picker') {
+              renderPickerMap();
+            } else if (activePreviewTab === 'library') {
+              renderTerritoryLibrary(territoryLibrarySource);
+            }
+          }
       } else if (event.data && event.data.type === 'mapFeaturePick') {
           const data = event.data || {};
           if (data.featureType === 'gadm' && data.gid && activePicker?.context === 'reference-gadm') {
@@ -439,9 +454,11 @@ xatra.TitleBox("<b>My Map</b>")
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.target.matches('input, textarea, [contenteditable="true"]')) return;
+      const editableTarget = isEditableTarget(e.target);
       const lowerKey = String(e.key || '').toLowerCase();
       const isMeta = e.ctrlKey || e.metaKey;
+      const allowPickerMapShortcutInInput = activeTab === 'builder' && isMeta && e.code === 'Space';
+      if (editableTarget && !allowPickerMapShortcutInInput) return;
       if (e.key === '?') {
         e.preventDefault();
         setShowShortcutHelp((prev) => !prev);

@@ -31,7 +31,7 @@ Bugs
   - [x] Also in general errors should always break the process, right (I might be talking nonsense, IDK)? Why does the execution not return things to normal upon these errors? 
 - [x] In all the forms there should be something to ensure when the contents are cleared, it is treated exactly as it would be exactly as if it were never edited. E.g. when I enter something into the Flag Color Sequence box and then remove it, I get an error while generating the map "Error: name 'parse_color_sequence' is not defined" even though its contents are clear again.
 - [x] territories don't get stored correctly if they themselves contain pre-computed territories. I.e. if I define a new Flag and build a territory for it KURU | gadm("IND.31") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]), it will just get stored as: india =  |  |  |  - gadm("IND.12") | polygon([[25.483,74.8389],[21.6166,70.2246],[14.1792,68.7305],[15.5807,75.6299],[16.6362,80.6836]]).
-- [ ] Bugs with the code editor
+- [x] Bugs with the code editor
   - [x] Weird bug: Every time I switch away from the Code window and then back to it, another copy of each item in the autocomplete appears. So when one first clicks out and back, there are two copies of "xatra" in the autocomplete menu, and if you type `xatra.` then there are two copies of `Admin` etc.; do it again and there are three copies of each, etc.
   - [x] Code editor is weirdly smaller vertically than the space available in the boxes for them 
     - [x] Map Code editor now uses ResizeObserver to fill available height in the Code tab panel.
@@ -90,7 +90,7 @@ Features
   - [x] Also allow a user to draw a path "freehand" by pressing spacebar (or maybe some other key---you pick whatever makes sense, like what's in line with tools like photoshop?) once, then holding and dragging. Press spacebar again to get out of freehand mode (and then you can continue clicking points normally).
     - [x] Ok, one issue: holding and dragging *also* moves the map around at the same time. Maybe instead of pressing spacebar + dragging, we should change it to holding shift and dragging, and prevent Leaflet from moving the map when shift is pressed.
       - [x] Fixed. However, Shift is actually also used for zooming in to maps, so another conflict. Can we switch to Ctrl+dragging (Cmd should also work for Mac users)?
-        - [ ] This works as long as I click at least one point on the map before going freehand, or if I hold down my mouse at a point then press control---but if I already have control held and then start drawing, the moving-around doesn't get cancelled---kind of like it needs the map to be in focus for the Ctrl to have the desired effect?
+        - [x] This works as long as I click at least one point on the map before going freehand, or if I hold down my mouse at a point then press control---but if I already have control held and then start drawing, the moving-around doesn't get cancelled---kind of like it needs the map to be in focus for the Ctrl to have the desired effect?
   - [x] Display these tips (backspace, freehand mode)
     - [x] These tips should be shown in a blaring message on the map while picker mode is on, not underneath the box like it currently is.
   - [x] One problem is that the user may forget to un-click the picker and leave it on while picking other co-ordinates. To avoid this, only one picker should be turned on at a time: clicking another picker should turn off all the other ones (and show this visually too).
@@ -137,7 +137,7 @@ Features
     - [x] When a new layer is created, its first input field should immediately be focused.
       - [x] A previous agent attempted to do this, but it doesn't seem to be working. The input field should be focused so that the user can immediately start typing.
     - [x] Keyboard shortcut Ctrl+Space to run "Update Reference Map" if in the Reference Map tab or "Update Territory Library Map" if in the Territory Library tab
-      - [ ] This is a bit unreliable---Ctrl+Space stops working if I click on the map, or if I click on the checkboxes in the Territory Library options, or if I click on the input fields in the Reference Map Options.
+      - [x] This is a bit unreliable---Ctrl+Space stops working if I click on the map, or if I click on the checkboxes in the Territory Library options, or if I click on the input fields in the Reference Map Options.
 - [x] Territory library tab (Ctrl/Cmd+5)
   - This will be a third map tab after "Map Preview" and "Reference Map", and will serve to visualize territories in the territory library.
   - Within this tab, there are multiple tabs. There is one tab for xatra.territory_library and one tab for those that the user has saved to library/entered in the Territory library code editor.
@@ -148,6 +148,10 @@ Features
     - [x] The Orange banner (about Shift and backspace) should not appear for territory picker.
     - [x] It shouldn't re-render the territory library map every time a checkbox is marked or unmarked---instead it should only update when the button to re-render the map is pressed
     - [x] It also shouldn't re-render the territory library map every time we navigate to the territory library tab.
+    - [ ] However, it _should_ render the territory library map in the background when the page is loaded (just like the reference map is loaded in the background).
+    - [ ] Why is there a tip saying "Default index: VRJISTHANA, VARNU, VANAVYA, APRITA, PSEUDOSATTAGYDIA_S, ..."? We don't need this, we can already see in the checklist which boxes are marked.
+    - [ ] The territory library checklist should have a search bar to filter and select the checkboxes based on your search term.
+    - [ ] The "Copy index" button should be an icon instead of text, and when it is clicked it should temporarily show a visual cue that it has been copied to clipboard.
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".

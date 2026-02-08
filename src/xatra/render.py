@@ -145,32 +145,52 @@ HTML_TEMPLATE = Template(
       });
       
       map.on('mousedown', function(e) {
+          if ((e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) && map && map.dragging) {
+              map.dragging.disable();
+          }
           if (window.parent) {
               window.parent.postMessage({
                   type: 'mapMouseDown',
                   lat: e.latlng.lat,
-                  lng: e.latlng.lng
+                  lng: e.latlng.lng,
+                  ctrlKey: !!(e.originalEvent && e.originalEvent.ctrlKey),
+                  metaKey: !!(e.originalEvent && e.originalEvent.metaKey),
+                  shiftKey: !!(e.originalEvent && e.originalEvent.shiftKey),
               }, '*');
           }
       });
       
       map.on('mousemove', function(e) {
           updateMultiTooltip(e);
+          if (map && map.dragging) {
+              const modifierHeld = !!(e.originalEvent && (e.originalEvent.ctrlKey || e.originalEvent.metaKey));
+              if (modifierHeld && map.dragging.enabled()) map.dragging.disable();
+              if (!modifierHeld && !map.dragging.enabled()) map.dragging.enable();
+          }
           if (window.parent) {
               window.parent.postMessage({
                   type: 'mapMouseMove',
                   lat: e.latlng.lat,
-                  lng: e.latlng.lng
+                  lng: e.latlng.lng,
+                  ctrlKey: !!(e.originalEvent && e.originalEvent.ctrlKey),
+                  metaKey: !!(e.originalEvent && e.originalEvent.metaKey),
+                  shiftKey: !!(e.originalEvent && e.originalEvent.shiftKey),
               }, '*');
           }
       });
       
       map.on('mouseup', function(e) {
+          if (map && map.dragging && !map.dragging.enabled()) {
+              map.dragging.enable();
+          }
           if (window.parent) {
               window.parent.postMessage({
                   type: 'mapMouseUp',
                   lat: e.latlng.lat,
-                  lng: e.latlng.lng
+                  lng: e.latlng.lng,
+                  ctrlKey: !!(e.originalEvent && e.originalEvent.ctrlKey),
+                  metaKey: !!(e.originalEvent && e.originalEvent.metaKey),
+                  shiftKey: !!(e.originalEvent && e.originalEvent.shiftKey),
               }, '*');
           }
       });
@@ -715,6 +735,10 @@ HTML_TEMPLATE = Template(
       // Forward key events to parent so picker shortcuts work when map iframe has focus
       document.addEventListener('keydown', function(e) {
         if (!window.parent) return;
+        if ((e.ctrlKey || e.metaKey) && (e.key === ' ' || e.code === 'Space')) {
+          e.preventDefault();
+          window.parent.postMessage({ type: 'mapShortcut', shortcut: 'updatePickerMap' }, '*');
+        }
         if ((e.key === 'Control' || e.key === 'Meta') && map && map.dragging) {
           map.dragging.disable();
         }
