@@ -545,6 +545,7 @@ def sync_code_to_builder(request: CodeSyncRequest):
             if "value" in kwargs:
                 _parse_territory_node(kwargs["value"], territory_parts)
             label = args_dict.pop("label", None)
+            args_dict.pop("parent", None)
             elements.append({
                 "type": "flag",
                 "label": label,
@@ -964,6 +965,7 @@ def run_rendering_task(task_type, data, result_queue):
                     args["label"] = el.label
                     
                 if el.type == "flag":
+                    args.pop("parent", None)
                     if isinstance(el.value, str):
                         territory = xatra.loaders.gadm(el.value)
                     elif isinstance(el.value, list):

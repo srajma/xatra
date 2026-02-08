@@ -843,6 +843,7 @@ xatra.TitleBox("<b>My Map</b>")
     // Elements
     builderElements.forEach(el => {
         const args = { ...el.args };
+        if (el.type === 'flag') delete args.parent;
         if (el.label != null && el.label !== '') args.label = el.label;
         const argsStr = argsToStr(args);
 

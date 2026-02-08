@@ -134,6 +134,7 @@ const Builder = ({
               key={index} 
               element={el} 
               index={index} 
+              elements={elements}
               updateElement={updateElement} 
               updateArg={updateArg}
               replaceElement={replaceElement}

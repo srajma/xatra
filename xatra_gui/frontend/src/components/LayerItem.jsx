@@ -6,7 +6,7 @@ import TerritoryBuilder from './TerritoryBuilder';
 const BUILTIN_ICON_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'cross', 'plus', 'star', 'hexagon', 'pentagon', 'octagon'];
 
 const LayerItem = ({ 
-  element, index, updateElement, updateArg, replaceElement, removeElement, 
+  element, index, elements, updateElement, updateArg, replaceElement, removeElement, 
   lastMapClick, activePicker, setActivePicker, draftPoints, setDraftPoints,
   onSaveTerritory, predefinedCode, onStartReferencePick
 }) => {
@@ -457,6 +457,12 @@ const LayerItem = ({
   };
 
   const renderMoreOptions = () => {
+    const inheritOptions = (elements || [])
+      .filter((el, idx) => idx !== index && el?.type === 'flag')
+      .map((el) => String(el?.label || '').trim())
+      .filter(Boolean)
+      .filter((label, idx, arr) => arr.indexOf(label) === idx);
+
     return (
       <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-3">
         {/* Classes */}
@@ -485,14 +491,19 @@ const LayerItem = ({
                     />
                 </div>
                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Parent (Label)</label>
-                    <input
-                        type="text"
-                        value={element.args?.parent || ''}
-                        onChange={(e) => updateArg(index, 'parent', e.target.value)}
-                        className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
-                        placeholder="e.g. British Empire"
-                    />
+                    <label className="block text-xs text-gray-500 mb-1">Inherit Color From</label>
+                    <select
+                      value={element.args?.inherit || ''}
+                      onChange={(e) => updateArg(index, 'inherit', e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none"
+                    >
+                      <option value="">None</option>
+                      {inheritOptions.map((label) => (
+                        <option key={label} value={label}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
                 </div>
             </>
         )}

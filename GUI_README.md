@@ -182,6 +182,10 @@ Minor changes
 - [x] When "Generating Map" is going on (for whatever generation---either the Map Preview, the Reference Map or the Territory Library), it blurs out everything in the map frame, including the Reference Map options box and the Territory library box. It should leave these boxes available for the user to interact with while the map renders.
 - [x] Remove this hint: `Ctrl/Cmd+5` opens this tab. `Custom Library` uses the code from the Code tab's Territory library editor.
 
+Design improvements
+- [ ] introduce a dark mode
+- [ ] the "Xatra Studio" title is cheesy. Replace it with just xatra (lowercase), and no icon.
+
 Development difficulties
 - [x] keeping synchrony between things---this should be documented, i.e. "if you change this, then change this too"
   - See "Development / Synchrony" section below.
