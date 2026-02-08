@@ -12,6 +12,7 @@ maps, allowing smooth transitions between different historical states.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 
@@ -36,9 +37,7 @@ class FlagEntry:
         note: Optional tooltip text for the flag
         color: Optional color for the flag (overrides color sequence)
         classes: Optional CSS classes for styling and color sequence assignment
-        parent: Optional name of parent flag (makes this flag a vassal)
-        children_color_seq: Optional color sequence for child vassals of this flag
-        placeholder: If True, flag is not rendered but can be used as parent for color sequences
+        parent: Optional parent label derived from slash-separated labels (e.g. "A/B")
     """
     label: str
     territory: Territory
@@ -47,8 +46,6 @@ class FlagEntry:
     color: Optional[str] = None
     classes: Optional[str] = None
     parent: Optional[str] = None
-    children_color_seq: Optional[ColorSequence] = None
-    placeholder: bool = False
 
 
 @dataclass
@@ -436,12 +433,6 @@ class Map:
         self._geocoder_provider: str = "nominatim"
         self._geocoder_api_key: Optional[str] = None
         
-        # Vassal system: track parent flags and their children color sequences
-        self._parent_labels: set = set()  # Labels that are actual flags (not placeholders)
-        self._parent_children_seq: Dict[str, ColorSequence] = {}  # Custom color sequences per parent
-        self._parent_children_idx: Dict[str, int] = {}  # Current color index per parent
-        self._parent_base_colors: Dict[str, 'Color'] = {}  # Base color for each parent's vassal sequence
-        
         # Add default base options
         self._add_default_base_options()
 
@@ -647,28 +638,24 @@ class Map:
         ))
 
     @time_debug("Add Flag")
-    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, parent: Optional[str] = None, children_color_seq: Optional[ColorSequence] = None, placeholder: bool = False) -> None:
+    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
         Flags automatically get colors from the map's color sequence. Flags with the same label
         will always use the same color. You can override this behavior by providing a custom color.
         Flags can be assigned to CSS classes for different color sequences.
         
-        A flag can be a vassal/province of another flag by specifying the `parent` parameter.
-        Vassals of real parent flags get colors with reduced saturation and smaller labels.
-        If the parent is a placeholder flag, saturation and font sizes are not reduced but
-        children still use the placeholder's color sequence.
+        A slash-separated label (e.g. "India/Karnataka") is treated as a vassal.
+        Vassals automatically receive a light HSLA overlay color, so they visually
+        tint their parent's territory rather than replacing it.
         
         Args:
             label: Display name for the flag
-            value: Territory object defining the geographical extent (optional for placeholder flags)
+            value: Territory object defining the geographical extent
             period: Optional time period as [start_year, end_year] list
             note: Optional tooltip text for the flag
             color: Optional color for the flag (overrides color sequence) in hex code
             classes: Optional CSS classes for styling and color sequence assignment
-            parent: Optional name of parent flag (makes this flag a vassal/province)
-            children_color_seq: Optional color sequence for vassals of this flag
-            placeholder: If True, flag is not rendered but serves as parent for color sequences
             
         Example:
             >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
@@ -677,30 +664,15 @@ class Map:
             >>> map.Flag("Empire", territory, classes="empire")  # Uses empire color sequence
             >>> # Vassal example:
             >>> map.Flag("India", gadm("IND"), note="Republic of India")
-            >>> map.Flag("Karnataka", gadm("IND.16"), parent="India")  # Vassal of India
-            >>> # Placeholder parent for grouping (e.g., by religion):
-            >>> map.Flag("Hindu", placeholder=True, color="#ff9933")  # Not rendered, just for grouping
-            >>> map.Flag("Vijayanagara", territory1, parent="Hindu")  # Uses Hindu's color family
-            >>> map.Flag("Chola", territory2, parent="Hindu")  # Same color family, no size reduction
+            >>> map.Flag("India/Karnataka", gadm("IND.16"))  # Vassal of India
         """
-        from .colorseq import Color, LinearColorSequence, GOLDEN_RATIO
-        
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
             if len(period) != 2:
                 raise ValueError("period must be [start, end]")
             period_tuple = (int(period[0]), int(period[1]))
-        
-        # For placeholder flags, we don't add to _parent_labels
-        # This means children of placeholders won't get reduced saturation/font size
-        if not placeholder:
-            # Track this label as a real flag (parent label)
-            self._parent_labels.add(label)
-        
-        # Store custom children color sequence if provided
-        if children_color_seq is not None:
-            self._parent_children_seq[label] = children_color_seq
-            self._parent_children_idx[label] = 0
+
+        parent = self._derive_parent_label(label)
         
         # Handle color assignment
         if color is not None:
@@ -712,8 +684,8 @@ class Map:
                 # Reuse existing color for this label
                 color = self._label_colors[label]
             elif parent is not None:
-                # This is a vassal - get color from parent's color sequence
-                color = self._get_vassal_color(label, parent)
+                # Slash-labeled flags are vassals with light HSLA overlay colors.
+                color = self._get_vassal_color(label)
             else:
                 # Determine which color sequence to use based on classes
                 color_sequence_class = None
@@ -730,79 +702,32 @@ class Map:
                 color = assigned_color.hex
                 self._label_colors[label] = color
                 self._flag_indexes[color_sequence_class] += 1
-        
-        # For placeholder flags, also initialize their children color sequence if they have a color
-        if placeholder and color is not None and label not in self._parent_children_seq:
-            base_color = Color.hex(color)
-            step = Color.hsl(0.05, 0.0, 0.0)  # Small hue steps
-            self._parent_children_seq[label] = LinearColorSequence(colors=[base_color], step=step)
-            self._parent_children_idx[label] = 0
-            self._parent_base_colors[label] = base_color
-        
-        # Warn if a non-placeholder flag has no territory
-        if not placeholder and value is None:
+
+        if value is None:
             import warnings
             warnings.warn(
                 f"Flag '{label}' has no territory (value=None). It will not be rendered on the map. "
-                f"Use placeholder=True if this is intentional for a grouping parent.",
+                f"This may be intentional for grouping.",
                 UserWarning,
                 stacklevel=2
             )
-        
-        self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color, classes=classes, parent=parent, children_color_seq=children_color_seq, placeholder=placeholder))
-    
-    def _get_vassal_color(self, label: str, parent: str) -> str:
-        """Get the color for a vassal flag based on its parent.
-        
-        If the parent is a real flag, the vassal gets a color with reduced saturation
-        derived from the parent's color. If the parent is a placeholder (not a real flag),
-        the vassal gets a color from a sequence based on the placeholder name.
-        
-        Args:
-            label: The vassal flag's label
-            parent: The parent flag's label
-            
-        Returns:
-            Hex color string for the vassal
-        """
-        from .colorseq import Color, LinearColorSequence, GOLDEN_RATIO
-        
-        # Check if parent is a real flag (already exists in _parent_labels)
-        is_real_parent = parent in self._parent_labels
-        
-        # Initialize parent's color sequence if not already done
-        if parent not in self._parent_children_idx:
-            self._parent_children_idx[parent] = 0
-        
-        if parent not in self._parent_children_seq:
-            if is_real_parent and parent in self._label_colors:
-                # Use the parent's actual color as base, with smaller hue steps
-                parent_color = Color.hex(self._label_colors[parent])
-                h, s, l = parent_color.hsl
-                # Reduce saturation for real parent's children (by 30%)
-                reduced_s = max(0.1, s * 0.7)
-                base_color = Color.hsl(h, reduced_s, l)
-                # Small hue step to keep children similar but distinguishable
-                step = Color.hsl(0.05, 0.0, 0.0)
-                self._parent_children_seq[parent] = LinearColorSequence(colors=[base_color], step=step)
-                self._parent_base_colors[parent] = base_color
-            else:
-                # Placeholder parent - create a new color sequence from current default
-                # Use full saturation, assign a base color from the default sequence
-                color_sequence_class = None
-                assigned_color = self._color_sequences[color_sequence_class][self._flag_indexes[color_sequence_class]]
-                self._flag_indexes[color_sequence_class] += 1
-                # Small hue step to keep children similar
-                step = Color.hsl(0.05, 0.0, 0.0)
-                self._parent_children_seq[parent] = LinearColorSequence(colors=[assigned_color], step=step)
-                self._parent_base_colors[parent] = assigned_color
-        
-        # Get the next color from this parent's sequence
-        idx = self._parent_children_idx[parent]
-        vassal_color = self._parent_children_seq[parent][idx]
-        self._parent_children_idx[parent] += 1
-        
-        color = vassal_color.hex
+
+        self._flags.append(FlagEntry(label=label, territory=value, period=period_tuple, note=note, color=color, classes=classes, parent=parent))
+
+    def _derive_parent_label(self, label: str) -> Optional[str]:
+        """Return the parent portion of a slash-separated flag label."""
+        if "/" not in label:
+            return None
+        parts = [part.strip() for part in label.split("/") if part.strip()]
+        if len(parts) < 2:
+            return None
+        return "/".join(parts[:-1])
+
+    def _get_vassal_color(self, label: str) -> str:
+        """Generate a stable random light overlay color for slash-labeled vassals."""
+        seed = hashlib.sha256(label.encode("utf-8")).hexdigest()
+        hue = int(seed[:8], 16) % 360
+        color = f"hsla({hue}, 100%, 90%, 0.6)"
         self._label_colors[label] = color
         return color
 
@@ -1431,15 +1356,9 @@ class Map:
         # Prepare flags for paxmax aggregation (keep territories for efficient union)
         flags_serialized: List[Dict[str, Any]] = []
         for fl in self._flags:
-            # Skip placeholder flags - they are not rendered
-            if fl.placeholder:
-                continue
-            
             restricted_period = self._apply_limits_to_period(fl.period)
             # Include objects with no period (always visible) or valid restricted periods
             if fl.period is None or restricted_period is not None:
-                # Determine if this flag's parent is a real flag (not a placeholder)
-                is_vassal_of_real_parent = fl.parent is not None and fl.parent in self._parent_labels
                 flags_serialized.append({
                     "label": fl.label,
                     "territory": fl.territory,  # Pass territory object for efficient union
@@ -1448,7 +1367,6 @@ class Map:
                     "color": fl.color,
                     "classes": fl.classes,
                     "parent": fl.parent,
-                    "is_vassal_of_real_parent": is_vassal_of_real_parent,
                 })
 
         # Find the earliest start year from all object types

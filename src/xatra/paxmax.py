@@ -203,9 +203,8 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                     all_classes.extend(it.get("classes").split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
-            # Preserve parent and vassal info from the first item
+            # Preserve parent info from the first item
             parent = items[0].get("parent") if items else None
-            is_vassal_of_real_parent = items[0].get("is_vassal_of_real_parent", False) if items else False
             
             out.append({
                 "label": label,
@@ -215,7 +214,6 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 "color": color,
                 "classes": unique_classes,
                 "parent": parent,
-                "is_vassal_of_real_parent": is_vassal_of_real_parent,
             })
         return {"mode": "static", "flags": out}
 
@@ -283,9 +281,8 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                     all_classes.extend(it.get("classes").split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
-            # Preserve parent and vassal info from the first active item
+            # Preserve parent info from the first active item
             parent = active[0].get("parent") if active else None
-            is_vassal_of_real_parent = active[0].get("is_vassal_of_real_parent", False) if active else False
             
             snapshot_flags.append({
                 "label": label,
@@ -295,7 +292,6 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 "color": color,
                 "classes": unique_classes,
                 "parent": parent,
-                "is_vassal_of_real_parent": is_vassal_of_real_parent,
             })
         snapshots.append({"year": year, "flags": snapshot_flags})
 

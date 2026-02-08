@@ -69,7 +69,6 @@ HTML_TEMPLATE = Template(
       .text-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
-      .vassal-label { font-size: 11px; font-weight: normal; }
       .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
     .admin-river { stroke: #0066cc; stroke-width: 2; opacity: 0.8; }
       .data { stroke: #333; stroke-width: 1; }
@@ -1246,11 +1245,7 @@ HTML_TEMPLATE = Template(
                 labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
               }
               
-              // Use smaller font for vassals of real parents
               let labelClassName = 'flag-label';
-              if (f.is_vassal_of_real_parent) {
-                labelClassName += ' vassal-label';
-              }
               if (f.classes) labelClassName += ' ' + f.classes;
               
               // Calculate rotation based on distant points in geometry
@@ -2116,11 +2111,7 @@ HTML_TEMPLATE = Template(
               labelStyle = `color: rgba(${r3}, ${g3}, ${b3}, ${alpha});`;
             }
             
-            // Use smaller font for vassals of real parents
             let labelClassName = 'flag-label';
-            if (f.is_vassal_of_real_parent) {
-              labelClassName += ' vassal-label';
-            }
             if (f.classes) labelClassName += ' ' + f.classes;
             
             // Calculate rotation based on distant points in geometry

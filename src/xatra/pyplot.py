@@ -91,21 +91,18 @@ def Dataframe(dataframe, data_column: Optional[str] = None, year_columns: Option
     get_current_map().Dataframe(dataframe, data_column, year_columns, classes, find_in_gadm)
 
 
-def Flag(label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, parent: Optional[str] = None, children_color_seq: Optional[ColorSequence] = None, placeholder: bool = False) -> None:
+def Flag(label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None) -> None:
     """Add a flag (country/kingdom) to the current map.
     
     Args:
         label: Display name for the flag
-        value: Territory object defining the geographical extent (optional for placeholder flags)
+        value: Territory object defining the geographical extent
         period: Optional time period as [start_year, end_year] list
         note: Optional tooltip text for the flag
         color: Optional color for the flag (overrides color sequence) in hex code
         classes: Optional CSS classes for styling and color sequence assignment
-        parent: Optional name of parent flag (makes this flag a vassal/province)
-        children_color_seq: Optional color sequence for vassals of this flag
-        placeholder: If True, flag is not rendered but serves as parent for color sequences
     """
-    get_current_map().Flag(label, value, period, note, color, classes, parent, children_color_seq, placeholder)
+    get_current_map().Flag(label, value, period, note, color, classes)
 
 
 def River(label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
@@ -166,4 +163,3 @@ def slider(start: Optional[int] = None, end: Optional[int] = None, speed: float 
 def show(out_json: str = "map.json", out_html: str = "map.html") -> None:
     """Export the current map to JSON and HTML files."""
     get_current_map().show(out_json, out_html)
-
