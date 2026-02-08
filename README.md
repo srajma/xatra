@@ -311,7 +311,7 @@ map = Map()
 
 The most important element of a Map is a "Flag". A Flag is a country or kingdom, and defined by a label, a territory (consisting of some algebra of GADM regions) and optionally a "period" (if period is left as None then the flag is considered to be active for the whole period of time).
 
-- **`Flag(label, territory=None, period=None, note=None, color=None, classes=None, type=None)`**: Add a flag (country/kingdom). Use `type="vassal"` or `type="province"` for slash-separated hierarchical labels like `India/Karnataka`.
+- **`Flag(label, territory=None, period=None, note=None, color=None, classes=None, type=None, inherit=None)`**: Add a flag (country/kingdom). Use `type="vassal"` or `type="province"` for slash-separated hierarchical labels like `India/Karnataka`. Use `inherit="OtherFlag"` to force color inheritance from an earlier-defined flag.
 - **`Dataframe(dataframe, data_column=None, year_columns=None, classes=None)`**: Add DataFrame-based choropleth data
 - **`Admin(gadm, level, period=None, classes=None, color_by_level=1)`**: Add administrative regions from GADM data
 - **`AdminRivers(period=None, classes=None, sources=None)`**: Add rivers from specified data sources

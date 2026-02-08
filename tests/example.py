@@ -26,7 +26,7 @@ map.Data(gadm = "IND.21", value=1000, period=[600, 700])
 map.Data(gadm = "IND.22", value=1000, period=[600, 800])
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], note="south is lost after Ashoka's death")
 map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
-map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500], color="#ff0000")
+map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500], color="#ff0000", inherit="Maurya")
 
 # ============================================================================
 # Custom Polygon Territory Examples

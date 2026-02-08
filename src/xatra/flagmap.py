@@ -39,6 +39,7 @@ class FlagEntry:
         classes: Optional CSS classes for styling and color sequence assignment
         parent: Optional parent label for hierarchical flags
         type: Optional relationship type: "vassal", "province", or None
+        inherit: Optional label of another flag whose color should be reused
         root_parent: Root parent label for hierarchical flags
         display_label: Leaf label shown on the map for hierarchical flags
         depth: Hierarchy depth (0 for non-hierarchical flags)
@@ -51,6 +52,7 @@ class FlagEntry:
     classes: Optional[str] = None
     parent: Optional[str] = None
     type: Optional[str] = None
+    inherit: Optional[str] = None
     root_parent: Optional[str] = None
     display_label: Optional[str] = None
     depth: int = 0
@@ -646,7 +648,7 @@ class Map:
         ))
 
     @time_debug("Add Flag")
-    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, type: Optional[str] = None) -> None:
+    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, type: Optional[str] = None, inherit: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
         Flags automatically get colors from the map's color sequence. Flags with the same label
@@ -664,6 +666,7 @@ class Map:
             color: Optional color for the flag (overrides color sequence) in hex code
             classes: Optional CSS classes for styling and color sequence assignment
             type: Optional relationship type: "vassal", "province", or None
+            inherit: Optional label of an earlier-defined flag to force color inheritance
             
         Example:
             >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
@@ -673,6 +676,7 @@ class Map:
             >>> map.Flag("India", gadm("IND"), note="Republic of India")
             >>> map.Flag("India/Karnataka", gadm("IND.16"), type="vassal")
             >>> map.Flag("India/Avantirastra", gadm("IND.19"), type="province")
+            >>> map.Flag("Client State", territory, inherit="India")
         """
         period_tuple: Optional[Tuple[int, int]] = None
         if period is not None:
@@ -695,7 +699,14 @@ class Map:
                 )
         
         # Handle color assignment
-        if color is not None:
+        if inherit is not None:
+            if inherit not in self._label_colors:
+                raise ValueError(
+                    f"inherit='{inherit}' requires that the inherited flag has already been defined with an assigned color."
+                )
+            color = self._label_colors[inherit]
+            self._label_colors[label] = color
+        elif color is not None:
             # Custom color provided - store it for this label
             self._label_colors[label] = color
         else:
@@ -742,6 +753,7 @@ class Map:
                 classes=classes,
                 parent=parent,
                 type=type,
+                inherit=inherit,
                 root_parent=root_parent,
                 display_label=display_label,
                 depth=depth,
