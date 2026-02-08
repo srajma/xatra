@@ -1720,7 +1720,71 @@ The timing chart shows:
 
 ## Features
 - [x] Vassals. A Flag can be a "vassal/province" of another Flag if it has an attribute "parent", e.g. Flag(name="Karnataka", parent="India") (where "India" is the name of another Flag). Doing so should, in particular, give the vassals a separate color sequence so that they are all similar colors---with a fixed lower saturation value than their parent---within the range of their parent (the exact color sequence can be adjusted within the parent's attributes children_color_seq=...), and the size of their labels will also be less and the tooltips will specify what they are a vassal of. It should also be possible for the name of the parent to be a placeholder---we'd do this to e.g. color nations belonging to the same religion with the same color. The saturation and font sizes for such nations (that are vassals of placeholder names not belonging to any actual Flag) will not be reduced.
-- [ ] Actually I don't like this implementation of vassals. Better to have vassals with slash-separated names, and something to make sure their colors don't simply add onto the layers below, but IDK---"change" their parents' color in that region somehow. Understand and plan this out properly; implement it and write a tests/example_vassals.py file to demonstrate that it works.
+- [ ] Actually I don't like this implementation of vassals. Better to have vassals with slash-separated names, and something to make sure their colors don't simply add onto the layers below, but IDK---"change" their parents' color in that region somehow. Understand and plan this out properly; implement it and write a tests/example_vassals.py file to demonstrate that it works. I do _not_ want to cut the children out of their parents' terrritories etc. as that is important for other things like border highlighting and label placement. Instead I found this suggestion online, which seems to be promising:
+```
+In short: **Leaflet doesn’t have a native "negative color" property**, but you can achieve this effect using CSS **Blend Modes**.
+
+When you stack semi-transparent layers in Leaflet, the alpha values normally compound (getting darker/more opaque). To "reverse" this or create a cutout/difference effect, you need to target the Leaflet pane or the specific SVG elements.
+
+### 1. Using CSS Blend Modes
+
+Leaflet renders most vectors (paths, circles, polygons) inside an SVG element. You can apply CSS to the `.leaflet-overlay-pane` or to specific paths to change how they interact with the layers below them.
+
+* **`mix-blend-mode: difference;`**: This is the closest to a "negative." It subtracts the color of the top layer from the bottom layer.
+* **`mix-blend-mode: exclusion;`**: Similar to difference but with lower contrast.
+
+```css
+/* Apply to all vectors in the map */
+.leaflet-vector-layers {
+    mix-blend-mode: difference;
+}
+
+```
+
+### 2. The "Reverse Alpha" Problem
+
+If your goal is to prevent overlapping areas from becoming darker (alpha stacking), CSS blend modes like `lighten` or `screen` can help.
+
+* **`mix-blend-mode: screen;`**: If you have two overlapping blue circles with 0.5 opacity, `screen` will prevent the overlapping area from becoming a darker, muddy blue.
+
+---
+
+### 3. Implementation via Class Names
+
+Since Leaflet objects allow you to add a `className`, you can apply specific "negative" logic to just one layer:
+
+**The CSS:**
+
+```css
+.negative-layer {
+    filter: invert(100%);
+    mix-blend-mode: difference;
+}
+
+```
+
+**The Javascript:**
+
+```javascript
+L.circle([51.5, -0.09], {
+    radius: 500,
+    color: '#ffffff', // Use white for a full inversion
+    fillOpacity: 1,
+    className: 'negative-layer'
+}).addTo(map);
+
+```
+
+### 4. Comparison of Methods
+
+| Method | Best For | Pros | Cons |
+| --- | --- | --- | --- |
+| **`difference`** | Creating "cutouts" | Looks very "tech" and high-contrast | Can make colors unpredictable |
+| **`destination-out`** | True transparency holes | Perfect for "donut" shapes | Requires Canvas renderer, not SVG |
+| **`filter: invert()`** | Quick color flipping | Easy to toggle | Inverts everything, including borders |
+
+> **Note:** If you are using the **Canvas renderer** instead of the default SVG renderer, you can use `globalCompositeOperation = 'destination-out'` to actually "punch a hole" through layers, which is the most literal way to reverse an alpha stack.
+```
 - [ ] MAYBE: Optionally separate Flag name and label: i.e. Flag name should serve all the functions that labels currently do, but the user can optionally override just the displayed label. Now obviously, Flags with the same name at the same point in time must have the same displayed label, but this label selection can change by time. You need to understand the paxmax aggregation carefully to implement this properly---then write a tests/example_flaglabel.py file to demonstrate that it works.
 - [x] Custom polygon territory --- just like how we can add paths, but these can be treated as actual shapes that can be treated as territories (i.e. we can take unions, subtractions and intersections of them with any other territory)
 - [x] search feature: search elements (feature search + geocoder in TitleBox)
