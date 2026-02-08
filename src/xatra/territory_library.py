@@ -1510,5 +1510,6 @@ __TERRITORY_INDEX__ = [
     "IRANIC",
     "SIMHALA",
     "TARIM",
-    "TIBET"
+    "TIBET",
+    "KAREN"
 ]
