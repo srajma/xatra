@@ -59,3 +59,46 @@ html, body, #root {
 .theme-dark textarea::placeholder {
   color: #94a3b8 !important;
 }
+
+.theme-dark .xatra-add-layer-btn {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.theme-dark .xatra-add-layer-btn:hover {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="flag"] {
+  color: #93c5fd !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="river"] {
+  color: #67e8f9 !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="point"] {
+  color: #c4b5fd !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="text"] {
+  color: #d1d5db !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="path"] {
+  color: #fdba74 !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="admin"] {
+  color: #a5b4fc !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="data"] {
+  color: #86efac !important;
+}
+
+.theme-dark .xatra-add-layer-btn[data-kind="titlebox"] {
+  color: #f5d0fe !important;
+}

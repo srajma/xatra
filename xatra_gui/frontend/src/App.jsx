@@ -517,7 +517,6 @@ xatra.TitleBox("<b>My Map</b>")
           t: 'text',
           h: 'path',
           a: 'admin',
-          l: 'admin_rivers',
           d: 'dataframe',
           b: 'titlebox',
         };
@@ -1440,7 +1439,6 @@ xatra.TitleBox("<b>My Map</b>")
                     <div>`Ctrl/Cmd+Shift+T` add Text</div>
                     <div>`Ctrl/Cmd+Shift+H` add Path</div>
                     <div>`Ctrl/Cmd+Shift+A` add Admin</div>
-                    <div>`Ctrl/Cmd+Shift+L` add All Rivers</div>
                     <div>`Ctrl/Cmd+Shift+D` add Data</div>
                     <div>`Ctrl/Cmd+Shift+B` add TitleBox</div>
                 </div>

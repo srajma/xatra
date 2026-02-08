@@ -42,10 +42,6 @@ const Builder = ({
         newElement.value = 'IND';
         newElement.args = { level: 1 };
         break;
-      case 'admin_rivers':
-        newElement.label = 'All Rivers'; // AdminRivers doesn't really have a label arg in MapElement but useful for UI
-        newElement.value = '["naturalearth"]';
-        break;
       case 'dataframe':
         newElement.label = 'Data';
         newElement.value = 'GID,value\nIND,100\nPAK,50';
@@ -163,31 +159,28 @@ const Builder = ({
 
           {/* Add layer panel at bottom so new layers appear above it */}
           <div ref={layersEndRef} className="grid grid-cols-3 gap-2 pt-2 sm:grid-cols-4">
-             <button onClick={() => addElement('flag', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-[10px] gap-1 border border-blue-100">
+             <button data-kind="flag" onClick={() => addElement('flag', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-[10px] gap-1 border border-blue-100">
                <Map size={14}/> Flag
              </button>
-             <button onClick={() => addElement('river', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-cyan-50 text-cyan-700 rounded hover:bg-cyan-100 text-[10px] gap-1 border border-cyan-100">
+             <button data-kind="river" onClick={() => addElement('river', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-cyan-50 text-cyan-700 rounded hover:bg-cyan-100 text-[10px] gap-1 border border-cyan-100">
                <span className="text-lg leading-3">~</span> River
              </button>
-             <button onClick={() => addElement('point', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 text-[10px] gap-1 border border-purple-100">
+             <button data-kind="point" onClick={() => addElement('point', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 text-[10px] gap-1 border border-purple-100">
                <MapPin size={14}/> Point
              </button>
-             <button onClick={() => addElement('text', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 text-[10px] gap-1 border border-gray-100">
+             <button data-kind="text" onClick={() => addElement('text', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-gray-50 text-gray-700 rounded hover:bg-gray-100 text-[10px] gap-1 border border-gray-100">
                <Type size={14}/> Text
              </button>
-             <button onClick={() => addElement('path', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 text-[10px] gap-1 border border-orange-100">
+             <button data-kind="path" onClick={() => addElement('path', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 text-[10px] gap-1 border border-orange-100">
                <GitMerge size={14}/> Path
              </button>
-             <button onClick={() => addElement('admin', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-[10px] gap-1 border border-indigo-100">
+             <button data-kind="admin" onClick={() => addElement('admin', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 text-[10px] gap-1 border border-indigo-100">
                <Users size={14}/> Admin
              </button>
-             <button onClick={() => addElement('admin_rivers', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 text-[10px] gap-1 border border-teal-100">
-               <span className="text-lg leading-3">≈</span> All Rivers
-             </button>
-             <button onClick={() => addElement('dataframe', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 text-[10px] gap-1 border border-green-100">
+             <button data-kind="data" onClick={() => addElement('dataframe', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 text-[10px] gap-1 border border-green-100">
                <Table size={14}/> Data
              </button>
-             <button onClick={() => addElement('titlebox', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-fuchsia-50 text-fuchsia-700 rounded hover:bg-fuchsia-100 text-[10px] gap-1 border border-fuchsia-100">
+             <button data-kind="titlebox" onClick={() => addElement('titlebox', { focusFirstField: true })} className="xatra-add-layer-btn flex flex-col items-center justify-center p-2 bg-fuchsia-50 text-fuchsia-700 rounded hover:bg-fuchsia-100 text-[10px] gap-1 border border-fuchsia-100">
                <Heading size={14}/> TitleBox
              </button>
           </div>
