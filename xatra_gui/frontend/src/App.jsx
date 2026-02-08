@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X, Keyboard } from 'lucide-react';
+import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, X, Keyboard, Copy, Check } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
 import Builder from './components/Builder';
@@ -21,10 +21,12 @@ function App() {
   const [territoryLibraryHtml, setTerritoryLibraryHtml] = useState('');
   const [territoryLibrarySource, setTerritoryLibrarySource] = useState('builtin'); // builtin | custom
   const [territoryLibraryNames, setTerritoryLibraryNames] = useState([]);
-  const [territoryLibraryIndexNames, setTerritoryLibraryIndexNames] = useState([]);
   const [selectedTerritoryNames, setSelectedTerritoryNames] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [territorySearchTerm, setTerritorySearchTerm] = useState('');
+  const [copyIndexCopied, setCopyIndexCopied] = useState(false);
+  const [loadingByView, setLoadingByView] = useState({ main: false, picker: false, library: false });
   const [error, setError] = useState(null);
+  const anyLoading = loadingByView.main || loadingByView.picker || loadingByView.library;
 
   // Builder State
   const [builderElements, setBuilderElements] = useState([
@@ -79,6 +81,7 @@ xatra.TitleBox("<b>My Map</b>")
   const [addLayerSignal, setAddLayerSignal] = useState(null);
   const hoverPickRef = useRef('');
   const didPrefetchReferenceRef = useRef(false);
+  const didPrefetchTerritoryRef = useRef(false);
 
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
@@ -439,6 +442,8 @@ xatra.TitleBox("<b>My Map</b>")
     const payload = `__TERRITORY_INDEX__ = ${JSON.stringify(selectedTerritoryNames)}`;
     try {
       await navigator.clipboard.writeText(payload);
+      setCopyIndexCopied(true);
+      window.setTimeout(() => setCopyIndexCopied(false), 1400);
     } catch (err) {
       setError(`Failed to copy index list: ${err.message}`);
     }
@@ -520,7 +525,7 @@ xatra.TitleBox("<b>My Map</b>")
   };
 
   const renderPickerMap = async ({ background = false } = {}) => {
-      if (!background) setLoading(true);
+      if (!background) setLoadingByView((prev) => ({ ...prev, picker: true }));
       try {
           const response = await fetch(`http://localhost:8088/render/picker`, {
               method: 'POST',
@@ -532,7 +537,7 @@ xatra.TitleBox("<b>My Map</b>")
       } catch (err) {
           setError(err.message);
       } finally {
-          if (!background) setLoading(false);
+          if (!background) setLoadingByView((prev) => ({ ...prev, picker: false }));
       }
   };
 
@@ -553,7 +558,6 @@ xatra.TitleBox("<b>My Map</b>")
           const names = Array.isArray(data.names) ? data.names : [];
           const indexNames = Array.isArray(data.index_names) ? data.index_names : [];
           setTerritoryLibraryNames(names);
-          setTerritoryLibraryIndexNames(indexNames);
           setSelectedTerritoryNames((prev) => {
             if (prev.length && prev.some((name) => names.includes(name))) {
               return prev.filter((name) => names.includes(name));
@@ -565,17 +569,23 @@ xatra.TitleBox("<b>My Map</b>")
       }
   };
 
-  const renderTerritoryLibrary = async (source = territoryLibrarySource) => {
-      setLoading(true);
+  const renderTerritoryLibrary = async (
+    source = territoryLibrarySource,
+    { background = false, useDefaultSelection = false } = {}
+  ) => {
+      if (!background) setLoadingByView((prev) => ({ ...prev, library: true }));
       try {
+          const body = {
+            source,
+            predefined_code: predefinedCode || '',
+          };
+          if (!useDefaultSelection) {
+            body.selected_names = selectedTerritoryNames;
+          }
           const response = await fetch('http://localhost:8088/render/territory-library', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                source,
-                predefined_code: predefinedCode || '',
-                selected_names: selectedTerritoryNames,
-              }),
+              body: JSON.stringify(body),
           });
           const data = await response.json();
           if (data.error) {
@@ -583,20 +593,18 @@ xatra.TitleBox("<b>My Map</b>")
           } else if (data.html) {
               setTerritoryLibraryHtml(data.html);
               const names = Array.isArray(data.available_names) ? data.available_names : [];
-              const indexNames = Array.isArray(data.index_names) ? data.index_names : [];
               if (names.length) setTerritoryLibraryNames(names);
-              setTerritoryLibraryIndexNames(indexNames);
           }
       } catch (err) {
           setError(err.message);
       } finally {
-          setLoading(false);
+          if (!background) setLoadingByView((prev) => ({ ...prev, library: false }));
       }
   };
 
   const renderMap = async () => {
     setActivePreviewTab('main');
-    setLoading(true);
+    setLoadingByView((prev) => ({ ...prev, main: true }));
     setError(null);
     try {
       const endpoint = activeTab === 'code' ? '/render/code' : '/render/builder';
@@ -621,7 +629,7 @@ xatra.TitleBox("<b>My Map</b>")
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setLoadingByView((prev) => ({ ...prev, main: false }));
     }
   };
 
@@ -928,7 +936,7 @@ xatra.TitleBox("<b>My Map</b>")
 
   const handleStop = async () => {
       // Force stop loading on frontend
-      setLoading(false);
+      setLoadingByView({ main: false, picker: false, library: false });
       try {
           await fetch('http://localhost:8088/stop', { method: 'POST' });
       } catch (e) { console.error(e); }
@@ -946,9 +954,20 @@ xatra.TitleBox("<b>My Map</b>")
   }, [mapHtml]);
 
   useEffect(() => {
+    if (didPrefetchTerritoryRef.current || !mapHtml) return;
+    didPrefetchTerritoryRef.current = true;
+    loadTerritoryLibraryCatalog('builtin');
+    renderTerritoryLibrary('builtin', { background: true, useDefaultSelection: true });
+  }, [mapHtml]);
+
+  useEffect(() => {
     if (activePreviewTab !== 'library') return;
     loadTerritoryLibraryCatalog(territoryLibrarySource);
   }, [activePreviewTab, territoryLibrarySource, predefinedCode]);
+
+  const filteredTerritoryNames = territoryLibraryNames.filter((name) => (
+    !territorySearchTerm.trim() || name.toLowerCase().includes(territorySearchTerm.trim().toLowerCase())
+  ));
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
@@ -1016,7 +1035,7 @@ xatra.TitleBox("<b>My Map</b>")
         </div>
 
         <div className="p-4 border-t border-gray-200 bg-gray-50">
-          {loading ? (
+          {anyLoading ? (
               <button
                 onClick={handleStop}
                 className="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all"
@@ -1140,7 +1159,7 @@ xatra.TitleBox("<b>My Map</b>")
 
                     <button 
                         onClick={renderPickerMap}
-                        disabled={loading}
+                        disabled={loadingByView.picker}
                         className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors disabled:opacity-50"
                     >
                         Update Reference Map
@@ -1241,18 +1260,29 @@ xatra.TitleBox("<b>My Map</b>")
                         <div className="text-[11px] font-semibold text-gray-700">Territories to Render</div>
                         <button
                           onClick={copySelectedTerritoryIndex}
-                          className="text-[10px] px-1.5 py-0.5 border rounded bg-white hover:bg-gray-50"
+                          className={`p-1 border rounded bg-white transition-colors ${copyIndexCopied ? 'text-green-700 border-green-300 bg-green-50' : 'text-gray-600 hover:bg-gray-50'}`}
                           disabled={!selectedTerritoryNames.length}
                           title="Copy selected names as __TERRITORY_INDEX__"
                         >
-                          Copy Index
+                          {copyIndexCopied ? <Check size={12}/> : <Copy size={12}/>}
                         </button>
+                    </div>
+                    <div className="space-y-1">
+                        <input
+                          type="text"
+                          value={territorySearchTerm}
+                          onChange={(e) => setTerritorySearchTerm(e.target.value)}
+                          className="w-full text-[11px] p-1.5 border rounded bg-white"
+                          placeholder="Filter territories..."
+                        />
                     </div>
                     <div className="max-h-40 overflow-y-auto space-y-1">
                         {territoryLibraryNames.length === 0 ? (
                           <div className="text-[10px] text-gray-400 italic">No territories found.</div>
+                        ) : filteredTerritoryNames.length === 0 ? (
+                          <div className="text-[10px] text-gray-400 italic">No matches for this search.</div>
                         ) : (
-                          territoryLibraryNames.map((name) => (
+                          filteredTerritoryNames.map((name) => (
                             <label key={name} className="flex items-center gap-2 text-[11px] text-gray-700 cursor-pointer">
                               <input
                                 type="checkbox"
@@ -1265,11 +1295,6 @@ xatra.TitleBox("<b>My Map</b>")
                           ))
                         )}
                     </div>
-                    {territoryLibraryIndexNames.length > 0 && (
-                      <div className="text-[10px] text-gray-500">
-                        Default index: {territoryLibraryIndexNames.join(', ')}
-                      </div>
-                    )}
                 </div>
                 <div className="space-y-2 border-t border-gray-100 pt-2 text-[11px]">
                     <div className="font-semibold text-gray-600">Picker Target</div>
@@ -1329,7 +1354,7 @@ xatra.TitleBox("<b>My Map</b>")
                 </div>
                 <button 
                     onClick={() => renderTerritoryLibrary(territoryLibrarySource)}
-                    disabled={loading}
+                    disabled={loadingByView.library}
                     className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow transition-colors disabled:opacity-50"
                 >
                     Update Territory Library Map
@@ -1383,11 +1408,11 @@ xatra.TitleBox("<b>My Map</b>")
                 </div>
             )}
             {activePreviewTab === 'main' ? (
-                <MapPreview html={mapHtml} loading={loading} iframeRef={iframeRef} />
+                <MapPreview html={mapHtml} loading={loadingByView.main} iframeRef={iframeRef} />
             ) : activePreviewTab === 'picker' ? (
-                <MapPreview html={pickerHtml} loading={loading} iframeRef={pickerIframeRef} />
+                <MapPreview html={pickerHtml} loading={loadingByView.picker} iframeRef={pickerIframeRef} />
             ) : (
-                <MapPreview html={territoryLibraryHtml} loading={loading} iframeRef={territoryLibraryIframeRef} />
+                <MapPreview html={territoryLibraryHtml} loading={loadingByView.library} iframeRef={territoryLibraryIframeRef} />
             )}
         </div>
       </div>

@@ -148,10 +148,11 @@ Features
     - [x] The Orange banner (about Shift and backspace) should not appear for territory picker.
     - [x] It shouldn't re-render the territory library map every time a checkbox is marked or unmarked---instead it should only update when the button to re-render the map is pressed
     - [x] It also shouldn't re-render the territory library map every time we navigate to the territory library tab.
-    - [ ] However, it _should_ render the territory library map in the background when the page is loaded (just like the reference map is loaded in the background).
-    - [ ] Why is there a tip saying "Default index: VRJISTHANA, VARNU, VANAVYA, APRITA, PSEUDOSATTAGYDIA_S, ..."? We don't need this, we can already see in the checklist which boxes are marked.
-    - [ ] The territory library checklist should have a search bar to filter and select the checkboxes based on your search term.
-    - [ ] The "Copy index" button should be an icon instead of text, and when it is clicked it should temporarily show a visual cue that it has been copied to clipboard.
+    - [x] However, it _should_ render the territory library map in the background when the page is loaded (just like the reference map is loaded in the background).
+    - [x] Why is there a tip saying "Default index: VRJISTHANA, VARNU, VANAVYA, APRITA, PSEUDOSATTAGYDIA_S, ..."? We don't need this, we can already see in the checklist which boxes are marked.
+    - [x] The territory library checklist should have a search bar to filter and select the checkboxes based on your search term.
+    - [x] The "Copy index" button should be an icon instead of text, and when it is clicked it should temporarily show a visual cue that it has been copied to clipboard.
+    
 
 Minor changes
 - [x] "Rivers" in the add Layers panel should be "All Rivers".
@@ -191,7 +192,6 @@ For eventually publishing this as an app
   - [ ] publishing territory libraries and CSS
   - [ ] importing existing map content, territory libraries and CSS into project
 - [ ] AI agent --- only for paid users
-  - [ ]
 
 Efficiency and scalability for publishing as an app
 - [ ] Re-rendering the whole map each time is inefficient

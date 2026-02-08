@@ -8,6 +8,7 @@ import multiprocessing
 import signal
 import ast
 import re
+from collections import OrderedDict
 
 # Set matplotlib backend to Agg before importing anything else
 import matplotlib
@@ -30,6 +31,9 @@ from xatra.icon import Icon
 # Global variable to track the current rendering process
 current_process = None
 process_lock = threading.Lock()
+render_cache_lock = threading.Lock()
+RENDER_CACHE_MAX_ENTRIES = 24
+render_cache = OrderedDict()
 
 # GADM Indexing
 GADM_INDEX = []
@@ -1092,7 +1096,21 @@ def run_rendering_task(task_type, data, result_queue):
 
 def run_in_process(task_type, data):
     global current_process
-    
+    cache_key = None
+    try:
+        payload = data.model_dump() if hasattr(data, "model_dump") else data.dict()
+        cache_key = f"{task_type}:{json.dumps(payload, sort_keys=True, default=str)}"
+    except Exception:
+        cache_key = None
+
+    if cache_key:
+        with render_cache_lock:
+            cached = render_cache.get(cache_key)
+            if cached is not None:
+                # Maintain LRU order
+                render_cache.move_to_end(cache_key)
+                return cached
+
     # Ensure previous process is dead
     with process_lock:
         if current_process and current_process.is_alive():
@@ -1122,7 +1140,14 @@ def run_in_process(task_type, data):
         
     with process_lock:
         current_process = None
-        
+
+    if cache_key and isinstance(result, dict) and "error" not in result:
+        with render_cache_lock:
+            render_cache[cache_key] = result
+            render_cache.move_to_end(cache_key)
+            while len(render_cache) > RENDER_CACHE_MAX_ENTRIES:
+                render_cache.popitem(last=False)
+
     return result
 
 @app.post("/render/picker")
