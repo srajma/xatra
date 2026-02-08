@@ -153,22 +153,12 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
     <section className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Global Options</h3>
         
-        <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">TitleBox (HTML)</label>
-            <textarea
-              value={options.title || ''}
-              onChange={(e) => updateOption('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 font-mono h-16"
-              placeholder="<b>My Map</b>"
-            />
-        </div>
-
         <button 
             onClick={() => setShowMore(!showMore)}
             className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium mb-2"
         >
             {showMore ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
-            {showMore ? 'Hide Advanced Options' : 'Show Advanced Options'}
+            {showMore ? 'Hide' : 'Show'}
         </button>
 
         {showMore && (

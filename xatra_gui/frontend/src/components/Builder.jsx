@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Map, Users, MapPin, Type, GitMerge, Table } from 'lucide-react';
+import { Map, Users, MapPin, Type, GitMerge, Table, Heading } from 'lucide-react';
 import LayerItem from './LayerItem';
 import GlobalOptions from './GlobalOptions';
 
@@ -50,6 +50,11 @@ const Builder = ({
         newElement.label = 'Data';
         newElement.value = 'GID,value\nIND,100\nPAK,50';
         newElement.args = { data_column: 'value' };
+        break;
+      case 'titlebox':
+        newElement.label = 'TitleBox';
+        newElement.value = '<b>My Map</b>';
+        newElement.args = {};
         break;
       default:
         break;
@@ -157,7 +162,7 @@ const Builder = ({
           )}
 
           {/* Add layer panel at bottom so new layers appear above it */}
-          <div ref={layersEndRef} className="grid grid-cols-4 gap-2 pt-2">
+          <div ref={layersEndRef} className="grid grid-cols-3 gap-2 pt-2 sm:grid-cols-4">
              <button onClick={() => addElement('flag', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-[10px] gap-1 border border-blue-100">
                <Map size={14}/> Flag
              </button>
@@ -181,6 +186,9 @@ const Builder = ({
              </button>
              <button onClick={() => addElement('dataframe', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-green-50 text-green-700 rounded hover:bg-green-100 text-[10px] gap-1 border border-green-100">
                <Table size={14}/> Data
+             </button>
+             <button onClick={() => addElement('titlebox', { focusFirstField: true })} className="flex flex-col items-center justify-center p-2 bg-fuchsia-50 text-fuchsia-700 rounded hover:bg-fuchsia-100 text-[10px] gap-1 border border-fuchsia-100">
+               <Heading size={14}/> TitleBox
              </button>
           </div>
         </div>

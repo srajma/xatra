@@ -464,10 +464,21 @@ def sync_code_to_builder(request: CodeSyncRequest):
             continue
 
         if method == "TitleBox":
+            title = None
             if call.args:
                 title = _python_value(call.args[0])
-                if isinstance(title, str):
-                    options["title"] = title
+            elif "html" in kwargs:
+                title = _python_value(kwargs.get("html"))
+            tb_args = {}
+            if "period" in kwargs:
+                tb_args["period"] = _python_value(kwargs.get("period"))
+            if isinstance(title, str):
+                elements.append({
+                    "type": "titlebox",
+                    "label": "TitleBox",
+                    "value": title,
+                    "args": tb_args,
+                })
             continue
 
         if method == "zoom":
@@ -858,9 +869,6 @@ def run_rendering_task(task_type, data, result_queue):
                     else:
                         m.BaseOption(bm)
             
-            if "title" in data.options:
-                m.TitleBox(data.options["title"])
-                
             if "css_rules" in data.options:
                 css_str = ""
                 for rule in data.options["css_rules"]:
@@ -1089,6 +1097,11 @@ def run_rendering_task(task_type, data, result_queue):
                         if args.get("data_column") in (None, ""): args.pop("data_column", None)
                         if args.get("year_columns") in (None, [], ""): args.pop("year_columns", None)
                         m.Dataframe(df, **args)
+                elif el.type == "titlebox":
+                    if "label" in args:
+                        del args["label"]
+                    html = el.value if isinstance(el.value, str) else str(el.value or "")
+                    m.TitleBox(html, **args)
 
         payload = m._export_json()
         html = export_html_string(payload)

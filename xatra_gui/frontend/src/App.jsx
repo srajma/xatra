@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layers, Code, Play, Map as MapIcon, Upload, Save, FileJson, FileCode, Plus, Trash2, Keyboard, Copy, Check } from 'lucide-react';
+import { Layers, Code, Play, Upload, Save, FileJson, FileCode, Plus, Trash2, Keyboard, Copy, Check, Moon, Sun } from 'lucide-react';
 
 // Components (defined inline for simplicity first, can be split later)
 import Builder from './components/Builder';
@@ -33,11 +33,17 @@ function App() {
     { type: 'flag', label: 'India', value: [], args: { note: 'Republic of India' } }
   ]);
   const [builderOptions, setBuilderOptions] = useState({
-    title: '<b>My Interactive Map</b>',
     basemaps: [{ url_or_provider: 'Esri.WorldTopoMap', default: true }],
     flag_color_sequences: [{ class_name: '', colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
     admin_color_sequences: [{ colors: '', step_h: 1.6180339887, step_s: 0.0, step_l: 0.0 }],
     data_colormap: { type: 'LinearSegmented', colors: 'yellow,orange,red' },
+  });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('xatra-theme') === 'dark';
+    } catch {
+      return false;
+    }
   });
 
   // Code State
@@ -86,6 +92,14 @@ xatra.TitleBox("<b>My Map</b>")
   const iframeRef = useRef(null);
   const pickerIframeRef = useRef(null);
   const territoryLibraryIframeRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('xatra-theme', isDarkMode ? 'dark' : 'light');
+    } catch {
+      // Ignore persistence errors (e.g., private mode restrictions)
+    }
+  }, [isDarkMode]);
 
   const updateDraft = (points, shapeType) => {
       const ref = activePreviewTab === 'picker'
@@ -505,6 +519,7 @@ xatra.TitleBox("<b>My Map</b>")
           a: 'admin',
           l: 'admin_rivers',
           d: 'dataframe',
+          b: 'titlebox',
         };
         const layerType = layerByKey[lowerKey];
         if (layerType) {
@@ -762,10 +777,6 @@ xatra.TitleBox("<b>My Map</b>")
         });
     }
 
-    if (builderOptions.title) {
-        lines.push(`xatra.TitleBox("""${builderOptions.title}""")`);
-    }
-
     if (builderOptions.zoom !== undefined && builderOptions.zoom !== null) {
         lines.push(`xatra.zoom(${builderOptions.zoom})`);
     }
@@ -844,10 +855,11 @@ xatra.TitleBox("<b>My Map</b>")
     };
 
     // Elements
+    const labelCapableTypes = new Set(['flag', 'river', 'point', 'text', 'path']);
     builderElements.forEach(el => {
         const args = { ...el.args };
         if (el.type === 'flag') delete args.parent;
-        if (el.label != null && el.label !== '') args.label = el.label;
+        if (labelCapableTypes.has(el.type) && el.label != null && el.label !== '') args.label = el.label;
         const argsStr = argsToStr(args);
 
         if (el.type === 'flag') {
@@ -898,6 +910,9 @@ xatra.TitleBox("<b>My Map</b>")
             const csvContent = (el.value != null && el.value !== '') ? String(el.value).replace(/"""/g, '\\"\\"\\"') : '';
             lines.push(`df = pd.read_csv(io.StringIO("""${csvContent}"""))`);
             lines.push(`xatra.Dataframe(df${argsStr})`);
+        } else if (el.type === 'titlebox') {
+            const titleHtml = (el.value != null && el.value !== '') ? String(el.value).replace(/"""/g, '\\"\\"\\"') : '';
+            lines.push(`xatra.TitleBox("""${titleHtml}"""${argsStr})`);
         }
     });
 
@@ -986,16 +1001,24 @@ xatra.TitleBox("<b>My Map</b>")
   ));
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
+    <div className={`flex h-screen font-sans ${isDarkMode ? 'theme-dark bg-slate-950 text-slate-100' : 'bg-gray-100'}`}>
       {/* Sidebar */}
       <div className="w-1/3 min-w-[350px] max-w-[500px] flex flex-col bg-white border-r border-gray-200 shadow-md z-10">
         <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <MapIcon className="w-6 h-6 text-blue-600" />
-                Xatra Studio
+            <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2 lowercase">
+                xatra
             </h1>
-            <div className="flex bg-white rounded-lg border border-gray-300 p-0.5">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDarkMode((prev) => !prev)}
+                className="p-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDarkMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-gray-600" />}
+              </button>
+              <div className="flex bg-white rounded-lg border border-gray-300 p-0.5">
                 <button 
                 onClick={() => handleTabChange('builder')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'builder' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -1008,6 +1031,7 @@ xatra.TitleBox("<b>My Map</b>")
                 >
                 <span className="flex items-center gap-1"><Code size={16}/> Code</span>
                 </button>
+              </div>
             </div>
           </div>
           
@@ -1398,6 +1422,7 @@ xatra.TitleBox("<b>My Map</b>")
                     <div>`Ctrl/Cmd+Shift+A` add Admin</div>
                     <div>`Ctrl/Cmd+Shift+L` add All Rivers</div>
                     <div>`Ctrl/Cmd+Shift+D` add Data</div>
+                    <div>`Ctrl/Cmd+Shift+B` add TitleBox</div>
                 </div>
             )}
             {activePicker && (activePicker.context === 'layer' || isTerritoryPolygonPicker(activePicker.context)) && (

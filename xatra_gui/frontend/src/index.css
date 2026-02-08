@@ -5,3 +5,57 @@ html, body, #root {
   margin: 0;
   overflow: hidden;
 }
+
+.theme-dark {
+  color-scheme: dark;
+}
+
+.theme-dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+.theme-dark .bg-gray-50 {
+  background-color: #111827 !important;
+}
+
+.theme-dark .bg-gray-100 {
+  background-color: #1f2937 !important;
+}
+
+.theme-dark .bg-gray-200 {
+  background-color: #111827 !important;
+}
+
+.theme-dark .border-gray-100,
+.theme-dark .border-gray-200,
+.theme-dark .border-gray-300 {
+  border-color: #374151 !important;
+}
+
+.theme-dark .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.theme-dark .text-gray-500,
+.theme-dark .text-gray-600,
+.theme-dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.theme-dark .text-gray-800,
+.theme-dark .text-gray-900 {
+  color: #f8fafc !important;
+}
+
+.theme-dark input,
+.theme-dark textarea,
+.theme-dark select {
+  background-color: #0b1220 !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+  color: #94a3b8 !important;
+}

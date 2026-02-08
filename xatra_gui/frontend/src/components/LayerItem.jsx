@@ -437,7 +437,7 @@ const LayerItem = ({
             </div>
           </div>
         );
-       case 'admin_rivers':
+      case 'admin_rivers':
          return (
            <div className="mb-2">
               <label className="block text-xs text-gray-500 mb-1">Sources (JSON list)</label>
@@ -447,8 +447,21 @@ const LayerItem = ({
                 onChange={(e) => updateElement(index, 'value', e.target.value)}
                 data-focus-primary="true"
                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-                placeholder='["naturalearth"]'
+              placeholder='["naturalearth"]'
               />
+          </div>
+        );
+      case 'titlebox':
+        return (
+          <div className="mb-2">
+            <label className="block text-xs text-gray-500 mb-1">TitleBox (HTML)</label>
+            <textarea
+              value={element.value || ''}
+              onChange={(e) => updateElement(index, 'value', e.target.value)}
+              data-focus-primary="true"
+              className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono h-20 resize-y"
+              placeholder="<b>My Map</b>"
+            />
           </div>
         );
       default:
@@ -457,6 +470,9 @@ const LayerItem = ({
   };
 
   const renderMoreOptions = () => {
+    if (element.type === 'titlebox') {
+      return null;
+    }
     const inheritOptions = (elements || [])
       .filter((el, idx) => idx !== index && el?.type === 'flag')
       .map((el) => String(el?.label || '').trim())
@@ -561,27 +577,32 @@ const LayerItem = ({
            </div>
       </div>
 
-      {/* Note */}
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Note (Tooltip)</label>
-        <input
-          type="text"
-          value={element.args?.note || ''}
-          onChange={(e) => updateArg(index, 'note', e.target.value)}
-          className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
-          placeholder="Optional description..."
-        />
-      </div>
+      {element.type !== 'titlebox' && (
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Note (Tooltip)</label>
+          <input
+            type="text"
+            value={element.args?.note || ''}
+            onChange={(e) => updateArg(index, 'note', e.target.value)}
+            className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm focus:border-blue-500 outline-none font-mono"
+            placeholder="Optional description..."
+          />
+        </div>
+      )}
 
-      <button 
-        onClick={() => setShowMore(!showMore)}
-        className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
-      >
-        {showMore ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
-        {showMore ? 'Less Options' : 'More Options'}
-      </button>
-      
-      {showMore && renderMoreOptions()}
+      {element.type !== 'titlebox' && (
+        <>
+          <button 
+            onClick={() => setShowMore(!showMore)}
+            className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
+          >
+            {showMore ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
+            {showMore ? 'Less Options' : 'More Options'}
+          </button>
+          
+          {showMore && renderMoreOptions()}
+        </>
+      )}
     </div>
   );
 };

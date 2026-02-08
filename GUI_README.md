@@ -181,11 +181,11 @@ Minor changes
 - [x] The countries column in the reference map should allow any GADM ID, not just country codes---since xatra.Admin() allows for it. So its search autocomplete should be exactly like that of the GADM entries in the Flag layer territory building, and there should not be any restriction on the characters (since we might want to search for these things by name). The level dropdown should still be taken from the country code part of the GADM ID (i.e. for IND.20 still take the levels list from that of IND).
 - [x] When "Generating Map" is going on (for whatever generation---either the Map Preview, the Reference Map or the Territory Library), it blurs out everything in the map frame, including the Reference Map options box and the Territory library box. It should leave these boxes available for the user to interact with while the map renders.
 - [x] Remove this hint: `Ctrl/Cmd+5` opens this tab. `Custom Library` uses the code from the Code tab's Territory library editor.
-- [ ] TitleBox should actually not be a global element, but a layer---xatra supports adding as many "TitleBox" elements as you want, e.g. with different periods. As with the other layers, the "period" field should be present.
+- [x] TitleBox should actually not be a global element, but a layer---xatra supports adding as many "TitleBox" elements as you want, e.g. with different periods. As with the other layers, the "period" field should be present.
 
 Design improvements
-- [ ] introduce a dark mode
-- [ ] the "Xatra Studio" title is cheesy. Replace it with just xatra (lowercase), and no icon.
+- [x] introduce a dark mode
+- [x] the "Xatra Studio" title is cheesy. Replace it with just xatra (lowercase), and no icon.
 
 Experiments I have to do
 - [ ] Make sure my existing maps work in this
