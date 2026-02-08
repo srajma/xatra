@@ -120,15 +120,15 @@ const AutocompleteInput = ({
         {...inputProps}
       />
       {showSuggestions && suggestions.length > 0 && (
-        <div ref={listRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div ref={listRef} className="xatra-autocomplete-menu absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
           {suggestions.map((item, idx) => (
             <div
               key={`${item.gid || item.country_code || item.country || 'item'}-${idx}`}
               ref={(el) => { itemRefs.current[idx] = el; }}
               onClick={() => handleSelect(item)}
               onMouseEnter={() => setActiveIndex(idx)}
-              className={`px-3 py-2 cursor-pointer text-xs border-b border-gray-50 last:border-none ${
-                idx === activeIndex ? 'bg-blue-50' : 'hover:bg-gray-100'
+              className={`xatra-autocomplete-item px-3 py-2 cursor-pointer text-xs border-b border-gray-50 last:border-none ${
+                idx === activeIndex ? 'bg-blue-50 xatra-autocomplete-item-active' : 'hover:bg-gray-100'
               }`}
             >
               <div className="font-semibold">
@@ -138,7 +138,7 @@ const AutocompleteInput = ({
                 )}
               </div>
               {(item.country || item.level != null || item.max_level != null) && (
-                <div className="text-gray-500 text-[10px]">
+                <div className="xatra-autocomplete-meta text-gray-500 text-[10px]">
                   {item.country || item.country_code}
                   {item.level != null ? ` • Level ${item.level}` : ''}
                   {item.max_level != null ? ` • Max ${item.max_level}` : ''}

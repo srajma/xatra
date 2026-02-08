@@ -102,3 +102,30 @@ html, body, #root {
 .theme-dark .xatra-add-layer-btn[data-kind="titlebox"] {
   color: #f5d0fe !important;
 }
+
+.theme-dark .xatra-autocomplete-menu {
+  background-color: #0b1220 !important;
+  border-color: #334155 !important;
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.6) !important;
+}
+
+.theme-dark .xatra-autocomplete-item {
+  color: #e2e8f0 !important;
+  border-color: #1e293b !important;
+}
+
+.theme-dark .xatra-autocomplete-item:hover {
+  background-color: #172033 !important;
+}
+
+.theme-dark .xatra-autocomplete-item-active {
+  background-color: #1e3a8a !important;
+}
+
+.theme-dark .xatra-autocomplete-item .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.theme-dark .xatra-autocomplete-meta {
+  color: #a5b4c8 !important;
+}
