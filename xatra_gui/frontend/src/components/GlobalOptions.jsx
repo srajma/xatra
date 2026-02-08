@@ -151,15 +151,16 @@ const GlobalOptions = ({ options, setOptions, elements, onGetCurrentView }) => {
 
   return (
     <section className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Global Options</h3>
-        
-        <button 
-            onClick={() => setShowMore(!showMore)}
-            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium mb-2"
-        >
-            {showMore ? <ChevronUp size={12}/> : <ChevronDown size={12}/>}
-            {showMore ? 'Hide' : 'Show'}
-        </button>
+        <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-semibold text-gray-900">Global Options</h3>
+            <button 
+                onClick={() => setShowMore(!showMore)}
+                className="p-1 text-gray-500 hover:text-blue-700 rounded hover:bg-gray-100 transition-colors"
+                title={showMore ? 'Collapse global options' : 'Expand global options'}
+            >
+                {showMore ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+            </button>
+        </div>
 
         {showMore && (
             <div className="space-y-6 pt-2 border-t border-gray-100">

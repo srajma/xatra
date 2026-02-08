@@ -245,11 +245,13 @@ class PickerEntry(BaseModel):
 class PickerRequest(BaseModel):
     entries: List[PickerEntry]
     adminRivers: bool = False
+    basemaps: Optional[List[Dict[str, Any]]] = None
 
 class TerritoryLibraryRequest(BaseModel):
     source: str = "builtin"  # "builtin" or "custom"
     predefined_code: Optional[str] = None
     selected_names: Optional[List[str]] = None
+    basemaps: Optional[List[Dict[str, Any]]] = None
 
 class StopRequest(BaseModel):
     task_types: Optional[List[str]] = None
@@ -794,6 +796,16 @@ def run_rendering_task(task_type, data, result_queue):
         colors = parse_color_list(row.get("colors"))
         return LinearColorSequence(colors=colors, step=Color.hsl(step_h, step_s, step_l))
 
+    def apply_basemaps(basemaps):
+        if isinstance(basemaps, list) and len(basemaps) > 0:
+            for bm in basemaps:
+                if isinstance(bm, dict):
+                    m.BaseOption(**bm)
+                else:
+                    m.BaseOption(bm)
+            return
+        m.BaseOption("Esri.WorldTopoMap", default=True)
+
     try:
         # Re-import xatra inside the process just in case, though imports are inherited on fork (mostly)
         # But we need fresh map state
@@ -802,13 +814,13 @@ def run_rendering_task(task_type, data, result_queue):
         m = xatra.get_current_map()
         
         if task_type == 'picker':
-            m.BaseOption("Esri.WorldTopoMap", default=True)
+            apply_basemaps(getattr(data, "basemaps", None))
             for entry in data.entries:
                 m.Admin(gadm=entry.country, level=entry.level)
             if data.adminRivers:
                 m.AdminRivers()
         elif task_type == 'territory_library':
-            m.BaseOption("Esri.WorldTopoMap", default=True)
+            apply_basemaps(getattr(data, "basemaps", None))
             import xatra.territory_library as territory_library
             source = (getattr(data, "source", "builtin") or "builtin").strip().lower()
             code = getattr(data, "predefined_code", "") or ""

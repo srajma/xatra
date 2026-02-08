@@ -542,10 +542,14 @@ xatra.TitleBox("<b>My Map</b>")
   const renderPickerMap = async ({ background = false, showLoading = true } = {}) => {
       if (showLoading) setLoadingByView((prev) => ({ ...prev, picker: true }));
       try {
+          const payload = {
+            ...pickerOptions,
+            basemaps: builderOptions.basemaps || [],
+          };
           const response = await fetch(`http://localhost:8088/render/picker`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(pickerOptions)
+              body: JSON.stringify(payload)
           });
           const data = await response.json();
           if (data.html) setPickerHtml(data.html);
@@ -593,6 +597,7 @@ xatra.TitleBox("<b>My Map</b>")
           const body = {
             source,
             predefined_code: predefinedCode || '',
+            basemaps: builderOptions.basemaps || [],
           };
           if (!useDefaultSelection) {
             body.selected_names = selectedTerritoryNames;
@@ -999,6 +1004,21 @@ xatra.TitleBox("<b>My Map</b>")
   const filteredTerritoryNames = territoryLibraryNames.filter((name) => (
     !territorySearchTerm.trim() || name.toLowerCase().includes(territorySearchTerm.trim().toLowerCase())
   ));
+  const mapTabBarClass = isDarkMode
+    ? 'bg-slate-900/90 border-slate-700'
+    : 'bg-white/90 border-gray-200';
+  const mapTabInactiveClass = isDarkMode
+    ? 'text-slate-300 hover:bg-slate-800'
+    : 'text-gray-600 hover:bg-gray-100';
+  const sidePanelClass = isDarkMode
+    ? 'bg-slate-900/95 border-slate-700 text-slate-100'
+    : 'bg-white/95 border-gray-200';
+  const shortcutsToggleClass = isDarkMode
+    ? 'bg-slate-900/95 border-slate-700 text-slate-300 hover:text-blue-300 hover:border-blue-500'
+    : 'bg-white/95 border-gray-200 text-gray-600 hover:text-blue-700 hover:border-blue-300';
+  const shortcutsPanelClass = isDarkMode
+    ? 'bg-slate-900/95 border-slate-700 text-slate-200'
+    : 'bg-white/95 border-gray-200 text-gray-700';
 
   return (
     <div className={`flex h-screen font-sans ${isDarkMode ? 'theme-dark bg-slate-950 text-slate-100' : 'bg-gray-100'}`}>
@@ -1090,30 +1110,30 @@ xatra.TitleBox("<b>My Map</b>")
       </div>
 
       {/* Main Preview Area */}
-      <div className="flex-1 flex flex-col relative bg-gray-200">
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 flex bg-white/90 backdrop-blur shadow-md rounded-full p-1 border border-gray-200">
+      <div className={`flex-1 flex flex-col relative ${isDarkMode ? 'bg-slate-900' : 'bg-gray-200'}`}>
+        <div className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-20 flex backdrop-blur shadow-md rounded-full p-1 border ${mapTabBarClass}`}>
             <button 
                 onClick={() => setActivePreviewTab('main')}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'main' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'main' ? 'bg-blue-600 text-white shadow-sm' : mapTabInactiveClass}`}
             >
                 Map Preview
             </button>
             <button 
                 onClick={() => setActivePreviewTab('picker')}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'picker' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'picker' ? 'bg-blue-600 text-white shadow-sm' : mapTabInactiveClass}`}
             >
                 Reference Map
             </button>
             <button 
                 onClick={() => setActivePreviewTab('library')}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'library' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${activePreviewTab === 'library' ? 'bg-blue-600 text-white shadow-sm' : mapTabInactiveClass}`}
             >
                 Territory Library
             </button>
         </div>
 
         {activePreviewTab === 'picker' && (
-            <div className="absolute top-16 right-4 z-20 w-72 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden">
+            <div className={`absolute top-16 right-4 z-20 w-72 backdrop-blur p-4 rounded-lg shadow-xl border space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden ${sidePanelClass}`}>
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b pb-2">
                     Reference Map Options
                 </h3>
@@ -1264,7 +1284,7 @@ xatra.TitleBox("<b>My Map</b>")
             </div>
         )}
         {activePreviewTab === 'library' && (
-            <div className="absolute top-16 right-4 z-20 w-72 bg-white/95 backdrop-blur p-4 rounded-lg shadow-xl border border-gray-200 space-y-3 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden">
+            <div className={`absolute top-16 right-4 z-20 w-72 backdrop-blur p-4 rounded-lg shadow-xl border space-y-3 max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden ${sidePanelClass}`}>
                 <h3 className="text-sm font-bold text-gray-800 border-b pb-2">Territory Library</h3>
                 <div className="grid grid-cols-2 gap-1">
                     <button
@@ -1397,13 +1417,13 @@ xatra.TitleBox("<b>My Map</b>")
             <button
                 type="button"
                 onClick={() => setShowShortcutHelp((prev) => !prev)}
-                className="absolute top-4 right-4 z-40 bg-white/95 border border-gray-200 rounded-full shadow p-2 text-gray-600 hover:text-blue-700 hover:border-blue-300"
+                className={`absolute top-4 right-4 z-40 rounded-full shadow p-2 border ${shortcutsToggleClass}`}
                 title="Toggle keyboard shortcuts"
             >
                 <Keyboard size={16} />
             </button>
             {showShortcutHelp && (
-                <div className="absolute top-16 right-4 z-40 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 text-xs text-gray-700 w-64">
+                <div className={`absolute top-16 right-4 z-40 rounded-lg shadow-lg p-3 text-xs w-64 border ${shortcutsPanelClass}`}>
                     <div className="font-semibold text-gray-800 mb-2">Shortcuts</div>
                     <div>`?` toggle this panel</div>
                     <div>`Ctrl/Cmd+1` Builder tab</div>
