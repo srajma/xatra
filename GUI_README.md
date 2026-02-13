@@ -196,6 +196,7 @@ Development difficulties
   - See "Development / Synchrony" section below.
 
 For eventually publishing this as an app
+- [ ] Move GUI to a separate repo instead of being part of the main xatra package
 - [ ] Sandboxing code (like in those online coding assessment platforms)
 - [ ] Database of user accounts, maps created by them etc.
   - [ ] saving and publishing maps on platform (publishing can be for paid users only)
