@@ -107,24 +107,24 @@ def Flag(label: str, value: Territory = None, period: Optional[List[int]] = None
     get_current_map().Flag(label, value, period, note, color, classes, type, inherit)
 
 
-def River(label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
+def River(label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1, hover_radius: int = 10) -> None:
     """Add a river to the current map."""
-    get_current_map().River(label, value, note, classes, period, show_label)
+    get_current_map().River(label, value, note, classes, period, show_label, n_labels, hover_radius)
 
 
-def Path(label: str, value: List[List[float]], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False) -> None:
+def Path(label: str, value: List[List[float]], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1, hover_radius: int = 10) -> None:
     """Add a path/route to the current map."""
-    get_current_map().Path(label, value, note, classes, period, show_label)
+    get_current_map().Path(label, value, note, classes, period, show_label, n_labels, hover_radius)
 
 
-def Point(label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False) -> None:
+def Point(label: str, position: List[float], note: Optional[str] = None, period: Optional[List[int]] = None, icon: Optional[Any] = None, show_label: bool = False, hover_radius: int = 20, classes: Optional[str] = None, rotation: Optional[float] = None) -> None:
     """Add a point of interest to the current map."""
-    get_current_map().Point(label, position, note, period, icon, show_label)
+    get_current_map().Point(label, position, note, period, icon, show_label, hover_radius, classes, rotation)
 
 
-def Text(label: str, position: List[float], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None) -> None:
+def Text(label: str, position: List[float], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, rotation: Optional[float] = None) -> None:
     """Add a text label to the current map."""
-    get_current_map().Text(label, position, note, classes, period)
+    get_current_map().Text(label, position, note, classes, period, rotation)
 
 
 def TitleBox(html: str, period: Optional[List[int]] = None) -> None:
@@ -152,9 +152,24 @@ def Admin(gadm: str, level: int, period: Optional[List[int]] = None, classes: Op
     get_current_map().Admin(gadm, level, period, classes, color_by_level, find_in_gadm)
 
 
-def AdminRivers(period: Optional[List[int]] = None, classes: Optional[str] = None, sources: Optional[List[str]] = None) -> None:
+def AdminRivers(period: Optional[List[int]] = None, classes: Optional[str] = None, sources: Optional[List[str]] = None, show_label: bool = False, n_labels: int = 1) -> None:
     """Add rivers from specified data sources to the current map."""
-    get_current_map().AdminRivers(period, classes, sources)
+    get_current_map().AdminRivers(period, classes, sources, show_label, n_labels)
+
+
+def zoom(level: int) -> None:
+    """Set the initial zoom level for the current map."""
+    get_current_map().zoom(level)
+
+
+def focus(latitude: float, longitude: float) -> None:
+    """Set the initial map focus (center) for the current map."""
+    get_current_map().focus(latitude, longitude)
+
+
+def to_html_string() -> str:
+    """Export the current map to an HTML string."""
+    return get_current_map().to_html_string()
 
 
 def slider(start: Optional[int] = None, end: Optional[int] = None, speed: float = 5.0) -> None:

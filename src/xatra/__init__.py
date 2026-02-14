@@ -90,7 +90,10 @@ from .pyplot import (
     BaseOption,
     Admin,
     AdminRivers,
+    zoom,
+    focus,
     slider,
+    to_html_string,
     show,
 )
 
@@ -215,7 +218,10 @@ __all__ = [
     "BaseOption",
     "Admin",
     "AdminRivers",
+    "zoom",
+    "focus",
     "slider",
+    "to_html_string",
     "show",
     # Debug utilities
     "DEBUG_TIME",
