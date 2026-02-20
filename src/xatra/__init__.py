@@ -58,6 +58,7 @@ from .loaders import gadm, naturalearth, overpass, polygon
 from .icon import Icon, ShapeType
 from . import debug_utils
 from .geometry_cache import clear_geometry_cache, get_geometry_cache_stats
+from .hub import xatrahub, XATRAHUB_URL
 
 # Import timing debugging functions
 from .debug_utils import (
@@ -221,6 +222,8 @@ __all__ = [
     "zoom",
     "focus",
     "slider",
+    "xatrahub",
+    "XATRAHUB_URL",
     "to_html_string",
     "show",
     # Debug utilities
