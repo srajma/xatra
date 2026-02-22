@@ -51,6 +51,7 @@ old/
 old_xatra/
 tests/*.json
 tests/*.html
+tests/*.mp3
 
 # Testing
 .pytest_cache/

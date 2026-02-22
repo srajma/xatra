@@ -157,6 +157,11 @@ def AdminRivers(period: Optional[List[int]] = None, classes: Optional[str] = Non
     get_current_map().AdminRivers(period, classes, sources, show_label, n_labels)
 
 
+def Music(path: str, timestamps=None, period=None) -> None:
+    """Add a music track to the current map."""
+    get_current_map().Music(path, timestamps, period)
+
+
 def zoom(level: int) -> None:
     """Set the initial zoom level for the current map."""
     get_current_map().zoom(level)

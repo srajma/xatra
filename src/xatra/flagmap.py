@@ -165,6 +165,23 @@ class TitleBoxEntry:
 
 
 @dataclass
+class MusicEntry:
+    """Represents a music track to play alongside the map.
+
+    Args:
+        path: Path to the audio file on disk
+        timestamps: Optional (start_seconds, end_seconds) specifying which portion of the
+                    audio to play.  If None, the whole file is used.
+        period: Optional (start_year, end_year) specifying when the music plays on a dynamic
+                map.  If None, defaults to the full slider period at export time.  Ignored
+                for static maps (which show simple play/pause controls).
+    """
+    path: str
+    timestamps: Optional[Tuple[float, float]] = None
+    period: Optional[Tuple[int, int]] = None
+
+
+@dataclass
 class AdminEntry:
     """Represents administrative regions from GADM data.
     
@@ -427,6 +444,7 @@ class Map:
         self._admin_rivers: List[AdminRiversEntry] = []
         self._data: List[DataEntry] = []
         self._dataframes: List[DataframeEntry] = []
+        self._musics: List[MusicEntry] = []
         self._base_options: List[BaseOptionEntry] = []
         self._css: List[str] = []
         self._map_limits: Optional[Tuple[int, int]] = None
@@ -963,6 +981,44 @@ class Map:
         # Convert years per second to milliseconds per year
         self._play_speed = int(1000 / float(speed))
 
+    def Music(self, path: str, timestamps=None, period=None) -> None:
+        """Add a music track to the map.
+
+        For static maps (no slider) a play/pause button is shown in the controls bar and
+        the audio loops continuously within the specified segment.
+
+        For dynamic maps the audio is synced with the time slider:
+        - When the slider is within ``period``, the audio plays from the position
+          corresponding to how far into the period the slider is, at normal (1×) speed.
+        - If the audio segment ends before the period does, it loops back to
+          ``timestamps[0]``.
+        - When the slider is outside ``period``, the audio is paused.
+
+        Args:
+            path: Path to the audio file on disk (embedded as base64 in the HTML).
+            timestamps: Optional ``(start_seconds, end_seconds)`` tuple selecting which
+                        portion of the audio file to use.  Defaults to the whole file.
+            period: Optional ``(start_year, end_year)`` tuple.  For dynamic maps this
+                    defaults to the full slider period.  Ignored for static maps.
+
+        Example:
+            >>> map.Music("soundtrack.mp3")
+            >>> map.Music("epic.ogg", timestamps=(10, 90), period=(-320, 700))
+        """
+        timestamps_tuple: Optional[Tuple[float, float]] = None
+        if timestamps is not None:
+            if len(timestamps) != 2:
+                raise ValueError("timestamps must be (start_seconds, end_seconds)")
+            timestamps_tuple = (float(timestamps[0]), float(timestamps[1]))
+
+        period_tuple: Optional[Tuple[int, int]] = None
+        if period is not None:
+            if len(period) != 2:
+                raise ValueError("period must be (start_year, end_year)")
+            period_tuple = (int(period[0]), int(period[1]))
+
+        self._musics.append(MusicEntry(path=path, timestamps=timestamps_tuple, period=period_tuple))
+
     def BaseOption(self, url_or_provider: str, name: Optional[str] = None, default: bool = False) -> None:
         """Add a base layer option.
         
@@ -1268,6 +1324,55 @@ class Map:
             return None
             
         return (restricted_start, restricted_end)
+
+    def _compute_slider_period(self) -> Optional[Tuple[int, int]]:
+        """Return the effective (min_year, max_year) for the slider.
+
+        Uses ``_map_limits`` when set by ``slider()``, otherwise scans all
+        element periods (same logic the JavaScript ``setupControls`` uses).
+        """
+        if self._map_limits is not None:
+            return self._map_limits
+
+        all_years: List[int] = []
+        for fl in self._flags:
+            if fl.period is not None:
+                all_years.extend([fl.period[0], fl.period[1]])
+        for r in self._rivers:
+            if r.period is not None:
+                all_years.extend([r.period[0], r.period[1]])
+        for p in self._paths:
+            if p.period is not None:
+                all_years.extend([p.period[0], p.period[1]])
+        for p in self._points:
+            if p.period is not None:
+                all_years.extend([p.period[0], p.period[1]])
+        for t in self._texts:
+            if t.period is not None:
+                all_years.extend([t.period[0], t.period[1]])
+        for tb in self._title_boxes:
+            if tb.period is not None:
+                all_years.extend([tb.period[0], tb.period[1]])
+        for a in self._admins:
+            if a.period is not None:
+                all_years.extend([a.period[0], a.period[1]])
+        for ar in self._admin_rivers:
+            if ar.period is not None:
+                all_years.extend([ar.period[0], ar.period[1]])
+        for d in self._data:
+            if d.period is not None:
+                all_years.extend([d.period[0], d.period[1]])
+        for df in self._dataframes:
+            if df.year_columns is not None:
+                for col in df.year_columns:
+                    try:
+                        all_years.append(int(col))
+                    except (ValueError, TypeError):
+                        pass
+
+        if all_years:
+            return (min(all_years), max(all_years))
+        return None
 
     def _serialize_colormap_info(self, all_dataframe_values: List[float]) -> Dict[str, Any]:
         """Serialize colormap information for frontend rendering.
@@ -2052,10 +2157,39 @@ class Map:
         initial_focus = self._initial_focus
         if initial_focus is None:
             initial_focus = self._calculate_auto_focus()
-        
+
         # Use default zoom if not set by user
         initial_zoom = self._initial_zoom if self._initial_zoom is not None else 5
-        
+
+        # Serialize music entries (embed audio as base64 data URLs)
+        import base64
+        import mimetypes
+        musics_serialized = []
+        for m in self._musics:
+            try:
+                with open(m.path, 'rb') as f:
+                    audio_data = f.read()
+                b64 = base64.b64encode(audio_data).decode('ascii')
+                mime_type, _ = mimetypes.guess_type(m.path)
+                if mime_type is None:
+                    mime_type = 'audio/mpeg'
+                data_url = f"data:{mime_type};base64,{b64}"
+
+                # Resolve period: None → full slider period (for dynamic maps)
+                resolved_period = m.period
+                if resolved_period is None and has_periods:
+                    resolved_period = self._compute_slider_period()
+
+                musics_serialized.append({
+                    "data_url": data_url,
+                    "timestamps": list(m.timestamps) if m.timestamps is not None else None,
+                    "period": list(resolved_period) if resolved_period is not None else None,
+                })
+            except FileNotFoundError:
+                print(f"Warning: Music file not found: {m.path}")
+            except Exception as e:
+                print(f"Warning: Could not load music file {m.path}: {e}")
+
         return {
             "css": "\n".join(self._css) if self._css else "",
             "flags": pax,
@@ -2068,6 +2202,7 @@ class Map:
             "admin_rivers": admin_rivers_serialized,
             "data": data_serialized,
             "dataframes": dataframes_serialized,
+            "musics": musics_serialized,
             "base_options": base_options_serialized,
             "map_limits": list(self._map_limits) if self._map_limits is not None else None,
             "play_speed": self._play_speed,

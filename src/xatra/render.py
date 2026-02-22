@@ -3183,6 +3183,132 @@ HTML_TEMPLATE = Template(
         });
       }
 
+      // ── Music player ────────────────────────────────────────────────────────
+      // musicAudios is shared between setupMusic() and setupControls() via
+      // window._updateMusicForYear so that the slider can drive the audio.
+      function setupMusic() {
+        if (!payload.musics || payload.musics.length === 0) return;
+
+        const isDynamic = payload.flags.mode === 'dynamic';
+        const controls = document.getElementById('controls');
+        const musicEntries = [];
+
+        payload.musics.forEach(function(musicData, idx) {
+          const audio = new Audio(musicData.data_url);
+          audio.preload = 'auto';
+
+          const entry = {
+            audio: audio,
+            period: musicData.period,           // [y0, y1] or null
+            timestamps: musicData.timestamps,   // [t0, t1] or null
+            effectiveTimestamps: null,          // resolved after metadata loads
+          };
+
+          // Resolve effective timestamps once metadata (duration) is known
+          audio.addEventListener('loadedmetadata', function() {
+            const t0 = (musicData.timestamps !== null && musicData.timestamps !== undefined)
+              ? musicData.timestamps[0] : 0;
+            const t1 = (musicData.timestamps !== null && musicData.timestamps !== undefined)
+              ? musicData.timestamps[1] : audio.duration;
+            entry.effectiveTimestamps = [t0, t1];
+            // If already playing (e.g. user clicked play before metadata loaded), seek to t0
+            if (!audio.paused && audio.currentTime < t0) {
+              audio.currentTime = t0;
+            }
+          });
+
+          // Loop within the specified segment using timeupdate
+          audio.addEventListener('timeupdate', function() {
+            if (entry.effectiveTimestamps === null) return;
+            const [t0, t1] = entry.effectiveTimestamps;
+            if (t1 > t0 && audio.currentTime >= t1 - 0.05) {
+              audio.currentTime = t0;
+            }
+          });
+
+          musicEntries.push(entry);
+
+          if (!isDynamic) {
+            // Static map: show a play/pause button in the controls bar
+            controls.style.display = 'flex';
+            const btn = document.createElement('button');
+            btn.id = 'musicPlayPause-' + idx;
+            btn.textContent = '\u266a \u25b6';
+            btn.title = 'Play / pause music';
+            btn.style.cssText = 'margin: 0 4px; padding: 4px 10px; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; cursor: pointer; font-size: 15px;';
+            let playing = false;
+
+            btn.addEventListener('click', function() {
+              if (playing) {
+                audio.pause();
+                btn.textContent = '\u266a \u25b6';
+                playing = false;
+              } else {
+                // Start from segment start if not already in the segment
+                if (entry.effectiveTimestamps !== null) {
+                  const [t0, t1] = entry.effectiveTimestamps;
+                  if (audio.currentTime < t0 || audio.currentTime >= t1) {
+                    audio.currentTime = t0;
+                  }
+                }
+                audio.play().catch(function() {});
+                btn.textContent = '\u266a \u23f8';
+                playing = true;
+              }
+            });
+
+            controls.appendChild(btn);
+          }
+        });
+
+        if (isDynamic) {
+          // Expose a function that setupControls() calls on every slider change.
+          // year         – current slider year
+          // isSliderPlaying – true while the slider's play interval is active
+          window._updateMusicForYear = function(year, isSliderPlaying) {
+            const playSpeedMs = payload.play_speed || 200;
+
+            for (const entry of musicEntries) {
+              if (entry.effectiveTimestamps === null) continue;
+
+              const [t0, t1] = entry.effectiveTimestamps;
+              const segDuration = Math.max(t1 - t0, 0.001);
+
+              // Determine whether the current year falls inside this track's period
+              const period = entry.period;
+              const inPeriod = (period === null || period === undefined)
+                || (year >= period[0] && year < period[1]);
+
+              if (inPeriod) {
+                // Compute expected audio position based on real-time elapsed since period start
+                const y0 = (period !== null && period !== undefined) ? period[0] : year;
+                const elapsedRealSecs = (year - y0) * playSpeedMs / 1000;
+                const expectedPos = t0 + (elapsedRealSecs % segDuration);
+
+                // Only seek if the discrepancy is large enough to indicate a manual drag
+                // (avoids interrupting smooth natural playback during slider play)
+                if (Math.abs(entry.audio.currentTime - expectedPos) > 0.5) {
+                  entry.audio.currentTime = expectedPos;
+                }
+
+                if (isSliderPlaying) {
+                  if (entry.audio.paused) {
+                    entry.audio.play().catch(function() {});
+                  }
+                } else {
+                  entry.audio.pause();
+                }
+              } else {
+                if (!entry.audio.paused) {
+                  entry.audio.pause();
+                }
+              }
+            }
+          };
+        }
+      }
+      // ── End music player ────────────────────────────────────────────────────
+
       function setupControls() {
         const controls = document.getElementById('controls');
         if (payload.flags.mode === 'dynamic') {
@@ -3235,21 +3361,24 @@ HTML_TEMPLATE = Template(
             let isPlaying = false;
             let playInterval = null;
             
-            input.addEventListener('input', () => { 
-              label.textContent = input.value; 
-              renderDynamic(parseInt(input.value)); 
+            input.addEventListener('input', () => {
+              label.textContent = input.value;
+              renderDynamic(parseInt(input.value));
+              if (window._updateMusicForYear) window._updateMusicForYear(parseInt(input.value), isPlaying);
             });
-            
+
             playPauseBtn.addEventListener('click', () => {
               if (isPlaying) {
                 // Pause
                 clearInterval(playInterval);
                 playPauseBtn.textContent = '▶';
                 isPlaying = false;
+                if (window._updateMusicForYear) window._updateMusicForYear(parseInt(input.value), false);
               } else {
                 // Play
                 playPauseBtn.textContent = '⏸';
                 isPlaying = true;
+                if (window._updateMusicForYear) window._updateMusicForYear(parseInt(input.value), true);
                 playInterval = setInterval(() => {
                   const currentYear = parseInt(input.value);
                   if (currentYear >= max) {
@@ -3257,17 +3386,20 @@ HTML_TEMPLATE = Template(
                     clearInterval(playInterval);
                     playPauseBtn.textContent = '▶';
                     isPlaying = false;
+                    if (window._updateMusicForYear) window._updateMusicForYear(currentYear, false);
                   } else {
                     const newYear = currentYear + 1;
                     input.value = newYear;
                     label.textContent = newYear;
                     renderDynamic(newYear);
+                    if (window._updateMusicForYear) window._updateMusicForYear(newYear, true);
                   }
                 }, payload.play_speed || 200); // Use speed from payload or default to 200ms
               }
             });
-            
+
             renderDynamic(min);
+            if (window._updateMusicForYear) window._updateMusicForYear(min, false);
           }
         } else {
           // Hide controls for static maps
@@ -3386,6 +3518,7 @@ HTML_TEMPLATE = Template(
         }
       }
       setupControls();
+      setupMusic();
       setupDragFunctionality();
       setupSearch();
     </script>
