@@ -1667,6 +1667,19 @@ The timing chart shows:
 - [x] admin map
 
 ## Features
+- [ ] adding music to maps
+    ```
+    Understand how this project works from the README, and add the following feature to xatra: a map.Music("blabla.mp3") (and corresponding xatra.Music()) layer. It should take a path to an audio file and optionally parameters timestamps=(...,...), period=(...,...) which determine what portion of the audio file is played between what years on the slider.
+
+    If the map is static (i.e a slider never appears, because none of the elements have periods), there should simply be play and pause controls for the music, and it should continuously play on repeat. If the map is dynamic, the music will instead play in alignment with the slider based on the following logic:
+
+    If period is None (the default), it is taken to be the whole period of the slider (make sure you find out where this is calculated and reuse existing functions/code).
+    If timestamps is None (the default), it is taken to be the whole length of the audio.
+    The segment of the music between timestamps[0] and timestamps[1] should start playing from period[0] till period[1] at its own pace, and if the music ends (i.e. timestamps[1] is reached) before reaching period[1] it should simply repeat. 
+
+    Note that the slider years and speed have defaults/are computed even when there no explicit .slider() method is called in constructing the map---when .slider() is called, it overrides these computed defaults.
+    ```
+
 - [x] Vassals via slash-separated labels (for example `India/Karnataka`), with light HSLA overlay colors and preserved parent coverage.
 - [x] Actually I don't like this implementation of vassals. Better to have vassals with slash-separated names, and their colors should always be something like hsla(randomly-generated hue, 100% saturation, 90% luminosity, 60% alpha). This makes the vassals just a lightening filter over their parent's territories. Implement it and write a simple tests/example_vassals.py file (no actual pytest tests, just an example map like in tests/example.py etc.) to demonstrate that it works. I do _not_ want to cut the children out of their parents' terrritories etc. as that is important for other things like border highlighting and label placement.
 - [ ] MAYBE: Optionally separate Flag name and label: i.e. Flag name should serve all the functions that labels currently do, but the user can optionally override just the displayed label. Now obviously, Flags with the same name at the same point in time must have the same displayed label, but this label selection can change by time. You need to understand the paxmax aggregation carefully to implement this properly---then write a tests/example_flaglabel.py file to demonstrate that it works.
