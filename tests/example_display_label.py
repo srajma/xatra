@@ -33,4 +33,4 @@ map.Flag(label="Shunga", display_label="Agnmitra", value=gadm("IND"), period=[-1
 
 
 # Generate the map
-map.show(out_json="tests/map.json", out_html="tests/map.html")
+map.show(out_json="tests/map_display_label.json", out_html="tests/map_display_label.html")

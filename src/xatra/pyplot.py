@@ -91,7 +91,7 @@ def Dataframe(dataframe, data_column: Optional[str] = None, year_columns: Option
     get_current_map().Dataframe(dataframe, data_column, year_columns, classes, find_in_gadm)
 
 
-def Flag(label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, type: Optional[str] = None, inherit: Optional[str] = None) -> None:
+def Flag(label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, type: Optional[str] = None, inherit: Optional[str] = None, display_label: Optional[str] = None) -> None:
     """Add a flag (country/kingdom) to the current map.
     
     Args:
@@ -103,8 +103,10 @@ def Flag(label: str, value: Territory = None, period: Optional[List[int]] = None
         classes: Optional CSS classes for styling and color sequence assignment
         type: Optional relationship type: "vassal", "province", or None
         inherit: Optional label of an earlier-defined flag to force color inheritance
+        display_label: Optional custom HTML/text label to display on map while keeping
+                      `label` for internal grouping/color behavior
     """
-    get_current_map().Flag(label, value, period, note, color, classes, type, inherit)
+    get_current_map().Flag(label, value, period, note, color, classes, type, inherit, display_label)
 
 
 def River(label: str, value: Dict[str, Any], note: Optional[str] = None, classes: Optional[str] = None, period: Optional[List[int]] = None, show_label: bool = False, n_labels: int = 1, hover_radius: int = 10) -> None:

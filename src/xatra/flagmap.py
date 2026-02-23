@@ -666,7 +666,7 @@ class Map:
         ))
 
     @time_debug("Add Flag")
-    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, type: Optional[str] = None, inherit: Optional[str] = None) -> None:
+    def Flag(self, label: str, value: Territory = None, period: Optional[List[int]] = None, note: Optional[str] = None, color: Optional[str] = None, classes: Optional[str] = None, type: Optional[str] = None, inherit: Optional[str] = None, display_label: Optional[str] = None) -> None:
         """Add a flag (country/kingdom) to the map.
         
         Flags automatically get colors from the map's color sequence. Flags with the same label
@@ -685,6 +685,8 @@ class Map:
             classes: Optional CSS classes for styling and color sequence assignment
             type: Optional relationship type: "vassal", "province", or None
             inherit: Optional label of an earlier-defined flag to force color inheritance
+            display_label: Optional custom HTML/text label to display on map while keeping
+                          `label` for internal grouping/color behavior
             
         Example:
             >>> map.Flag("Maurya", maurya_territory, period=[320, 180], note="Ancient Indian empire")
@@ -707,14 +709,17 @@ class Map:
 
         parent = None
         root_parent = label
-        display_label = label
+        resolved_display_label = label
         depth = 0
         if type in ("vassal", "province"):
-            root_parent, parent, display_label, depth = self._derive_hierarchy(label)
+            root_parent, parent, resolved_display_label, depth = self._derive_hierarchy(label)
             if depth < 1:
                 raise ValueError(
                     "Hierarchical flags with type='vassal' or type='province' must use slash-separated labels like 'Maurya/Vidisa'."
                 )
+        if display_label is not None:
+            # Explicit override takes priority over derived/default display labels.
+            resolved_display_label = display_label
         
         # Handle color assignment
         if inherit is not None:
@@ -773,7 +778,7 @@ class Map:
                 type=type,
                 inherit=inherit,
                 root_parent=root_parent,
-                display_label=display_label,
+                display_label=resolved_display_label,
                 depth=depth,
             )
         )

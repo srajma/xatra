@@ -203,12 +203,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                     all_classes.extend(it.get("classes").split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
-            # Preserve hierarchy metadata from the first item
+            # Preserve hierarchy metadata from the first item.
+            # Display label intentionally uses last declared item for this label.
             parent = items[0].get("parent") if items else None
             type_ = items[0].get("type") if items else None
             root_parent = items[0].get("root_parent") if items else None
             root_parent_color = items[0].get("root_parent_color") if items else None
-            display_label = items[0].get("display_label") if items else label
+            display_label = (items[-1].get("display_label") or label) if items else label
             vassal_depth = items[0].get("vassal_depth", 0) if items else 0
             
             out.append({
@@ -291,12 +292,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                     all_classes.extend(it.get("classes").split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
-            # Preserve hierarchy metadata from the first active item
+            # Preserve hierarchy metadata from the first active item.
+            # Display label intentionally uses last declared active item for this label.
             parent = active[0].get("parent") if active else None
             type_ = active[0].get("type") if active else None
             root_parent = active[0].get("root_parent") if active else None
             root_parent_color = active[0].get("root_parent_color") if active else None
-            display_label = active[0].get("display_label") if active else label
+            display_label = (active[-1].get("display_label") or label) if active else label
             vassal_depth = active[0].get("vassal_depth", 0) if active else 0
             
             snapshot_flags.append({
