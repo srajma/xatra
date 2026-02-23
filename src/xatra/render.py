@@ -745,6 +745,19 @@ HTML_TEMPLATE = Template(
           e.preventDefault();
           window.parent.postMessage({ type: 'mapKeyDown', key: e.key, repeat: e.repeat === true }, '*');
         }
+        // Forward modifier+key combos so global shortcuts work when the map iframe has focus
+        if ((e.ctrlKey || e.metaKey) && e.key !== 'Control' && e.key !== 'Meta' && e.key !== ' ' && e.code !== 'Space') {
+          e.preventDefault();
+          window.parent.postMessage({
+            type: 'mapKeyDown',
+            key: e.key,
+            ctrlKey: !!e.ctrlKey,
+            metaKey: !!e.metaKey,
+            shiftKey: !!e.shiftKey,
+            altKey: !!e.altKey,
+            repeat: e.repeat === true
+          }, '*');
+        }
       });
       document.addEventListener('keyup', function(e) {
         if (!window.parent) return;
