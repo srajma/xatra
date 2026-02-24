@@ -2,7 +2,7 @@
 
 import xatra
 from xatra.loaders import gadm, naturalearth, polygon
-from xatra.territory_library import NORTH_INDIA
+from xatra.territory_library import NORTH_INDIA, AUDICYA, JANGALA, BRAHMAVARTA
 from xatra.colorseq import LinearColorSequence
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -133,6 +133,7 @@ map.Flag(
     note="Custom polygon: triangular Deccan region",
     classes="deccan"
 )
+
 
 # ============================================================================
 # End of Custom Polygon Examples
