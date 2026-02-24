@@ -957,9 +957,14 @@ map.Point(label="Port", position=[19.0, 73.0], icon=port)
 # Optional bottom-center anchor for pin-like placement
 town = Icon.bootstrap("geo-alt-fill", icon_size=24, icon_anchor=(12, 24), popup_anchor=(0, -20))
 map.Point(label="Town", position=[12.3, 76.6], icon=town)
+
+# Optional self-hosted icon directory (avoids CDN dependency)
+self_hosted = Icon.bootstrap("bank2", base_url="/static/bootstrap-icons")
+map.Point(label="Offline-safe Temple", position=[11.0, 76.9], icon=self_hosted)
 ```
 
 Note: Bootstrap icons are loaded from CDN at map-view time, so the viewer needs internet access.
+If you pass `base_url`, icons are loaded from your own path (`<base_url>/<icon-name>.svg`) instead.
 
 Defaults in `Icon.bootstrap(...)`:
 - `icon_size=24`

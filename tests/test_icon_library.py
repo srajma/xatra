@@ -25,6 +25,10 @@ def test_bootstrap_anchor_overrides():
     assert icon.icon_anchor == (10, 30)
     assert icon.popup_anchor == (0, -24)
 
+def test_bootstrap_base_url_override():
+    icon = Icon.bootstrap("bank2", base_url="/static/bootstrap-icons")
+    assert icon.icon_url == "/static/bootstrap-icons/bank2.svg"
+
 
 def test_leaflet_builtin_defaults():
     icon = Icon.builtin("marker-icon.png")

@@ -20,7 +20,7 @@ map.Point(label="Capital", position=[28.6, 77.2], icon=capital_icon)
 temple_icon = Icon.bootstrap("bank2", icon_size=26)
 map.Point(label="Temple Complex", position=[19.0, 73.0], icon=temple_icon)
 
-port_icon = Icon.bootstrap("anchor-fill", icon_size=24)
+port_icon = Icon.bootstrap("usb-symbol", icon_size=24)
 map.Point(label="Port", position=[13.0, 80.2], icon=port_icon)
 
 trade_icon = Icon.bootstrap("signpost-split-fill", icon_size=24)

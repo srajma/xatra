@@ -399,6 +399,7 @@ class Icon:
         icon_anchor: Optional[Union[int, Tuple[int, int]]] = None,
         popup_anchor: Optional[Union[int, Tuple[int, int]]] = None,
         version: str = "1.11.3",
+        base_url: Optional[str] = None,
         **kwargs
     ) -> Icon:
         """Create an icon from Bootstrap Icons (https://icons.getbootstrap.com).
@@ -412,6 +413,11 @@ class Icon:
             icon_anchor: Marker anchor point (single int or (x, y)); defaults to center
             popup_anchor: Popup anchor offset; defaults to (0, -icon_height//2)
             version: Bootstrap Icons version on CDN
+            base_url: Optional icon base URL. If omitted, uses jsDelivr:
+                     https://cdn.jsdelivr.net/npm/bootstrap-icons@<version>/icons
+                     If provided, icon URL becomes `<base_url>/<name>.svg`.
+                     If `base_url` contains `{version}`, it is formatted with the
+                     `version` argument before use.
             **kwargs: Additional Icon fields (shadow_url, shadow_size, etc.)
 
         Returns:
@@ -420,7 +426,11 @@ class Icon:
         size = _coerce_pair(icon_size, "icon_size")
         anchor = _coerce_pair(icon_anchor, "icon_anchor") if icon_anchor is not None else (size[0] // 2, size[1] // 2)
         popup = _coerce_pair(popup_anchor, "popup_anchor") if popup_anchor is not None else (0, -(size[1] // 2))
-        icon_url = f"{BOOTSTRAP_ICONS_CDN}@{version}/icons/{name}.svg"
+        if base_url is None:
+            resolved_base = f"{BOOTSTRAP_ICONS_CDN}@{version}/icons"
+        else:
+            resolved_base = base_url.format(version=version) if "{version}" in base_url else base_url
+        icon_url = f"{resolved_base.rstrip('/')}/{name}.svg"
         return cls(
             icon_url=icon_url,
             icon_size=size,
