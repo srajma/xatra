@@ -979,10 +979,6 @@ These defaults avoid the common misalignment issue where non-pin icons are ancho
 - `marker-icon.png` - Default blue marker
 - `marker-icon-red.png` - Red marker
 - `marker-icon-green.png` - Green marker
-- `marker-icon-2x.png` - High-res blue marker
-- `marker-icon-2x-red.png` - High-res red marker
-- `marker-icon-2x-green.png` - High-res green marker
-- `marker-shadow.png` - Default marker shadow
 
 ```python
 # Built-in Leaflet markers (with marker shadow/anchors preconfigured)
