@@ -919,7 +919,7 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 
 ### Point Icons
 
-The `Icon` class provides three ways to create custom marker icons: external URLs, built-in icons, and geometric shapes.
+The `Icon` class provides four ways to create custom marker icons: external URLs, Bootstrap Icons, Leaflet marker built-ins, and geometric shapes.
 
 Use `Icon.to_html()` to get the exact `<img>` element as rendered, handy for legends.
 
@@ -940,43 +940,35 @@ custom_icon = Icon(
 map.Point(label="Custom Red Marker", position=[19.0, 73.0], icon=custom_icon)
 ```
 
-#### Built-in Icons
+#### Bootstrap Icons (Standard Library)
 
-Xatra includes many built-in icons organized by category:
+Use `Icon.bootstrap(...)` to reference the standard [Bootstrap Icons](https://icons.getbootstrap.com/) set from jsDelivr:
 
-**Cities and Buildings:**
-- `city.png` - Ancient Indian style city
-- `temple.svg` - Hindu temple with shikhara
-- `temple-nagara.svg` - Nagara-style temple
-- `temple-gopuram.svg` - Dravidian gopuram style
-- `temple-nepali.svg` - Nepali temple style
-- `temple-pagoda.svg` - Pagoda-style temple
-- `temple-parthenon.svg` - Classical Greek Parthenon
-- `fort.svg` - Fortress or citadel
-- `port.svg` - Seaport with ships and cranes
-- `oilrig.svg` - Oil rig platform
+```python
+from xatra import Icon
 
-**General Purpose:**
-- `star.svg` - Five-pointed star for important locations
-- `important.svg` - Exclamation mark in circle
-- `example.svg` - Simple circular marker with exclamation
+# Center-anchored POI icons
+temple = Icon.bootstrap("bank2", icon_size=26)
+map.Point(label="Temple", position=[13.0, 80.2], icon=temple)
 
-**Geometric Shapes:**
-- `circle.svg` - Empty circle outline
-- `disk.svg` - Filled circle/disk
-- `square.svg` - Filled square
-- `rectangle.svg` - Filled rectangle
-- `triangle.svg` - Filled triangle (pointing up)
-- `diamond.svg` - Filled diamond shape
-- `cross.svg` - X-shaped cross
-- `plus.svg` - Plus sign (+)
+port = Icon.bootstrap("anchor-fill", icon_size=24)
+map.Point(label="Port", position=[19.0, 73.0], icon=port)
 
-**Religious Symbols:**
-- `symbol-om.svg` - Hindu Om symbol
-- `symbol-cross.svg` - Christian cross
-- `symbol-star.svg` - Jewish Star of David
-- `symbol-muslim.svg` - Islamic crescent and star
-- `symbol-zoro.svg` - Zoroastrian faravahar
+# Optional bottom-center anchor for pin-like placement
+town = Icon.bootstrap("geo-alt-fill", icon_size=24, icon_anchor=(12, 24), popup_anchor=(0, -20))
+map.Point(label="Town", position=[12.3, 76.6], icon=town)
+```
+
+Note: Bootstrap icons are loaded from CDN at map-view time, so the viewer needs internet access.
+
+Defaults in `Icon.bootstrap(...)`:
+- `icon_size=24`
+- `icon_anchor=(width/2, height/2)` (center)
+- `popup_anchor=(0, -height/2)`
+
+These defaults avoid the common misalignment issue where non-pin icons are anchored at the marker tip.
+
+#### Leaflet Marker Built-ins
 
 **Leaflet Markers:**
 - `marker-icon.png` - Default blue marker
@@ -988,16 +980,12 @@ Xatra includes many built-in icons organized by category:
 - `marker-shadow.png` - Default marker shadow
 
 ```python
-# Built-in temple icons
-temple_icon = Icon.builtin("temple.svg", icon_size=(32, 32), icon_anchor=(16, 16))
-map.Point(label="Sacred Temple", position=[13.0, 80.2], icon=temple_icon)
+# Built-in Leaflet markers (with marker shadow/anchors preconfigured)
+default_marker = Icon.builtin("marker-icon.png")
+map.Point(label="Default Marker", position=[13.0, 80.2], icon=default_marker)
 
-fort_icon = Icon.builtin("fort.svg", icon_size=(28, 28), icon_anchor=(14, 14))
-map.Point(label="Ancient Fort", position=[23.0, 72.6], icon=fort_icon)
-
-# Religious symbols
-om_icon = Icon.builtin("symbol-om.svg", icon_size=(30, 30), icon_anchor=(15, 15))
-map.Point(label="Sacred Site", position=[12.3, 76.6], icon=om_icon)
+red_marker = Icon.builtin("marker-icon-red.png")
+map.Point(label="Red Marker", position=[23.0, 72.6], icon=red_marker)
 ```
 
 #### Geometric Shape Icons
@@ -1075,7 +1063,7 @@ print("Map with geometric icons exported to geometric_icons.html")
 
 #### Complete Icon Example
 
-Here's a comprehensive example showing all three types of icons together:
+Here's a comprehensive example showing all icon approaches together:
 
 ```python
 import xatra
@@ -1095,17 +1083,18 @@ red_marker = Icon(
 )
 map.Point(label="Custom Red Marker", position=[19.0, 73.0], icon=red_marker)
 
-# 2. Built-in icons
-temple = Icon.builtin("temple.svg", icon_size=(32, 32), icon_anchor=(16, 16))
+# 2. Bootstrap Icons (standard icon library)
+temple = Icon.bootstrap("bank2", icon_size=26)
 map.Point(label="Sacred Temple", position=[13.0, 80.2], icon=temple)
 
-fort = Icon.builtin("fort.svg", icon_size=(28, 28), icon_anchor=(14, 14))
-map.Point(label="Ancient Fort", position=[23.0, 72.6], icon=fort)
+fort = Icon.bootstrap("shield-fill", icon_size=26)
+map.Point(label="Fortified Site", position=[23.0, 72.6], icon=fort)
 
-city = Icon.builtin("city.png", icon_size=(24, 24), icon_anchor=(12, 12))
-map.Point(label="Ancient City", position=[28.6, 77.2], icon=city)
+# 3. Leaflet marker built-ins
+leaflet_red = Icon.builtin("marker-icon-red.png")
+map.Point(label="Leaflet Marker", position=[28.6, 77.2], icon=leaflet_red)
 
-# 3. Geometric shape icons
+# 4. Geometric shape icons
 circle = Icon.geometric("circle", color="blue", size=24)
 map.Point(label="Blue Circle", position=[12.3, 76.6], icon=circle)
 
@@ -1116,7 +1105,7 @@ map.Point(label="Gold Star", position=[25.0, 121.5], icon=star)
 diamond = Icon.geometric("diamond", color="purple", icon_size=20, icon_anchor=10)
 map.Point(label="Purple Diamond", position=[10.8, 78.7], icon=diamond)
 
-map.TitleBox("<b>Complete Icon Example</b><br>External URLs, built-in icons, and geometric shapes")
+map.TitleBox("<b>Complete Icon Example</b><br>External URLs, Bootstrap Icons, Leaflet markers, and geometric shapes")
 
 map.show(out_json="tests/complete_icons.json", out_html="tests/complete_icons.html")
 print("Complete icon example exported to complete_icons.html")

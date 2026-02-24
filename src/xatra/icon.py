@@ -2,10 +2,11 @@
 Xatra Icon Module
 
 This module provides the Icon class for customizing marker icons in maps.
-It supports three types of icons:
+It supports four types of icons:
 1. Custom image URLs
-2. Built-in icons loaded as base64 URIs
-3. Pure SVG geometric shapes (circles, triangles, diamonds, etc.)
+2. Leaflet marker built-ins loaded as base64 URIs
+3. Standard Bootstrap Icons loaded from jsDelivr CDN
+4. Pure SVG geometric shapes (circles, triangles, diamonds, etc.)
 
 The geometric shapes are generated using SVG and converted to data URIs,
 providing lightweight, scalable alternatives to image-based icons.
@@ -38,6 +39,28 @@ class ShapeType(Enum):
     HEXAGON = "hexagon"
     PENTAGON = "pentagon"
     OCTAGON = "octagon"
+
+
+LEAFLET_BUILTIN_FILENAMES = {
+    "marker-icon.png",
+    "marker-icon-red.png",
+    "marker-icon-green.png",
+    "marker-icon-2x.png",
+    "marker-icon-2x-red.png",
+    "marker-icon-2x-green.png",
+    "marker-shadow.png",
+}
+
+BOOTSTRAP_ICONS_CDN = "https://cdn.jsdelivr.net/npm/bootstrap-icons"
+
+
+def _coerce_pair(value: Union[int, Tuple[int, int], list], field_name: str) -> Tuple[int, int]:
+    """Normalize single int or 2-item sequence into an (x, y) tuple."""
+    if isinstance(value, int):
+        return (value, value)
+    if isinstance(value, (tuple, list)) and len(value) == 2:
+        return (int(value[0]), int(value[1]))
+    raise ValueError(f"{field_name} must be an int or a 2-item tuple/list")
 
 
 def _generate_shape_svg(shape: ShapeType, size: int, color: str, border_color: str = None, border_width: int = 0) -> str:
@@ -225,7 +248,8 @@ class Icon:
     
     This class allows you to customize the appearance of point markers by specifying
     custom icons, sizes, and anchor points. Icons can be loaded from URLs, from
-    built-in icons shipped with the package, or created as pure HTML/CSS geometric shapes.
+    Leaflet built-ins (`Icon.builtin(...)`), from Bootstrap Icons CDN
+    (`Icon.bootstrap(...)`), or created as pure SVG geometric shapes.
     
     Args:
         icon_url: URL or data URI for the icon image
@@ -245,8 +269,8 @@ class Icon:
         ... )
         >>> map.Point("Delhi", [28.6, 77.2], icon=icon)
         
-        >>> # Use a built-in icon
-        >>> icon = Icon.builtin("star.png")
+        >>> # Use a Bootstrap icon
+        >>> icon = Icon.bootstrap("bank", icon_size=28)
         >>> map.Point("Important Place", [28.6, 77.2], icon=icon)
         
         >>> # Create a geometric shape icon
@@ -264,13 +288,13 @@ class Icon:
     
     @classmethod
     def builtin(cls, filename: str, **kwargs) -> Icon:
-        """Load a built-in icon from the package's icons directory.
+        """Load a Leaflet marker built-in icon from the package's icons directory.
         
-        This method loads icons from the `src/xatra/icons/` directory and converts
-        them to base64 data URIs that can be embedded directly in the HTML output.
+        Built-ins are intentionally limited to Leaflet marker assets. For
+        general-purpose iconography, use `Icon.bootstrap(...)`.
         
         Args:
-            filename: Name of the icon file (e.g., "star.svg", "temple.svg")
+            filename: Built-in marker filename (e.g., "marker-icon.png")
             **kwargs: Additional Icon parameters (icon_size, icon_anchor, etc.)
         
         Returns:
@@ -278,42 +302,7 @@ class Icon:
         
         Raises:
             FileNotFoundError: If the specified icon file doesn't exist
-        
-        Available Built-in Icons:
-        
-        Cities and Buildings:
-            - city.png - Ancient Indian style city
-            - temple.svg - Hindu temple with shikhara
-            - temple-nagara.svg - Nagara-style temple
-            - temple-gopuram.svg - Dravidian gopuram style
-            - temple-nepali.svg - Nepali temple style
-            - temple-pagoda.svg - Pagoda-style temple
-            - temple-parthenon.svg - Classical Greek Parthenon
-            - fort.svg - Fortress or citadel
-            - port.svg - Seaport with ships and cranes
-            - oilrig.svg - Oil rig platform
-        
-        General Purpose:
-            - star.svg - Five-pointed star for important locations
-            - important.svg - Exclamation mark in circle
-            - example.svg - Simple circular marker with exclamation
-        
-        Geometric Shapes:
-            - circle.svg - Empty circle outline
-            - disk.svg - Filled circle/disk
-            - square.svg - Filled square
-            - rectangle.svg - Filled rectangle
-            - triangle.svg - Filled triangle (pointing up)
-            - diamond.svg - Filled diamond shape
-            - cross.svg - X-shaped cross
-            - plus.svg - Plus sign (+)
-        
-        Religious Symbols:
-            - symbol-om.svg - Hindu Om symbol
-            - symbol-cross.svg - Christian cross
-            - symbol-star.svg - Jewish Star of David
-            - symbol-muslim.svg - Islamic crescent and star
-            - symbol-zoro.svg - Zoroastrian faravahar
+            ValueError: If filename is not a supported Leaflet marker asset
         
         Leaflet Markers:
             - marker-icon.png - Default blue marker
@@ -325,10 +314,17 @@ class Icon:
             - marker-shadow.png - Default marker shadow
         
         Example:
-            >>> # Load a built-in temple icon with custom size
-            >>> icon = Icon.builtin("temple.svg", icon_size=(32, 32), icon_anchor=(16, 16))
-            >>> map.Point("Sacred Temple", [28.6, 77.2], icon=icon)
+            >>> icon = Icon.builtin("marker-icon-red.png")
+            >>> map.Point("Capital", [28.6, 77.2], icon=icon)
         """
+        if filename not in LEAFLET_BUILTIN_FILENAMES:
+            supported = ", ".join(sorted(LEAFLET_BUILTIN_FILENAMES))
+            raise ValueError(
+                f"Unsupported built-in icon '{filename}'. "
+                f"Only Leaflet marker assets are available: {supported}. "
+                f"Use Icon.bootstrap(...) for standard POI icons."
+            )
+
         try:
             # Try to use importlib.resources (Python 3.9+)
             icon_path = files('xatra').joinpath('icons', filename)
@@ -361,8 +357,77 @@ class Icon:
         # Convert to base64 data URI
         b64_data = base64.b64encode(icon_data).decode('utf-8')
         data_uri = f"data:{mime_type};base64,{b64_data}"
-        
+
+        if "icon_size" in kwargs:
+            kwargs["icon_size"] = _coerce_pair(kwargs["icon_size"], "icon_size")
+        elif filename == "marker-shadow.png":
+            kwargs["icon_size"] = (41, 41)
+        else:
+            kwargs["icon_size"] = (25, 41)
+
+        if "icon_anchor" in kwargs:
+            kwargs["icon_anchor"] = _coerce_pair(kwargs["icon_anchor"], "icon_anchor")
+        elif filename == "marker-shadow.png":
+            kwargs["icon_anchor"] = (12, 41)
+        else:
+            kwargs["icon_anchor"] = (12, 41)
+
+        if "popup_anchor" in kwargs:
+            kwargs["popup_anchor"] = _coerce_pair(kwargs["popup_anchor"], "popup_anchor")
+        elif filename != "marker-shadow.png":
+            kwargs["popup_anchor"] = (1, -34)
+
+        if filename.startswith("marker-icon") and "shadow_url" not in kwargs:
+            shadow_icon = cls.builtin("marker-shadow.png")
+            kwargs["shadow_url"] = shadow_icon.icon_url
+            kwargs.setdefault("shadow_size", (41, 41))
+            kwargs.setdefault("shadow_anchor", (12, 41))
+
+        if "shadow_size" in kwargs:
+            kwargs["shadow_size"] = _coerce_pair(kwargs["shadow_size"], "shadow_size")
+        if "shadow_anchor" in kwargs:
+            kwargs["shadow_anchor"] = _coerce_pair(kwargs["shadow_anchor"], "shadow_anchor")
+
         return cls(icon_url=data_uri, **kwargs)
+
+    @classmethod
+    def bootstrap(
+        cls,
+        name: str,
+        *,
+        icon_size: Union[int, Tuple[int, int]] = 24,
+        icon_anchor: Optional[Union[int, Tuple[int, int]]] = None,
+        popup_anchor: Optional[Union[int, Tuple[int, int]]] = None,
+        version: str = "1.11.3",
+        **kwargs
+    ) -> Icon:
+        """Create an icon from Bootstrap Icons (https://icons.getbootstrap.com).
+
+        The icon is referenced from jsDelivr CDN as:
+        `https://cdn.jsdelivr.net/npm/bootstrap-icons@<version>/icons/<name>.svg`
+
+        Args:
+            name: Bootstrap icon name without extension (e.g., "bank", "geo-alt-fill")
+            icon_size: Icon size in pixels (single int or (w, h))
+            icon_anchor: Marker anchor point (single int or (x, y)); defaults to center
+            popup_anchor: Popup anchor offset; defaults to (0, -icon_height//2)
+            version: Bootstrap Icons version on CDN
+            **kwargs: Additional Icon fields (shadow_url, shadow_size, etc.)
+
+        Returns:
+            Icon instance pointing to the CDN SVG asset
+        """
+        size = _coerce_pair(icon_size, "icon_size")
+        anchor = _coerce_pair(icon_anchor, "icon_anchor") if icon_anchor is not None else (size[0] // 2, size[1] // 2)
+        popup = _coerce_pair(popup_anchor, "popup_anchor") if popup_anchor is not None else (0, -(size[1] // 2))
+        icon_url = f"{BOOTSTRAP_ICONS_CDN}@{version}/icons/{name}.svg"
+        return cls(
+            icon_url=icon_url,
+            icon_size=size,
+            icon_anchor=anchor,
+            popup_anchor=popup,
+            **kwargs,
+        )
     
     @classmethod
     def geometric(
@@ -444,19 +509,25 @@ class Icon:
         
         # Handle icon_size - convert single int to tuple if needed
         if 'icon_size' in kwargs:
-            icon_size = kwargs['icon_size']
-            if isinstance(icon_size, int):
-                kwargs['icon_size'] = (icon_size, icon_size)
+            kwargs['icon_size'] = _coerce_pair(kwargs['icon_size'], 'icon_size')
         else:
             kwargs['icon_size'] = (size, size)
         
         # Handle icon_anchor - convert single int to tuple if needed
         if 'icon_anchor' in kwargs:
-            icon_anchor = kwargs['icon_anchor']
-            if isinstance(icon_anchor, int):
-                kwargs['icon_anchor'] = (icon_anchor, icon_anchor)
+            kwargs['icon_anchor'] = _coerce_pair(kwargs['icon_anchor'], 'icon_anchor')
         else:
             kwargs['icon_anchor'] = (size // 2, size // 2)
+
+        if 'popup_anchor' in kwargs:
+            kwargs['popup_anchor'] = _coerce_pair(kwargs['popup_anchor'], 'popup_anchor')
+        else:
+            kwargs['popup_anchor'] = (0, -(kwargs['icon_size'][1] // 2))
+
+        if 'shadow_size' in kwargs:
+            kwargs['shadow_size'] = _coerce_pair(kwargs['shadow_size'], 'shadow_size')
+        if 'shadow_anchor' in kwargs:
+            kwargs['shadow_anchor'] = _coerce_pair(kwargs['shadow_anchor'], 'shadow_anchor')
         
         return cls(icon_url=data_uri, **kwargs)
     
@@ -523,4 +594,3 @@ class Icon:
                 # Basic attribute serialization; assumes keys/values are safe strings
                 attributes.append(f'{key}="{value}"')
         return f"<img {' '.join(attributes)} />"
-

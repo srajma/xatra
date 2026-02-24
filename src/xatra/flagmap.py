@@ -874,7 +874,7 @@ class Map:
             >>> 
             >>> # With custom icon
             >>> from xatra.icon import Icon
-            >>> icon = Icon.builtin("star.png", icon_size=(32, 32))
+            >>> icon = Icon.bootstrap("star-fill", icon_size=28)
             >>> map.Point("Capital", [28.6, 77.2], icon=icon)
             >>> 
             >>> # With label displayed next to the point
