@@ -121,14 +121,16 @@ def _generate_shape_svg(shape: ShapeType, size: int, color: str, border_color: s
         """
     
     elif shape == ShapeType.CROSS:
-        # Cross shape
+        # X-shaped cross
         thickness = max(2, size // 8)
         center = size // 2
-        half_thickness = thickness // 2
+        arm_length = size * 1.6
+        x = center - arm_length / 2
+        y = center - thickness / 2
         return f"""
         <svg viewBox="{viewbox}" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="{center - half_thickness}" width="{size}" height="{thickness}" fill="{color}" {border_attrs}/>
-            <rect x="{center - half_thickness}" y="0" width="{thickness}" height="{size}" fill="{color}" {border_attrs}/>
+            <rect x="{x:.2f}" y="{y:.2f}" width="{arm_length:.2f}" height="{thickness}" fill="{color}" transform="rotate(45 {center} {center})" {border_attrs}/>
+            <rect x="{x:.2f}" y="{y:.2f}" width="{arm_length:.2f}" height="{thickness}" fill="{color}" transform="rotate(-45 {center} {center})" {border_attrs}/>
         </svg>
         """
     
