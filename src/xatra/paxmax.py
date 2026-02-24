@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
-from shapely.geometry import shape, mapping
+from shapely.geometry import shape, mapping, Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 
 from .debug_utils import time_debug
@@ -139,6 +139,37 @@ def _to_shape(geojson):
     return _shape_wrapper(geojson)
 
 
+def _extract_polygon_parts(geom):
+    """Recursively collect Polygon parts from any Shapely geometry."""
+    if geom is None or geom.is_empty:
+        return []
+
+    if isinstance(geom, Polygon):
+        return [geom]
+
+    if isinstance(geom, MultiPolygon):
+        return [g for g in geom.geoms if g is not None and not g.is_empty]
+
+    if isinstance(geom, GeometryCollection):
+        parts = []
+        for subgeom in geom.geoms:
+            parts.extend(_extract_polygon_parts(subgeom))
+        return parts
+
+    return []
+
+
+def _polygonal_only(geom):
+    """Keep only polygonal components of a geometry for area-based flag rendering."""
+    parts = _extract_polygon_parts(geom)
+    if not parts:
+        return None
+    if len(parts) == 1:
+        return parts[0]
+    merged = _unary_union_wrapper(parts)
+    return merged if merged is not None and not merged.is_empty else None
+
+
 @time_debug("Paxmax aggregation")
 def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int = None) -> Dict[str, Any]:
     """Aggregate flags using the pax-max method for dynamic maps.
@@ -182,12 +213,14 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 # Use territory union (more efficient with caching)
                 union_territory = Territory.union_territories(territories)
                 geom = union_territory.to_geometry()
+                geom = _polygonal_only(geom)
                 geom_dict = mapping(geom) if geom is not None else None
                 centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
             elif geometries:
                 # Fallback to geometry union (legacy support)
                 geoms = [_to_shape(geom) for geom in geometries]
                 geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
+                geom = _polygonal_only(geom)
                 geom_dict = _mapping_wrapper(geom) if geom is not None else None
                 centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
             else:
@@ -271,12 +304,14 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 # Use territory union (more efficient with caching)
                 union_territory = Territory.union_territories(territories)
                 geom = union_territory.to_geometry()
+                geom = _polygonal_only(geom)
                 geom_dict = mapping(geom) if geom is not None else None
                 centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
             elif geometries:
                 # Fallback to geometry union (legacy support)
                 geoms = [_to_shape(geom) for geom in geometries]
                 geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
+                geom = _polygonal_only(geom)
                 geom_dict = _mapping_wrapper(geom) if geom is not None else None
                 centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
             else:
