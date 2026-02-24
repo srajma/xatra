@@ -7,10 +7,6 @@ This directory contains only Leaflet-compatible marker assets used by `Icon.buil
 - `marker-icon.png`
 - `marker-icon-red.png`
 - `marker-icon-green.png`
-- `marker-icon-2x.png`
-- `marker-icon-2x-red.png`
-- `marker-icon-2x-green.png`
-- `marker-shadow.png`
 
 ## Usage
 
