@@ -29,11 +29,11 @@ map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500], color="#ff0000", inherit="Maurya")
 
 
-xatra.Flag(
+map.Flag(
     label="Punjab",
     value=gadm("IND") & AUDICYA,
 )
-xatra.Flag(
+map.Flag(
     label="Haryanajangala",
     value=AUDICYA & JANGALA
 )
