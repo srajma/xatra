@@ -11,7 +11,7 @@ for historical mapping applications.
 
 from __future__ import annotations
 
-from .loaders import gadm
+from .loaders import gadm, polygon
 
 """custom, recurring, world regions"""
 
@@ -1066,7 +1066,7 @@ UZB_FERGHANA = gadm("UZB") - (UZB_BACTRIA | UZB_SOGDIA_PROPER | UZB_KHWAREZM)
 TKM_KHWAREZM = gadm("TKM.3") | gadm("TKM.6")
 TKM_MARGIANA = gadm("TKM") - TKM_KHWAREZM
 MARGIANA = TKM_MARGIANA | AFG_MARGIANA
-ANDHAKAVARTA = MARGIANA - gadm("TKM") # should ideally include Nisa as well but Turkmenistan admin level 3 data is missing
+ANDHAKAVARTA = MARGIANA - gadm("TKM") 
 BACTRIA = AFG_BACTRIA | TJK_BACTRIA | UZB_BACTRIA
 MERU = AFG_MERU | TJK_MERU
 SOGDIA_PROPER = UZB_SOGDIA_PROPER | TJK_SOGDIA_PROPER
@@ -1179,7 +1179,7 @@ IRAN = gadm("IRN")
 IRANIC = IRAN | CENTRAL_ASIA_GREATER
 IRANIC_GREATER = IRANIC | TARIM
 HYRCANIA = gadm("IRN.9")
-PARTHIA = gadm("IRN.25") | gadm("IRN.21") | gadm("IRN.24")
+PARTHIA = gadm("IRN.25") | gadm("IRN.21") | gadm("IRN.24") | polygon([[38.0394,57.3816],[38.1,57.7441],[38.0654,57.9749],[38.074,58.3044],[37.9875,58.5901],[37.8575,58.689],[37.7012,58.7988],[37.5794,58.8538],[37.3963,58.7549],[37.6751,57.8101],[37.9702,57.1399],[38.1173,57.1729]])
 PERSIA = gadm("IRN.7")
 
 MEDITERRANEAN_EAST = (
