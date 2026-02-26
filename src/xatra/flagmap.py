@@ -1207,7 +1207,7 @@ class Map:
     def _extract_coordinates_from_geometry(self, geometry: Dict[str, Any], all_lats: List[float], all_lngs: List[float]) -> None:
         """Extract coordinates from a GeoJSON geometry and add them to the lists."""
         def extract_coords(obj):
-            if isinstance(obj, list):
+            if isinstance(obj, (list, tuple)):
                 if len(obj) == 2 and isinstance(obj[0], (int, float)) and isinstance(obj[1], (int, float)):
                     # This is a coordinate pair [lng, lat]
                     all_lngs.append(obj[0])
@@ -1227,6 +1227,82 @@ class Map:
         else:
             # Direct geometry
             extract_coords(geometry.get("coordinates", []))
+
+    def _calculate_auto_focus_from_serialized_elements(
+        self,
+        pax: Dict[str, Any],
+        rivers_serialized: List[Dict[str, Any]],
+        paths_serialized: List[Dict[str, Any]],
+        points_serialized: List[Dict[str, Any]],
+        texts_serialized: List[Dict[str, Any]],
+        admins_serialized: List[Dict[str, Any]],
+        admin_rivers_serialized: List[Dict[str, Any]],
+        data_serialized: List[Dict[str, Any]],
+        dataframes_serialized: List[Dict[str, Any]],
+    ) -> Tuple[float, float]:
+        """Calculate focus from all serialized elements that will be rendered."""
+        all_lats: List[float] = []
+        all_lngs: List[float] = []
+
+        if pax.get("mode") == "dynamic":
+            for snapshot in pax.get("snapshots", []):
+                for flag in snapshot.get("flags", []):
+                    geometry = flag.get("geometry")
+                    if geometry:
+                        self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+        else:
+            for flag in pax.get("flags", []):
+                geometry = flag.get("geometry")
+                if geometry:
+                    self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+
+        for river in rivers_serialized:
+            geometry = river.get("geometry")
+            if geometry:
+                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+
+        for path in paths_serialized:
+            for coord in path.get("coords", []):
+                all_lats.append(coord[0])
+                all_lngs.append(coord[1])
+
+        for point in points_serialized:
+            position = point.get("position")
+            if position and len(position) == 2:
+                all_lats.append(position[0])
+                all_lngs.append(position[1])
+
+        for text in texts_serialized:
+            position = text.get("position")
+            if position and len(position) == 2:
+                all_lats.append(position[0])
+                all_lngs.append(position[1])
+
+        for admin in admins_serialized:
+            geometry = admin.get("geometry")
+            if geometry:
+                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+
+        for admin_river in admin_rivers_serialized:
+            geometry = admin_river.get("geometry")
+            if geometry:
+                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+
+        for data in data_serialized:
+            geometry = data.get("geometry")
+            if geometry:
+                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+
+        for dataframe in dataframes_serialized:
+            geometry = dataframe.get("geometry")
+            if geometry:
+                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+
+        if all_lats and all_lngs:
+            center_lat = (min(all_lats) + max(all_lats)) / 2
+            center_lng = (min(all_lngs) + max(all_lngs)) / 2
+            return (center_lat, center_lng)
+        return (22.0, 79.0)
 
     def _add_default_base_options(self) -> None:
         """Add default base layer options.
@@ -2161,7 +2237,17 @@ class Map:
         # Calculate automatic focus if not set by user
         initial_focus = self._initial_focus
         if initial_focus is None:
-            initial_focus = self._calculate_auto_focus()
+            initial_focus = self._calculate_auto_focus_from_serialized_elements(
+                pax=pax,
+                rivers_serialized=rivers_serialized,
+                paths_serialized=paths_serialized,
+                points_serialized=points_serialized,
+                texts_serialized=texts_serialized,
+                admins_serialized=admins_serialized,
+                admin_rivers_serialized=admin_rivers_serialized,
+                data_serialized=data_serialized,
+                dataframes_serialized=dataframes_serialized,
+            )
 
         # Use default zoom if not set by user
         initial_zoom = self._initial_zoom if self._initial_zoom is not None else 5
