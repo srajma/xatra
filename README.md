@@ -280,6 +280,25 @@ xatra.show(out_json="tests/map_pyplot.json", out_html="tests/map_pyplot.html")
 print("Map exported to tests/map_pyplot.html")
 ```
 
+## `xatrahub()` imports
+
+`xatrahub(path, filter_only=None, filter_not=None)` loads artifacts from a XatraHub API (default `http://localhost:8088`, override with `XATRAHUB_URL`).
+
+- Path formats accepted by the hub API:
+  - `/{kind}/{name}` or `/{kind}/{name}/{version}`
+  - `/{username}/{kind}/{name}` or `/{username}/{kind}/{name}/{version}` (legacy format)
+- `kind="lib"`: returns a namespace object, so use `lib = xatrahub("...")` then `lib.TERRITORY_NAME`.
+- `kind="map"` or `kind="css"`: applies imported code and returns `None`.
+- `filter_only` / `filter_not` (lists of method names like `["Flag", "River"]`) filter imported `xatra.<Method>(...)` calls for map/css imports.
+
+```python
+import xatra
+from xatra import xatrahub
+
+indic = xatrahub("/lib/dtl/alpha")  # lib import returns namespace
+xatrahub("/map/mauryan_extent/3", filter_not=["TitleBox"])  # map import applies into current map
+```
+
 ## Search
 
 Two search boxes appear in the **TitleBox** (the draggable panel at the top-left):
