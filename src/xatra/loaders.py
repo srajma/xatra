@@ -211,7 +211,7 @@ def naturalearth(ne_id: str) -> Dict[str, Any]:
 
 
 @time_debug("Load Overpass data")
-def overpass(osm_id: str) -> Dict[str, Any]:
+def overpass(osm_id: str, osm_type: Optional[str] = None) -> Dict[str, Any]:
     """Return a GeoJSON Feature or FeatureCollection for an Overpass river by id.
 
     We search files under data/rivers_overpass_india whose filename contains the id.
@@ -220,6 +220,7 @@ def overpass(osm_id: str) -> Dict[str, Any]:
     
     Args:
         osm_id: OpenStreetMap ID to search for
+        osm_type: Optional restriction for object type: "relation" or "way"
         
     Returns:
         GeoJSON Feature or FeatureCollection
@@ -231,17 +232,21 @@ def overpass(osm_id: str) -> Dict[str, Any]:
     osm_id_str = str(osm_id).strip()
     if not osm_id_str.isdigit():
         raise ValueError(f"Invalid OSM id '{osm_id}'. Expected digits only.")
+    if osm_type is not None:
+        osm_type = str(osm_type).strip().lower()
+        if osm_type not in ("relation", "way"):
+            raise ValueError("osm_type must be one of: 'relation', 'way', or None")
 
-    path = _find_overpass_path_for_id(osm_id_str)
+    path = _find_overpass_path_for_id(osm_id_str, osm_type=osm_type)
     if path is None:
-        downloaded = _download_overpass_feature(osm_id_str)
+        downloaded = _download_overpass_feature(osm_id_str, osm_type=osm_type)
         path = _save_overpass_feature(downloaded, osm_id_str)
 
     data = _read_json(path)
 
     # Self-heal stale auto-cached way-only files by retrying relation fetch.
     # This fixes cases where a relation id was previously mis-resolved as way(id).
-    if _is_stale_way_cache(path, data, osm_id_str):
+    if osm_type != "way" and _is_stale_way_cache(path, data, osm_id_str):
         try:
             relation_query = f"""
 [out:json][timeout:40];
@@ -307,7 +312,7 @@ def _is_stale_way_cache(path: str, data: Dict[str, Any], osm_id: str) -> bool:
     return str(props.get("_id", osm_id)) == osm_id
 
 
-def _find_overpass_path_for_id(osm_id: str) -> Optional[str]:
+def _find_overpass_path_for_id(osm_id: str, osm_type: Optional[str] = None) -> Optional[str]:
     if not os.path.isdir(OVERPASS_DIR):
         return None
 
@@ -318,6 +323,8 @@ def _find_overpass_path_for_id(osm_id: str) -> Optional[str]:
     for name in os.listdir(OVERPASS_DIR):
         if not name.endswith(".json"):
             continue
+        if osm_type is not None and osm_type not in name.lower():
+            continue
         full = os.path.join(OVERPASS_DIR, name)
         stem, _ = os.path.splitext(name)
         if stem.endswith(f"_{token}") or stem == token:
@@ -326,7 +333,7 @@ def _find_overpass_path_for_id(osm_id: str) -> Optional[str]:
             loose_candidates.append(full)
 
     candidates = sorted(exact_candidates) if exact_candidates else sorted(loose_candidates)
-    if candidates:
+    if candidates and osm_type is None:
         # Prefer relation files over way files when both exist for the same id.
         candidates = sorted(
             candidates,
@@ -352,8 +359,9 @@ def _save_overpass_feature(feature: Dict[str, Any], osm_id: str) -> str:
     return path
 
 
-def _download_overpass_feature(osm_id: str) -> Dict[str, Any]:
-    relation_query = f"""
+def _download_overpass_feature(osm_id: str, osm_type: Optional[str] = None) -> Dict[str, Any]:
+    if osm_type in (None, "relation"):
+        relation_query = f"""
 [out:json][timeout:40];
 relation({osm_id});
 out tags;
@@ -361,25 +369,38 @@ way(r);
 out geom tags;
 """.strip()
 
-    relation_data = _run_overpass_query(relation_query)
-    relation_feature = _overpass_elements_to_feature(relation_data.get("elements", []), osm_id, prefer_relation=True)
-    if relation_feature is not None:
-        return relation_feature
+        relation_data = _run_overpass_query(relation_query)
+        relation_feature = _overpass_elements_to_feature(
+            relation_data.get("elements", []),
+            osm_id,
+            prefer_relation=True,
+        )
+        if relation_feature is not None:
+            relation_is_relation = relation_feature.get("properties", {}).get("_osm_type") == "relation"
+            if relation_is_relation or osm_type is None:
+                return relation_feature
 
-    way_query = f"""
+    if osm_type in (None, "way"):
+        way_query = f"""
 [out:json][timeout:40];
 way({osm_id});
 out geom tags;
 """.strip()
 
-    way_data = _run_overpass_query(way_query)
-    way_feature = _overpass_elements_to_feature(way_data.get("elements", []), osm_id, prefer_relation=False)
-    if way_feature is not None:
-        return way_feature
+        way_data = _run_overpass_query(way_query)
+        way_feature = _overpass_elements_to_feature(
+            way_data.get("elements", []),
+            osm_id,
+            prefer_relation=False,
+        )
+        if way_feature is not None:
+            way_is_way = way_feature.get("properties", {}).get("_osm_type") == "way"
+            if way_is_way or osm_type is None:
+                return way_feature
 
-    raise FileNotFoundError(
-        f"OSM id '{osm_id}' not found as relation or way via Overpass API"
-    )
+    if osm_type is None:
+        raise FileNotFoundError(f"OSM id '{osm_id}' not found as relation or way via Overpass API")
+    raise FileNotFoundError(f"OSM id '{osm_id}' not found as {osm_type} via Overpass API")
 
 
 def _run_overpass_query(query: str) -> Dict[str, Any]:
