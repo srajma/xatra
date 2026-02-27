@@ -350,7 +350,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
 - **`DataColormap(colormap, vmin=None, vmax=None, norm=None)`**: Set the color map for data elements
 - **`zoom(level: int)`**: Set the zoom level. Defaults to 5.
-- **`focus(latitude: float, longitude: float)`**: set where the map is initially focused at. Defaults to the center of the bounding box of all elements on the map.
+- **`focus(latitude: float, longitude: float)`**: set where the map is initially focused at. If not set, xatra auto-focuses to the center of the bounding box of rendered `Flag`/`Admin`/`Data`/`Dataframe` geometries. `River`/`Path`/`Point`/`Text` are only used for auto-focus when none of those four are present.
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 
 ##### Export
