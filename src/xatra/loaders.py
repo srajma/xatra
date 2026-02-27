@@ -13,6 +13,9 @@ from __future__ import annotations
 import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
+from urllib import error as urllib_error
+from urllib import parse as urllib_parse
+from urllib import request as urllib_request
 
 from .debug_utils import time_debug
 
@@ -29,6 +32,11 @@ DISPUTED_DIR = os.path.join(DATA_DIR, "disputed_territories")
 DISPUTED_MAPPING_JSON = os.path.join(DISPUTED_DIR, "disputed_mapping.json")
 NE_RIVERS_FILE = os.path.join(DATA_DIR, "ne_10m_rivers.geojson")
 OVERPASS_DIR = os.path.join(DATA_DIR, "rivers_overpass_india")
+OVERPASS_API_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
+]
 
 # Global file cache to avoid repeated disk reads
 _file_cache: Dict[str, Any] = {}
@@ -220,17 +228,40 @@ def overpass(osm_id: str) -> Dict[str, Any]:
         FileNotFoundError: If no matching file found
         ValueError: If data format is unsupported
     """
-    if not os.path.isdir(OVERPASS_DIR):
-        raise FileNotFoundError(f"Missing overpass dir: {OVERPASS_DIR}")
-    candidates: List[str] = []
-    for name in os.listdir(OVERPASS_DIR):
-        if str(osm_id) in name:
-            candidates.append(os.path.join(OVERPASS_DIR, name))
-    if not candidates:
-        raise FileNotFoundError(f"No overpass file containing id '{osm_id}' in {OVERPASS_DIR}")
-    # Choose the first match deterministically by name
-    path = sorted(candidates)[0]
+    osm_id_str = str(osm_id).strip()
+    if not osm_id_str.isdigit():
+        raise ValueError(f"Invalid OSM id '{osm_id}'. Expected digits only.")
+
+    path = _find_overpass_path_for_id(osm_id_str)
+    if path is None:
+        downloaded = _download_overpass_feature(osm_id_str)
+        path = _save_overpass_feature(downloaded, osm_id_str)
+
     data = _read_json(path)
+
+    # Self-heal stale auto-cached way-only files by retrying relation fetch.
+    # This fixes cases where a relation id was previously mis-resolved as way(id).
+    if _is_stale_way_cache(path, data, osm_id_str):
+        try:
+            relation_query = f"""
+[out:json][timeout:40];
+relation({osm_id_str});
+out tags;
+way(r);
+out geom tags;
+""".strip()
+            relation_data = _run_overpass_query(relation_query)
+            relation_feature = _overpass_elements_to_feature(
+                relation_data.get("elements", []),
+                osm_id_str,
+                prefer_relation=True,
+            )
+            if relation_feature is not None and relation_feature.get("properties", {}).get("_osm_type") == "relation":
+                path = _save_overpass_feature(relation_feature, osm_id_str)
+                data = relation_feature
+        except Exception:
+            # Keep existing cached data if refresh fails.
+            pass
     t = data.get("type")
     if t in ("Feature", "FeatureCollection"):
         return data
@@ -264,6 +295,238 @@ def overpass(osm_id: str) -> Dict[str, Any]:
     else:
         geometry = {"type": "MultiLineString", "coordinates": line_geoms}
     return {"type": "Feature", "properties": {"source": os.path.basename(path)}, "geometry": geometry}
+
+
+def _is_stale_way_cache(path: str, data: Dict[str, Any], osm_id: str) -> bool:
+    name = os.path.basename(path)
+    if not name.startswith("overpass_way_"):
+        return False
+    if data.get("type") != "Feature":
+        return False
+    props = data.get("properties", {}) or {}
+    return str(props.get("_id", osm_id)) == osm_id
+
+
+def _find_overpass_path_for_id(osm_id: str) -> Optional[str]:
+    if not os.path.isdir(OVERPASS_DIR):
+        return None
+
+    exact_candidates: List[str] = []
+    loose_candidates: List[str] = []
+    token = str(osm_id)
+
+    for name in os.listdir(OVERPASS_DIR):
+        if not name.endswith(".json"):
+            continue
+        full = os.path.join(OVERPASS_DIR, name)
+        stem, _ = os.path.splitext(name)
+        if stem.endswith(f"_{token}") or stem == token:
+            exact_candidates.append(full)
+        elif token in name:
+            loose_candidates.append(full)
+
+    candidates = sorted(exact_candidates) if exact_candidates else sorted(loose_candidates)
+    if candidates:
+        # Prefer relation files over way files when both exist for the same id.
+        candidates = sorted(
+            candidates,
+            key=lambda p: (
+                0 if "relation" in os.path.basename(p) else 1,
+                os.path.basename(p),
+            ),
+        )
+    return candidates[0] if candidates else None
+
+
+def _save_overpass_feature(feature: Dict[str, Any], osm_id: str) -> str:
+    os.makedirs(OVERPASS_DIR, exist_ok=True)
+    props = feature.get("properties", {}) or {}
+    osm_type = str(props.get("_osm_type", "unknown"))
+    filename = f"overpass_{osm_type}_{osm_id}.json"
+    path = os.path.join(OVERPASS_DIR, filename)
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(feature, f, ensure_ascii=False)
+
+    _file_cache[path] = feature
+    return path
+
+
+def _download_overpass_feature(osm_id: str) -> Dict[str, Any]:
+    relation_query = f"""
+[out:json][timeout:40];
+relation({osm_id});
+out tags;
+way(r);
+out geom tags;
+""".strip()
+
+    relation_data = _run_overpass_query(relation_query)
+    relation_feature = _overpass_elements_to_feature(relation_data.get("elements", []), osm_id, prefer_relation=True)
+    if relation_feature is not None:
+        return relation_feature
+
+    way_query = f"""
+[out:json][timeout:40];
+way({osm_id});
+out geom tags;
+""".strip()
+
+    way_data = _run_overpass_query(way_query)
+    way_feature = _overpass_elements_to_feature(way_data.get("elements", []), osm_id, prefer_relation=False)
+    if way_feature is not None:
+        return way_feature
+
+    raise FileNotFoundError(
+        f"OSM id '{osm_id}' not found as relation or way via Overpass API"
+    )
+
+
+def _run_overpass_query(query: str) -> Dict[str, Any]:
+    payload = urllib_parse.urlencode({"data": query}).encode("utf-8")
+    errors: List[str] = []
+
+    for endpoint in OVERPASS_API_URLS:
+        req = urllib_request.Request(endpoint, data=payload, method="POST")
+        req.add_header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+
+        try:
+            with urllib_request.urlopen(req, timeout=60) as resp:
+                body = resp.read().decode("utf-8")
+            try:
+                return json.loads(body)
+            except json.JSONDecodeError:
+                errors.append(f"{endpoint}: invalid JSON response")
+                continue
+        except urllib_error.HTTPError as exc:
+            error_body = ""
+            try:
+                error_body = exc.read().decode("utf-8")
+            except Exception:
+                error_body = ""
+            errors.append(f"{endpoint}: HTTP {exc.code} {error_body[:120]}")
+        except urllib_error.URLError as exc:
+            errors.append(f"{endpoint}: {exc}")
+
+    raise ConnectionError("All Overpass API endpoints failed: " + " | ".join(errors))
+
+
+def _overpass_elements_to_feature(
+    elements: List[Dict[str, Any]],
+    osm_id: str,
+    prefer_relation: bool,
+) -> Optional[Dict[str, Any]]:
+    if not isinstance(elements, list) or not elements:
+        return None
+
+    node_coords: Dict[int, Tuple[float, float]] = {}
+    ways_by_id: Dict[int, Dict[str, Any]] = {}
+    relations_by_id: Dict[int, Dict[str, Any]] = {}
+
+    for el in elements:
+        el_type = el.get("type")
+        if el_type == "node":
+            try:
+                node_coords[int(el["id"])] = (float(el["lon"]), float(el["lat"]))
+            except Exception:
+                continue
+        elif el_type == "way":
+            try:
+                ways_by_id[int(el["id"])] = el
+            except Exception:
+                continue
+        elif el_type == "relation":
+            try:
+                relations_by_id[int(el["id"])] = el
+            except Exception:
+                continue
+
+    target_id = int(osm_id)
+    target_relation = relations_by_id.get(target_id)
+    target_way = ways_by_id.get(target_id)
+
+    selected_way_ids: List[int] = []
+    tags: Dict[str, Any] = {}
+    osm_type = "relation" if prefer_relation else "way"
+
+    if prefer_relation and target_relation is not None:
+        tags = target_relation.get("tags", {}) or {}
+        for member in target_relation.get("members", []) or []:
+            if member.get("type") == "way" and member.get("ref") is not None:
+                try:
+                    selected_way_ids.append(int(member["ref"]))
+                except Exception:
+                    continue
+        # Some Overpass responses expose relation tags but return ways separately
+        # with empty members; use all returned ways in that case.
+        if not selected_way_ids:
+            selected_way_ids = sorted(ways_by_id.keys())
+        osm_type = "relation"
+    elif target_way is not None:
+        tags = target_way.get("tags", {}) or {}
+        selected_way_ids.append(target_id)
+        osm_type = "way"
+    elif target_relation is not None:
+        tags = target_relation.get("tags", {}) or {}
+        for member in target_relation.get("members", []) or []:
+            if member.get("type") == "way" and member.get("ref") is not None:
+                try:
+                    selected_way_ids.append(int(member["ref"]))
+                except Exception:
+                    continue
+        osm_type = "relation"
+    else:
+        selected_way_ids = sorted(ways_by_id.keys())
+        if not selected_way_ids:
+            return None
+        first_way = ways_by_id[selected_way_ids[0]]
+        tags = first_way.get("tags", {}) or {}
+        osm_type = "way"
+
+    line_geoms: List[List[List[float]]] = []
+    for way_id in selected_way_ids:
+        way = ways_by_id.get(way_id)
+        if not way:
+            continue
+
+        coords: List[List[float]] = []
+        if isinstance(way.get("geometry"), list):
+            for item in way["geometry"]:
+                try:
+                    coords.append([float(item["lon"]), float(item["lat"])])
+                except Exception:
+                    continue
+        else:
+            for node_id in way.get("nodes", []) or []:
+                try:
+                    nid = int(node_id)
+                except Exception:
+                    continue
+                if nid in node_coords:
+                    lon, lat = node_coords[nid]
+                    coords.append([lon, lat])
+
+        if len(coords) >= 2:
+            line_geoms.append(coords)
+
+    if not line_geoms:
+        return None
+
+    if len(line_geoms) == 1:
+        geometry: Dict[str, Any] = {"type": "LineString", "coordinates": line_geoms[0]}
+    else:
+        geometry = {"type": "MultiLineString", "coordinates": line_geoms}
+
+    properties: Dict[str, Any] = {
+        "_source": "overpass",
+        "_id": str(osm_id),
+        "_osm_type": osm_type,
+        "name": tags.get("name"),
+        "name:en": tags.get("name:en"),
+    }
+    cleaned_properties = {k: v for k, v in properties.items() if v is not None}
+
+    return {"type": "Feature", "properties": cleaned_properties, "geometry": geometry}
 
 
 @time_debug("Load GADM-like data")

@@ -1865,7 +1865,12 @@ class Map:
                     all_rivers = []
                     
                     # Load rivers based on specified sources
-                    from .loaders import _read_json, NE_RIVERS_FILE, OVERPASS_DIR
+                    from .loaders import (
+                        _read_json,
+                        NE_RIVERS_FILE,
+                        OVERPASS_DIR,
+                        _overpass_elements_to_feature,
+                    )
                     import os
                     
                     # Load Natural Earth rivers if requested
@@ -1900,6 +1905,20 @@ class Map:
                                                 feature["properties"]["_source"] = "overpass"
                                                 feature["properties"]["_filename"] = filename
                                                 all_rivers.append(feature)
+                                        elif isinstance(overpass_data.get("elements"), list):
+                                            # Backward compatibility for raw Overpass dumps.
+                                            guessed_id = "".join(ch for ch in filename if ch.isdigit())
+                                            if guessed_id:
+                                                converted = _overpass_elements_to_feature(
+                                                    overpass_data.get("elements", []),
+                                                    guessed_id,
+                                                    prefer_relation=True,
+                                                )
+                                                if converted is not None:
+                                                    converted.setdefault("properties", {})
+                                                    converted["properties"]["_source"] = "overpass"
+                                                    converted["properties"]["_filename"] = filename
+                                                    all_rivers.append(converted)
                                     except Exception as e:
                                         print(f"Warning: Could not load overpass file {filename}: {e}")
                                         continue
