@@ -65,7 +65,7 @@ map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500])
 map.Flag(label="Chola", value=gadm("IND.31"), note="Chola persisted throughout this entire period")
 map.Admin(gadm="IND.31", level=3)
 map.AdminRivers(sources=["naturalearth", "overpass"], classes="all-rivers", note="All rivers from Natural Earth and Overpass data")
-map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
+map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id, osm_type=None|'relation'|'way')", classes="ganga-river indian-river")
 map.River(label="Ganga", value=naturalearth("1159122643"), period=[0, 600], note="Modern course of Ganga")
 map.Path(label="Uttarapatha", value=[[28,77],[30,90],[40, 120]], classes="uttarapatha-path")
 map.Path(label="Silk Road", value=[[35.0, 75.0], [40.0, 80.0], [45.0, 85.0]], period=[-200, 600])
@@ -569,7 +569,9 @@ Represents geographical regions with set algebra operations.
 
 - **`gadm(key)`**: Load GADM administrative boundary (e.g., "IND", "PAK")
 - **`naturalearth(ne_id)`**: Load Natural Earth feature by ID
-- **`overpass(osm_id)`**: Load Overpass API data by OSM ID
+- **`overpass(osm_id, osm_type=None)`**: Load Overpass data by OSM ID.
+  Searches local cache first (`data/rivers_overpass_india`), then fetches from Overpass API if missing, normalizes to GeoJSON, saves locally, and returns it.
+  `osm_type` can be `"relation"` or `"way"` to restrict lookup/fetch (including filename matching).
 - **`polygon(coords, holes=None)`**: Create custom polygon territory from coordinates
 
 ### Custom Polygon Territories
@@ -927,6 +929,7 @@ map.AdminRivers(period=[1800, 1900], classes="historical-rivers")
 - **Source identification**: Rivers are colored differently by source (blue for Natural Earth, orange for Overpass)
 - **Rich tooltips**: Shows source information, IDs, and all available name fields
 - **Automatic loading**: Loads rivers from specified data sources
+- **Overpass compatibility**: Accepts both cached GeoJSON and raw Overpass JSON (`elements`) files
 - **Time support**: Works with dynamic maps and period filtering
 
 **Tooltip information:**
@@ -1533,7 +1536,7 @@ When time debugging is enabled, you'll see timing information for:
 **Data Loading Operations:**
 - Loading GADM data files
 - Loading Natural Earth features
-- Loading Overpass data
+- Loading Overpass data (local cache lookup + optional on-demand API fetch)
 - Reading JSON files from disk (with cache hits/misses)
 - Converting GeoJSON to Shapely geometries
 
@@ -1665,6 +1668,8 @@ The timing chart shows:
 ### Overpass API
 - Rivers: `data/rivers_overpass_india/`
 - Features identified by OSM ID in filename
+- Auto-cached files are named like `overpass_relation_<id>.json` or `overpass_way_<id>.json`
+- `overpass(osm_id, osm_type="relation"|"way")` restricts both local filename matching and API lookup
 
 ## TODO
 
