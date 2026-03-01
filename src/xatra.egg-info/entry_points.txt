@@ -1,2 +1,3 @@
 [console_scripts]
 xatra-install-data = xatra.data_installer:main
+xatra-simplify-data = xatra.simplify_data:main

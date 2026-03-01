@@ -17,6 +17,7 @@ dependencies = [
 
 [project.scripts]
 xatra-install-data = "xatra.data_installer:main"
+xatra-simplify-data = "xatra.simplify_data:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

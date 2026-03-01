@@ -28,6 +28,7 @@ except ImportError:
     DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 GADM_DIR = os.path.join(DATA_DIR, "gadm")
+GADM_SIMPLIFIED_DIR = os.path.join(DATA_DIR, "gadm_simplified")
 DISPUTED_DIR = os.path.join(DATA_DIR, "disputed_territories")
 DISPUTED_MAPPING_JSON = os.path.join(DISPUTED_DIR, "disputed_mapping.json")
 NE_RIVERS_FILE = os.path.join(DATA_DIR, "ne_10m_rivers.geojson")
@@ -41,8 +42,63 @@ OVERPASS_API_URLS = [
 # Global file cache to avoid repeated disk reads
 _file_cache: Dict[str, Any] = {}
 _disputed_mapping_cache: Optional[Dict[str, Any]] = None
+_active_simplify_tolerance: Optional[float] = None
 
 DEBUG_FILE_CACHE = False
+
+
+def _normalize_simplify_tolerance(simplify_tolerance: Optional[float]) -> Optional[float]:
+    """Normalize/validate simplification tolerance."""
+    if simplify_tolerance is None:
+        return None
+    tol = float(simplify_tolerance)
+    if tol <= 0:
+        raise ValueError("simplify_tolerance must be > 0 when provided")
+    return tol
+
+
+def _format_simplify_tolerance(simplify_tolerance: float) -> str:
+    """Format simplification tolerance for file-system-safe path segments."""
+    tol = _normalize_simplify_tolerance(simplify_tolerance)
+    # Keep representation compact but stable for CLI/config values.
+    token = f"{tol:.12g}".rstrip("0").rstrip(".")
+    return token.replace(".", "p")
+
+
+def set_active_simplification_tolerance(simplify_tolerance: Optional[float]) -> None:
+    """Set active GADM simplification tolerance used by loaders."""
+    global _active_simplify_tolerance
+    _active_simplify_tolerance = _normalize_simplify_tolerance(simplify_tolerance)
+
+
+def get_active_simplification_tolerance() -> Optional[float]:
+    """Get currently active GADM simplification tolerance."""
+    return _active_simplify_tolerance
+
+
+def _resolve_simplify_tolerance(simplify_tolerance: Optional[float]) -> Optional[float]:
+    """Resolve explicit tolerance or fall back to active map/session tolerance."""
+    if simplify_tolerance is not None:
+        return _normalize_simplify_tolerance(simplify_tolerance)
+    return _active_simplify_tolerance
+
+
+def _get_gadm_file_path(
+    iso3: str,
+    level: int,
+    simplify_tolerance: Optional[float] = None,
+) -> str:
+    """Get the GADM file path for an ISO3 and level, honoring simplification."""
+    resolved = _resolve_simplify_tolerance(simplify_tolerance)
+    if resolved is None:
+        return os.path.join(GADM_DIR, f"gadm41_{iso3}_{level}.json")
+
+    tol_token = _format_simplify_tolerance(resolved)
+    return os.path.join(
+        GADM_SIMPLIFIED_DIR,
+        f"tol_{tol_token}",
+        f"gadm41_{iso3}_{level}.json",
+    )
 
 @time_debug("Read JSON file")
 def _read_json(path: str):
@@ -128,18 +184,27 @@ def _compute_find_in_gadm_default(key: str) -> Optional[List[str]]:
 
 
 @time_debug("Load GADM data")
-def gadm(key: str, find_in_gadm: Optional[List[str]] = None):
+def gadm(
+    key: str,
+    find_in_gadm: Optional[List[str]] = None,
+    simplify_tolerance: Optional[float] = None,
+):
     """Load GADM administrative boundary as Territory.
     
     Args:
         key: GADM country code (e.g., "IND", "PAK")
         find_in_gadm: Optional list of country codes to search in if key is not found in its own file
+        simplify_tolerance: Optional simplification tolerance; if None, uses active map/session setting
         
     Returns:
         Territory object
     """
     from .territory import Territory
-    return Territory.from_gadm(key, find_in_gadm)
+    return Territory.from_gadm(
+        key,
+        find_in_gadm=find_in_gadm,
+        simplify_tolerance=simplify_tolerance,
+    )
 
 
 def polygon(coords: List[List[float]], holes: Optional[List[List[List[float]]]] = None):
@@ -551,7 +616,11 @@ def _overpass_elements_to_feature(
 
 
 @time_debug("Load GADM-like data")
-def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[str, Any]:
+def load_gadm_like(
+    key: str,
+    find_in_gadm: Optional[List[str]] = None,
+    simplify_tolerance: Optional[float] = None,
+) -> Dict[str, Any]:
     """Load GADM geometry by key like 'IND' or 'IND.31' or deeper.
 
     - If key has no dot: open gadm41_<ISO>_0.json and return its FeatureCollection
@@ -563,6 +632,7 @@ def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[s
     Args:
         key: GADM key (e.g., "IND", "IND.31", "IND.31.1")
         find_in_gadm: Optional list of country codes to search in if key is not found in its own file
+        simplify_tolerance: Optional simplification tolerance; if None, uses active map/session setting
         
     Returns:
         GeoJSON FeatureCollection
@@ -578,7 +648,7 @@ def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[s
     level = 0 if len(parts) == 1 else len(parts) - 1
     
     # Try to load from the key's own file first
-    path = os.path.join(GADM_DIR, f"gadm41_{iso3}_{level}.json")
+    path = _get_gadm_file_path(iso3, level, simplify_tolerance=simplify_tolerance)
     if os.path.exists(path):
         fc = _read_json(path)
         if fc.get("type") != "FeatureCollection":
@@ -601,7 +671,7 @@ def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[s
         find_in_gadm = _compute_find_in_gadm_default(key)
     if find_in_gadm:
         for country_code in find_in_gadm:
-            search_path = os.path.join(GADM_DIR, f"gadm41_{country_code}_{level}.json")
+            search_path = _get_gadm_file_path(country_code, level, simplify_tolerance=simplify_tolerance)
             if os.path.exists(search_path):
                 fc = _read_json(search_path)
                 if fc.get("type") != "FeatureCollection":
@@ -622,6 +692,13 @@ def load_gadm_like(key: str, find_in_gadm: Optional[List[str]] = None) -> Dict[s
                     return {"type": "FeatureCollection", "features": features}
     
     # If still not found, raise the original error
+    resolved_tol = _resolve_simplify_tolerance(simplify_tolerance)
+    if resolved_tol is not None:
+        raise FileNotFoundError(
+            f"GADM file not found: {path}. "
+            f"Simplification tolerance {resolved_tol} is active; "
+            f"generate simplified files first (xatra-simplify-data)."
+        )
     raise FileNotFoundError(f"GADM file not found: {path}")
 
 

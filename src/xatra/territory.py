@@ -77,20 +77,29 @@ class Territory:
         return Territory(_geometry_provider=provider,strrepr="<DIRECT_DICT>")
 
     @staticmethod
-    def from_gadm(key: str, find_in_gadm: Optional[List[str]] = None) -> "Territory":
+    def from_gadm(
+        key: str,
+        find_in_gadm: Optional[List[str]] = None,
+        simplify_tolerance: Optional[float] = None,
+    ) -> "Territory":
         """Create Territory from GADM administrative boundary.
         
         Args:
             key: GADM country code (e.g., "IND", "PAK")
             find_in_gadm: Optional list of country codes to search in if key is not found in its own file
+            simplify_tolerance: Optional simplification tolerance (overrides active map/session setting)
             
         Returns:
             Territory instance
         """
         def provider():
-            obj = load_gadm_like(key, find_in_gadm)
+            obj = load_gadm_like(key, find_in_gadm, simplify_tolerance=simplify_tolerance)
             return _geojson_to_geometry(obj)
-        return Territory(_geometry_provider=provider, strrepr=f'gadm("{key}")')
+        if simplify_tolerance is None:
+            repr_str = f'gadm("{key}")'
+        else:
+            repr_str = f'gadm("{key}", simplify_tolerance={float(simplify_tolerance):.12g})'
+        return Territory(_geometry_provider=provider, strrepr=repr_str)
 
     @staticmethod
     def from_naturalearth(ne_id: str) -> "Territory":
@@ -186,9 +195,18 @@ class Territory:
         
         # Use global cache for all other territories
         cache = get_global_cache()
+        cache_strrepr = self.strrepr
+        try:
+            from .loaders import get_active_simplification_tolerance
+            active_tol = get_active_simplification_tolerance()
+        except Exception:
+            active_tol = None
+        if active_tol is not None and "simplify_tolerance=" not in self.strrepr:
+            # Keep cache entries disjoint across simplification settings.
+            cache_strrepr = f"{self.strrepr}@@simplify={active_tol:.12g}"
         
         # Try to get from cache first
-        cached_geometry = cache.get(self.strrepr)
+        cached_geometry = cache.get(cache_strrepr)
         if cached_geometry is not None:
             # print(f"RETRIEVING CACHED GEOMETRY FOR '{self.strrepr}'")
             return cached_geometry
@@ -200,7 +218,7 @@ class Territory:
         # print(f"CALCULATING GEOMETRY FOR '{self.strrepr}'")
         geometry = self._geometry_provider()
         if geometry is not None:
-            cache.put(self.strrepr, geometry)
+            cache.put(cache_strrepr, geometry)
         
         return geometry
 

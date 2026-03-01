@@ -352,6 +352,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 - **`zoom(level: int)`**: Set the zoom level. Defaults to 5.
 - **`focus(latitude: float, longitude: float)`**: set where the map is initially focused at. If not set, xatra auto-focuses to the center of the bounding box of rendered `Flag`/`Admin`/`Data`/`Dataframe` geometries. `River`/`Path`/`Point`/`Text` are only used for auto-focus when none of those four are present.
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
+- **`simplify(tolerance=None)`**: Use precomputed simplified GADM geometry for this map (`None` disables)
 
 ##### Export
 
@@ -567,7 +568,7 @@ Represents geographical regions with set algebra operations.
 
 ### Data Loaders
 
-- **`gadm(key)`**: Load GADM administrative boundary (e.g., "IND", "PAK")
+- **`gadm(key, simplify_tolerance=None)`**: Load GADM administrative boundary (e.g., "IND", "PAK")
 - **`naturalearth(ne_id)`**: Load Natural Earth feature by ID
 - **`overpass(osm_id, osm_type=None)`**: Load Overpass data by OSM ID.
   Searches local cache first (`data/rivers_overpass_india`), then fetches from Overpass API if missing, normalizes to GeoJSON, saves locally, and returns it.
@@ -1481,6 +1482,22 @@ Xatra is optimized for large, complex maps with many elements:
 - **Centroid Pre-computation**: Flag centroids are calculated once during export, not on every render
 - **Layer Visibility Toggling**: Dynamic maps use efficient visibility toggling instead of recreating layers
 - **Memory Management**: Use `clear_file_cache()` to free memory when working with very large datasets
+
+For faster geometry operations, you can precompute topology-safe simplified GADM copies:
+
+```bash
+xatra-simplify-data
+```
+
+Then select simplification per map:
+
+```python
+import xatra
+map = xatra.Map()
+map.simplify(0.025)
+# or pyplot-style
+xatra.simplify(0.025)
+```
 
 ### Geometry Cache Management
 

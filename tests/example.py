@@ -199,6 +199,7 @@ map.CSS("""
 .trade-corridor { fill: rgba(60, 179, 113, 0.4); stroke: #3cb371; stroke-width: 2; stroke-dasharray: 8 4; }
 .deccan { fill: rgba(220, 20, 60, 0.4); stroke: #dc143c; stroke-width: 2; }
 """)
+map.simplify(0.05)
 
 # Generate the map
 map.show(out_json="tests/map.json", out_html="tests/map.html")

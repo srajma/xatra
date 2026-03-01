@@ -184,6 +184,11 @@ def slider(start: Optional[int] = None, end: Optional[int] = None, speed: float 
     get_current_map().slider(start, end, speed)
 
 
+def simplify(tolerance: Optional[float] = None) -> None:
+    """Set GADM simplification tolerance for the current map."""
+    get_current_map().simplify(tolerance)
+
+
 def show(out_json: str = "map.json", out_html: str = "map.html") -> None:
     """Export the current map to JSON and HTML files."""
     get_current_map().show(out_json, out_html)

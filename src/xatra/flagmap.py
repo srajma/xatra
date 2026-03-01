@@ -460,6 +460,7 @@ class Map:
         self._initial_focus: Optional[Tuple[float, float]] = None
         self._geocoder_provider: str = "nominatim"
         self._geocoder_api_key: Optional[str] = None
+        self._simplify_tolerance: Optional[float] = None
         
         # Add default base options
         self._add_default_base_options()
@@ -985,6 +986,20 @@ class Map:
             self._map_limits = (int(start), int(end))
         # Convert years per second to milliseconds per year
         self._play_speed = int(1000 / float(speed))
+
+    def simplify(self, tolerance: Optional[float] = None) -> None:
+        """Set simplification tolerance for GADM geometry lookups in this map.
+
+        Args:
+            tolerance: Simplification tolerance in degrees. Use None to disable.
+        """
+        if tolerance is None:
+            self._simplify_tolerance = None
+            return
+        tol = float(tolerance)
+        if tol <= 0:
+            raise ValueError("tolerance must be > 0 or None")
+        self._simplify_tolerance = tol
 
     def Music(self, path: str, timestamps=None, period=None) -> None:
         """Add a music track to the map.
@@ -1600,6 +1615,9 @@ class Map:
         Returns:
             Dictionary containing all map data including flags, rivers, paths, etc.
         """
+        from .loaders import set_active_simplification_tolerance
+        set_active_simplification_tolerance(self._simplify_tolerance)
+
         # Prepare flags for paxmax aggregation (keep territories for efficient union)
         flags_serialized: List[Dict[str, Any]] = []
         for fl in self._flags:
@@ -1781,14 +1799,21 @@ class Map:
             # Include objects with no period (always visible) or valid restricted periods
             if a.period is None or restricted_period is not None:
                 try:
-                    from .loaders import _read_json, _compute_find_in_gadm_default, GADM_DIR
+                    from .loaders import (
+                        _read_json,
+                        _compute_find_in_gadm_default,
+                        _get_gadm_file_path,
+                    )
                     import os
                     
                     # Load the appropriate level file directly
                     parts = a.gadm_key.split('.')
                     iso3 = parts[0]
-                    gadm_dir = GADM_DIR
-                    level_file_path = os.path.join(gadm_dir, f"gadm41_{iso3}_{a.level}.json")
+                    level_file_path = _get_gadm_file_path(
+                        iso3,
+                        a.level,
+                        simplify_tolerance=self._simplify_tolerance,
+                    )
                     
                     # Try to load the level file, with fallback to find_in_gadm (explicit or computed) if needed
                     level_file = None
@@ -1799,7 +1824,11 @@ class Map:
                         candidate_countries = a.find_in_gadm or _compute_find_in_gadm_default(a.gadm_key)
                         if candidate_countries:
                             for country_code in candidate_countries:
-                                search_path = os.path.join(gadm_dir, f"gadm41_{country_code}_{a.level}.json")
+                                search_path = _get_gadm_file_path(
+                                    country_code,
+                                    a.level,
+                                    simplify_tolerance=self._simplify_tolerance,
+                                )
                                 if os.path.exists(search_path):
                                     level_file = _read_json(search_path)
                                     break
@@ -2021,7 +2050,11 @@ class Map:
                     for gadm_key, gids in gid_groups.items():
                         try:
                             # Load GADM data for this key
-                            gadm_geojson = load_gadm_like(gadm_key, df_entry.find_in_gadm)
+                            gadm_geojson = load_gadm_like(
+                                gadm_key,
+                                df_entry.find_in_gadm,
+                                simplify_tolerance=self._simplify_tolerance,
+                            )
                             if not gadm_geojson.get("features"):
                                 continue
                             
@@ -2120,7 +2153,11 @@ class Map:
                     for gadm_key, gids in gid_groups.items():
                         try:
                             # Load GADM data for this key
-                            gadm_geojson = load_gadm_like(gadm_key, df_entry.find_in_gadm)
+                            gadm_geojson = load_gadm_like(
+                                gadm_key,
+                                df_entry.find_in_gadm,
+                                simplify_tolerance=self._simplify_tolerance,
+                            )
                             if not gadm_geojson.get("features"):
                                 continue
                             
@@ -2172,7 +2209,11 @@ class Map:
         for (gadm, find_in_gadm), data_elements in data_by_gadm.items():
             try:
                 # Load GADM data once per GADM (already cached via _file_cache)
-                gadm_geojson = load_gadm_like(gadm, list(find_in_gadm) if find_in_gadm else None)
+                gadm_geojson = load_gadm_like(
+                    gadm,
+                    list(find_in_gadm) if find_in_gadm else None,
+                    simplify_tolerance=self._simplify_tolerance,
+                )
                 
                 if not gadm_geojson.get("features"):
                     print(f"Warning: No GADM features found for: {gadm}")

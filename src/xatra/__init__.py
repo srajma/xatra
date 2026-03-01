@@ -95,6 +95,7 @@ from .pyplot import (
     zoom,
     focus,
     slider,
+    simplify,
     to_html_string,
     show,
 )
@@ -224,6 +225,7 @@ __all__ = [
     "zoom",
     "focus",
     "slider",
+    "simplify",
     "xatrahub",
     "XATRAHUB_URL",
     "to_html_string",
