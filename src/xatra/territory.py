@@ -11,7 +11,7 @@ base datasets using Shapely geometry operations.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from shapely.geometry import shape, Polygon, mapping
@@ -61,6 +61,8 @@ class Territory:
 
     _geometry_provider: Optional[callable] = None
     strrepr: str = None
+    _memoized_geometry: Any = field(default=None, init=False, repr=False)
+    _memoized_ready: bool = field(default=False, init=False, repr=False)
 
     @staticmethod
     def from_geojson(geojson_obj: Dict[str, Any]) -> "Territory":
@@ -187,12 +189,22 @@ class Territory:
         Returns:
             Shapely geometry object or None if invalid
         """
+        # Always memoize per-instance results to avoid repeated recomputation
+        # during complex map exports when global caching is disabled.
+        if self._memoized_ready:
+            return self._memoized_geometry
+
         # Skip caching for territories created from GeoJSON objects
         if self.strrepr == "<DIRECT_DICT>":
             if self._geometry_provider is None:
+                self._memoized_ready = True
+                self._memoized_geometry = None
                 return None
-            return self._geometry_provider()
-        
+            geometry = self._geometry_provider()
+            self._memoized_ready = True
+            self._memoized_geometry = geometry
+            return geometry
+
         # Use global cache for all other territories
         cache = get_global_cache()
         cache_strrepr = self.strrepr
@@ -209,17 +221,22 @@ class Territory:
         cached_geometry = cache.get(cache_strrepr)
         if cached_geometry is not None:
             # print(f"RETRIEVING CACHED GEOMETRY FOR '{self.strrepr}'")
+            self._memoized_ready = True
+            self._memoized_geometry = cached_geometry
             return cached_geometry
         
         # Not in cache, compute and store
         if self._geometry_provider is None:
+            self._memoized_ready = True
+            self._memoized_geometry = None
             return None
         
         # print(f"CALCULATING GEOMETRY FOR '{self.strrepr}'")
         geometry = self._geometry_provider()
         if geometry is not None:
             cache.put(cache_strrepr, geometry)
-        
+        self._memoized_ready = True
+        self._memoized_geometry = geometry
         return geometry
 
     # Set algebra

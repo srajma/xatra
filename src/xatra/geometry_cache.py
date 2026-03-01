@@ -22,6 +22,7 @@ from shapely.geometry import mapping
 from shapely.geometry.base import BaseGeometry
 
 from .debug_utils import time_debug
+from .settings import CACHING_ENABLED
 
 
 class GeometryCache:
@@ -83,11 +84,16 @@ class GeometryCache:
             Cached geometry or None if not found
         """
         cache_key = self._compute_hash(strrepr)
-        
+
         # Check in-memory cache first
         if cache_key in self._memory_cache:
             self._hits += 1
             return self._memory_cache[cache_key]
+
+        # When caching is disabled, bypass disk cache only.
+        if not CACHING_ENABLED:
+            self._misses += 1
+            return None
         
         # Check on-disk cache
         cache_path = self._get_cache_path(cache_key)
@@ -119,10 +125,14 @@ class GeometryCache:
             geometry: Geometry to cache
         """
         cache_key = self._compute_hash(strrepr)
-        
+
         # Store in memory cache
         self._memory_cache[cache_key] = geometry
-        
+
+        # When caching is disabled, keep memory cache hot but skip disk writes.
+        if not CACHING_ENABLED:
+            return
+
         # Store in disk cache
         cache_path = self._get_cache_path(cache_key)
         try:
@@ -159,6 +169,7 @@ class GeometryCache:
         disk_size = len(list(self.cache_dir.glob("*.pkl")))
         
         stats = {
+            "caching_enabled": CACHING_ENABLED,
             "total_requests": total_requests,
             "memory_hits": self._hits,
             "memory_misses": self._misses,

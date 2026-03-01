@@ -1520,6 +1520,14 @@ print(f"Disk cache: {stats['disk_cache_size']} files")
 
 Cache files are stored in `~/.xatra/cache/` and persist across program runs for maximum performance.
 
+To disable cache usage globally for a run, set:
+
+```bash
+CACHING=False python your_script.py
+```
+
+Accepted false values are `0`, `false`, `no`, `off` (case-insensitive). When disabled, Xatra bypasses on-disk geometry cache reads/writes while keeping in-process memory reuse, and does not clear existing cache contents.
+
 ### Time Debugging
 
 Xatra includes a comprehensive time debugging feature that helps you understand where time is being spent when creating maps. When enabled, it prints detailed timing information for every major operation with HH:MM:SS timestamps and tracks **exclusive time** (time spent in each function excluding time spent in other tracked functions called from it).

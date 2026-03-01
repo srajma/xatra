@@ -59,6 +59,7 @@ from .icon import Icon, ShapeType
 from . import debug_utils
 from .geometry_cache import clear_geometry_cache, get_geometry_cache_stats
 from .hub import xatrahub, XATRAHUB_URL
+from .settings import CACHING_ENABLED
 
 # Import timing debugging functions
 from .debug_utils import (
@@ -232,6 +233,7 @@ __all__ = [
     "show",
     # Debug utilities
     "DEBUG_TIME",
+    "CACHING_ENABLED",
     "set_debug_time",
     # Cache management
     "clear_cache",
