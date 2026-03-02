@@ -3567,11 +3567,11 @@ HTML_TEMPLATE = Template(
 )
 
 
-def export_html_string(payload: Dict[str, Any]) -> str:
+def export_html_string(payload: Dict[str, Any] | str) -> str:
     """Export map data to HTML string for embedding.
 
     Args:
-        payload: Map data dictionary containing flags, rivers, paths, etc.
+        payload: Map data dictionary OR a pre-serialized JSON string.
 
     Returns:
         HTML string containing the complete interactive map.
@@ -3580,19 +3580,26 @@ def export_html_string(payload: Dict[str, Any]) -> str:
         >>> html = export_html_string(map_data)
         >>> # Use in iframe or embed directly
     """
-    return HTML_TEMPLATE.render(payload=json.dumps(payload, ensure_ascii=False), css=payload.get("css", ""))
+    if isinstance(payload, str):
+        payload_json = payload
+        css = "" 
+    else:
+        payload_json = json.dumps(payload, ensure_ascii=False)
+        css = payload.get("css", "")
+        
+    return HTML_TEMPLATE.render(payload=payload_json, css=css)
 
 
 @time_debug("Export to HTML")
-def export_html(payload: Dict[str, Any], out_html: str) -> None:
+def export_html(payload: Dict[str, Any] | str, out_html: str) -> None:
     """Export map data to an interactive HTML file.
 
     Args:
-        payload: Map data dictionary containing flags, rivers, paths, etc.
+        payload: Map data dictionary OR a pre-serialized JSON string.
         out_html: Output path for the HTML file
 
     Example:
-        >>> export_html(map_data, "my_map.html")
+        >>> export_html(payload, "my_map.html")
     """
     html = export_html_string(payload)
     with open(out_html, "w", encoding="utf-8") as f:

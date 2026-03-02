@@ -1716,18 +1716,45 @@ class Map:
 
         # Global geometry registry for the whole map
         geometry_registry = pax.pop("geometry_library", {}) if isinstance(pax, dict) else {}
+        
+        # Track dict object IDs to geom_ids to avoid re-hashing
+        obj_id_to_geom_id = {}
+        for gid, gdict in geometry_registry.items():
+            obj_id_to_geom_id[id(gdict)] = gid
 
         def register_geometry(geom_dict):
             if not geom_dict:
                 return None
+            
+            # Fast path: already seen this exact dictionary object
+            obj_id = id(geom_dict)
+            if obj_id in obj_id_to_geom_id:
+                return obj_id_to_geom_id[obj_id]
+            
+            # Check if it already has a magic attribute (from Territory.to_geojson_dict)
+            if hasattr(geom_dict, "_xatra_geom_id"):
+                gid = geom_dict._xatra_geom_id
+                if gid not in geometry_registry:
+                    geometry_registry[gid] = geom_dict
+                obj_id_to_geom_id[obj_id] = gid
+                return gid
+
+            # Slow path (only once per unique dict object): generate hash
             import hashlib
-            import json
-            # Use json.dumps to get a consistent string for hashing
-            # (sorting keys ensures the same dict always produces the same hash)
-            geom_str = json.dumps(geom_dict, sort_keys=True)
-            geom_id = hashlib.md5(geom_str.encode()).hexdigest()
+            try:
+                import orjson
+                # orjson is MUCH faster than standard json for hashing
+                geom_str = orjson.dumps(geom_dict, option=orjson.OPT_SORT_KEYS)
+            except ImportError:
+                import json
+                geom_str = json.dumps(geom_dict, sort_keys=True).encode('utf-8')
+                
+            geom_id = hashlib.md5(geom_str).hexdigest()
+            
             if geom_id not in geometry_registry:
                 geometry_registry[geom_id] = geom_dict
+            
+            obj_id_to_geom_id[obj_id] = geom_id
             return geom_id
 
         rivers_serialized = []
@@ -2439,18 +2466,23 @@ class Map:
         payload = self._export_json()
         
         from .debug_utils import DebugSection
+        payload_serialized = None
         with DebugSection("Serialize payload to JSON"):
             try:
                 import orjson
-                # orjson returns bytes, needs to be written in 'wb' mode
+                # orjson returns bytes
+                payload_serialized_bytes = orjson.dumps(payload, option=orjson.OPT_NON_STR_KEYS)
                 with open(out_json, "wb") as f:
-                    f.write(orjson.dumps(payload, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS))
+                    f.write(payload_serialized_bytes)
+                payload_serialized = payload_serialized_bytes.decode('utf-8')
             except ImportError:
                 import json
+                payload_serialized = json.dumps(payload, ensure_ascii=False)
                 with open(out_json, "w", encoding="utf-8") as f:
-                    json.dump(payload, f, indent=2, ensure_ascii=False)
+                    f.write(payload_serialized)
         
-        export_html(payload, out_html)
+        # Pass the already serialized string to export_html
+        export_html(payload_serialized or payload, out_html)
 
     # Handle provider names from leaflet-providers
     PROVIDER_URLS = {
