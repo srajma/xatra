@@ -277,6 +277,9 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
     # For each label and each breakpoint year, compute union of active geometries
     snapshots: List[Dict[str, Any]] = []
     
+    # Global geometry registry for this aggregation
+    geometry_library: Dict[str, Any] = {}
+    
     # Local cache to avoid redundant processing of the same territory/geometry
     # within the same aggregation run.
     processed_cache: Dict[str, Dict[str, Any]] = {}
@@ -305,11 +308,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             # Use territory strreprs or geometry hashes
             t_keys = sorted([a["territory"].strrepr for a in active if a.get("territory") is not None])
             # For simplicity, we'll only cache if we have territories
-            cache_key = f"{label}:{'|'.join(t_keys)}" if t_keys else None
+            import hashlib
+            raw_key = f"{label}:{'|'.join(t_keys)}" if t_keys else None
+            cache_key = hashlib.md5(raw_key.encode()).hexdigest() if raw_key else None
             
             if cache_key and cache_key in processed_cache:
                 cached = processed_cache[cache_key]
-                geom_dict = cached["geom_dict"]
+                geom_id = cached["geom_id"]
                 centroid = cached["centroid"]
             else:
                 # Check if we have territories or geometries
@@ -334,9 +339,16 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                     geom_dict = None
                     centroid = None
                 
+                if geom_dict:
+                    # Use the cache_key as geom_id, or generate one if no cache_key
+                    geom_id = cache_key if cache_key else hashlib.md5(str(geom_dict).encode()).hexdigest()
+                    geometry_library[geom_id] = geom_dict
+                else:
+                    geom_id = None
+
                 if cache_key:
                     processed_cache[cache_key] = {
-                        "geom_dict": geom_dict,
+                        "geom_id": geom_id,
                         "centroid": centroid
                     }
             
@@ -361,7 +373,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             snapshot_flags.append({
                 "label": label,
                 "display_label": display_label,
-                "geometry": geom_dict,
+                "geom_id": geom_id,
                 "centroid": centroid,
                 "note": "; ".join(notes) or None,
                 "color": color,
@@ -374,7 +386,12 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             })
         snapshots.append({"year": year, "flags": snapshot_flags})
 
-    return {"mode": "dynamic", "breakpoints": breakpoints, "snapshots": snapshots}
+    return {
+        "mode": "dynamic",
+        "breakpoints": breakpoints,
+        "snapshots": snapshots,
+        "geometry_library": geometry_library
+    }
 
 
 @time_debug("Filter by period")

@@ -1265,6 +1265,7 @@ class Map:
         admin_rivers_serialized: List[Dict[str, Any]],
         data_serialized: List[Dict[str, Any]],
         dataframes_serialized: List[Dict[str, Any]],
+        geometry_registry: Dict[str, Any],
     ) -> Tuple[float, float]:
         """Calculate focus from all serialized elements that will be rendered."""
         primary_lats: List[float] = []
@@ -1272,33 +1273,31 @@ class Map:
         secondary_lats: List[float] = []
         secondary_lngs: List[float] = []
         
-        # Track seen geometries to avoid redundant coordinate extraction
+        # Track seen geometry IDs to avoid redundant coordinate extraction
         seen_geom_ids = set()
 
-        def extract_to_list(geometry, lats, lngs):
-            if geometry:
-                gid = id(geometry)
-                if gid not in seen_geom_ids:
-                    self._extract_coordinates_from_geometry(geometry, lats, lngs)
-                    seen_geom_ids.add(gid)
+        def extract_from_id(geom_id, lats, lngs):
+            if geom_id and geom_id in geometry_registry and geom_id not in seen_geom_ids:
+                self._extract_coordinates_from_geometry(geometry_registry[geom_id], lats, lngs)
+                seen_geom_ids.add(geom_id)
 
         # 1. Primary elements: Flags, Admins, Data
         if pax.get("mode") == "dynamic":
             for snapshot in pax.get("snapshots", []):
                 for flag in snapshot.get("flags", []):
-                    extract_to_list(flag.get("geometry"), primary_lats, primary_lngs)
+                    extract_from_id(flag.get("geom_id"), primary_lats, primary_lngs)
         else:
             for flag in pax.get("flags", []):
-                extract_to_list(flag.get("geometry"), primary_lats, primary_lngs)
+                extract_from_id(flag.get("geom_id"), primary_lats, primary_lngs)
 
         for admin in admins_serialized:
-            extract_to_list(admin.get("geometry"), primary_lats, primary_lngs)
+            extract_from_id(admin.get("geom_id"), primary_lats, primary_lngs)
 
         for data in data_serialized:
-            extract_to_list(data.get("geometry"), primary_lats, primary_lngs)
+            extract_from_id(data.get("geom_id"), primary_lats, primary_lngs)
 
         for dataframe in dataframes_serialized:
-            extract_to_list(dataframe.get("geometry"), primary_lats, primary_lngs)
+            extract_from_id(dataframe.get("geom_id"), primary_lats, primary_lngs)
 
         if primary_lats and primary_lngs:
             center_lat = (min(primary_lats) + max(primary_lats)) / 2
@@ -1307,10 +1306,10 @@ class Map:
 
         # 2. Secondary elements: Rivers, Paths, Points, Texts, Admin Rivers
         for river in rivers_serialized:
-            extract_to_list(river.get("geometry"), secondary_lats, secondary_lngs)
+            extract_from_id(river.get("geom_id"), secondary_lats, secondary_lngs)
 
         for admin_river in admin_rivers_serialized:
-            extract_to_list(admin_river.get("geometry"), secondary_lats, secondary_lngs)
+            extract_from_id(admin_river.get("geom_id"), secondary_lats, secondary_lngs)
 
         for path in paths_serialized:
             for coord in path.get("coords", []):
@@ -1711,17 +1710,35 @@ class Map:
             pax = {
                 "mode": "dynamic",
                 "breakpoints": [earliest_start] if earliest_start is not None else [],
-                "snapshots": [{"year": earliest_start, "flags": pax.get("flags", [])}] if earliest_start is not None else []
+                "snapshots": [{"year": earliest_start, "flags": pax.get("flags", [])}] if earliest_start is not None else [],
+                "geometry_library": pax.get("geometry_library", {})
             }
+
+        # Global geometry registry for the whole map
+        geometry_registry = pax.pop("geometry_library", {}) if isinstance(pax, dict) else {}
+
+        def register_geometry(geom_dict):
+            if not geom_dict:
+                return None
+            import hashlib
+            import json
+            # Use json.dumps to get a consistent string for hashing
+            # (sorting keys ensures the same dict always produces the same hash)
+            geom_str = json.dumps(geom_dict, sort_keys=True)
+            geom_id = hashlib.md5(geom_str.encode()).hexdigest()
+            if geom_id not in geometry_registry:
+                geometry_registry[geom_id] = geom_dict
+            return geom_id
 
         rivers_serialized = []
         for r in self._rivers:
             restricted_period = self._apply_limits_to_period(r.period)
             # Include objects with no period (always visible) or valid restricted periods
             if r.period is None or restricted_period is not None:
+                geom_id = register_geometry(r.geometry)
                 rivers_serialized.append({
                     "label": r.label,
-                    "geometry": r.geometry,
+                    "geom_id": geom_id,
                     "note": r.note,
                     "classes": r.classes,
                     "period": list(restricted_period) if restricted_period is not None else None,
@@ -1887,10 +1904,11 @@ class Map:
                         "features": filtered_features
                     }
                     
+                    geom_id = register_geometry(admin_geojson)
                     admins_serialized.append({
                         "gadm_key": a.gadm_key,
                         "level": a.level,
-                        "geometry": admin_geojson,
+                        "geom_id": geom_id,
                         "classes": a.classes,
                         "period": list(restricted_period) if restricted_period is not None else None,
                         "color_by_level": effective_color_by_level,
@@ -1977,8 +1995,9 @@ class Map:
                             "features": all_rivers
                         }
                         
+                        geom_id = register_geometry(admin_rivers_geojson)
                         admin_rivers_serialized.append({
-                            "geometry": admin_rivers_geojson,
+                            "geom_id": geom_id,
                             "classes": ar.classes,
                             "period": list(restricted_period) if restricted_period is not None else None,
                             "sources": ar.sources,
@@ -2089,9 +2108,11 @@ class Map:
                                             matching_features.append(feature_copy)
                             
                             if matching_features:
+                                df_geojson = {"type": "FeatureCollection", "features": matching_features}
+                                geom_id = register_geometry(df_geojson)
                                 dataframes_serialized.append({
                                     "type": "static",
-                                    "geometry": {"type": "FeatureCollection", "features": matching_features},
+                                    "geom_id": geom_id,
                                     "classes": df_entry.classes,
                                 })
                                 
@@ -2190,9 +2211,11 @@ class Map:
                                             matching_features.append(feature_copy)
                             
                             if matching_features:
+                                df_geojson = {"type": "FeatureCollection", "features": matching_features}
+                                geom_id = register_geometry(df_geojson)
                                 dataframes_serialized.append({
                                     "type": "dynamic",
-                                    "geometry": {"type": "FeatureCollection", "features": matching_features},
+                                    "geom_id": geom_id,
                                     "years": sorted(years),
                                     "classes": df_entry.classes,
                                 })
@@ -2255,12 +2278,14 @@ class Map:
                     "features": features_with_data
                 }
                 
-                # Create one data entry per data element, but all share the same geometry
+                geom_id = register_geometry(data_geojson)
+                
+                # Create one data entry per data element, but all share the same geometry registry ID
                 for i, data_element in enumerate(data_elements):
                     data_serialized.append({
                         "gadm": gadm,
                         "value": data_element["value"],
-                        "geometry": data_geojson,  # Shared geometry
+                        "geom_id": geom_id,  # Shared geometry ID
                         "classes": data_element["classes"],
                         "period": data_element["period"],
                         "color": colors[i],  # Pre-calculated color
@@ -2324,6 +2349,7 @@ class Map:
                 admin_rivers_serialized=admin_rivers_serialized,
                 data_serialized=data_serialized,
                 dataframes_serialized=dataframes_serialized,
+                geometry_registry=geometry_registry
             )
 
         # Use default zoom if not set by user
@@ -2380,6 +2406,7 @@ class Map:
             "initial_zoom": initial_zoom,
             "geocoder_provider": self._geocoder_provider,
             "geocoder_api_key": self._geocoder_api_key,
+            "geometry_registry": geometry_registry
         }
 
     def to_html_string(self) -> str:
@@ -2410,11 +2437,19 @@ class Map:
         # watermark with a TitleBox
         self.TitleBox("<i>made with <a href='https://github.com/srajma/xatra'>xatra</a></i>")
         payload = self._export_json()
-        import json
+        
         from .debug_utils import DebugSection
         with DebugSection("Serialize payload to JSON"):
-            with open(out_json, "w", encoding="utf-8") as f:
-                json.dump(payload, f)
+            try:
+                import orjson
+                # orjson returns bytes, needs to be written in 'wb' mode
+                with open(out_json, "wb") as f:
+                    f.write(orjson.dumps(payload, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS))
+            except ImportError:
+                import json
+                with open(out_json, "w", encoding="utf-8") as f:
+                    json.dump(payload, f, indent=2, ensure_ascii=False)
+        
         export_html(payload, out_html)
 
     # Handle provider names from leaflet-providers

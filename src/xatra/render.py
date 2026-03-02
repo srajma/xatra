@@ -110,6 +110,18 @@ HTML_TEMPLATE = Template(
     <script src="https://unpkg.com/leaflet-search@4.0.0/dist/leaflet-search.min.js"></script>
     <script>
       const payload = {{ payload | safe }};
+      const geometryRegistry = payload.geometry_registry || {};
+
+      // Hydration helper to resolve geometry from geom_id
+      function resolveGeometry(item) {
+        if (!item) return null;
+        if (item.geometry) return item.geometry;
+        if (item.geom_id && geometryRegistry[item.geom_id]) {
+          return geometryRegistry[item.geom_id];
+        }
+        return null;
+      }
+
       const initialFocus = payload.initial_focus || [22, 79];
       const initialZoom = payload.initial_zoom || 4;
       const map = L.map('map').setView(initialFocus, initialZoom);
@@ -1203,7 +1215,8 @@ HTML_TEMPLATE = Template(
         const snapshots = payload.flags.snapshots;
         for (const snapshot of snapshots) {
           for (const f of snapshot.flags) {
-            if (!f.geometry) continue;
+            const geometry = resolveGeometry(f);
+            if (!geometry) continue;
             
             let className = (f.type === 'province') ? 'province' : 'flag';
             if (f.type === 'vassal') className += ' vassal';
@@ -1239,7 +1252,7 @@ HTML_TEMPLATE = Template(
               flagTooltip += ' — ' + f.note;
             }
             
-            const layer = L.geoJSON(f.geometry, {
+            const layer = L.geoJSON(geometry, {
               ...flagStyle,
               onEachFeature: function(feature, subLayer) {
                 // Register with multi-tooltip system
@@ -1277,7 +1290,8 @@ HTML_TEMPLATE = Template(
             layer._flagData = { label: f.label, snapshot: snapshot.year };
 
             // Add label at centroid
-            const centroid = f.centroid || getCentroid(f.geometry);
+            const centroid = f.centroid || getCentroid(geometry);
+
             if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
               let labelStyle = '';
               if ((f.type === 'vassal' || f.type === 'province') && (f.root_parent_color || f.color)) {
@@ -1297,7 +1311,7 @@ HTML_TEMPLATE = Template(
               
               // Calculate rotation based on distant points in geometry
               let rotationAngle = 0;
-              const distantPoints = findDistantPoints(f.geometry);
+              const distantPoints = findDistantPoints(geometry);
               if (distantPoints) {
                 rotationAngle = distantPoints.angle;
               }
@@ -1334,11 +1348,12 @@ HTML_TEMPLATE = Template(
 
       function createAllRivers() {
         for (const r of payload.rivers || []) {
-          if (!r.geometry) continue;
+          const geometry = resolveGeometry(r);
+          if (!geometry) continue;
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
           const riverTooltip = `${r.label}${r.note ? ' — ' + r.note : ''}`;
-          const layer = L.geoJSON(r.geometry, { 
+          const layer = L.geoJSON(geometry, { 
             style: { className },
             onEachFeature: function(feature, subLayer) {
               // Register each sublayer with multi-tooltip system
@@ -1356,7 +1371,7 @@ HTML_TEMPLATE = Template(
             // Create labels at positions k/(n+1) where k = 1, 2, ..., n
             for (let k = 1; k <= nLabels; k++) {
               const fraction = k / (nLabels + 1);
-              const labelInfo = calculateRiverLabelPosition(r.geometry, r.label, fraction);
+              const labelInfo = calculateRiverLabelPosition(geometry, r.label, fraction);
               
               if (labelInfo) {
                 let labelClassName = 'river-label-container';
@@ -1572,12 +1587,12 @@ HTML_TEMPLATE = Template(
 
       function createAllAdmins() {
         for (const a of payload.admins || []) {
-          if (!a.geometry) continue;
-          
+          const geometry = resolveGeometry(a);
+          if (!geometry) continue;
           let className = 'admin';
           if (a.classes) className += ' ' + a.classes;
-          
-          const layer = L.geoJSON(a.geometry, {
+          const layer = L.geoJSON(geometry, {
+
             style: function(feature) {
               const props = feature.properties || {};
               const color = props._color;
@@ -1694,12 +1709,13 @@ HTML_TEMPLATE = Template(
 
       function createAllAdminRivers() {
         for (const ar of payload.admin_rivers || []) {
-          if (!ar.geometry) continue;
-          
+          const geometry = resolveGeometry(ar);
+          if (!geometry) continue;
           let className = 'admin-river';
+
           if (ar.classes) className += ' ' + ar.classes;
           
-          const layer = L.geoJSON(ar.geometry, {
+          const layer = L.geoJSON(geometry, {
             style: function(feature) {
               const props = feature.properties || {};
               const source = props._source;
@@ -1773,8 +1789,8 @@ HTML_TEMPLATE = Template(
               const fraction = k / (nLabels + 1);
               
               // Calculate label position and rotation for each river feature
-              if (ar.geometry.features) {
-                for (const feature of ar.geometry.features) {
+              if (geometry.features) {
+                for (const feature of geometry.features) {
                   const labelInfo = calculateRiverLabelPosition(feature, feature.properties?.name || 'River', fraction);
                   if (labelInfo && labelInfo.position) {
                     const innerClassName = 'admin-river-label';
@@ -1798,12 +1814,13 @@ HTML_TEMPLATE = Template(
 
       function createAllData() {
         for (const d of payload.data || []) {
-          if (!d.geometry) continue;
-          
+          const geometry = resolveGeometry(d);
+          if (!geometry) continue;
           let className = 'data';
           if (d.classes) className += ' ' + d.classes;
-          
-          const layer = L.geoJSON(d.geometry, {
+
+          const layer = L.geoJSON(geometry, {
+
             style: function(feature) {
               const props = feature.properties || {};
               const dataIndex = d.data_index || 0;
@@ -1874,12 +1891,13 @@ HTML_TEMPLATE = Template(
       }
 
       function createStaticDataframe(df) {
-        if (!df.geometry) return;
+        const geometry = resolveGeometry(df);
+        if (!geometry) return;
         
         let className = 'data';
         if (df.classes) className += ' ' + df.classes;
         
-        const layer = L.geoJSON(df.geometry, {
+        const layer = L.geoJSON(geometry, {
           style: function(feature) {
             const props = feature.properties || {};
             const value = props._dataframe_value;
@@ -1939,12 +1957,13 @@ HTML_TEMPLATE = Template(
       }
 
       function createDynamicDataframe(df) {
-        if (!df.geometry) return;
+        const geometry = resolveGeometry(df);
+        if (!geometry) return;
         
         let className = 'data';
         if (df.classes) className += ' ' + df.classes;
         
-        const layer = L.geoJSON(df.geometry, {
+        const layer = L.geoJSON(geometry, {
           style: function(feature) {
             const props = feature.properties || {};
             const dataframeData = props._dataframe_data;
@@ -2040,7 +2059,8 @@ HTML_TEMPLATE = Template(
       function renderStatic() {
         const flags = payload.flags.flags;
         for (const f of flags) {
-          if (!f.geometry) continue;
+          const geometry = resolveGeometry(f);
+          if (!geometry) continue;
           
           // Create style with flag color
           let className = (f.type === 'province') ? 'province' : 'flag';
@@ -2077,7 +2097,7 @@ HTML_TEMPLATE = Template(
             flagTooltip += ' — ' + f.note;
           }
           
-          const layer = L.geoJSON(f.geometry, {
+          const layer = L.geoJSON(geometry, {
             ...flagStyle,
             onEachFeature: function(feature, subLayer) {
               // Register with multi-tooltip system
@@ -2119,7 +2139,7 @@ HTML_TEMPLATE = Template(
           // Add label at centroid (use pre-computed centroid if available)
           const centroid = f.centroid || (() => {
             console.warn(`Centroid fallback calculation for flag: ${f.label}`);
-            return getCentroid(f.geometry);
+            return getCentroid(geometry);
           })();
           if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
             // Create custom label element with flag color
@@ -2141,7 +2161,7 @@ HTML_TEMPLATE = Template(
             
             // Calculate rotation based on distant points in geometry
             let rotationAngle = 0;
-            const distantPoints = findDistantPoints(f.geometry);
+            const distantPoints = findDistantPoints(geometry);
             if (distantPoints) {
               rotationAngle = distantPoints.angle;
             }
@@ -2174,12 +2194,13 @@ HTML_TEMPLATE = Template(
       function renderRivers(year = null) {
         const rivers = year !== null ? filterByPeriod(payload.rivers, year) : payload.rivers;
         for (const r of rivers) {
-          if (!r.geometry) continue;
+          const geometry = resolveGeometry(r);
+          if (!geometry) continue;
           let className = 'river';
           if (r.classes) className += ' ' + r.classes;
           const riverTooltip = `${r.label}${r.note ? ' — ' + r.note : ''}`;
           
-          const layer = L.geoJSON(r.geometry, {
+          const layer = L.geoJSON(geometry, {
             style: { className },
             onEachFeature: function(feature, subLayer) {
               // Register each sublayer with multi-tooltip system
@@ -2196,7 +2217,7 @@ HTML_TEMPLATE = Template(
             // Create labels at positions k/(n+1) where k = 1, 2, ..., n
             for (let k = 1; k <= nLabels; k++) {
               const fraction = k / (nLabels + 1);
-              const labelInfo = calculateRiverLabelPosition(r.geometry, r.label, fraction);
+              const labelInfo = calculateRiverLabelPosition(geometry, r.label, fraction);
               
               if (labelInfo) {
                 let labelClassName = 'river-label-container';
@@ -2447,14 +2468,15 @@ HTML_TEMPLATE = Template(
       function renderAdmins(year = null) {
         const admins = year !== null ? filterByPeriod(payload.admins, year) : payload.admins;
         for (const a of admins) {
-          if (!a.geometry) continue;
+          const geometry = resolveGeometry(a);
+          if (!geometry) continue;
           
           // Create style for admin regions
           let className = 'admin';
           if (a.classes) className += ' ' + a.classes;
           
           // Add each feature with its own tooltip and color
-          const layer = L.geoJSON(a.geometry, {
+          const layer = L.geoJSON(geometry, {
             style: function(feature) {
               const props = feature.properties || {};
               const color = props._color;
@@ -2555,14 +2577,15 @@ HTML_TEMPLATE = Template(
       function renderAdminRivers(year = null) {
         const adminRivers = year !== null ? filterByPeriod(payload.admin_rivers, year) : payload.admin_rivers;
         for (const ar of adminRivers) {
-          if (!ar.geometry) continue;
+          const geometry = resolveGeometry(ar);
+          if (!geometry) continue;
           
           // Create style for admin rivers
           let className = 'admin-river';
           if (ar.classes) className += ' ' + ar.classes;
           
           // Add each feature with its own tooltip
-          const layer = L.geoJSON(ar.geometry, {
+          const layer = L.geoJSON(geometry, {
             style: function(feature) {
               const props = feature.properties || {};
               const source = props._source;
@@ -2643,8 +2666,8 @@ HTML_TEMPLATE = Template(
               const fraction = k / (nLabels + 1);
               
               // Calculate label position and rotation for each river feature
-              if (ar.geometry.features) {
-                for (const feature of ar.geometry.features) {
+              if (geometry.features) {
+                for (const feature of geometry.features) {
                   const labelInfo = calculateRiverLabelPosition(feature, feature.properties?.name || 'River', fraction);
                   if (labelInfo && labelInfo.position) {
                     const innerClassName = 'admin-river-label';
@@ -2669,12 +2692,13 @@ HTML_TEMPLATE = Template(
       function renderData(year = null) {
         const data = year !== null ? filterByPeriod(payload.data, year) : payload.data;
         for (const d of data) {
-          if (!d.geometry) continue;
+          const geometry = resolveGeometry(d);
+          if (!geometry) continue;
           
           let className = 'data';
           if (d.classes) className += ' ' + d.classes;
           
-          const layer = L.geoJSON(d.geometry, {
+          const layer = L.geoJSON(geometry, {
             style: function(feature) {
               const props = feature.properties || {};
               const dataIndex = d.data_index || 0;
@@ -3058,15 +3082,17 @@ HTML_TEMPLATE = Template(
           }
         }
         for (const r of payload.rivers || []) {
-          if (r.geometry) {
-            const cen = getCentroidFromGeometry(r.geometry);
+          const geometry = resolveGeometry(r);
+          if (geometry) {
+            const cen = getCentroidFromGeometry(geometry);
             if (cen) add(r.label, cen[0], cen[1], 'River', r.note);
           }
         }
         const flags = payload.flags && payload.flags.flags ? payload.flags.flags : (payload.flags && payload.flags.snapshots && payload.flags.snapshots[0] ? payload.flags.snapshots[0].flags : []);
         for (const f of flags || []) {
-          if (f.geometry) {
-            const cen = getCentroidFromGeometry(f.geometry);
+          const geometry = resolveGeometry(f);
+          if (geometry) {
+            const cen = getCentroidFromGeometry(geometry);
             if (cen) add(f.label, cen[0], cen[1], 'Flag', f.note);
           }
         }
