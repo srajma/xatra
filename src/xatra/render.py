@@ -3567,11 +3567,12 @@ HTML_TEMPLATE = Template(
 )
 
 
-def export_html_string(payload: Dict[str, Any] | str) -> str:
+def export_html_string(payload: Dict[str, Any] | str, css: Optional[str] = None) -> str:
     """Export map data to HTML string for embedding.
 
     Args:
         payload: Map data dictionary OR a pre-serialized JSON string.
+        css: Optional CSS string (required if payload is a string and has custom styles).
 
     Returns:
         HTML string containing the complete interactive map.
@@ -3582,25 +3583,26 @@ def export_html_string(payload: Dict[str, Any] | str) -> str:
     """
     if isinstance(payload, str):
         payload_json = payload
-        css = "" 
+        effective_css = css or "" 
     else:
         payload_json = json.dumps(payload, ensure_ascii=False)
-        css = payload.get("css", "")
+        effective_css = css if css is not None else payload.get("css", "")
         
-    return HTML_TEMPLATE.render(payload=payload_json, css=css)
+    return HTML_TEMPLATE.render(payload=payload_json, css=effective_css)
 
 
 @time_debug("Export to HTML")
-def export_html(payload: Dict[str, Any] | str, out_html: str) -> None:
+def export_html(payload: Dict[str, Any] | str, out_html: str, css: Optional[str] = None) -> None:
     """Export map data to an interactive HTML file.
 
     Args:
         payload: Map data dictionary OR a pre-serialized JSON string.
         out_html: Output path for the HTML file
+        css: Optional CSS string.
 
     Example:
         >>> export_html(payload, "my_map.html")
     """
-    html = export_html_string(payload)
+    html = export_html_string(payload, css=css)
     with open(out_html, "w", encoding="utf-8") as f:
         f.write(html)

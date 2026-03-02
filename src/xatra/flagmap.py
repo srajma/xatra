@@ -2481,8 +2481,8 @@ class Map:
                 with open(out_json, "w", encoding="utf-8") as f:
                     f.write(payload_serialized)
         
-        # Pass the already serialized string to export_html
-        export_html(payload_serialized or payload, out_html)
+        # Pass the already serialized string to export_html, along with CSS
+        export_html(payload_serialized or payload, out_html, css=payload.get("css", ""))
 
     # Handle provider names from leaflet-providers
     PROVIDER_URLS = {
