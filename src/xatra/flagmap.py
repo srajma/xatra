@@ -1122,6 +1122,7 @@ class Map:
             raise ValueError("Longitude must be between -180 and 180")
         self._initial_focus = (float(latitude), float(longitude))
 
+    @time_debug("Calculate auto focus")
     def _calculate_auto_focus(self) -> Tuple[float, float]:
         """Calculate the center of the bounding box for all map elements.
         
@@ -1243,6 +1244,7 @@ class Map:
             # Direct geometry
             extract_coords(geometry.get("coordinates", []))
 
+    @time_debug("Calculate auto focus (serialized)")
     def _calculate_auto_focus_from_serialized_elements(
         self,
         pax: Dict[str, Any],
@@ -1256,77 +1258,58 @@ class Map:
         dataframes_serialized: List[Dict[str, Any]],
     ) -> Tuple[float, float]:
         """Calculate focus from all serialized elements that will be rendered."""
-        def has_rendered_flags() -> bool:
-            if pax.get("mode") == "dynamic":
-                for snapshot in pax.get("snapshots", []):
-                    if snapshot.get("flags"):
-                        return True
-                return False
-            return bool(pax.get("flags"))
-
         all_lats: List[float] = []
         all_lngs: List[float] = []
-        has_primary_area_objects = (
-            has_rendered_flags()
-            or bool(admins_serialized)
-            or bool(data_serialized)
-            or bool(dataframes_serialized)
-        )
+        
+        # Track seen geometries to avoid redundant coordinate extraction
+        seen_geom_ids = set()
+
+        def extract_once(geometry):
+            if geometry:
+                gid = id(geometry)
+                if gid not in seen_geom_ids:
+                    self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+                    seen_geom_ids.add(gid)
 
         if pax.get("mode") == "dynamic":
             for snapshot in pax.get("snapshots", []):
                 for flag in snapshot.get("flags", []):
-                    geometry = flag.get("geometry")
-                    if geometry:
-                        self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+                    extract_once(flag.get("geometry"))
         else:
             for flag in pax.get("flags", []):
-                geometry = flag.get("geometry")
-                if geometry:
-                    self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+                extract_once(flag.get("geometry"))
 
-        if not has_primary_area_objects:
-            for river in rivers_serialized:
-                geometry = river.get("geometry")
-                if geometry:
-                    self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+        for river in rivers_serialized:
+            extract_once(river.get("geometry"))
 
-            for path in paths_serialized:
-                for coord in path.get("coords", []):
-                    all_lats.append(coord[0])
-                    all_lngs.append(coord[1])
+        for path in paths_serialized:
+            for coord in path.get("coords", []):
+                all_lats.append(coord[0])
+                all_lngs.append(coord[1])
 
-            for point in points_serialized:
-                position = point.get("position")
-                if position and len(position) == 2:
-                    all_lats.append(position[0])
-                    all_lngs.append(position[1])
+        for point in points_serialized:
+            position = point.get("position")
+            if position and len(position) == 2:
+                all_lats.append(position[0])
+                all_lngs.append(position[1])
 
-            for text in texts_serialized:
-                position = text.get("position")
-                if position and len(position) == 2:
-                    all_lats.append(position[0])
-                    all_lngs.append(position[1])
+        for text in texts_serialized:
+            position = text.get("position")
+            if position and len(position) == 2:
+                all_lats.append(position[0])
+                all_lngs.append(position[1])
 
         for admin in admins_serialized:
-            geometry = admin.get("geometry")
-            if geometry:
-                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+            extract_once(admin.get("geometry"))
 
         for admin_river in admin_rivers_serialized:
-            geometry = admin_river.get("geometry")
-            if geometry:
-                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+            extract_once(admin_river.get("geometry"))
 
         for data in data_serialized:
-            geometry = data.get("geometry")
-            if geometry:
-                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+            extract_once(data.get("geometry"))
 
         for dataframe in dataframes_serialized:
-            geometry = dataframe.get("geometry")
-            if geometry:
-                self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+            extract_once(dataframe.get("geometry"))
 
         if all_lats and all_lngs:
             center_lat = (min(all_lats) + max(all_lats)) / 2
@@ -2409,8 +2392,10 @@ class Map:
         self.TitleBox("<i>made with <a href='https://github.com/srajma/xatra'>xatra</a></i>")
         payload = self._export_json()
         import json
-        with open(out_json, "w", encoding="utf-8") as f:
-            json.dump(payload, f)
+        from .debug_utils import DebugSection
+        with DebugSection("Serialize payload to JSON"):
+            with open(out_json, "w", encoding="utf-8") as f:
+                json.dump(payload, f)
         export_html(payload, out_html)
 
     # Handle provider names from leaflet-providers

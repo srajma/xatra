@@ -276,6 +276,11 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
 
     # For each label and each breakpoint year, compute union of active geometries
     snapshots: List[Dict[str, Any]] = []
+    
+    # Local cache to avoid redundant processing of the same territory/geometry
+    # within the same aggregation run.
+    processed_cache: Dict[str, Dict[str, Any]] = {}
+
     for year in breakpoints:
         snapshot_flags = []
         for label, items in by_label.items():
@@ -296,27 +301,44 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             if not active:
                 continue
             
-            # Check if we have territories or geometries
-            territories = [a.get("territory") for a in active if a.get("territory") is not None]
-            geometries = [a.get("geometry") for a in active if a.get("geometry") is not None]
+            # Create a cache key for this set of active items
+            # Use territory strreprs or geometry hashes
+            t_keys = sorted([a["territory"].strrepr for a in active if a.get("territory") is not None])
+            # For simplicity, we'll only cache if we have territories
+            cache_key = f"{label}:{'|'.join(t_keys)}" if t_keys else None
             
-            if territories:
-                # Use territory union (more efficient with caching)
-                union_territory = Territory.union_territories(territories)
-                geom = union_territory.to_geometry()
-                geom = _polygonal_only(geom)
-                geom_dict = mapping(geom) if geom is not None else None
-                centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
-            elif geometries:
-                # Fallback to geometry union (legacy support)
-                geoms = [_to_shape(geom) for geom in geometries]
-                geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
-                geom = _polygonal_only(geom)
-                geom_dict = _mapping_wrapper(geom) if geom is not None else None
-                centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
+            if cache_key and cache_key in processed_cache:
+                cached = processed_cache[cache_key]
+                geom_dict = cached["geom_dict"]
+                centroid = cached["centroid"]
             else:
-                geom_dict = None
-                centroid = None
+                # Check if we have territories or geometries
+                territories = [a.get("territory") for a in active if a.get("territory") is not None]
+                geometries = [a.get("geometry") for a in active if a.get("geometry") is not None]
+                
+                if territories:
+                    # Use territory union (more efficient with caching)
+                    union_territory = Territory.union_territories(territories)
+                    geom = union_territory.to_geometry()
+                    geom = _polygonal_only(geom)
+                    geom_dict = mapping(geom) if geom is not None else None
+                    centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
+                elif geometries:
+                    # Fallback to geometry union (legacy support)
+                    geoms = [_to_shape(geom) for geom in geometries]
+                    geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
+                    geom = _polygonal_only(geom)
+                    geom_dict = _mapping_wrapper(geom) if geom is not None else None
+                    centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
+                else:
+                    geom_dict = None
+                    centroid = None
+                
+                if cache_key:
+                    processed_cache[cache_key] = {
+                        "geom_dict": geom_dict,
+                        "centroid": centroid
+                    }
             
             # Preserve color from the first active item
             color = active[0].get("color") if active else None
