@@ -15,7 +15,11 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from shapely.geometry import shape, Polygon, mapping
-from shapely.ops import unary_union
+# Use the timed wrapper from paxmax if possible, else fallback to raw
+try:
+    from .paxmax import _unary_union_wrapper as unary_union
+except ImportError:
+    from shapely.ops import unary_union
 
 from .loaders import load_gadm_like, load_naturalearth_like
 from typing import List, Tuple
@@ -75,9 +79,19 @@ class Territory:
         Returns:
             Territory instance
         """
+        import hashlib
+        import json
+        try:
+            import orjson
+            content_hash = hashlib.sha256(orjson.dumps(geojson_obj, option=orjson.OPT_SORT_KEYS)).hexdigest()[:16]
+        except ImportError:
+            content_hash = hashlib.sha256(json.dumps(geojson_obj, sort_keys=True).encode('utf-8')).hexdigest()[:16]
+            
+        strrepr = f"<GEOJSON_{content_hash}>"
+        
         def provider():
             return _geojson_to_geometry(geojson_obj)
-        return Territory(_geometry_provider=provider,strrepr="<DIRECT_DICT>")
+        return Territory(_geometry_provider=provider, strrepr=strrepr)
 
     @staticmethod
     def from_gadm(
@@ -195,18 +209,7 @@ class Territory:
         if self._memoized_ready:
             return self._memoized_geometry
 
-        # Skip caching for territories created from GeoJSON objects
-        if self.strrepr == "<DIRECT_DICT>":
-            if self._geometry_provider is None:
-                self._memoized_ready = True
-                self._memoized_geometry = None
-                return None
-            geometry = self._geometry_provider()
-            self._memoized_ready = True
-            self._memoized_geometry = geometry
-            return geometry
-
-        # Use global cache for all other territories
+        # Use global cache for all territories
         cache = get_global_cache()
         cache_strrepr = self.strrepr
         try:

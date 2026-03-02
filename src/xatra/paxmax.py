@@ -38,6 +38,9 @@ def _mapping_wrapper(geometry):
 @time_debug("Shapely unary union")
 def _unary_union_wrapper(geometries):
     """Wrapper for shapely.ops.unary_union with time debugging."""
+    if not geometries:
+        return None
+    # print(f"DEBUG: Unioning {len(geometries)} geometries...")
     return unary_union(geometries)
 
 
