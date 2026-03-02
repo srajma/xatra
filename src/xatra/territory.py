@@ -63,6 +63,7 @@ class Territory:
     strrepr: str = None
     _memoized_geometry: Any = field(default=None, init=False, repr=False)
     _memoized_ready: bool = field(default=False, init=False, repr=False)
+    _geojson_cache: Optional[Dict[str, Any]] = field(default=None, init=False, repr=False)
 
     @staticmethod
     def from_geojson(geojson_obj: Dict[str, Any]) -> "Territory":
@@ -238,6 +239,25 @@ class Territory:
         self._memoized_ready = True
         self._memoized_geometry = geometry
         return geometry
+
+    def to_geojson_dict(self) -> Optional[Dict[str, Any]]:
+        """Convert the territory to a GeoJSON-compatible dictionary.
+        
+        This method is cached to avoid redundant conversions.
+        
+        Returns:
+            Dictionary representing the GeoJSON geometry
+        """
+        if self._geojson_cache is not None:
+            return self._geojson_cache
+            
+        geom = self.to_geometry()
+        if geom is None:
+            return None
+            
+        from shapely.geometry import mapping
+        self._geojson_cache = mapping(geom)
+        return self._geojson_cache
 
     # Set algebra
     def __or__(self, other: "Territory") -> "Territory":

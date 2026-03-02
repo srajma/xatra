@@ -174,7 +174,7 @@ map.TitleBox("<b>Map of major Indian empires</b><br>Classical period, source: Ma
 map.TitleBox("<h2>Ancient Period (-500 to 0)</h2><p>This title appears only in ancient times</p>", period=[-500, 0])
 map.TitleBox("<h2>Classical Period (-100 to 400)</h2><p>This title appears only in classical times</p>", period=[-100, 400])
 map.slider(speed=1000) # a slider is automatically added, but you can use this to set the time limits and play speed
-map.zoom(4)
+# map.zoom(4)
 map.CSS("""
 /* applies to all elements of given class */
 .river { stroke: #0066cc; stroke-width: 2; }

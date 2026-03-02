@@ -102,29 +102,65 @@ def _get_gadm_file_path(
 
 @time_debug("Read JSON file")
 def _read_json(path: str):
-    """Read JSON file from disk with caching.
-    
+    """Read JSON file from disk with caching and optional orjson/pickle speedup.
+
     Args:
         path: Path to JSON file
-        
+
     Returns:
         Parsed JSON data
-        
+
     Raises:
         FileNotFoundError: If file doesn't exist
     """
-    if path not in _file_cache:
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Missing data file: {path}")
+    if path in _file_cache:
         if DEBUG_FILE_CACHE:
-            print(f"DEBUG: Loading file from disk: {path}")
-        with open(path, "r", encoding="utf-8") as f:
-            _file_cache[path] = json.load(f)
-    else:
-        if DEBUG_FILE_CACHE:
-            print(f"DEBUG: Using cached file: {path}")
-    return _file_cache[path]
+            print(f"DEBUG: Using memory-cached file: {path}")
+        return _file_cache[path]
 
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Missing data file: {path}")
+
+    # Try loading from binary pickle cache first (much faster than parsing JSON)
+    pickle_cache_path = path + ".pickle"
+    if os.path.exists(pickle_cache_path) and os.path.getmtime(pickle_cache_path) >= os.path.getmtime(path):
+        try:
+            import pickle
+            if DEBUG_FILE_CACHE:
+                print(f"DEBUG: Loading from pickle cache: {pickle_cache_path}")
+            with open(pickle_cache_path, "rb") as f:
+                data = pickle.load(f)
+            _file_cache[path] = data
+            return data
+        except Exception:
+            # Fall back to JSON if pickle fails
+            pass
+
+    if DEBUG_FILE_CACHE:
+        print(f"DEBUG: Loading file from disk: {path}")
+
+    # Try orjson speedup
+    try:
+        import orjson
+        with open(path, "rb") as f:
+            data = orjson.loads(f.read())
+    except ImportError:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+    # Cache in memory
+    _file_cache[path] = data
+
+    # Update on-disk binary cache for next time
+    try:
+        import pickle
+        with open(pickle_cache_path, "wb") as f:
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception:
+        # Ignore cache write errors
+        pass
+
+    return data
 
 @time_debug("Clear file cache")
 def clear_file_cache():

@@ -283,6 +283,9 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
     # Local cache to avoid redundant processing of the same territory/geometry
     # within the same aggregation run.
     processed_cache: Dict[str, Dict[str, Any]] = {}
+    
+    # Cache for geometry to dict mapping (for non-Territory items)
+    mapping_cache: Dict[int, Dict[str, Any]] = {}
 
     for year in breakpoints:
         snapshot_flags = []
@@ -324,16 +327,23 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 if territories:
                     # Use territory union (more efficient with caching)
                     union_territory = Territory.union_territories(territories)
-                    geom = union_territory.to_geometry()
-                    geom = _polygonal_only(geom)
-                    geom_dict = mapping(geom) if geom is not None else None
+                    geom_dict = union_territory.to_geojson_dict()
                     centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
                 elif geometries:
                     # Fallback to geometry union (legacy support)
                     geoms = [_to_shape(geom) for geom in geometries]
                     geom = _unary_union_wrapper([g for g in geoms if g is not None]) if geoms else None
                     geom = _polygonal_only(geom)
-                    geom_dict = _mapping_wrapper(geom) if geom is not None else None
+                    
+                    # Cache the mapping conversion
+                    if geom is not None:
+                        gid = id(geom)
+                        if gid not in mapping_cache:
+                            mapping_cache[gid] = mapping(geom)
+                        geom_dict = mapping_cache[gid]
+                    else:
+                        geom_dict = None
+                        
                     centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
                 else:
                     geom_dict = None
