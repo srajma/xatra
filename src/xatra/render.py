@@ -3585,7 +3585,13 @@ def export_html_string(payload: Dict[str, Any] | str, css: Optional[str] = None)
         payload_json = payload
         effective_css = css or "" 
     else:
-        payload_json = json.dumps(payload, ensure_ascii=False)
+        try:
+            import orjson
+            # orjson returns bytes
+            payload_json = orjson.dumps(payload, option=orjson.OPT_NON_STR_KEYS).decode('utf-8')
+        except ImportError:
+            import json
+            payload_json = json.dumps(payload, ensure_ascii=False)
         effective_css = css if css is not None else payload.get("css", "")
         
     return HTML_TEMPLATE.render(payload=payload_json, css=effective_css)
