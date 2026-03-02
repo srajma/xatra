@@ -14,6 +14,7 @@ src/xatra/loaders.py
 src/xatra/paxmax.py
 src/xatra/pyplot.py
 src/xatra/render.py
+src/xatra/settings.py
 src/xatra/simplify_data.py
 src/xatra/territory.py
 src/xatra/territory_library.py

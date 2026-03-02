@@ -13,6 +13,7 @@ dependencies = [
     "matplotlib>=3.10.6",
     "pandas>=2.3.2",
     "huggingface-hub>=0.20.0",
+    "orjson>=3.10.0",
 ]
 
 [project.scripts]
