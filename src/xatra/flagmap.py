@@ -1130,22 +1130,31 @@ class Map:
             Tuple of (latitude, longitude) for the center of all elements.
             Returns (22, 79) (India) as default if no elements are present.
         """
-        all_lats = []
-        all_lngs = []
+        primary_lats: List[float] = []
+        primary_lngs: List[float] = []
+        secondary_lats: List[float] = []
+        secondary_lngs: List[float] = []
         
-        # Collect coordinates from all element types
-        self._collect_coordinates_from_flags(all_lats, all_lngs)
-        self._collect_coordinates_from_rivers(all_lats, all_lngs)
-        self._collect_coordinates_from_paths(all_lats, all_lngs)
-        self._collect_coordinates_from_points(all_lats, all_lngs)
-        self._collect_coordinates_from_texts(all_lats, all_lngs)
-        self._collect_coordinates_from_admins(all_lats, all_lngs)
-        self._collect_coordinates_from_data(all_lats, all_lngs)
-        self._collect_coordinates_from_dataframes(all_lats, all_lngs)
+        # Collect coordinates from primary area-defining elements
+        self._collect_coordinates_from_flags(primary_lats, primary_lngs)
+        self._collect_coordinates_from_admins(primary_lats, primary_lngs)
+        self._collect_coordinates_from_data(primary_lats, primary_lngs)
+        self._collect_coordinates_from_dataframes(primary_lats, primary_lngs)
         
-        if all_lats and all_lngs:
-            center_lat = (min(all_lats) + max(all_lats)) / 2
-            center_lng = (min(all_lngs) + max(all_lngs)) / 2
+        if primary_lats and primary_lngs:
+            center_lat = (min(primary_lats) + max(primary_lats)) / 2
+            center_lng = (min(primary_lngs) + max(primary_lngs)) / 2
+            return (center_lat, center_lng)
+            
+        # Fallback to secondary elements if no primary ones exist
+        self._collect_coordinates_from_rivers(secondary_lats, secondary_lngs)
+        self._collect_coordinates_from_paths(secondary_lats, secondary_lngs)
+        self._collect_coordinates_from_points(secondary_lats, secondary_lngs)
+        self._collect_coordinates_from_texts(secondary_lats, secondary_lngs)
+        
+        if secondary_lats and secondary_lngs:
+            center_lat = (min(secondary_lats) + max(secondary_lats)) / 2
+            center_lng = (min(secondary_lngs) + max(secondary_lngs)) / 2
             return (center_lat, center_lng)
         else:
             # Default to India if no elements
@@ -1258,63 +1267,73 @@ class Map:
         dataframes_serialized: List[Dict[str, Any]],
     ) -> Tuple[float, float]:
         """Calculate focus from all serialized elements that will be rendered."""
-        all_lats: List[float] = []
-        all_lngs: List[float] = []
+        primary_lats: List[float] = []
+        primary_lngs: List[float] = []
+        secondary_lats: List[float] = []
+        secondary_lngs: List[float] = []
         
         # Track seen geometries to avoid redundant coordinate extraction
         seen_geom_ids = set()
 
-        def extract_once(geometry):
+        def extract_to_list(geometry, lats, lngs):
             if geometry:
                 gid = id(geometry)
                 if gid not in seen_geom_ids:
-                    self._extract_coordinates_from_geometry(geometry, all_lats, all_lngs)
+                    self._extract_coordinates_from_geometry(geometry, lats, lngs)
                     seen_geom_ids.add(gid)
 
+        # 1. Primary elements: Flags, Admins, Data
         if pax.get("mode") == "dynamic":
             for snapshot in pax.get("snapshots", []):
                 for flag in snapshot.get("flags", []):
-                    extract_once(flag.get("geometry"))
+                    extract_to_list(flag.get("geometry"), primary_lats, primary_lngs)
         else:
             for flag in pax.get("flags", []):
-                extract_once(flag.get("geometry"))
+                extract_to_list(flag.get("geometry"), primary_lats, primary_lngs)
 
+        for admin in admins_serialized:
+            extract_to_list(admin.get("geometry"), primary_lats, primary_lngs)
+
+        for data in data_serialized:
+            extract_to_list(data.get("geometry"), primary_lats, primary_lngs)
+
+        for dataframe in dataframes_serialized:
+            extract_to_list(dataframe.get("geometry"), primary_lats, primary_lngs)
+
+        if primary_lats and primary_lngs:
+            center_lat = (min(primary_lats) + max(primary_lats)) / 2
+            center_lng = (min(primary_lngs) + max(primary_lngs)) / 2
+            return (center_lat, center_lng)
+
+        # 2. Secondary elements: Rivers, Paths, Points, Texts, Admin Rivers
         for river in rivers_serialized:
-            extract_once(river.get("geometry"))
+            extract_to_list(river.get("geometry"), secondary_lats, secondary_lngs)
+
+        for admin_river in admin_rivers_serialized:
+            extract_to_list(admin_river.get("geometry"), secondary_lats, secondary_lngs)
 
         for path in paths_serialized:
             for coord in path.get("coords", []):
-                all_lats.append(coord[0])
-                all_lngs.append(coord[1])
+                secondary_lats.append(coord[0])
+                secondary_lngs.append(coord[1])
 
         for point in points_serialized:
             position = point.get("position")
             if position and len(position) == 2:
-                all_lats.append(position[0])
-                all_lngs.append(position[1])
+                secondary_lats.append(position[0])
+                secondary_lngs.append(position[1])
 
         for text in texts_serialized:
             position = text.get("position")
             if position and len(position) == 2:
-                all_lats.append(position[0])
-                all_lngs.append(position[1])
+                secondary_lats.append(position[0])
+                secondary_lngs.append(position[1])
 
-        for admin in admins_serialized:
-            extract_once(admin.get("geometry"))
-
-        for admin_river in admin_rivers_serialized:
-            extract_once(admin_river.get("geometry"))
-
-        for data in data_serialized:
-            extract_once(data.get("geometry"))
-
-        for dataframe in dataframes_serialized:
-            extract_once(dataframe.get("geometry"))
-
-        if all_lats and all_lngs:
-            center_lat = (min(all_lats) + max(all_lats)) / 2
-            center_lng = (min(all_lngs) + max(all_lngs)) / 2
+        if secondary_lats and secondary_lngs:
+            center_lat = (min(secondary_lats) + max(secondary_lats)) / 2
+            center_lng = (min(secondary_lngs) + max(secondary_lngs)) / 2
             return (center_lat, center_lng)
+
         return (22.0, 79.0)
 
     def _add_default_base_options(self) -> None:
