@@ -2,7 +2,7 @@
 
 import xatra
 from xatra.loaders import gadm, naturalearth, polygon
-from xatra.territory_library import NORTH_INDIA, AUDICYA, JANGALA, BRAHMAVARTA
+from xatra.territory_library import NORTH_INDIA, AUDICYA, JANGALA, BRAHMAVARTA, SUBCONTINENT_PROPER
 from xatra.colorseq import LinearColorSequence
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -24,6 +24,7 @@ map.Data(gadm = "IND.21", value=300, period=[0, 600])
 map.Data(gadm = "IND.22", value=300, period=[0, 600])
 map.Data(gadm = "IND.21", value=1000, period=[600, 700])
 map.Data(gadm = "IND.22", value=1000, period=[600, 800])
+map.Flag(value=SUBCONTINENT_PROPER,label="jambu")
 map.Flag(label="Maurya", value=gadm("IND") | gadm("PAK"), period=[-320, -240], note="south is lost after Ashoka's death")
 map.Flag(label="Maurya", value=NORTH_INDIA, period=[-320, -180])
 map.Flag(label="Gupta", value=NORTH_INDIA, period=[250, 500], color="#ff0000", inherit="Maurya")
@@ -158,7 +159,7 @@ map.Flag(label="Muslim/Mughal", value=NORTH_INDIA, period=[1500,1700], type="vas
 map.Flag(label="Muslim/Deccan", value=gadm("IND.2") | gadm("IND.16") | gadm("IND.32"), period=[1400,1600], type="vassal")
 # map.Admin(gadm="IND", level=2)
 map.Admin(gadm="IND.16", level=3, period=[-500,750])
-map.Admin(gadm="BGD", level=1)
+# map.Admin(gadm="BGD", level=1)
 map.Admin(gadm="AFG", level=0)
 map.AdminRivers(sources=["overpass"])
 map.River(label="Ganga", value=naturalearth("1159122643"), note="can be specified as naturalearth(id) or overpass(id)", classes="ganga-river indian-river")
@@ -199,7 +200,6 @@ map.CSS("""
 .trade-corridor { fill: rgba(60, 179, 113, 0.4); stroke: #3cb371; stroke-width: 2; stroke-dasharray: 8 4; }
 .deccan { fill: rgba(220, 20, 60, 0.4); stroke: #dc143c; stroke-width: 2; }
 """)
-# map.simplify(0.05)
 
 # Generate the map
 map.show(out_json="tests/map.json", out_html="tests/map.html")
