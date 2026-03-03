@@ -164,13 +164,21 @@ def _extract_polygon_parts(geom):
 
 def _polygonal_only(geom):
     """Keep only polygonal components of a geometry for area-based flag rendering."""
+    if geom is None or geom.is_empty:
+        return None
+
+    if isinstance(geom, Polygon):
+        return geom
+
+    if isinstance(geom, MultiPolygon):
+        return geom
+
     parts = _extract_polygon_parts(geom)
     if not parts:
         return None
     if len(parts) == 1:
         return parts[0]
-    merged = _unary_union_wrapper(parts)
-    return merged if merged is not None and not merged.is_empty else None
+    return MultiPolygon(parts)
 
 
 @time_debug("Paxmax aggregation")
