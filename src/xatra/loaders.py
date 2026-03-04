@@ -43,6 +43,10 @@ OVERPASS_API_URLS = [
 _file_cache: Dict[str, Any] = {}
 _disputed_mapping_cache: Optional[Dict[str, Any]] = None
 _active_simplify_tolerance: Optional[float] = None
+_overpass_feature_collection_cache: Optional[Tuple[Tuple[str, ...], List[Dict[str, Any]]]] = None
+
+OVERPASS_MERGED_FILE = os.path.join(OVERPASS_DIR, "_merged_features.json")
+OVERPASS_MERGED_MANIFEST = os.path.join(OVERPASS_DIR, "_merged_features_manifest.json")
 
 DEBUG_FILE_CACHE = False
 
@@ -173,6 +177,8 @@ def clear_file_cache():
     _file_cache.clear()
     global _disputed_mapping_cache
     _disputed_mapping_cache = None
+    global _overpass_feature_collection_cache
+    _overpass_feature_collection_cache = None
 
 
 @time_debug("Load disputed mapping")
@@ -457,7 +463,118 @@ def _save_overpass_feature(feature: Dict[str, Any], osm_id: str) -> str:
         json.dump(feature, f, ensure_ascii=False)
 
     _file_cache[path] = feature
+
+    # Invalidate merged overpass cache artifacts so next load refreshes them.
+    global _overpass_feature_collection_cache
+    _overpass_feature_collection_cache = None
+    _file_cache.pop(OVERPASS_MERGED_FILE, None)
+    _file_cache.pop(OVERPASS_MERGED_MANIFEST, None)
+    for stale_path in (OVERPASS_MERGED_FILE, OVERPASS_MERGED_MANIFEST):
+        try:
+            if os.path.exists(stale_path):
+                os.remove(stale_path)
+        except Exception:
+            pass
+
     return path
+
+
+def _list_overpass_source_files() -> List[str]:
+    if not os.path.isdir(OVERPASS_DIR):
+        return []
+    source_files: List[str] = []
+    for filename in os.listdir(OVERPASS_DIR):
+        if not filename.endswith(".json"):
+            continue
+        if filename == os.path.basename(OVERPASS_MERGED_FILE):
+            continue
+        source_files.append(filename)
+    return sorted(source_files)
+
+
+def _load_overpass_from_file(filename: str) -> List[Dict[str, Any]]:
+    filepath = os.path.join(OVERPASS_DIR, filename)
+    loaded_features: List[Dict[str, Any]] = []
+    data = _read_json(filepath)
+
+    if data.get("type") == "Feature":
+        data.setdefault("properties", {})
+        data["properties"]["_source"] = "overpass"
+        data["properties"]["_filename"] = filename
+        loaded_features.append(data)
+    elif data.get("type") == "FeatureCollection":
+        for feature in data.get("features", []):
+            feature.setdefault("properties", {})
+            feature["properties"]["_source"] = "overpass"
+            feature["properties"]["_filename"] = filename
+            loaded_features.append(feature)
+    elif isinstance(data.get("elements"), list):
+        guessed_id = "".join(ch for ch in filename if ch.isdigit())
+        if guessed_id:
+            converted = _overpass_elements_to_feature(
+                data.get("elements", []),
+                guessed_id,
+                prefer_relation=True,
+            )
+            if converted is not None:
+                converted.setdefault("properties", {})
+                converted["properties"]["_source"] = "overpass"
+                converted["properties"]["_filename"] = filename
+                loaded_features.append(converted)
+    return loaded_features
+
+
+@time_debug("Load Overpass feature collection")
+def load_all_overpass_features() -> List[Dict[str, Any]]:
+    global _overpass_feature_collection_cache
+
+    source_files = _list_overpass_source_files()
+    if not source_files:
+        _overpass_feature_collection_cache = (tuple(), [])
+        return []
+
+    source_signature = tuple(source_files)
+    if _overpass_feature_collection_cache is not None and _overpass_feature_collection_cache[0] == source_signature:
+        return _overpass_feature_collection_cache[1]
+
+    can_use_merged_cache = os.path.exists(OVERPASS_MERGED_FILE) and os.path.exists(OVERPASS_MERGED_MANIFEST)
+    if can_use_merged_cache:
+        try:
+            manifest = _read_json(OVERPASS_MERGED_MANIFEST)
+            manifest_files = manifest.get("files", []) if isinstance(manifest, dict) else []
+            if manifest_files == source_files:
+                merged_obj = _read_json(OVERPASS_MERGED_FILE)
+                features = merged_obj.get("features", []) if isinstance(merged_obj, dict) else []
+                if isinstance(features, list):
+                    _overpass_feature_collection_cache = (source_signature, features)
+                    return features
+        except Exception:
+            pass
+
+    merged_features: List[Dict[str, Any]] = []
+    for filename in source_files:
+        try:
+            merged_features.extend(_load_overpass_from_file(filename))
+        except Exception as e:
+            print(f"Warning: Could not load overpass file {filename}: {e}")
+
+    try:
+        os.makedirs(OVERPASS_DIR, exist_ok=True)
+        merged_obj = {"type": "FeatureCollection", "features": merged_features}
+        manifest_obj = {"files": source_files}
+
+        with open(OVERPASS_MERGED_FILE, "w", encoding="utf-8") as f:
+            json.dump(merged_obj, f, ensure_ascii=False)
+        with open(OVERPASS_MERGED_MANIFEST, "w", encoding="utf-8") as f:
+            json.dump(manifest_obj, f, ensure_ascii=False)
+
+        _file_cache[OVERPASS_MERGED_FILE] = merged_obj
+        _file_cache[OVERPASS_MERGED_MANIFEST] = manifest_obj
+    except Exception:
+        pass
+
+    _overpass_feature_collection_cache = (source_signature, merged_features)
+    return merged_features
 
 
 def _download_overpass_feature(osm_id: str, osm_type: Optional[str] = None) -> Dict[str, Any]:

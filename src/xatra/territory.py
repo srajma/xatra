@@ -243,6 +243,7 @@ class Territory:
         self._memoized_geometry = geometry
         return geometry
 
+    @time_debug("Convert territory to GeoJSON dict")
     def to_geojson_dict(self) -> Optional[Dict[str, Any]]:
         """Convert the territory to a GeoJSON-compatible dictionary.
         

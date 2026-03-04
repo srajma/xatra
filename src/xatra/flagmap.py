@@ -1959,8 +1959,7 @@ class Map:
                     from .loaders import (
                         _read_json,
                         NE_RIVERS_FILE,
-                        OVERPASS_DIR,
-                        _overpass_elements_to_feature,
+                        load_all_overpass_features,
                     )
                     import os
                     
@@ -1978,41 +1977,7 @@ class Map:
                     
                     # Load Overpass rivers if requested
                     if "overpass" in ar.sources:
-                        if os.path.isdir(OVERPASS_DIR):
-                            for filename in os.listdir(OVERPASS_DIR):
-                                if filename.endswith('.json'):
-                                    filepath = os.path.join(OVERPASS_DIR, filename)
-                                    try:
-                                        overpass_data = _read_json(filepath)
-                                        # Handle both Feature and FeatureCollection
-                                        if overpass_data.get("type") == "Feature":
-                                            overpass_data.setdefault("properties", {})
-                                            overpass_data["properties"]["_source"] = "overpass"
-                                            overpass_data["properties"]["_filename"] = filename
-                                            all_rivers.append(overpass_data)
-                                        elif overpass_data.get("type") == "FeatureCollection":
-                                            for feature in overpass_data.get("features", []):
-                                                feature.setdefault("properties", {})
-                                                feature["properties"]["_source"] = "overpass"
-                                                feature["properties"]["_filename"] = filename
-                                                all_rivers.append(feature)
-                                        elif isinstance(overpass_data.get("elements"), list):
-                                            # Backward compatibility for raw Overpass dumps.
-                                            guessed_id = "".join(ch for ch in filename if ch.isdigit())
-                                            if guessed_id:
-                                                converted = _overpass_elements_to_feature(
-                                                    overpass_data.get("elements", []),
-                                                    guessed_id,
-                                                    prefer_relation=True,
-                                                )
-                                                if converted is not None:
-                                                    converted.setdefault("properties", {})
-                                                    converted["properties"]["_source"] = "overpass"
-                                                    converted["properties"]["_filename"] = filename
-                                                    all_rivers.append(converted)
-                                    except Exception as e:
-                                        print(f"Warning: Could not load overpass file {filename}: {e}")
-                                        continue
+                        all_rivers.extend(load_all_overpass_features())
                     
                     # Only create AdminRivers entry if we actually found rivers
                     if all_rivers:
