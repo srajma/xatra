@@ -182,7 +182,7 @@ def _polygonal_only(geom):
 
 
 @time_debug("Paxmax aggregation")
-def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int = None) -> Dict[str, Any]:
+def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: Optional[int] = None) -> Dict[str, Any]:
     """Aggregate flags using the pax-max method for dynamic maps.
     
     The pax-max method groups flags with the same label over time and creates
@@ -217,7 +217,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
         out = []
         for label, items in by_label.items():
             # Check if we have territories or geometries
-            territories = [it.get("territory") for it in items if it.get("territory") is not None]
+            territories = [it.get("territory") for it in items if isinstance(it.get("territory"), Territory)]
             geometries = [it.get("geometry") for it in items if it.get("geometry") is not None]
             
             if territories:
@@ -243,8 +243,9 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             # Collect all unique classes from items with the same label
             all_classes = []
             for it in items:
-                if it.get("classes"):
-                    all_classes.extend(it.get("classes").split())
+                classes = it.get("classes")
+                if isinstance(classes, str) and classes:
+                    all_classes.extend(classes.split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
             # Preserve hierarchy metadata from the first item.
@@ -261,7 +262,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 "display_label": display_label,
                 "geometry": geom_dict,
                 "centroid": centroid,
-                "note": "; ".join([it.get("note") for it in items if it.get("note")]) or None,
+                "note": "; ".join([str(it.get("note")) for it in items if it.get("note")]) or None,
                 "color": color,
                 "classes": unique_classes,
                 "parent": parent,
@@ -291,9 +292,9 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
     # Global geometry registry for this aggregation
     geometry_library: Dict[str, Any] = {}
     
-    # Local cache to avoid redundant processing of the same territory/geometry
+    # Local cache to avoid redundant processing of the same label/active-set
     # within the same aggregation run.
-    processed_cache: Dict[str, Dict[str, Any]] = {}
+    processed_cache: Dict[tuple, Dict[str, Any]] = {}
     
     # Cache for geometry to dict mapping (for non-Territory items)
     mapping_cache: Dict[int, Dict[str, Any]] = {}
@@ -302,37 +303,35 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
         snapshot_flags = []
         for label, items in by_label.items():
             active = []
+            active_indices: List[int] = []
             notes = []
-            for it in items:
+            for idx, it in enumerate(items):
                 per = it.get("period")
                 if per is None:
                     active.append(it)
+                    active_indices.append(idx)
                     if it.get("note"):
                         notes.append(it.get("note"))
                 else:
                     start, end = int(per[0]), int(per[1])
                     if year >= start and year < end:
                         active.append(it)
+                        active_indices.append(idx)
                         if it.get("note"):
                             notes.append(it.get("note"))
             if not active:
                 continue
-            
-            # Create a cache key for this set of active items
-            # Use territory strreprs or geometry hashes
-            t_keys = sorted([a["territory"].strrepr for a in active if a.get("territory") is not None])
-            # For simplicity, we'll only cache if we have territories
-            import hashlib
-            raw_key = f"{label}:{'|'.join(t_keys)}" if t_keys else None
-            cache_key = hashlib.md5(raw_key.encode()).hexdigest() if raw_key else None
-            
-            if cache_key and cache_key in processed_cache:
-                cached = processed_cache[cache_key]
-                geom_id = cached["geom_id"]
-                centroid = cached["centroid"]
+
+            # Cache by (label, active item indices). This avoids repeated string
+            # sorting/hashing for static labels across many breakpoint years.
+            cache_key = (label, tuple(active_indices))
+            cached_flag = processed_cache.get(cache_key)
+            if cached_flag is not None:
+                snapshot_flags.append(dict(cached_flag))
+                continue
             else:
                 # Check if we have territories or geometries
-                territories = [a.get("territory") for a in active if a.get("territory") is not None]
+                territories = [a.get("territory") for a in active if isinstance(a.get("territory"), Territory)]
                 geometries = [a.get("geometry") for a in active if a.get("geometry") is not None]
                 
                 if territories:
@@ -359,27 +358,22 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 else:
                     geom_dict = None
                     centroid = None
-                
+
                 if geom_dict:
-                    # Use the cache_key as geom_id, or generate one if no cache_key
-                    geom_id = cache_key if cache_key else hashlib.md5(str(geom_dict).encode()).hexdigest()
+                    # Geometry ids only need to be unique within this export payload.
+                    geom_id = f"g{len(geometry_library)}"
                     geometry_library[geom_id] = geom_dict
                 else:
                     geom_id = None
 
-                if cache_key:
-                    processed_cache[cache_key] = {
-                        "geom_id": geom_id,
-                        "centroid": centroid
-                    }
-            
             # Preserve color from the first active item
             color = active[0].get("color") if active else None
             # Collect all unique classes from active items
             all_classes = []
             for it in active:
-                if it.get("classes"):
-                    all_classes.extend(it.get("classes").split())
+                classes = it.get("classes")
+                if isinstance(classes, str) and classes:
+                    all_classes.extend(classes.split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
             
             # Preserve hierarchy metadata from the first active item.
@@ -391,7 +385,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
             display_label = (active[-1].get("display_label") or label) if active else label
             vassal_depth = active[0].get("vassal_depth", 0) if active else 0
             
-            snapshot_flags.append({
+            flag_payload = {
                 "label": label,
                 "display_label": display_label,
                 "geom_id": geom_id,
@@ -404,7 +398,9 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: int
                 "root_parent": root_parent,
                 "root_parent_color": root_parent_color,
                 "vassal_depth": vassal_depth,
-            })
+            }
+            processed_cache[cache_key] = flag_payload
+            snapshot_flags.append(dict(flag_payload))
         snapshots.append({"year": year, "flags": snapshot_flags})
 
     return {
