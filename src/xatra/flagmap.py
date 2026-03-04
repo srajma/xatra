@@ -1288,7 +1288,13 @@ class Map:
                     extract_from_id(flag.get("geom_id"), primary_lats, primary_lngs)
         else:
             for flag in pax.get("flags", []):
-                extract_from_id(flag.get("geom_id"), primary_lats, primary_lngs)
+                # Static pax payloads store inline geometry ("geometry") rather than geom_id.
+                # Prefer geom_id when present, but support inline geometry for compatibility.
+                geom_id = flag.get("geom_id")
+                if geom_id:
+                    extract_from_id(geom_id, primary_lats, primary_lngs)
+                elif flag.get("geometry"):
+                    self._extract_coordinates_from_geometry(flag.get("geometry"), primary_lats, primary_lngs)
 
         for admin in admins_serialized:
             extract_from_id(admin.get("geom_id"), primary_lats, primary_lngs)
