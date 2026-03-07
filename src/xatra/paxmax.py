@@ -213,13 +213,15 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: Opt
     dynamic = any(f.get("period") is not None for f in flags_serialized)
 
     if not dynamic:
-        # Simple union per label
+        # Simple union per label.
+        # Keep static mode geometry externalized too, so render payloads stay compact.
         out = []
+        geometry_library: Dict[str, Any] = {}
         for label, items in by_label.items():
             # Check if we have territories or geometries
             territories = [it.get("territory") for it in items if isinstance(it.get("territory"), Territory)]
             geometries = [it.get("geometry") for it in items if it.get("geometry") is not None]
-            
+
             if territories:
                 # Use territory union (more efficient with caching)
                 union_territory = Territory.union_territories(territories)
@@ -237,7 +239,13 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: Opt
             else:
                 geom_dict = None
                 centroid = None
-            
+
+            if geom_dict:
+                geom_id = f"g{len(geometry_library)}"
+                geometry_library[geom_id] = geom_dict
+            else:
+                geom_id = None
+
             # Preserve color from the first item (they should all have the same color for the same label)
             color = items[0].get("color") if items else None
             # Collect all unique classes from items with the same label
@@ -247,7 +255,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: Opt
                 if isinstance(classes, str) and classes:
                     all_classes.extend(classes.split())
             unique_classes = " ".join(sorted(set(all_classes))) if all_classes else None
-            
+
             # Preserve hierarchy metadata from the first item.
             # Display label intentionally uses last declared item for this label.
             parent = items[0].get("parent") if items else None
@@ -256,11 +264,11 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: Opt
             root_parent_color = items[0].get("root_parent_color") if items else None
             display_label = (items[-1].get("display_label") or label) if items else label
             vassal_depth = items[0].get("vassal_depth", 0) if items else 0
-            
+
             out.append({
                 "label": label,
                 "display_label": display_label,
-                "geometry": geom_dict,
+                "geom_id": geom_id,
                 "centroid": centroid,
                 "note": "; ".join([str(it.get("note")) for it in items if it.get("note")]) or None,
                 "color": color,
@@ -271,7 +279,7 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: Opt
                 "root_parent_color": root_parent_color,
                 "vassal_depth": vassal_depth,
             })
-        return {"mode": "static", "flags": out}
+        return {"mode": "static", "flags": out, "geometry_library": geometry_library}
 
     # Dynamic: compute breakpoints and stable periods
     breakpoints: List[int] = []
