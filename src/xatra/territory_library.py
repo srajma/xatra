@@ -148,12 +148,12 @@ HIMALAYAN = (
 
 # tibeto-burman region
 
-TIBET_CN_TIB = gadm("CHN.29")  # chinese occupied tibet
-TIBET_CN_QIN = gadm("CHN.21")  # chinese occupied tibet
-TIBET_CN_SIC = gadm("CHN.26.5") | gadm("CHN.26.16")  # chinese occupied tibet
-TIBET_CN = TIBET_CN_TIB | TIBET_CN_QIN | TIBET_CN_SIC
-TIBET_BHU = gadm("BTN")  # bhutanese occupied tibet
-TIBET_NEP = (
+BHOTA_CN_TIB = gadm("CHN.29")  # chinese occupied tibet
+BHOTA_CN_QIN = gadm("CHN.21")  # chinese occupied tibet
+BHOTA_CN_SIC = gadm("CHN.26.5") | gadm("CHN.26.16")  # chinese occupied tibet
+BHOTA_CN = BHOTA_CN_TIB | BHOTA_CN_QIN | BHOTA_CN_SIC
+BHOTA_BHU = gadm("BTN")  # bhutanese occupied tibet
+BHOTA_NEP = (
     gadm("NPL.4.2.1")
     | gadm("NPL.4.2.2")
     | gadm("NPL.4.2.5")
@@ -174,14 +174,14 @@ TIBET_NEP = (
     | gadm("NPL.2.2.3")
     | gadm("NPL.2.2.1")
 )  # nepali-occupied tibet
-TIBET_AP = CHINESE_CLAIMS_AP  # tibet under risk of chinese occupation
-TIBET_LAD = LADAKH  # tibet in its rightful home
-TIBET_SIK = gadm("IND.30")  # tibet in its rightful home
-TIBET = TIBET_CN | TIBET_BHU | TIBET_NEP | TIBET_LAD | TIBET_AP | TIBET_SIK
+BHOTA_AP = CHINESE_CLAIMS_AP  # tibet under risk of chinese occupation
+BHOTA_LAD = LADAKH  # tibet in its rightful home
+BHOTA_SIK = gadm("IND.30")  # tibet in its rightful home
+BHOTA = BHOTA_CN | BHOTA_BHU | BHOTA_NEP | BHOTA_LAD | BHOTA_AP | BHOTA_SIK
 
-TIBET_BURMA_INTERM = (
+BHOTA_BURMA_INTERM = (
     NEI_HIM | gadm("MMR.3")
-) - TIBET  # intermediary region from Tibet to Burma
+) - BHOTA  # intermediary region from Tibet to Burma
 YUNNAN_BURMA_INTERM = gadm("MMR.4")  # kachin state
 KAREN = gadm("MMR.5") | gadm("MMR.6")  # karenic parts of myanmar
 SIAM_BURMA_INTERM = gadm("MMR.13")  # shan state
@@ -1135,11 +1135,11 @@ SEA_MARITIME = (
     | PHILIPPINES
 )
 SEA_MAINLAND = (
-    SIAM | BURMA | LAOS | KHMER | CHAM | SIAM_BURMA_INTERM | KAREN | TIBET_BURMA_INTERM
+    SIAM | BURMA | LAOS | KHMER | CHAM | SIAM_BURMA_INTERM | KAREN | BHOTA_BURMA_INTERM
 )
 SEA = SEA_MARITIME | SEA_MAINLAND
-SEA_GREATER = SEA | TIBET | NEI_HIM
-INDOSPHERE = SUBCONTINENT | CENTRAL_ASIA | TARIM | TIBET | SEA | HIMALAYAN
+SEA_GREATER = SEA | BHOTA | NEI_HIM
+INDOSPHERE = SUBCONTINENT | CENTRAL_ASIA | TARIM | BHOTA | SEA | HIMALAYAN
 BHARATA = SUBCONTINENT_PROPER - SIMHALA
 NORTH_INDIA = (
     GANGETIC | BRAHMAVARTA | BENGAL | AUDICYA | RJ | MP | GUJARAT | UP_KALAKAVANA
@@ -1272,7 +1272,7 @@ INDIAN_OCEAN = (
 
 MANCHURIA = gadm("CHN.11") | gadm("CHN.17") | gadm("CHN.18")
 MONGOLIA = gadm("CHN.19") | gadm("MNG")
-CHINA_PROPER = gadm("CHN") - (TIBET | XINJIANG | MANCHURIA | MONGOLIA)
+CHINA_PROPER = gadm("CHN") - (BHOTA | XINJIANG | MANCHURIA | MONGOLIA)
 JAPAN = gadm("JPN")
 KOREA = gadm("KOR") | gadm("PRK")
 ARMENIA = gadm("ARM")
@@ -1378,9 +1378,9 @@ __TERRITORY_INDEX__ = [
     "QIEMO",
     "KORLA",
     "TURFAN",
-    "TIBET",
+    "BHOTA",
     "HIMALAYAN",
-    "TIBET_BURMA_INTERM",
+    "BHOTA_BURMA_INTERM",
     "YUNNAN_BURMA_INTERM",
     "KAREN",
     "SIAM_BURMA_INTERM",
@@ -1510,6 +1510,6 @@ __TERRITORY_INDEX__ = [
     "IRANIC",
     "SIMHALA",
     "TARIM",
-    "TIBET",
+    "BHOTA",
     "KAREN"
 ]
