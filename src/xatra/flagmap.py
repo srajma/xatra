@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 
@@ -233,10 +234,12 @@ class BaseOptionEntry:
     Args:
         url: Tile server URL or provider name
         name: Display name for the layer
+        options: Optional Leaflet tile-layer options
         default: Whether this layer should be selected by default
     """
     url: str
     name: str
+    options: Optional[Dict[str, Any]] = None
     default: bool = False
 
 
@@ -1048,21 +1051,31 @@ class Map:
             default: Whether this should be the default layer
         """
         
-        if url_or_provider in self.PROVIDER_URLS:
-            url = self.PROVIDER_URLS[url_or_provider]
+        if url_or_provider in self.PROVIDERS:
+            provider = self.PROVIDERS[url_or_provider]
+            url = self._resolve_base_option_url(provider["url"])
             display_name = name or url_or_provider
+            options = dict(provider.get("options", {}))
         else:
-            url = url_or_provider
+            url = self._resolve_base_option_url(url_or_provider)
             display_name = name or self._derive_name_from_url(url)
+            options = None
         
         # Check if this layer already exists and update it
         for i, existing in enumerate(self._base_options):
             if existing.url == url:
-                self._base_options[i] = BaseOptionEntry(url=url, name=display_name, default=default)
+                self._base_options[i] = BaseOptionEntry(
+                    url=url,
+                    name=display_name,
+                    options=options,
+                    default=default,
+                )
                 return
         
         # Add new layer
-        self._base_options.append(BaseOptionEntry(url=url, name=display_name, default=default))
+        self._base_options.append(
+            BaseOptionEntry(url=url, name=display_name, options=options, default=default)
+        )
 
     def _derive_name_from_url(self, url: str) -> str:
         """Derive a display name from URL.
@@ -1089,6 +1102,15 @@ class Map:
         elif "nationalmap" in url:
             return "USGS"
         return "Custom Layer"
+
+    def _resolve_base_option_url(self, url: str) -> str:
+        """Apply URL adjustments before storing a base layer."""
+        if "stadiamaps.com" in url:
+            api_key = os.environ.get("STADIA_API_KEY")
+            if api_key and "api_key=" not in url:
+                separator = "&" if "?" in url else "?"
+                return f"{url}{separator}api_key={api_key}"
+        return url
 
     def zoom(self, level: int) -> None:
         """Set the initial zoom level for the map.
@@ -1831,6 +1853,7 @@ class Map:
         base_options_serialized = [{
             "url": b.url,
             "name": b.name,
+            "options": b.options,
             "default": b.default,
         } for b in self._base_options]
 
@@ -2456,16 +2479,68 @@ class Map:
         export_html(payload_serialized or payload, out_html, css=payload.get("css", ""))
 
     # Handle provider names from leaflet-providers
-    PROVIDER_URLS = {
-        "OpenStreetMap": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        "Esri.WorldImagery": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        "OpenTopoMap": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-        "Esri.WorldPhysical": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
-        "CartoDB.Positron": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-        "CartoDB.PositronNoLabels": "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
-        "USGS.USImageryTopo": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
-        "Esri.OceanBasemap": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}",
-        # "Stadia.OSMBright": "https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.{ext}", # needs authentication apparently
-        "Esri.WorldTopoMap": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-        
+    PROVIDERS = {
+        "OpenStreetMap": {
+            "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        },
+        "Esri.WorldImagery": {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        },
+        "OpenTopoMap": {
+            "url": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        },
+        "Esri.WorldPhysical": {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
+        },
+        "CartoDB.Positron": {
+            "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+        },
+        "CartoDB.PositronNoLabels": {
+            "url": "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png",
+        },
+        "USGS.USImageryTopo": {
+            "url": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
+        },
+        "Esri.OceanBasemap": {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}",
+            "options": {
+                "attribution": "Tiles &copy; Esri &mdash; Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri",
+                "maxZoom": 13,
+            },
+        },
+        "Esri.WorldTopoMap": {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        },
+        "Stadia.StamenWatercolor": {
+            "url": "https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.{ext}",
+            "options": {
+                "minZoom": 1,
+                "maxZoom": 16,
+                "attribution": "&copy; <a href=\"https://www.stadiamaps.com/\" target=\"_blank\">Stadia Maps</a> &copy; <a href=\"https://www.stamen.com/\" target=\"_blank\">Stamen Design</a> &copy; <a href=\"https://openmaptiles.org/\" target=\"_blank\">OpenMapTiles</a> &copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
+                "ext": "jpg",
+            },
+        },
+        "Stadia.StamenTerrainBackground": {
+            "url": "https://tiles.stadiamaps.com/tiles/stamen_terrain_background/{z}/{x}/{y}{r}.{ext}",
+            "options": {
+                "minZoom": 0,
+                "maxZoom": 18,
+                "attribution": "&copy; <a href=\"https://www.stadiamaps.com/\" target=\"_blank\">Stadia Maps</a> &copy; <a href=\"https://www.stamen.com/\" target=\"_blank\">Stamen Design</a> &copy; <a href=\"https://openmaptiles.org/\" target=\"_blank\">OpenMapTiles</a> &copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
+                "ext": "png",
+            },
+        },
+        "Esri.WorldTerrain": {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}",
+            "options": {
+                "attribution": "Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and NPS",
+                "maxZoom": 13,
+            },
+        },
+        "Esri.WorldShadedRelief": {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}",
+            "options": {
+                "attribution": "Tiles &copy; Esri &mdash; Source: Esri",
+                "maxZoom": 13,
+            },
+        },
     }

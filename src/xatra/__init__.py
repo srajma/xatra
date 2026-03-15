@@ -33,6 +33,11 @@ import warnings
 import sys
 import os
 
+from dotenv import find_dotenv, load_dotenv
+
+
+load_dotenv(find_dotenv(usecwd=True), override=False)
+
 # Check for data installation
 from .data_installer import is_data_installed, get_xatra_dir
 

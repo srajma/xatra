@@ -8,6 +8,7 @@ Requires-Dist: overpy>=0.7
 Requires-Dist: requests>=2.32.5
 Requires-Dist: shapely>=2.0.4
 Requires-Dist: geojson>=3.1.0
+Requires-Dist: python-dotenv>=1.0.1
 Requires-Dist: jinja2>=3.1.4
 Requires-Dist: matplotlib>=3.10.6
 Requires-Dist: pandas>=2.3.2
@@ -31,6 +32,14 @@ Xatra is the matplotlib of maps. You can create historical maps (static or dynam
 
 ```bash
 pip install xatra
+xatra-install-data
+```
+
+Or if installing to a local virtual environment:
+
+```bash
+uv add xatra
+source .venv/bin/activate
 xatra-install-data
 ```
 

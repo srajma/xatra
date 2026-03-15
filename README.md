@@ -352,7 +352,7 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 ##### Styling and Configuration
 
 - **`CSS(css)`**: Add custom CSS styles
-- **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer
+- **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer. `url_or_provider` may be either a raw Leaflet tile URL template or one of the built-in providers: `OpenStreetMap`, `OpenTopoMap`, `Esri.WorldImagery`, `Esri.WorldPhysical`, `Esri.WorldTopoMap`, `Esri.WorldTerrain`, `Esri.WorldShadedRelief`, `Esri.OceanBasemap`, `CartoDB.Positron`, `CartoDB.PositronNoLabels`, `USGS.USImageryTopo`, `Stadia.StamenWatercolor`, or `Stadia.StamenTerrainBackground`. For Stadia providers and raw `stadiamaps.com` tile URLs, set `STADIA_API_KEY` in `.env`.
 - **`FlagColorSequence(color_sequence, class_name=None)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
 - **`DataColormap(colormap, vmin=None, vmax=None, norm=None)`**: Set the color map for data elements
