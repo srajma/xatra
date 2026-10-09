@@ -191,10 +191,10 @@ map.show()
 
 ## Tip on coloring historical maps well
 
-Successive Flags you define are assigned colors based on the map's `FlagColorSequence`, which is a class that determines how the next color is calculated. The default color sequence increments successive colors' hues by the conjugate golden ratio of the hue spectrum (taken from 0 to 1, so 0 is red, 1/3 is green, 2/3 is blue and 1 is red again) mod 1:
+Successive Flags you define are assigned colors based on the map's `FlagColorSequence`, which is a class that determines how the next color is calculated. The default color sequence increments successive colors' hues by the conjugate golden ratio of the hue spectrum (taken from 0 to 1, so 0 is red, 1/3 is green, 2/3 is blue and 1 is red again) mod 1, in the perceptual OKLCH colour space so that every colour has the same visual weight:
 
 ```python
-map.FlagColorSequence(LinearColorSequence(colors=[<random>], step = Color.hsl(GOLDEN_RATIO, 0.0, 0.0)))
+map.FlagColorSequence(LinearColorSequence(colors=None, step=Color.hsl(GOLDEN_RATIO, 0.0, 0.0)))
 ```
 
 This is [best for making nearby colors as contrasting as possible](https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/) -- so as a general tip: place nearby flags near each other.
@@ -352,12 +352,12 @@ The most important element of a Map is a "Flag". A Flag is a country or kingdom,
 ##### Styling and Configuration
 
 - **`CSS(css)`**: Add custom CSS styles
-- **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer. `url_or_provider` may be either a raw Leaflet tile URL template or one of the built-in providers: `OpenStreetMap`, `OpenTopoMap`, `Esri.WorldImagery`, `Esri.WorldPhysical`, `Esri.WorldTopoMap`, `Esri.WorldTerrain`, `Esri.WorldShadedRelief`, `Esri.OceanBasemap`, `CartoDB.Positron`, `CartoDB.PositronNoLabels`, `USGS.USImageryTopo`, `Stadia.StamenWatercolor`, or `Stadia.StamenTerrainBackground`. For Stadia providers and raw `stadiamaps.com` tile URLs, set `STADIA_API_KEY` in `.env`.
+- **`BaseOption(url_or_provider, name=None, default=False)`**: Add base map layer. If you add none, maps use `Xatra.Atlas` (a softened, label-free physical relief map that suits historical maps). `url_or_provider` may be either a raw Leaflet tile URL template or one of the built-in providers: `Xatra.Atlas`, `OpenStreetMap`, `OpenTopoMap`, `Esri.WorldImagery`, `Esri.WorldPhysical`, `Esri.WorldTopoMap`, `Esri.WorldTerrain`, `Esri.WorldShadedRelief`, `Esri.OceanBasemap`, `CartoDB.Positron`, `CartoDB.PositronNoLabels`, `USGS.USImageryTopo`, `Stadia.StamenWatercolor`, or `Stadia.StamenTerrainBackground`. For Stadia providers and raw `stadiamaps.com` tile URLs, set `STADIA_API_KEY` in `.env`. (CARTO now requires an API key too; without one its tiles show a watermark.) If no basemap is marked `default=True`, the first one is shown.
 - **`FlagColorSequence(color_sequence, class_name=None)`**: Set the color sequence for flags
 - **`AdminColorSequence(color_sequence)`**: Set the color sequence for admin regions
 - **`DataColormap(colormap, vmin=None, vmax=None, norm=None)`**: Set the color map for data elements
-- **`zoom(level: int)`**: Set the zoom level. Defaults to 5.
-- **`focus(latitude: float, longitude: float)`**: set where the map is initially focused at. If not set, xatra auto-focuses to the center of the bounding box of rendered `Flag`/`Admin`/`Data`/`Dataframe` geometries. `River`/`Path`/`Point`/`Text` are only used for auto-focus when none of those four are present.
+- **`zoom(level: int)`**: Set the zoom level.
+- **`focus(latitude: float, longitude: float)`**: set where the map is initially focused at. If neither `zoom` nor `focus` is set, xatra frames the content automatically: it fits the bounding box of rendered `Flag`/`Admin`/`Data`/`Dataframe` geometries (leaving room for the title box and time slider). `River`/`Path`/`Point`/`Text` are only used when none of those four are present.
 - **`slider(start=None, end=None, speed=5.0)`**: Set time limits and play speed for dynamic maps (speed in years per second)
 - **`simplify(tolerance=None)`**: Use precomputed simplified GADM geometry for this map (`None` disables) [DON'T USE; IT WON'T HELP YOU]
 
@@ -420,12 +420,35 @@ Every element type automatically receives a default CSS class that you can use f
 | Flag labels | `.flag-label` | The text label that appears at the flag's centroid |
 | `River()` | `.river` | River line geometry |
 | `Path()` | `.path` | Path line geometry |
-| `Point()` | `.point` | Point marker |
-| `Text()` | `.text` | Text label |
+| `Point()` | `.point`, `.point-dot` | Point marker (the default marker is an ink dot, `.point-dot`) |
+| Point labels | `.point-label` | Label shown with `show_label=True` |
+| `River()` / `Path()` labels | `.river-label`, `.path-label` | Labels shown with `show_label=True` |
+| `Text()` | `.text-label` | Text label |
 | `Admin()` | `.admin` | Administrative region geometry |
-| `Dataframe()` | `.dataframe` | DataFrame visualization geometry |
+| `Data()` / `Dataframe()` | `.data` | Data / DataFrame choropleth geometry |
 | `TitleBox()` | `#title` | The title box container (ID, not class) |
 | `slider()` | `#controls` | The time slider controls (ID, not class) |
+
+#### Default look and theme variables
+
+Out of the box, maps use an atlas style: a label-free relief basemap, soft evenly-weighted flag colours with darker borders, serif small-caps labels with a white halo (sized by the territory's on-screen size), italic blue river labels, and compact translucent panels. Most of it is driven by CSS variables you can override:
+
+```python
+map.CSS("""
+:root {
+  --xatra-map-font: "Cormorant Garamond", Georgia, serif;  /* labels on the map */
+  --xatra-ui-font: system-ui, sans-serif;                  /* title box, slider, tooltips */
+  --xatra-ink: #2f2a26;          /* default label / marker colour */
+  --xatra-water: #3a76b0;        /* rivers */
+  --xatra-water-ink: #24598c;    /* river labels */
+  --xatra-route: #7a5a3a;        /* paths */
+  --xatra-panel-bg: rgba(255,255,255,0.9);
+  --xatra-accent: #8b2f2f;       /* links in the title box */
+}
+.flag-label { font-size: 12px; }   /* fixed size instead of size-by-territory */
+.xatra-atlas-tiles { filter: none; } /* un-soften the Atlas basemap */
+""")
+```
 
 #### Custom CSS Classes
 
@@ -632,7 +655,7 @@ map.show()
 
 ### Color Sequences
 
-Xatra supports automatic color assignment for both flags and admin regions using color sequences. By default, maps use `LinearColorSequence()` which generates contrasting colors. You can also use other color sequences:
+Xatra supports automatic color assignment for both flags and admin regions using color sequences. By default, maps use `LinearColorSequence()`, which (when given no starting colours) produces xatra's "atlas" palette: soft colours of equal visual weight (generated in the perceptual OKLCH space), stepping the hue by the golden ratio so consecutive flags contrast. The palette is deterministic, so colours don't change between renders. With explicit starting `colors`, it steps in HSL instead, as before. You can also use other color sequences:
 
 - **`LinearColorSequence()`**: Generates contrasting colors (default)
 - **`RotatingColorSequence()`**: Cycles through a predefined set of colors
@@ -836,7 +859,7 @@ The `DataColormap` method controls how data values are mapped to colors. It supp
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, PowerNorm
 
-# Default colormap (yellow-orange-red)
+# Default colormap (warm light-to-dark: cream → amber → brick → plum)
 map.DataColormap()
 
 # Matplotlib colormaps

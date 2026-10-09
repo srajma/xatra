@@ -1,0 +1,10 @@
+import sys, xatra
+m = xatra.Map()
+m.Admin(gadm="IND", level=1)
+m.Admin(gadm="PAK", level=1)
+m.Admin(gadm="BGD", level=1)
+m.Admin(gadm="NPL", level=1)
+m.Admin(gadm="LKA", level=1)
+m.AdminRivers(sources=["naturalearth"])
+m.TitleBox("<h2>States and provinces</h2>")
+m.show(out_html=sys.argv[1])

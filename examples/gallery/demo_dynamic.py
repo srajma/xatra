@@ -1,0 +1,21 @@
+import sys, xatra
+from xatra.loaders import gadm, naturalearth
+from xatra.territory_library import *
+m = xatra.Map()
+m.Flag(label="Maurya", value=NORTH_INDIA | GUJARAT | DECCAN | KALINGA_GREATER | GANDHARA, period=[-320, -185])
+m.Flag(label="Maurya", value=MAGADHA | KOSALA, period=[-185, -180])
+m.Flag(label="Shunga", value=MAGADHA | KOSALA | VATSA | AVANTI, period=[-185, -75])
+m.Flag(label="Indo-Greek", value=GANDHARA | PUNJAB | BACTRIA, period=[-180, -10])
+m.Flag(label="Satavahana", value=VIDARBHA | ASMAKA | MULAKA | APARANTA | GREATER_PUNE, period=[-100, 220])
+m.Flag(label="Kalinga", value=KALINGA_GREATER, period=[-185, 50])
+m.Flag(label="Kushana", value=GANDHARA | PUNJAB | BACTRIA | UP_WEST, period=[30, 240])
+m.Flag(label="Gupta", value=GANGETIC | MP | BENGAL | RJ, period=[320, 550])
+m.Flag(label="Gupta/Vakataka", value=VIDARBHA | MULAKA | ASMAKA, period=[350, 500])
+m.Flag(label="Cola", value=COLA, period=[-300, 600])
+m.Flag(label="Pandya", value=PANDYA, period=[-300, 600])
+m.Flag(label="Cera", value=CERA, period=[-300, 600])
+m.Point(label="Pāṭaliputra", position=[25.6,85.1], show_label=True)
+m.Point(label="Ujjayinī", position=[23.2,75.8], show_label=True)
+m.TitleBox("<h2>Ancient India</h2><p>Major polities, 320 BCE – 550 CE.</p>")
+m.slider(-320, 550)
+m.show(out_html=sys.argv[1])

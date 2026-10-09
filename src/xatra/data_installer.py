@@ -45,43 +45,102 @@ def is_data_installed() -> bool:
     return all(p.exists() for p in REQUIRED_PATHS)
 
 
+def _list_repo_files(repo_id: str) -> list[tuple[str, int]]:
+    """List (path, size) of every file in the dataset repo (one paginated API listing)."""
+    from huggingface_hub import HfApi
+
+    files = []
+    for entry in HfApi().list_repo_tree(repo_id, repo_type="dataset", recursive=True):
+        size = getattr(entry, "size", None)
+        if size is not None and not entry.path.startswith("."):
+            files.append((entry.path, int(size)))
+    return files
+
+
+def _download_file(url: str, dest: Path, expected_size: int, max_attempts: int = 12) -> None:
+    """Download one file with retries; backs off on rate limiting (HTTP 429) and server errors."""
+    import time
+    import requests
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(dest.name + ".part")
+    for attempt in range(max_attempts):
+        try:
+            with requests.get(url, stream=True, timeout=120, headers={"User-Agent": "xatra-install-data"}) as resp:
+                if resp.status_code == 429 or resp.status_code >= 500:
+                    wait = min(300, int(resp.headers.get("Retry-After", 0) or 0) or 20 * (attempt + 1))
+                    print(f"  … server busy ({resp.status_code}); retrying in {wait}s", flush=True)
+                    time.sleep(wait)
+                    continue
+                resp.raise_for_status()
+                with open(tmp, "wb") as fh:
+                    for chunk in resp.iter_content(chunk_size=1 << 20):
+                        fh.write(chunk)
+            if expected_size and tmp.stat().st_size != expected_size:
+                raise IOError(f"size mismatch for {dest.name}")
+            tmp.replace(dest)
+            return
+        except (requests.RequestException, IOError) as exc:
+            wait = min(120, 10 * (attempt + 1))
+            print(f"  … {exc}; retrying in {wait}s")
+            time.sleep(wait)
+    raise RuntimeError(f"Could not download {url}")
+
+
 def download_from_huggingface(repo_id: str, target_dir: Path, force: bool = False):
     """
     Download data from Hugging Face Hub.
-    
+
+    Files are fetched one at a time from the CDN with retries, so the install
+    survives Hugging Face's anonymous rate limits, and re-running it resumes
+    where it stopped (files already present with the right size are skipped).
+
     Args:
         repo_id: HuggingFace repository ID (e.g., "username/xatra-data")
         target_dir: Local directory to download to
         force: If True, re-download even if data exists
     """
+    from urllib.parse import quote
+
     try:
-        from huggingface_hub import snapshot_download
+        import huggingface_hub  # noqa: F401
     except ImportError:
         print("ERROR: huggingface_hub is required for data installation.")
         print("Install it with: pip install huggingface_hub")
         sys.exit(1)
-    
+
     print(f"Downloading Xatra data from Hugging Face: {repo_id}")
     print(f"Target directory: {target_dir}")
     print("This may take several minutes depending on your connection...")
-    
+
     try:
-        # Download the entire repository
-        snapshot_dir = snapshot_download(
-            repo_id=repo_id,
-            repo_type="dataset",
-            local_dir=target_dir,
-            local_dir_use_symlinks=False,
-        )
-        
-        print(f"✓ Following files were downloaded to {target_dir}:")
-        print(f"Contents of {target_dir}:")
-        for item in target_dir.iterdir():
-            print(f"  - {item.name}{'/' if item.is_dir() else ''}")
-        
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        files = _list_repo_files(repo_id)
+        # Geographic data first (needed to render anything), then the optional geometry cache.
+        files.sort(key=lambda item: (not item[0].startswith("data/"), item[0]))
+        total = len(files)
+        pending = [
+            (path, size) for path, size in files
+            if force or not ((target_dir / path).exists() and (target_dir / path).stat().st_size == size)
+        ]
+        print(f"{total - len(pending)} of {total} files already present; fetching {len(pending)}.", flush=True)
+
+        def fetch(item):
+            path, size = item
+            url = f"https://huggingface.co/datasets/{repo_id}/resolve/main/{quote(path)}"
+            _download_file(url, target_dir / path, size)
+            return path
+
+        done = total - len(pending)
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            for future in as_completed([pool.submit(fetch, item) for item in pending]):
+                done += 1
+                print(f"  [{done}/{total}] {future.result()}", flush=True)
+        print(f"✓ {total} files present in {target_dir}", flush=True)
     except Exception as e:
         print(f"ERROR: Failed to download data from Hugging Face: {e}")
-        print(f"\nYou can manually download the data:")
+        print("Re-run the installer to resume, or download manually:")
         print(f"1. Visit: https://huggingface.co/datasets/{repo_id}")
         print(f"2. Download and extract the data to: {target_dir}")
         sys.exit(1)

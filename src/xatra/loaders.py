@@ -35,6 +35,7 @@ NE_RIVERS_FILE = os.path.join(DATA_DIR, "ne_10m_rivers.geojson")
 OVERPASS_DIR = os.path.join(DATA_DIR, "rivers_overpass_india")
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.openstreetmap.ru/api/interpreter",
 ]
@@ -43,6 +44,7 @@ OVERPASS_API_URLS = [
 _file_cache: Dict[str, Any] = {}
 _disputed_mapping_cache: Optional[Dict[str, Any]] = None
 _active_simplify_tolerance: Optional[float] = None
+OVERPASS_USER_AGENT = "xatra (+https://github.com/srajma/xatra)"
 _overpass_feature_collection_cache: Optional[Tuple[Tuple[str, ...], List[Dict[str, Any]]]] = None
 
 OVERPASS_MERGED_FILE = os.path.join(OVERPASS_DIR, "_merged_features.json")
@@ -628,6 +630,8 @@ def _run_overpass_query(query: str) -> Dict[str, Any]:
     for endpoint in OVERPASS_API_URLS:
         req = urllib_request.Request(endpoint, data=payload, method="POST")
         req.add_header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+        # overpass-api.de rejects generic client User-Agents (HTTP 406).
+        req.add_header("User-Agent", OVERPASS_USER_AGENT)
 
         try:
             with urllib_request.urlopen(req, timeout=60) as resp:
