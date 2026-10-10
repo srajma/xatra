@@ -16,7 +16,7 @@ import math
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
-from shapely.geometry import shape, mapping, Polygon, MultiPolygon, GeometryCollection
+from shapely.geometry import shape, mapping, Point, Polygon, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 
 from .debug_utils import time_debug
@@ -49,11 +49,13 @@ def _unary_union_wrapper(geometries):
 def _compute_centroid_for_geometry(geometry: Dict[str, Any]) -> Optional[List[float]]:
     """Compute a label anchor for a GeoJSON (Multi)Polygon.
 
-    Uses the largest part of the territory (so an empire with island
-    possessions is labelled on its mainland), and its area centroid when that
-    sits comfortably inside the shape; otherwise the pole of inaccessibility
-    (the interior point farthest from the border), so labels of crescent- or
-    L-shaped territories never land outside them.
+    Works on the largest part of the territory (so an empire with island
+    possessions is labelled on its mainland), in a locally equal-scaled
+    plane (longitude shrunk by cos(latitude)) so distances match what the
+    reader sees. Among interior points with comfortable room around them
+    (at least half the room at the pole of inaccessibility), it picks the
+    one closest to the area centroid: labels sit in the visual middle of the
+    territory, yet never on a sliver or outside a crescent/L-shaped region.
 
     Returns:
         [latitude, longitude] or None if invalid
@@ -61,6 +63,9 @@ def _compute_centroid_for_geometry(geometry: Dict[str, Any]) -> Optional[List[fl
     if geometry is None or geometry.get("type") not in ["Polygon", "MultiPolygon"]:
         return None
     try:
+        import numpy as np
+        import shapely
+        from shapely import affinity
         from shapely.ops import polylabel
 
         geom = shape(geometry)
@@ -70,17 +75,37 @@ def _compute_centroid_for_geometry(geometry: Dict[str, Any]) -> Optional[List[fl
         main = max(parts, key=lambda g: g.area)
         if main.area <= 0:
             return _area_weighted_centroid(geometry)
-        minx, miny, maxx, maxy = main.bounds
+        kx = max(math.cos(math.radians(main.centroid.y)), 0.05)
+        plane = affinity.scale(main, xfact=kx, yfact=1.0, origin=(0, 0))
+        minx, miny, maxx, maxy = plane.bounds
         size = max(maxx - minx, maxy - miny)
-        simple = main.simplify(size / 400, preserve_topology=True)
+        simple = plane.simplify(size / 400, preserve_topology=True)
         if simple.is_empty or not simple.is_valid:
-            simple = main
+            simple = plane
         pole = polylabel(simple, tolerance=max(size / 300, 1e-6))
-        pole_depth = simple.exterior.distance(pole)
+        boundary = simple.boundary
+        pole_depth = boundary.distance(pole)
         centroid = simple.centroid
-        if simple.contains(centroid) and simple.exterior.distance(centroid) >= 0.6 * pole_depth:
-            return [centroid.y, centroid.x]
-        return [pole.y, pole.x]
+        best = pole
+        if pole_depth > 0:
+            n = 48
+            xs, ys = np.meshgrid(np.linspace(minx, maxx, n), np.linspace(miny, maxy, n))
+            xs, ys = xs.ravel(), ys.ravel()
+            inside = shapely.contains_xy(simple, xs, ys)
+            xs, ys = xs[inside], ys[inside]
+            centroid_inside = simple.contains(centroid)
+            candidates = list(zip(xs, ys)) + ([(centroid.x, centroid.y)] if centroid_inside else [])
+            points = shapely.points(np.array(candidates)) if candidates else []
+            depth = shapely.distance(boundary, points) if candidates else np.array([])
+            ok = depth >= 0.5 * pole_depth
+            if centroid_inside and ok[-1]:
+                best = centroid
+            elif ok.any():
+                cand = np.array(candidates)[ok]
+                d2 = (cand[:, 0] - centroid.x) ** 2 + (cand[:, 1] - centroid.y) ** 2
+                x, y = cand[int(np.argmin(d2))]
+                best = Point(x, y)
+        return [best.y, best.x / kx]
     except Exception:
         return _area_weighted_centroid(geometry)
 

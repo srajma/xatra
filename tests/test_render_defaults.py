@@ -131,3 +131,15 @@ def test_dynamic_flags_drop_artifact_holes_too():
     geometry = result["geometry_library"][flag["geom_id"]]
     rings = geometry["coordinates"] if geometry["type"] == "Polygon" else geometry["coordinates"][0]
     assert len(rings) == 1  # the speck hole is gone
+
+
+def test_label_anchor_prefers_the_middle_of_a_long_territory():
+    # A long north-south strip with a bulge at the top (like Uraśa): the pole
+    # of inaccessibility is in the bulge, but the label belongs mid-strip.
+    strip = Polygon([(0, 0), (1.3, 0), (1.3, 6), (2.35, 6), (2.35, 8.4), (-1.05, 8.4), (-1.05, 6), (0, 6), (0, 0)])
+    lat, lng = _compute_centroid_for_geometry(mapping(strip))
+    from shapely.geometry import Point
+
+    assert strip.contains(Point(lng, lat))
+    assert lat < 6.5  # not up in the bulge
+    assert abs(lat - strip.centroid.y) < 1.0

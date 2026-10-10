@@ -1370,6 +1370,19 @@ HTML_TEMPLATE = Template(
       function rectsOverlap(a, b) {
         return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
       }
+      function flagContainsPoint(marker, latlng) {
+        const polygon = marker._xatraPolygon;
+        if (!polygon) return true;
+        let inside = false;
+        polygon.eachLayer((sub) => {
+          if (!inside && sub instanceof L.Polygon) {
+            const b = sub.getBounds();
+            if (b.contains(latlng) && pointInPolygon(latlng, sub.getLatLngs())) inside = true;
+          }
+        });
+        return inside;
+      }
+
       function declutterFlagLabels() {
         const mapEl = map.getContainer();
         const taken = [];
@@ -1377,31 +1390,50 @@ HTML_TEMPLATE = Template(
           const r = el.getBoundingClientRect();
           if (r.width && r.height) taken.push(r);
         }
+        // Point markers are dodged when possible but never hide a label.
+        const markers = [];
+        for (const el of mapEl.querySelectorAll('.point-dot, .leaflet-marker-icon:not(.leaflet-div-icon):not(.flag-label-container)')) {
+          const r = el.getBoundingClientRect();
+          if (r.width && r.height) markers.push(r);
+        }
         const items = [];
         for (const marker of flagLabelMarkers) {
           if (!map.hasLayer(marker)) continue;
           const el = marker.getElement && marker.getElement();
           const inner = el && el.querySelector('.flag-label');
           if (!inner) continue;
+          const rotor = el.querySelector('.flag-label-rotor') || inner;
           inner.classList.remove('xatra-label-hidden');
           inner.style.translate = '';
-          items.push({ inner, priority: (marker._xatraSizePx || 0) * (marker._xatraLabel ? marker._xatraLabel.depthScale : 1) });
+          rotor.style.translate = '';
+          items.push({ inner, rotor, marker, priority: (marker._xatraSizePx || 0) * (marker._xatraLabel ? marker._xatraLabel.depthScale : 1) });
         }
         items.sort((a, b) => b.priority - a.priority);
         const pad = 3;
         for (const item of items) {
           const r = item.inner.getBoundingClientRect();
           if (!r.width || !r.height) continue;
-          // Try the anchor first, then a little above or below it.
+          // Try the anchor first, then a little above or below it (in screen
+          // space, stepping by one line of text), but only to spots that are
+          // still inside the territory; otherwise the label waits for a zoom-in.
+          const lineHeight = item.inner.offsetHeight || r.height;
+          const mapRect = mapEl.getBoundingClientRect();
           let placed = false;
-          for (const dy of [0, -1, 1, -2, 2].map((k) => k * 1.15 * r.height)) {
-            const box = { left: r.left - pad, right: r.right + pad, top: r.top + dy - pad, bottom: r.bottom + dy + pad };
-            if (!taken.some((t) => rectsOverlap(box, t))) {
-              if (dy) item.inner.style.translate = `0 ${dy.toFixed(1)}px`;
+          for (const avoidMarkers of [true, false]) {
+            for (const dy of [0, -1, 1, -2, 2].map((k) => k * 1.1 * lineHeight)) {
+              const box = { left: r.left - pad, right: r.right + pad, top: r.top + dy - pad, bottom: r.bottom + dy + pad };
+              if (taken.some((t) => rectsOverlap(box, t))) continue;
+              if (avoidMarkers && markers.some((t) => rectsOverlap(box, t))) continue;
+              if (dy) {
+                const center = L.point(r.left + r.width / 2 - mapRect.left, r.top + r.height / 2 + dy - mapRect.top);
+                if (!flagContainsPoint(item.marker, map.containerPointToLatLng(center))) continue;
+                item.rotor.style.translate = `0 ${dy.toFixed(1)}px`;
+              }
               taken.push(box);
               placed = true;
               break;
             }
+            if (placed) break;
           }
           if (!placed) item.inner.classList.add('xatra-label-hidden');
         }
@@ -1518,6 +1550,7 @@ HTML_TEMPLATE = Template(
           });
           const labelLayer = L.marker(anchor, { icon: labelDiv, interactive: false, keyboard: false });
           labelLayer._flagData = flagData;
+          labelLayer._xatraPolygon = layer;
           labelLayer._xatraLabel = {
             bounds: geometryLatLngBounds(geometry),
             depthScale: Math.pow(0.85, f.vassal_depth || 0)
