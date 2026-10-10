@@ -35,63 +35,134 @@ HTML_TEMPLATE = Template(
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-search@4.0.0/dist/leaflet-search.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=Inter:wght@400..650&display=swap" />
     <style>
+      /* ── Design tokens (override any of these in your own CSS) ── */
+      :root {
+        --xatra-ui-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --xatra-map-font: "EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+        --xatra-ink: #2f2a26;
+        --xatra-muted: #6b6560;
+        --xatra-water: #3a76b0;
+        --xatra-water-ink: #24598c;
+        --xatra-route: #7a5a3a;
+        --xatra-panel-bg: rgba(255, 255, 255, 0.9);
+        --xatra-panel-border: rgba(30, 25, 20, 0.08);
+        --xatra-panel-shadow: 0 1px 2px rgba(20, 15, 10, 0.06), 0 8px 28px rgba(20, 15, 10, 0.14);
+        --xatra-accent: #8b2f2f;
+        --xatra-halo: 0 0 1px rgba(255,255,255,0.95), 0 0 2px rgba(255,255,255,0.95), 0 0 4px rgba(255,255,255,0.8), 0 0 8px rgba(255,255,255,0.45);
+      }
       html, body, #map { height: 100%; margin: 0; padding: 0; }
-      #controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; gap: 8px; }
-      #title { position: fixed; top: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 12px 16px; border-radius: 8px; max-width: 360px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: move; user-select: none; }
-      #coordinate-display { margin-bottom: 12px; font-size: 14px; }
-      #coordinate-label { font-weight: bold; }
-      #coordinates { font-family: monospace; color: #0066cc; }
-      #layer-selector { margin-top: 12px; }
-      #colormap { margin-top: 12px; cursor: crosshair; }
-      #colormap-tooltip { position: fixed; background: rgba(255,255,255,0.98); border: 1px solid #333; padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1001; pointer-events: none; display: none; font-size: 13px; }
-      #colormap-tooltip .color-sample { width: 20px; height: 20px; border: 1px solid #666; display: inline-block; vertical-align: middle; margin-right: 8px; border-radius: 3px; }
-      #multi-tooltip { position: fixed; background: rgba(255,255,255,0.95); border: 2px solid #333; padding: 10px 14px; border-radius: 6px; box-shadow: 0 3px 12px rgba(0,0,0,0.4); z-index: 1002; pointer-events: none; display: none; font-size: 13px; max-width: 400px; }
-      #multi-tooltip .tooltip-item { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #ddd; }
+      body { font-family: var(--xatra-ui-font); color: #1f1c19; -webkit-font-smoothing: antialiased; }
+      #map { background: #dfe5e8; }
+      .leaflet-container { font-family: var(--xatra-ui-font); font-size: 12px; }
+
+      /* ── Panels ── */
+      #title { position: fixed; top: 16px; left: 16px; max-width: 340px; z-index: 1000; padding: 14px 16px 12px; background: var(--xatra-panel-bg); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); border: 1px solid var(--xatra-panel-border); border-radius: 12px; box-shadow: var(--xatra-panel-shadow); font-size: 13.5px; line-height: 1.45; cursor: move; user-select: none; scrollbar-width: thin; }
+      #title-content > .title-box { margin-bottom: 8px; }
+      #title-content > .title-box:empty { display: none; }
+      #title .title-box h1, #title .title-box h2, #title .title-box h3 { font-family: var(--xatra-map-font); font-weight: 600; line-height: 1.15; margin: 0 0 6px; letter-spacing: 0.01em; }
+      #title .title-box h1 { font-size: 24px; }
+      #title .title-box h2 { font-size: 20px; }
+      #title .title-box h3 { font-size: 17px; }
+      #title .title-box p { margin: 0 0 6px; }
+      #title .title-box ul, #title .title-box ol { margin: 4px 0 6px; padding-left: 18px; }
+      #title a { color: var(--xatra-accent); }
+      #title .xatra-credit { font-size: 11px; color: var(--xatra-muted); }
+      #title .xatra-credit a { color: inherit; }
+      #title input, #title select, #title button, #title textarea { cursor: auto; }
+      #controls { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 32px); box-sizing: border-box; background: var(--xatra-panel-bg); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); padding: 8px 14px; border: 1px solid var(--xatra-panel-border); border-radius: 999px; box-shadow: var(--xatra-panel-shadow); z-index: 1000; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--xatra-muted); font-variant-numeric: tabular-nums; }
+      #controls:has(#year) { width: min(640px, calc(100% - 32px)); }
+      #controls button[id^="musicPlayPause"] { width: auto; padding: 0 12px; border-radius: 999px; }
+      #controls #yearLabel { font-family: var(--xatra-map-font); font-size: 20px; font-weight: 600; color: var(--xatra-ink); min-width: 92px; text-align: center; white-space: nowrap; }
+      #controls button { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; background: var(--xatra-ink); color: #fff; font-size: 13px; cursor: pointer; transition: transform 0.12s ease, background 0.12s ease; }
+      #controls button:hover { background: #000; transform: scale(1.06); }
+      #controls input[type="range"] { flex: 1; min-width: 60px; accent-color: var(--xatra-ink); cursor: pointer; }
+      #controls #startYear, #controls #endYear { white-space: nowrap; }
+      #coordinate-display { margin-top: 10px; font-size: 11px; color: var(--xatra-muted); order: 9; }
+      #coordinate-label { font-weight: 500; }
+      #coordinates { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--xatra-muted); }
+      /* Scroll long titles inside the panel; the search row stays outside so its dropdown isn't clipped. */
+      #title-content { display: flex; flex-direction: column; max-height: calc(100vh - 190px); overflow-y: auto; scrollbar-width: thin; }
+      #layer-selector { margin-top: 6px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--xatra-muted); }
+      #layer-selector select { margin-left: 0; flex: 1; min-width: 0; font: inherit; color: var(--xatra-ink); padding: 4px 8px; border: 1px solid rgba(0,0,0,0.12); border-radius: 7px; background: rgba(255,255,255,0.8); }
+      #colormap { margin-top: 10px; cursor: crosshair; }
+      #colormap svg { max-width: 100%; height: auto; }
+      #colormap-tooltip { position: fixed; background: #fff; border: 1px solid var(--xatra-panel-border); padding: 6px 10px; border-radius: 8px; box-shadow: var(--xatra-panel-shadow); z-index: 1001; pointer-events: none; display: none; font-size: 12.5px; }
+      #colormap-tooltip .color-sample { width: 14px; height: 14px; border: 1px solid rgba(0,0,0,0.2); display: inline-block; vertical-align: middle; margin-right: 8px; border-radius: 3px; }
+      #multi-tooltip { position: fixed; background: rgba(255,255,255,0.97); border: 1px solid var(--xatra-panel-border); padding: 8px 12px; border-radius: 10px; box-shadow: var(--xatra-panel-shadow); z-index: 1002; pointer-events: none; display: none; font-size: 13px; line-height: 1.4; max-width: 340px; color: var(--xatra-ink); }
+      #multi-tooltip .tooltip-item { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,0.07); }
       #multi-tooltip .tooltip-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-      #multi-tooltip .tooltip-type { font-weight: bold; color: #0066cc; font-size: 11px; text-transform: uppercase; margin-bottom: 3px; }
-      #multi-tooltip .tooltip-content { color: #333; }
-      #layer-selector select { margin-left: 8px; }
-      .flag { stroke: #333; stroke-width: 0; } /*fill: rgba(200,0,0,0.3);*/
-      .flag:hover { stroke-width: 0.7; }
-      .river { stroke: #0066cc; stroke-width: 1; fill: none; }
-      .path { stroke: #444; stroke-dasharray: 4 2; }
-      .point { background: #000; width: 6px; height: 6px; border-radius: 6px; }
-      .text-label { font-size: 16px; font-weight: bold; color: #666666; background: none; border: none; box-shadow: none; }
-      .path-label { font-size: 14px; color: #444444; padding: 2px 6px; } /* border-radius: 3px; border: 1px solid #cccccc; background: rgba(255,255,255,0.8); */
+      #multi-tooltip .tooltip-type { font-weight: 600; color: var(--xatra-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+      #multi-tooltip .tooltip-content { color: var(--xatra-ink); }
+
+      /* ── Map features ── */
+      .flag { transition: fill-opacity 0.15s ease, stroke-width 0.15s ease; }
+      .flag:hover { fill-opacity: 0.62; stroke-width: 2; }
+      .river { stroke: var(--xatra-water); stroke-width: 1.4; stroke-opacity: 0.9; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+      .path { stroke: var(--xatra-route); stroke-width: 1.6; stroke-opacity: 0.9; stroke-dasharray: 6 4; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+      .point { background: none; }
+      .point-dot { display: block; width: 100%; height: 100%; box-sizing: border-box; border-radius: 50%; background: var(--xatra-ink); border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.3); }
+      .text-label { font-family: var(--xatra-map-font); font-size: 17px; font-weight: 500; font-variant: small-caps; letter-spacing: 0.22em; color: rgba(60, 50, 42, 0.78); background: none; border: none; box-shadow: none; text-shadow: var(--xatra-halo); }
+      .path-label { font-family: var(--xatra-map-font); font-size: 14px; font-style: italic; letter-spacing: 0.03em; color: var(--xatra-route); padding: 2px 6px; text-shadow: var(--xatra-halo); }
       .path-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
-      .river-label { font-size: 14px; color: #0066cc; padding: 2px 6px; }
+      .river-label { font-family: var(--xatra-map-font); font-size: 14px; font-style: italic; letter-spacing: 0.04em; color: var(--xatra-water-ink); padding: 2px 6px; text-shadow: var(--xatra-halo); }
       .river-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
-      .admin-river-label { font-size: 12px; color: #0066cc; padding: 1px 4px; }
+      .admin-river-label { font-family: var(--xatra-map-font); font-size: 12px; font-style: italic; color: var(--xatra-water-ink); padding: 1px 4px; text-shadow: var(--xatra-halo); }
       .admin-river-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
-      .point-label { font-size: 14px; color: #444444; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 3px; border: 1px solid #cccccc; }
-      .point-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
+      .point-label { font-family: var(--xatra-map-font); font-size: 14px; font-weight: 500; font-variant: normal; letter-spacing: 0.01em; color: var(--xatra-ink); background: none; padding: 0; border: none; text-shadow: var(--xatra-halo); }
+      .point-label-container { background: none; border: none; display: flex; justify-content: flex-start; align-items: center; }
       .text-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
-      .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
-      .flag-label { font-size: 14px; font-weight: bold; color: #333; background: none; border: none; box-shadow: none; white-space: nowrap; }
-      .admin { stroke: #000; stroke-width: 0.5;  } /* fill: rgba(100,100,100,0.1); */
-    .admin-river { stroke: #0066cc; stroke-width: 2; opacity: 0.8; }
-      .data { stroke: #333; stroke-width: 1; }
-      #title-search-wrapper { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-      #title-search-wrapper .leaflet-control { margin: 0; }
-      .search-block { display: flex; flex-direction: column; gap: 4px; max-width: 100%; }
-      .search-block-label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.03em; }
+      .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+      .flag-label { font-family: var(--xatra-map-font); font-size: calc(15px * var(--xatra-label-scale, 1)); font-weight: 600; font-variant: small-caps; letter-spacing: 0.12em; line-height: 1.1; text-align: center; color: var(--xatra-ink); background: none; border: none; box-shadow: none; white-space: nowrap; text-shadow: var(--xatra-halo); }
+      .flag-label.vassal, .flag-label.province { font-weight: 500; letter-spacing: 0.08em; }
+      .flag-label.xatra-label-hidden { visibility: hidden; }
+      .admin { stroke: rgba(40, 35, 30, 0.55); stroke-width: 0.6; }
+      .admin-river { stroke: var(--xatra-water); stroke-width: 1.1; stroke-opacity: 0.75; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+      .data { stroke: #fff; stroke-width: 0.5; stroke-opacity: 0.8; }
+
+      .xatra-atlas-tiles { filter: saturate(0.72) brightness(1.04); }
+
+      /* ── Leaflet chrome ── */
+      .leaflet-bar { border: none !important; border-radius: 10px !important; overflow: hidden; box-shadow: var(--xatra-panel-shadow) !important; }
+      .leaflet-bar a, .leaflet-bar a:hover { width: 32px; height: 32px; line-height: 32px; color: var(--xatra-ink); background: var(--xatra-panel-bg); border-bottom-color: rgba(0,0,0,0.08); }
+      .leaflet-bar a:hover { background: #fff; }
+      .leaflet-control-attribution { background: rgba(255,255,255,0.65) !important; color: #6b6560; font-size: 10px; border-top-left-radius: 6px; }
+      .leaflet-control-attribution a { color: #5a544f; }
+
+      /* ── Search ── */
+      #title-search-wrapper { margin-top: 10px; display: flex; flex-direction: row; gap: 6px; }
+      #title-search-wrapper .leaflet-control { margin: 0; float: none; }
+      #title-search-wrapper:has(.search-block:only-child) .search-block { flex-basis: 100%; }
+      .search-block { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; }
+      .search-block-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      .search-block:empty, .search-block:has(> div:empty) { display: none; }
       /* Feature search: single row, input + button inline, don't overflow */
       #search-features-container { max-width: 100%; min-width: 0; }
-      #search-features-container .leaflet-control-search { display: flex !important; flex-direction: row !important; align-items: stretch; width: 100% !important; max-width: 100%; box-sizing: border-box; }
-      #search-features-container .leaflet-control-search .search-input { flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; height: 28px !important; margin: 3px 0 3px 3px !important; box-sizing: border-box !important; }
-      #search-features-container .leaflet-control-search .search-button { flex: 0 0 32px !important; width: 32px !important; height: 28px !important; margin: 3px 3px 3px 0 !important; }
-      #search-features-container .leaflet-control-search .search-cancel { right: 36px !important; margin: 0 !important; height: 28px !important; }
-      #search-features-container .leaflet-control-search .search-tooltip { z-index: 1100; max-height: 200px; left: 0; right: 0; width: 100% !important; min-width: 0; box-sizing: border-box; background: #fff; border: 1px solid #ccc; border-radius: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+      #search-features-container .leaflet-control-search { display: flex !important; flex-direction: row !important; align-items: stretch; width: 100% !important; max-width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; box-shadow: none; }
+      #search-features-container .leaflet-control-search label.search-input { display: none !important; }
+      #search-features-container .leaflet-control-search input.search-input { display: block !important; order: 2; flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; height: 28px !important; margin: 0 !important; padding: 0 8px !important; border: none !important; background: transparent !important; font: 12.5px var(--xatra-ui-font) !important; box-sizing: border-box !important; outline: none; }
+      #search-features-container .leaflet-control-search .search-button { order: 1; flex: 0 0 28px !important; background-position: center !important; width: 28px !important; height: 28px !important; margin: 0 !important; background-color: transparent !important; opacity: 0.6; }
+      #search-features-container .leaflet-control-search .search-cancel { right: 4px !important; top: 0 !important; margin: 0 !important; height: 28px !important; }
+      #search-features-container .leaflet-control-search .search-tooltip { z-index: 1100; max-height: 240px; left: 0; top: 32px; width: max-content !important; min-width: 100%; max-width: 300px; box-sizing: border-box; background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; box-shadow: var(--xatra-panel-shadow); }
       #search-features-container .leaflet-control-search .search-tooltip ul { list-style: none; margin: 0; padding: 2px 0; }
-      #search-features-container .leaflet-control-search .search-tip { margin: 0; padding: 6px 10px; border-radius: 0; background: #fff; border: none; border-bottom: 1px solid #eee; font-size: 13px; }
+      #search-features-container .leaflet-control-search .search-tip { white-space: normal; margin: 0; padding: 6px 10px; border-radius: 0; background: #fff; border: none; border-bottom: 1px solid #f0eeec; font-size: 12.5px; color: var(--xatra-ink); }
       #search-features-container .leaflet-control-search .search-tip:last-child { border-bottom: none; }
       #search-features-container .leaflet-control-search .search-tip:hover,
-      #search-features-container .leaflet-control-search .search-tip-select { background: #f0f4ff; }
+      #search-features-container .leaflet-control-search .search-tip-select { background: #f6f3ef; }
       /* Map search (geocoder) */
       #search-geocoder-container { z-index: 400; max-width: 100%; min-width: 0; }
-      #title-search-wrapper .leaflet-control-geocoder { width: 100%; max-width: 100%; }
-      #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; }
+      #title-search-wrapper .leaflet-control-geocoder { width: 100%; max-width: 100%; display: flex; align-items: center; background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; box-shadow: none; min-height: 30px; box-sizing: border-box; }
+      #title-search-wrapper .leaflet-control-geocoder-form { display: block !important; flex: 1; min-width: 0; }
+      #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; border: none; background: transparent; font: 12.5px var(--xatra-ui-font); padding: 0 6px; height: 28px; outline: none; }
+      #title-search-wrapper .leaflet-control-geocoder-icon { width: 28px; height: 28px; flex: 0 0 28px; background-color: transparent; opacity: 0.6; border-radius: 8px; }
+      @media (max-width: 600px) {
+        #title { top: 10px; left: 10px; max-width: calc(100% - 64px); padding: 10px 12px; font-size: 12.5px; }
+        #controls { bottom: 14px; }
+        #controls #startYear, #controls #endYear { display: none; }
+      }
       {{ css }}
     </style>
   </head>
@@ -124,13 +195,15 @@ HTML_TEMPLATE = Template(
 
       const initialFocus = payload.initial_focus || [22, 79];
       const initialZoom = payload.initial_zoom || 4;
-      const map = L.map('map').setView(initialFocus, initialZoom);
+      const map = L.map('map', { zoomControl: false }).setView(initialFocus, initialZoom);
+      L.control.zoom({ position: 'topright' }).addTo(map);
       
       // Function to initialize coordinate display
       function initializeCoordinateDisplay() {
         const coordinateElement = document.getElementById('coordinates');
         if (coordinateElement) {
-          coordinateElement.textContent = `${initialFocus[0].toFixed(4)}, ${initialFocus[1].toFixed(4)}`;
+          const center = map.getCenter();
+          coordinateElement.textContent = `${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`;
         }
       }
       
@@ -224,6 +297,11 @@ HTML_TEMPLATE = Template(
           attribution: '&copy; ' + option.name,
           ...(option.options || {}),
         };
+        // Providers with limited native zoom are upscaled instead of going blank.
+        if (layerOptions.maxNativeZoom === undefined && layerOptions.maxZoom < 18) {
+          layerOptions.maxNativeZoom = layerOptions.maxZoom;
+          layerOptions.maxZoom = 18;
+        }
 
         const layer = L.tileLayer(option.url, layerOptions);
         baseLayers[option.name] = layer;
@@ -1141,60 +1219,282 @@ HTML_TEMPLATE = Template(
         return { point: nearest, distance: dist, t: t };
       }
 
-      function darkenedLabelColor(color, luminosityDrop = 0.2, alpha = 0.9) {
-        if (!color) return '#333';
-        if (!color.startsWith('#')) return color;
+      // Default point marker: a small ink dot with a white ring (an atlas-style
+      // city marker). Restyle via `.point-dot` in CSS, or pass an Icon.
+      function defaultPointIcon(classes) {
+        return L.divIcon({
+          html: '<span class="point-dot"></span>',
+          className: 'point' + (classes ? ' ' + classes : ''),
+          iconSize: [11, 11],
+          iconAnchor: [5.5, 5.5]
+        });
+      }
 
-        const hex = color.replace('#', '');
-        if (hex.length !== 6) return color;
-
+      // ── Flag styling ─────────────────────────────────────────────────────────
+      function parseColorToHsl(color) {
+        if (!color || typeof color !== 'string') return null;
+        const c = color.trim();
+        let m = c.match(/^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%/i);
+        if (m) return { h: parseFloat(m[1]) / 360, s: parseFloat(m[2]) / 100, l: parseFloat(m[3]) / 100 };
+        if (!c.startsWith('#')) return null;
+        let hex = c.slice(1);
+        if (hex.length === 3) hex = hex.split('').map(ch => ch + ch).join('');
+        if (hex.length < 6) return null;
         const r = parseInt(hex.substr(0, 2), 16) / 255;
         const g = parseInt(hex.substr(2, 2), 16) / 255;
         const b = parseInt(hex.substr(4, 2), 16) / 255;
-
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        let h, s, l = (max + min) / 2;
-
-        if (max === min) {
-          h = s = 0;
-        } else {
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h = 0, s = 0;
+        const l = (max + min) / 2;
+        if (max !== min) {
           const d = max - min;
           s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-          switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-          }
+          if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+          else if (max === g) h = (b - r) / d + 2;
+          else h = (r - g) / d + 4;
           h /= 6;
         }
+        return { h, s, l };
+      }
 
-        l = Math.max(0, l - luminosityDrop);
+      function hslCss(hsl, alpha = 1) {
+        const h = Math.round(hsl.h * 3600) / 10;
+        const s = Math.round(Math.max(0, Math.min(1, hsl.s)) * 1000) / 10;
+        const l = Math.round(Math.max(0, Math.min(1, hsl.l)) * 1000) / 10;
+        return alpha >= 1 ? `hsl(${h}, ${s}%, ${l}%)` : `hsla(${h}, ${s}%, ${l}%, ${alpha})`;
+      }
 
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
+      // Deep ink of the same hue, for labels drawn on a pale fill.
+      function labelInkColor(color) {
+        const hsl = parseColorToHsl(color);
+        if (!hsl) return '#2f2a26';
+        return hslCss({ h: hsl.h, s: Math.min(Math.max(hsl.s, 0.2), 0.5), l: Math.min(hsl.l * 0.42, 0.3) });
+      }
+
+      // A darker, slightly desaturated shade of the fill, for borders.
+      function borderShadeColor(color) {
+        const hsl = parseColorToHsl(color);
+        if (!hsl) return '#555';
+        return hslCss({ h: hsl.h, s: hsl.s * 0.7, l: Math.max(hsl.l - 0.28, 0.12) });
+      }
+
+      function geometryLatLngBounds(geometry) {
+        let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+        const visit = (coords) => {
+          if (typeof coords[0] === 'number') {
+            if (coords[1] < minLat) minLat = coords[1];
+            if (coords[1] > maxLat) maxLat = coords[1];
+            if (coords[0] < minLng) minLng = coords[0];
+            if (coords[0] > maxLng) maxLng = coords[0];
+            return;
+          }
+          for (const c of coords) visit(c);
         };
+        const visitGeom = (g) => {
+          if (!g) return;
+          if (g.type === 'FeatureCollection') { for (const f of g.features || []) visitGeom(f.geometry); return; }
+          if (g.type === 'Feature') { visitGeom(g.geometry); return; }
+          if (g.type === 'GeometryCollection') { for (const gg of g.geometries || []) visitGeom(gg); return; }
+          if (g.coordinates) visit(g.coordinates);
+        };
+        visitGeom(geometry);
+        if (!isFinite(minLat)) return null;
+        return L.latLngBounds([minLat, minLng], [maxLat, maxLng]);
+      }
 
-        let r2, g2, b2;
-        if (s === 0) {
-          r2 = g2 = b2 = l;
+      // Label size follows the territory's on-screen size, so empires get
+      // big, airy labels and small principalities get modest ones.
+      const flagLabelMarkers = new Set();
+      function flagLabelScale(marker) {
+        const info = marker._xatraLabel;
+        if (!info || !info.bounds) return info ? info.depthScale : 1;
+        const zoom = map.getZoom();
+        const nw = map.project(info.bounds.getNorthWest(), zoom);
+        const se = map.project(info.bounds.getSouthEast(), zoom);
+        const sizePx = Math.sqrt(Math.max(1, Math.abs(se.x - nw.x)) * Math.max(1, Math.abs(se.y - nw.y)));
+        const scale = Math.max(0.8, Math.min(2.2, Math.pow(sizePx / 160, 0.5)));
+        marker._xatraSizePx = sizePx;
+        return scale * info.depthScale;
+      }
+      function applyFlagLabelScale(marker) {
+        const el = marker.getElement && marker.getElement();
+        if (!el) return;
+        const inner = el.querySelector('.flag-label');
+        if (inner) inner.style.setProperty('--xatra-label-scale', flagLabelScale(marker).toFixed(3));
+      }
+      function updateFlagLabelScales() {
+        for (const marker of flagLabelMarkers) {
+          if (map.hasLayer(marker)) applyFlagLabelScale(marker);
+        }
+        declutterFlagLabels();
+      }
+      map.on('zoomend', updateFlagLabelScales);
+
+      // Hide flag labels that would collide with a bigger territory's label (or
+      // with point/text labels); zooming in reveals them.
+      function rectsOverlap(a, b) {
+        return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      }
+      function declutterFlagLabels() {
+        const mapEl = map.getContainer();
+        const taken = [];
+        for (const el of mapEl.querySelectorAll('.text-label, .point-label')) {
+          const r = el.getBoundingClientRect();
+          if (r.width && r.height) taken.push(r);
+        }
+        const items = [];
+        for (const marker of flagLabelMarkers) {
+          if (!map.hasLayer(marker)) continue;
+          const el = marker.getElement && marker.getElement();
+          const inner = el && el.querySelector('.flag-label');
+          if (!inner) continue;
+          inner.classList.remove('xatra-label-hidden');
+          inner.style.translate = '';
+          items.push({ inner, priority: (marker._xatraSizePx || 0) * (marker._xatraLabel ? marker._xatraLabel.depthScale : 1) });
+        }
+        items.sort((a, b) => b.priority - a.priority);
+        const pad = 3;
+        for (const item of items) {
+          const r = item.inner.getBoundingClientRect();
+          if (!r.width || !r.height) continue;
+          // Try the anchor first, then a little above or below it.
+          let placed = false;
+          for (const dy of [0, -1, 1, -2, 2].map((k) => k * 1.15 * r.height)) {
+            const box = { left: r.left - pad, right: r.right + pad, top: r.top + dy - pad, bottom: r.bottom + dy + pad };
+            if (!taken.some((t) => rectsOverlap(box, t))) {
+              if (dy) item.inner.style.translate = `0 ${dy.toFixed(1)}px`;
+              taken.push(box);
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) item.inner.classList.add('xatra-label-hidden');
+        }
+      }
+
+      let declutterPending = false;
+      function scheduleDeclutter() {
+        if (declutterPending) return;
+        declutterPending = true;
+        requestAnimationFrame(() => {
+          declutterPending = false;
+          declutterFlagLabels();
+        });
+      }
+      // Web fonts change label widths once they load.
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => scheduleDeclutter());
+
+      // Rotate labels only for clearly elongated territories, and gently.
+      function flagLabelAngle(geometry) {
+        const distant = findDistantPoints(geometry);
+        if (!distant) return 0;
+        const [lat1, lng1] = distant.point1;
+        const [lat2, lng2] = distant.point2;
+        const len = Math.hypot(lat2 - lat1, lng2 - lng1);
+        if (len < 1e-9) return 0;
+        const ux = (lng2 - lng1) / len, uy = (lat2 - lat1) / len;
+        let minW = Infinity, maxW = -Infinity;
+        for (const [lat, lng] of extractCoordinatesFromGeometry(geometry.type === 'Feature' ? geometry.geometry : geometry)) {
+          const w = (lng - lng1) * -uy + (lat - lat1) * ux;
+          if (w < minW) minW = w;
+          if (w > maxW) maxW = w;
+        }
+        const width = Math.max(maxW - minW, 1e-9);
+        if (len / width < 2.2) return 0;
+        return Math.max(-35, Math.min(35, distant.angle));
+      }
+
+      function flagTooltipText(f) {
+        let text = f.display_label || f.label;
+        if (f.parent) {
+          const relation = f.type || 'vassal';
+          const parentLabel = f.parent.includes('/') ? f.parent.split('/').slice(-1)[0] : f.parent;
+          text += ` (${relation} of ${parentLabel})`;
+        }
+        if (f.note) text += ' — ' + f.note;
+        return text;
+      }
+
+      // Builds the polygon layer (and label marker, if any) for one flag.
+      // Layers are returned un-added; `flagData` is attached for dynamic maps.
+      function buildFlagLayers(f, geometry, flagData) {
+        let className = (f.type === 'province') ? 'province' : 'flag';
+        if (f.type === 'vassal') className += ' vassal';
+        if (f.classes) className += ' ' + f.classes;
+        const baseColor = f.root_parent_color || f.color;
+
+        let style;
+        if (f.type === 'province') {
+          style = {
+            className,
+            fill: false,
+            stroke: true,
+            color: borderShadeColor(baseColor || '#888'),
+            opacity: 0.75,
+            weight: 1,
+            dashArray: '4 3',
+            lineJoin: 'round'
+          };
+        } else if (f.color) {
+          style = {
+            className,
+            fillColor: f.color,
+            fillOpacity: f.type === 'vassal' ? 0.6 : 0.5,
+            color: borderShadeColor(f.type === 'vassal' ? (baseColor || f.color) : f.color),
+            opacity: 0.7,
+            weight: f.type === 'vassal' ? 0.9 : 1.1,
+            lineJoin: 'round'
+          };
         } else {
-          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-          const p = 2 * l - q;
-          r2 = hue2rgb(p, q, h + 1/3);
-          g2 = hue2rgb(p, q, h);
-          b2 = hue2rgb(p, q, h - 1/3);
+          style = { className };
         }
 
-        const r3 = Math.round(r2 * 255);
-        const g3 = Math.round(g2 * 255);
-        const b3 = Math.round(b2 * 255);
-        return `rgba(${r3}, ${g3}, ${b3}, ${alpha})`;
+        const flagTooltip = flagTooltipText(f);
+        const layer = L.geoJSON(geometry, {
+          style: () => style,
+          onEachFeature: function(feature, subLayer) {
+            registerLayerTooltip(subLayer, 'Flag', flagTooltip);
+            subLayer.on('click', function() {
+              if (!window.parent) return;
+              window.parent.postMessage({
+                type: 'mapFeaturePick',
+                featureType: 'territory',
+                name: f.label || ''
+              }, '*');
+            });
+          }
+        });
+        layer._flagData = flagData;
+        const built = [layer];
+
+        const anchor = f.centroid || getCentroid(geometry);
+        if (anchor && (anchor[0] !== 0 || anchor[1] !== 0)) {
+          let labelClassName = 'flag-label';
+          if (f.type === 'vassal') labelClassName += ' vassal';
+          if (f.type === 'province') labelClassName += ' province';
+          if (f.classes) labelClassName += ' ' + f.classes;
+          const labelStyle = baseColor ? `color: ${labelInkColor(baseColor)};` : '';
+          const rotationAngle = flagLabelAngle(geometry);
+          const labelDiv = L.divIcon({
+            html: `<div class="flag-label-rotor" style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.display_label || f.label}</div></div>`,
+            className: 'flag-label-container',
+            iconSize: [0, 0],
+            iconAnchor: [0, 0]
+          });
+          const labelLayer = L.marker(anchor, { icon: labelDiv, interactive: false, keyboard: false });
+          labelLayer._flagData = flagData;
+          labelLayer._xatraLabel = {
+            bounds: geometryLatLngBounds(geometry),
+            depthScale: Math.pow(0.85, f.vassal_depth || 0)
+          };
+          labelLayer.on('add', () => {
+            applyFlagLabelScale(labelLayer);
+            scheduleDeclutter();
+          });
+          flagLabelMarkers.add(labelLayer);
+          built.push(labelLayer);
+        }
+        return built;
       }
 
       function createAllLayers() {
@@ -1209,117 +1509,8 @@ HTML_TEMPLATE = Template(
             const geometry = resolveGeometry(f);
             if (!geometry) continue;
             
-            let className = (f.type === 'province') ? 'province' : 'flag';
-            if (f.type === 'vassal') className += ' vassal';
-            if (f.classes) className += ' ' + f.classes;
-            const flagStyle = { className: className };
-            if (f.type === 'province') {
-              const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
-              flagStyle.style = {
-                fill: false,
-                stroke: true,
-                color: provinceBorderColor,
-                opacity: 0.8,
-                weight: 1.2,
-                lineJoin: 'round'
-              };
-            } else if (f.color) {
-              flagStyle.style = {
-                fillColor: f.color,
-                fillOpacity: 0.4,
-                color: f.color,
-                weight: 1
-              };
-            }
-            
-            // Build tooltip with optional parent/vassal info
-            let flagTooltip = f.display_label || f.label;
-            if (f.parent) {
-              const relation = f.type || 'vassal';
-              const parentLabel = f.parent.includes('/') ? f.parent.split('/').slice(-1)[0] : f.parent;
-              flagTooltip += ` (${relation} of ${parentLabel})`;
-            }
-            if (f.note) {
-              flagTooltip += ' — ' + f.note;
-            }
-            
-            const layer = L.geoJSON(geometry, {
-              ...flagStyle,
-              onEachFeature: function(feature, subLayer) {
-                // Register with multi-tooltip system
-                registerLayerTooltip(subLayer, 'Flag', flagTooltip);
-                subLayer.on('click', function() {
-                  if (!window.parent) return;
-                  window.parent.postMessage({
-                    type: 'mapFeaturePick',
-                    featureType: 'territory',
-                    name: f.label || ''
-                  }, '*');
-                });
-              }
-            });
-            
-            if (f.type === 'province') {
-              const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
-              layer.setStyle({
-                fill: false,
-                stroke: true,
-                color: provinceBorderColor,
-                opacity: 0.8,
-                weight: 1.2,
-                lineJoin: 'round'
-              });
-            } else if (f.color) {
-              layer.setStyle({
-                fillColor: f.color,
-                fillOpacity: 0.4,
-                color: f.color,
-                weight: 1
-              });
-            }
-            
-            layer._flagData = { label: f.label, snapshot: snapshot.year };
-
-            // Add label at centroid
-            const centroid = f.centroid || getCentroid(geometry);
-
-            if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
-              let labelStyle = '';
-              if ((f.type === 'vassal' || f.type === 'province') && (f.root_parent_color || f.color)) {
-                const baseColor = f.root_parent_color || f.color;
-                labelStyle = `color: ${darkenedLabelColor(baseColor, 0.12, 0.9)};`;
-              } else if (f.color) {
-                labelStyle = `color: ${darkenedLabelColor(f.color, 0.2, 0.9)};`;
-              }
-              const depth = f.vassal_depth || 0;
-              const fontScale = Math.pow(0.85, depth);
-              labelStyle += ` font-size: ${14 * fontScale}px;`;
-              
-              let labelClassName = 'flag-label';
-              if (f.type === 'vassal') labelClassName += ' vassal';
-              if (f.type === 'province') labelClassName += ' province';
-              if (f.classes) labelClassName += ' ' + f.classes;
-              
-              // Calculate rotation based on distant points in geometry
-              let rotationAngle = 0;
-              const distantPoints = findDistantPoints(geometry);
-              if (distantPoints) {
-                rotationAngle = distantPoints.angle;
-              }
-              
-              const labelDiv = L.divIcon({
-                html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.display_label || f.label}</div></div>`,
-                className: 'flag-label-container',
-                iconSize: [1, 1],
-                iconAnchor: [0, 0]
-              });
-              const labelLayer = L.marker(centroid, { icon: labelDiv });
-              
-              // Store metadata for visibility management
-              labelLayer._flagData = { label: f.label, snapshot: snapshot.year };
-              
-              layers.flags.push(layer, labelLayer);
-            }
+            const built = buildFlagLayers(f, geometry, { label: f.label, snapshot: snapshot.year });
+            layers.flags.push(...built);
           }
         }
         
@@ -1511,6 +1702,8 @@ HTML_TEMPLATE = Template(
             if (p.icon.shadowSize) iconOptions.shadowSize = p.icon.shadowSize;
             if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
             markerOptions.icon = L.icon(iconOptions);
+          } else {
+            markerOptions.icon = defaultPointIcon(p.classes);
           }
           
           // Apply classes to marker if present
@@ -1536,7 +1729,7 @@ HTML_TEMPLATE = Template(
             // Outer div: rotation (inline, can be customized), Inner div: translation (CSS customizable)
             const rotationAngle = p.rotation || 0; // Default to 0 degrees if no rotation specified
             const labelDiv = L.divIcon({
-              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateX(10px); white-space: nowrap;">${p.label}</div></div>`,
+              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateX(9px); white-space: nowrap;">${p.label}</div></div>`,
               className: labelClassName,
               iconSize: [1, 1],
               iconAnchor: [0, 0]
@@ -1590,7 +1783,7 @@ HTML_TEMPLATE = Template(
               return {
                 className: className,
                 fillColor: color || '#cccccc',
-                fillOpacity: 0.3,
+                fillOpacity: 0.35,
                 color: color || '#666666',
                 weight: 1
               };
@@ -1819,7 +2012,7 @@ HTML_TEMPLATE = Template(
               return {
                 className: className,
                 fillColor: color,
-                fillOpacity: 1.0,
+                fillOpacity: 0.85,
                 color: color,
                 weight: 1
               };
@@ -1896,7 +2089,7 @@ HTML_TEMPLATE = Template(
             return {
               className: className,
               fillColor: color,
-              fillOpacity: 1.0,
+              fillOpacity: 0.85,
               color: color,
               weight: 1
             };
@@ -1981,7 +2174,7 @@ HTML_TEMPLATE = Template(
             return {
               className: className,
               fillColor: color,
-              fillOpacity: 1.0,
+              fillOpacity: 0.85,
               color: color,
               opacity: 1.0,
               weight: 1
@@ -2053,133 +2246,23 @@ HTML_TEMPLATE = Template(
           const geometry = resolveGeometry(f);
           if (!geometry) continue;
           
-          // Create style with flag color
-          let className = (f.type === 'province') ? 'province' : 'flag';
-          if (f.type === 'vassal') className += ' vassal';
-          if (f.classes) className += ' ' + f.classes;
-          const flagStyle = { className: className };
-          if (f.type === 'province') {
-            const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
-            flagStyle.style = {
-              fill: false,
-              stroke: true,
-              color: provinceBorderColor,
-              opacity: 0.8,
-              weight: 1.2,
-              lineJoin: 'round'
-            };
-          } else if (f.color) {
-            flagStyle.style = {
-              fillColor: f.color,
-              fillOpacity: 0.4,
-              color: f.color,
-              weight: 1
-            };
+          const built = buildFlagLayers(f, geometry, { label: f.label });
+          for (const l of built) {
+            l.addTo(map);
+            layers.flags.push(l);
           }
-          
-          // Build tooltip with optional parent/vassal info
-          let flagTooltip = f.display_label || f.label;
-          if (f.parent) {
-            const relation = f.type || 'vassal';
-            const parentLabel = f.parent.includes('/') ? f.parent.split('/').slice(-1)[0] : f.parent;
-            flagTooltip += ` (${relation} of ${parentLabel})`;
-          }
-          if (f.note) {
-            flagTooltip += ' — ' + f.note;
-          }
-          
-          const layer = L.geoJSON(geometry, {
-            ...flagStyle,
-            onEachFeature: function(feature, subLayer) {
-              // Register with multi-tooltip system
-              registerLayerTooltip(subLayer, 'Flag', flagTooltip);
-              subLayer.on('click', function() {
-                if (!window.parent) return;
-                window.parent.postMessage({
-                  type: 'mapFeaturePick',
-                  featureType: 'territory',
-                  name: f.label || ''
-                }, '*');
-              });
-            }
-          }).addTo(map);
-          
-          // Apply color styling after layer creation
-          if (f.type === 'province') {
-            const provinceBorderColor = darkenedLabelColor(f.root_parent_color || f.color || '#333', 0.12, 0.9);
-            layer.setStyle({
-              fill: false,
-              stroke: true,
-              color: provinceBorderColor,
-              opacity: 0.8,
-              weight: 1.2,
-              lineJoin: 'round'
-            });
-          } else if (f.color) {
-            layer.setStyle({
-              fillColor: f.color,
-              fillOpacity: 0.4,
-              color: f.color,
-              weight: 1
-            });
-          }
-          
-          layer._flagData = { label: f.label };
-          layers.flags.push(layer);
-          
-          // Add label at centroid (use pre-computed centroid if available)
-          const centroid = f.centroid || (() => {
-            console.warn(`Centroid fallback calculation for flag: ${f.label}`);
-            return getCentroid(geometry);
-          })();
-          if (centroid && (centroid[0] !== 0 || centroid[1] !== 0)) {
-            // Create custom label element with flag color
-            let labelStyle = '';
-            if ((f.type === 'vassal' || f.type === 'province') && (f.root_parent_color || f.color)) {
-              const baseColor = f.root_parent_color || f.color;
-              labelStyle = `color: ${darkenedLabelColor(baseColor, 0.12, 0.9)};`;
-            } else if (f.color) {
-              labelStyle = `color: ${darkenedLabelColor(f.color, 0.2, 0.9)};`;
-            }
-            const depth = f.vassal_depth || 0;
-            const fontScale = Math.pow(0.85, depth);
-            labelStyle += ` font-size: ${14 * fontScale}px;`;
-            
-            let labelClassName = 'flag-label';
-            if (f.type === 'vassal') labelClassName += ' vassal';
-            if (f.type === 'province') labelClassName += ' province';
-            if (f.classes) labelClassName += ' ' + f.classes;
-            
-            // Calculate rotation based on distant points in geometry
-            let rotationAngle = 0;
-            const distantPoints = findDistantPoints(geometry);
-            if (distantPoints) {
-              rotationAngle = distantPoints.angle;
-            }
-            
-            const labelDiv = L.divIcon({
-              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${labelClassName}" style="${labelStyle}">${f.display_label || f.label}</div></div>`,
-              className: 'flag-label-container',
-              iconSize: [1, 1],
-              iconAnchor: [0, 0]
-            });
-            const labelLayer = L.marker(centroid, { icon: labelDiv }).addTo(map);
-            labelLayer._flagData = { label: f.label };
-            layers.flags.push(labelLayer);
-            
-            // Debug: Add visible marker for centroid
-            if (DEBUG_CENTROIDS) {
-              const debugMarker = L.circleMarker(centroid, {
-                radius: 8,
-                color: 'red',
-                fillColor: 'yellow',
-                fillOpacity: 0.8,
-                weight: 2
-              }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${centroid[0].toFixed(4)}<br>Lng: ${centroid[1].toFixed(4)}`);
-              layers.flags.push(debugMarker);
-            }
+          if (DEBUG_CENTROIDS && f.centroid) {
+            const debugMarker = L.circleMarker(f.centroid, {
+              radius: 8,
+              color: 'red',
+              fillColor: 'yellow',
+              fillOpacity: 0.8,
+              weight: 2
+            }).addTo(map).bindTooltip(`Centroid: ${f.label}<br>Lat: ${f.centroid[0].toFixed(4)}<br>Lng: ${f.centroid[1].toFixed(4)}`);
+            layers.flags.push(debugMarker);
           }
         }
+        updateFlagLabelScales();
       }
 
       function renderRivers(year = null) {
@@ -2356,6 +2439,8 @@ HTML_TEMPLATE = Template(
             if (p.icon.shadowSize) iconOptions.shadowSize = p.icon.shadowSize;
             if (p.icon.shadowAnchor) iconOptions.shadowAnchor = p.icon.shadowAnchor;
             markerOptions.icon = L.icon(iconOptions);
+          } else {
+            markerOptions.icon = defaultPointIcon(p.classes);
           }
           
           // Apply classes to marker if present
@@ -2380,7 +2465,7 @@ HTML_TEMPLATE = Template(
             // Outer div: rotation (inline, can be customized), Inner div: translation (CSS customizable)
             const rotationAngle = p.rotation || 0; // Default to 0 degrees if no rotation specified
             const labelDiv = L.divIcon({
-              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateX(10px); white-space: nowrap;">${p.label}</div></div>`,
+              html: `<div style="transform: rotate(${rotationAngle}deg);"><div class="${innerClassName}" style="transform: translateX(9px); white-space: nowrap;">${p.label}</div></div>`,
               className: labelClassName,
               iconSize: [1, 1],
               iconAnchor: [0, 0]
@@ -2434,7 +2519,7 @@ HTML_TEMPLATE = Template(
         
         // Add layer selector if there are base options
         if (payload.base_options && payload.base_options.length > 0) {
-          content += '<div id="layer-selector"><label for="baseLayer">Base Layer:</label><select id="baseLayer"></select></div>';
+          content += '<div id="layer-selector"><label for="baseLayer">Basemap</label><select id="baseLayer"></select></div>';
         }
         
         // Add colormap if available
@@ -2474,7 +2559,7 @@ HTML_TEMPLATE = Template(
               return {
                 className: className,
                 fillColor: color || '#cccccc',
-                fillOpacity: 0.3,
+                fillOpacity: 0.35,
                 color: color || '#666666',
                 weight: 1
               };
@@ -2697,7 +2782,7 @@ HTML_TEMPLATE = Template(
               return {
                 className: className,
                 fillColor: color,
-                fillOpacity: 1.0,
+                fillOpacity: 0.85,
                 color: color,
                 weight: 1
               };
@@ -2808,6 +2893,7 @@ HTML_TEMPLATE = Template(
         
         // Update title boxes
         renderTitleBoxes(year);
+        scheduleDeclutter();
       }
 
       function updateLayerVisibility(layerArray, year, dataProperty) {
@@ -2854,7 +2940,7 @@ HTML_TEMPLATE = Template(
                 const color = getDataColor(value);
                 feature.setStyle({
                   fillColor: color,
-                  fillOpacity: 1.0,
+                  fillOpacity: 0.85,
                   color: color,
                   opacity: 1.0,
                   weight: 1
@@ -2976,22 +3062,19 @@ HTML_TEMPLATE = Template(
         noneOption.textContent = 'None';
         select.appendChild(noneOption);
         
-        // Add base layer options
-        let defaultSelected = false;
+        // Add base layer options; reflect the layer currently shown (the title
+        // panel is rebuilt as the time slider moves).
         for (const option of payload.base_options || []) {
           const optionElement = document.createElement('option');
           optionElement.value = option.name;
           optionElement.textContent = option.name;
-          if (option.default === true) {
+          if (currentBaseLayer && baseLayers[option.name] === currentBaseLayer) {
             optionElement.selected = true;
-            defaultSelected = true;
           }
           select.appendChild(optionElement);
         }
-        
-        // If no default was set, select "None"
-        if (!defaultSelected) {
-          select.selectedIndex = 0; // Select "None"
+        if (!currentBaseLayer) {
+          select.selectedIndex = 0; // "None"
         }
         
         // Handle layer changes
@@ -3098,7 +3181,8 @@ HTML_TEMPLATE = Template(
           const searchControl = new L.Control.Search({
             layer: searchLayer,
             propertyName: 'title',
-            textPlaceholder: 'Search by name or note…',
+            textPlaceholder: 'Find on map…',
+            collapsed: false,
             initial: false,
             hideMarkerOnCollapse: true,
             marker: false
@@ -3124,7 +3208,9 @@ HTML_TEMPLATE = Template(
           }
           const geocoderControl = L.Control.geocoder({
             geocoder: geocoderInstance,
-            defaultMarkGeocode: true
+            defaultMarkGeocode: true,
+            collapsed: false,
+            placeholder: 'Find a place…'
           }).addTo(map);
           const geocoderEl = geocoderControl.getContainer();
           if (geocoderEl && geocoderEl.parentNode) geocoderEl.parentNode.removeChild(geocoderEl);
@@ -3265,7 +3351,6 @@ HTML_TEMPLATE = Template(
             btn.id = 'musicPlayPause-' + idx;
             btn.textContent = '\u266a \u25b6';
             btn.title = 'Play / pause music';
-            btn.style.cssText = 'margin: 0 4px; padding: 4px 10px; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; cursor: pointer; font-size: 15px;';
             let playing = false;
 
             btn.addEventListener('click', function() {
@@ -3375,12 +3460,19 @@ HTML_TEMPLATE = Template(
               max = payload.map_limits[1];
             }
             
+            // Show eras only when the range reaches into BCE.
+            const useEra = min < 0;
+            const formatYear = (y) => {
+              y = Number(y);
+              if (!useEra) return String(y);
+              return y < 0 ? `${-y} BCE` : `${y} CE`;
+            };
             controls.innerHTML = `
-              <span id="yearLabel">${min}</span>
-              <button id="playPause" style="margin: 0 8px; padding: 4px 8px; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; cursor: pointer;">▶</button>
-              <span id="startYear" style="margin-right: 8px;">${min}</span>
-              <input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" style="flex: 1; margin: 0 8px;" />
-              <span id="endYear" style="margin-left: 8px;">${max}</span>
+              <button id="playPause" title="Play / pause" aria-label="Play">▶</button>
+              <span id="yearLabel">${formatYear(min)}</span>
+              <span id="startYear">${formatYear(min)}</span>
+              <input type="range" id="year" min="${min}" max="${max}" step="1" value="${min}" aria-label="Year" />
+              <span id="endYear">${formatYear(max)}</span>
             `;
             const input = document.getElementById('year');
             const label = document.getElementById('yearLabel');
@@ -3392,7 +3484,7 @@ HTML_TEMPLATE = Template(
             let playInterval = null;
             
             input.addEventListener('input', () => {
-              label.textContent = input.value;
+              label.textContent = formatYear(input.value);
               renderDynamic(parseInt(input.value));
               if (window._updateMusicForYear) window._updateMusicForYear(parseInt(input.value), isPlaying);
             });
@@ -3420,7 +3512,7 @@ HTML_TEMPLATE = Template(
                   } else {
                     const newYear = currentYear + 1;
                     input.value = newYear;
-                    label.textContent = newYear;
+                    label.textContent = formatYear(newYear);
                     renderDynamic(newYear);
                     if (window._updateMusicForYear) window._updateMusicForYear(newYear, true);
                   }
@@ -3550,6 +3642,38 @@ HTML_TEMPLATE = Template(
       setupControls();
       setupMusic();
       setupDragFunctionality();
+
+      // Frame the content (when the map has no explicit zoom/focus), leaving
+      // room for the title panel and the time slider.
+      function fitContent(opts = {}) {
+        if (!payload.fit_bounds) return;
+        const bounds = L.latLngBounds(payload.fit_bounds);
+        if (!bounds.isValid()) return;
+        const width = map.getSize().x;
+        let left = 24, bottom = 24;
+        if (!opts.ignorePanels) {
+          const title = document.getElementById('title');
+          if (title && title.offsetWidth && width > 760) left = Math.min(title.offsetWidth + 24, width * 0.22);
+          const controls = document.getElementById('controls');
+          if (controls && controls.style.display !== 'none' && controls.offsetHeight) bottom = controls.offsetHeight + 48;
+        }
+        // Tiles stay crisp at whole zoom levels, so snap to one: zoom in when
+        // the content would only slightly overflow its frame, else zoom out.
+        const paddingTL = L.point(left, 24), paddingBR = L.point(24, bottom);
+        const snap = map.options.zoomSnap;
+        map.options.zoomSnap = 0;
+        const exact = map.getBoundsZoom(bounds, false, paddingTL.add(paddingBR));
+        map.options.zoomSnap = snap;
+        const zoom = Math.min(8, exact - Math.floor(exact) >= 0.8 ? Math.ceil(exact) : Math.floor(exact));
+        const offset = paddingBR.subtract(paddingTL).divideBy(2);
+        const centerPoint = map.project(bounds.getSouthWest(), zoom).add(map.project(bounds.getNorthEast(), zoom)).divideBy(2).add(offset);
+        map.setView(map.unproject(centerPoint, zoom), zoom, { animate: false });
+      }
+      window.xatraFitContent = fitContent;
+      fitContent();
+      initializeCoordinateDisplay();
+      updateFlagLabelScales();
+      // NOTE: keep setupSearch() as the script's last line; xatra-gui matches on it.
       setupSearch();
     </script>
   </body>
@@ -3585,6 +3709,8 @@ def export_html_string(payload: Dict[str, Any] | str, css: Optional[str] = None)
             payload_json = json.dumps(payload, ensure_ascii=False)
         effective_css = css if css is not None else payload.get("css", "")
         
+    # A "</script>" inside any label would otherwise terminate the inline script.
+    payload_json = payload_json.replace("</", "<\\/")
     return HTML_TEMPLATE.render(payload=payload_json, css=effective_css)
 
 

@@ -23,6 +23,9 @@ from .paxmax import paxmax_aggregate
 from .colorseq import ColorSequence, LinearColorSequence
 from .debug_utils import time_debug
 
+# Basemap used when a map does not choose one.
+DEFAULT_BASEMAP = "Xatra.Atlas"
+
 
 GeometryLike = Union[Territory, Dict[str, Any]]
 
@@ -360,61 +363,94 @@ class DataColormap:
         return f"#{r:02x}{g:02x}{b:02x}"
 
 
-def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 200, height: int = 20, norm=None) -> str:
-    """Generate an SVG color bar for a colormap.
-    
+def _format_legend_value(value: float) -> str:
+    """Format a legend tick compactly: 1234567 -> "1.23M", 0.004567 -> "0.00457"."""
+    import math
+
+    if value is None or not math.isfinite(value):
+        return ""
+    magnitude = abs(value)
+    if magnitude == 0:
+        return "0"
+    for threshold, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M")):
+        if magnitude >= threshold:
+            return f"{value / threshold:.3g}{suffix}"
+    if magnitude >= 1000:
+        return f"{value:,.0f}"
+    if magnitude >= 1:
+        return f"{value:.3g}" if magnitude < 100 else f"{value:.0f}"
+    return f"{value:.3g}"
+
+
+def generate_colormap_svg(colormap, vmin: float, vmax: float, width: int = 300, height: int = 12, norm=None) -> str:
+    """Generate an SVG legend (gradient bar with min/mid/max ticks) for a colormap.
+
+    The bar is linear in normalized space, so with a ``norm`` (e.g. LogNorm)
+    the tick values follow the norm.
+
     Args:
         colormap: matplotlib Colormap object
         vmin: Minimum value for the color bar
         vmax: Maximum value for the color bar
-        width: Width of the color bar in pixels
-        height: Height of the color bar in pixels
+        width: Width of the color bar (SVG user units; the SVG scales to its container)
+        height: Height of the gradient bar
         norm: matplotlib Normalize object (optional)
-        
+
     Returns:
         SVG string for the color bar
     """
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import io
-    
-    # Create a figure with just the color bar
-    fig, ax = plt.subplots(figsize=(width/100, height/100))
-    fig.patch.set_facecolor('white')
-    
-    # Create a gradient
-    gradient = np.linspace(0, 1, width)
-    gradient = np.vstack((gradient, gradient))
-    
-    # Display the gradient with optional normalization
-    if norm is not None:
-        ax.imshow(gradient, aspect='auto', cmap=colormap, norm=norm, extent=[vmin, vmax, 0, 1])
-    else:
-        ax.imshow(gradient, aspect='auto', cmap=colormap, extent=[vmin, vmax, 0, 1])
-    
-    ax.set_xlim(vmin, vmax)
-    ax.set_ylim(0, 1)
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-    ax.set_yticks([])
-    ax.set_xticks([vmin, vmax])
-    ax.set_xticklabels([str(vmin), str(vmax)])
-    
-    # Remove borders
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(True)
-    
-    # Save to SVG string
-    svg_buffer = io.StringIO()
-    plt.savefig(svg_buffer, format='svg', bbox_inches='tight', pad_inches=0.1)
-    plt.close(fig)
-    
-    svg_content = svg_buffer.getvalue()
-    svg_buffer.close()
-    
-    return svg_content
+    import html as _html
+    import uuid
+
+    def value_at(t: float) -> float:
+        if norm is not None:
+            try:
+                if getattr(norm, "vmin", None) is None or getattr(norm, "vmax", None) is None:
+                    norm.autoscale_None([vmin, vmax])
+                return float(norm.inverse(t))
+            except Exception:
+                pass
+        return vmin + t * (vmax - vmin)
+
+    stops = []
+    n_stops = 24
+    for i in range(n_stops + 1):
+        t = i / n_stops
+        r, g, b, _a = colormap(t)
+        stops.append(
+            f'<stop offset="{t * 100:.2f}%" stop-color="#{int(round(r * 255)):02x}{int(round(g * 255)):02x}{int(round(b * 255)):02x}"/>'
+        )
+    gradient_id = f"xatra-cmap-{uuid.uuid4().hex[:8]}"
+    pad = 4
+    bar_w = width - 2 * pad
+    label_y = height + 15
+    ticks = []
+    for t, anchor in ((0.0, "start"), (0.5, "middle"), (1.0, "end")):
+        x = pad + t * bar_w
+        label = _html.escape(_format_legend_value(value_at(t)))
+        ticks.append(
+            f'<line x1="{x:.1f}" y1="{height}" x2="{x:.1f}" y2="{height + 3}" stroke="rgba(0,0,0,0.35)" stroke-width="1"/>'
+            f'<text x="{x:.1f}" y="{label_y}" text-anchor="{anchor}" font-size="11" fill="currentColor">{label}</text>'
+        )
+    total_h = label_y + 4
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {total_h}" width="100%" '
+        f'style="display:block;max-width:{width}px;color:#4a4540;font-family:inherit;font-variant-numeric:tabular-nums">'
+        f'<defs><linearGradient id="{gradient_id}" x1="0" x2="1" y1="0" y2="0">{"".join(stops)}</linearGradient></defs>'
+        f'<rect x="{pad}" y="0" width="{bar_w}" height="{height}" rx="3" fill="url(#{gradient_id})" '
+        f'stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>'
+        f'{"".join(ticks)}</svg>'
+    )
+
+
+# Default sequential palette for data maps: warm, light-to-dark, readable over relief.
+DEFAULT_DATA_COLORS = ["#f7e3a1", "#f2b866", "#e17d4f", "#bf4650", "#76264a"]
+
+
+def _default_data_colormap():
+    from matplotlib.colors import LinearSegmentedColormap
+
+    return LinearSegmentedColormap.from_list("xatra_default", DEFAULT_DATA_COLORS)
 
 
 class Map:
@@ -502,7 +538,7 @@ class Map:
         
         Args:
             colormap: matplotlib Colormap object (e.g., plt.cm.viridis, plt.cm.Reds).
-                     If None, uses default yellow-orange-red colormap.
+                     If None, uses xatra's default warm sequential colormap.
             vmin: Minimum value for normalization (default: None, auto-detect)
             vmax: Maximum value for normalization (default: None, auto-detect)
             norm: matplotlib Normalize object (e.g., LogNorm, PowerNorm). If provided,
@@ -511,7 +547,7 @@ class Map:
         Example:
             >>> import matplotlib.pyplot as plt
             >>> from matplotlib.colors import LogNorm, PowerNorm
-            >>> map.DataColormap()  # Uses default yellow-orange-red colormap
+            >>> map.DataColormap()  # Uses default warm sequential colormap
             >>> map.DataColormap(plt.cm.viridis)
             >>> map.DataColormap(plt.cm.Reds, vmin=0, vmax=100)
             >>> map.DataColormap(plt.cm.viridis, norm=LogNorm(vmin=1, vmax=1000))
@@ -519,7 +555,7 @@ class Map:
         """
         if colormap is None:
             from matplotlib.colors import LinearSegmentedColormap
-            colormap = LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"])
+            colormap = _default_data_colormap()
         elif isinstance(colormap, str):
             import matplotlib.pyplot as plt
             colormap = plt.get_cmap(colormap)
@@ -529,7 +565,7 @@ class Map:
         """Add a data element to the map.
         
         Data elements are colored based on their numeric values using the map's data colormap.
-        If no colormap is set, a default yellow-orange-red colormap will be used.
+        If no colormap is set, the default warm sequential colormap will be used.
         
         Args:
             gadm: GADM key (e.g., "IND.31" for Tamil Nadu)
@@ -552,7 +588,7 @@ class Map:
         # Create default colormap if none exists
         if self._data_colormap is None:
             from matplotlib.colors import LinearSegmentedColormap
-            self._data_colormap = DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+            self._data_colormap = DataColormap(_default_data_colormap())
         
         # Add value to colormap for auto-detection of vmin/vmax
         self._data_colormap.add_value(value)
@@ -648,7 +684,7 @@ class Map:
         # Create default colormap if none exists
         if self._data_colormap is None:
             from matplotlib.colors import LinearSegmentedColormap
-            self._data_colormap = DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+            self._data_colormap = DataColormap(_default_data_colormap())
         
         # Add all values to colormap for auto-detection of vmin/vmax
         if data_column is not None:
@@ -1054,7 +1090,7 @@ class Map:
         if url_or_provider in self.PROVIDERS:
             provider = self.PROVIDERS[url_or_provider]
             url = self._resolve_base_option_url(provider["url"])
-            display_name = name or url_or_provider
+            display_name = name or provider.get("name") or url_or_provider
             options = dict(provider.get("options", {}))
         else:
             url = self._resolve_base_option_url(url_or_provider)
@@ -1062,8 +1098,9 @@ class Map:
             options = None
         
         # Check if this layer already exists and update it
+        style_key = (options or {}).get("className")
         for i, existing in enumerate(self._base_options):
-            if existing.url == url:
+            if existing.url == url and (existing.options or {}).get("className") == style_key:
                 self._base_options[i] = BaseOptionEntry(
                     url=url,
                     name=display_name,
@@ -1276,7 +1313,7 @@ class Map:
             extract_coords(geometry.get("coordinates", []))
 
     @time_debug("Calculate auto focus (serialized)")
-    def _calculate_auto_focus_from_serialized_elements(
+    def _calculate_auto_bounds_from_serialized_elements(
         self,
         pax: Dict[str, Any],
         rivers_serialized: List[Dict[str, Any]],
@@ -1287,81 +1324,74 @@ class Map:
         admin_rivers_serialized: List[Dict[str, Any]],
         data_serialized: List[Dict[str, Any]],
         dataframes_serialized: List[Dict[str, Any]],
-        geometry_registry: Dict[str, Any],
-    ) -> Tuple[float, float]:
-        """Calculate focus from all serialized elements that will be rendered."""
+        geometry_registry: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Tuple[float, float, float, float]]:
+        """Bounding box (min_lat, min_lng, max_lat, max_lng) of what the map shows.
+
+        Area elements (flags, admins, data) define the extent when present;
+        otherwise rivers, paths, points and texts do. Returns None for an empty map.
+        """
+        geometry_registry = geometry_registry or {}
         primary_lats: List[float] = []
         primary_lngs: List[float] = []
         secondary_lats: List[float] = []
         secondary_lngs: List[float] = []
-        
+
         # Track seen geometry IDs to avoid redundant coordinate extraction
         seen_geom_ids = set()
 
-        def extract_from_id(geom_id, lats, lngs):
-            if geom_id and geom_id in geometry_registry and geom_id not in seen_geom_ids:
-                self._extract_coordinates_from_geometry(geometry_registry[geom_id], lats, lngs)
-                seen_geom_ids.add(geom_id)
+        def extract(item: Dict[str, Any], lats: List[float], lngs: List[float]) -> None:
+            # Prefer geom_id (externalized geometry), but support inline geometry too.
+            geom_id = item.get("geom_id")
+            if geom_id:
+                if geom_id in geometry_registry and geom_id not in seen_geom_ids:
+                    self._extract_coordinates_from_geometry(geometry_registry[geom_id], lats, lngs)
+                    seen_geom_ids.add(geom_id)
+            elif item.get("geometry"):
+                self._extract_coordinates_from_geometry(item["geometry"], lats, lngs)
 
         # 1. Primary elements: Flags, Admins, Data
         if pax.get("mode") == "dynamic":
             for snapshot in pax.get("snapshots", []):
                 for flag in snapshot.get("flags", []):
-                    extract_from_id(flag.get("geom_id"), primary_lats, primary_lngs)
+                    extract(flag, primary_lats, primary_lngs)
         else:
             for flag in pax.get("flags", []):
-                # Static pax payloads store inline geometry ("geometry") rather than geom_id.
-                # Prefer geom_id when present, but support inline geometry for compatibility.
-                geom_id = flag.get("geom_id")
-                if geom_id:
-                    extract_from_id(geom_id, primary_lats, primary_lngs)
-                elif flag.get("geometry"):
-                    self._extract_coordinates_from_geometry(flag.get("geometry"), primary_lats, primary_lngs)
+                extract(flag, primary_lats, primary_lngs)
 
-        for admin in admins_serialized:
-            extract_from_id(admin.get("geom_id"), primary_lats, primary_lngs)
-
-        for data in data_serialized:
-            extract_from_id(data.get("geom_id"), primary_lats, primary_lngs)
-
-        for dataframe in dataframes_serialized:
-            extract_from_id(dataframe.get("geom_id"), primary_lats, primary_lngs)
+        for item in [*admins_serialized, *data_serialized, *dataframes_serialized]:
+            extract(item, primary_lats, primary_lngs)
 
         if primary_lats and primary_lngs:
-            center_lat = (min(primary_lats) + max(primary_lats)) / 2
-            center_lng = (min(primary_lngs) + max(primary_lngs)) / 2
-            return (center_lat, center_lng)
+            return (min(primary_lats), min(primary_lngs), max(primary_lats), max(primary_lngs))
 
         # 2. Secondary elements: Rivers, Paths, Points, Texts, Admin Rivers
-        for river in rivers_serialized:
-            extract_from_id(river.get("geom_id"), secondary_lats, secondary_lngs)
-
-        for admin_river in admin_rivers_serialized:
-            extract_from_id(admin_river.get("geom_id"), secondary_lats, secondary_lngs)
+        for item in [*rivers_serialized, *admin_rivers_serialized]:
+            extract(item, secondary_lats, secondary_lngs)
 
         for path in paths_serialized:
             for coord in path.get("coords", []):
                 secondary_lats.append(coord[0])
                 secondary_lngs.append(coord[1])
 
-        for point in points_serialized:
-            position = point.get("position")
-            if position and len(position) == 2:
-                secondary_lats.append(position[0])
-                secondary_lngs.append(position[1])
-
-        for text in texts_serialized:
-            position = text.get("position")
+        for item in [*points_serialized, *texts_serialized]:
+            position = item.get("position")
             if position and len(position) == 2:
                 secondary_lats.append(position[0])
                 secondary_lngs.append(position[1])
 
         if secondary_lats and secondary_lngs:
-            center_lat = (min(secondary_lats) + max(secondary_lats)) / 2
-            center_lng = (min(secondary_lngs) + max(secondary_lngs)) / 2
-            return (center_lat, center_lng)
+            return (min(secondary_lats), min(secondary_lngs), max(secondary_lats), max(secondary_lngs))
 
-        return (22.0, 79.0)
+        return None
+
+    def _calculate_auto_focus_from_serialized_elements(self, *args, **kwargs) -> Tuple[float, float]:
+        """Calculate focus (centre of the content's bounding box) from serialized elements."""
+        bounds = self._calculate_auto_bounds_from_serialized_elements(*args, **kwargs)
+        if bounds is None:
+            return (22.0, 79.0)
+        min_lat, min_lng, max_lat, max_lng = bounds
+        return ((min_lat + max_lat) / 2, (min_lng + max_lng) / 2)
 
     def _add_default_base_options(self) -> None:
         """Add default base layer options.
@@ -1850,12 +1880,23 @@ class Map:
                     "period": list(restricted_period) if restricted_period is not None else None,
                 })
 
+        base_option_entries = list(self._base_options)
+        if not base_option_entries:
+            # No basemap chosen: use the default atlas basemap rather than a blank canvas.
+            provider = self.PROVIDERS[DEFAULT_BASEMAP]
+            base_option_entries = [BaseOptionEntry(
+                url=provider["url"],
+                name=provider.get("name", DEFAULT_BASEMAP),
+                options=dict(provider.get("options", {})),
+                default=True,
+            )]
+        has_default = any(b.default for b in base_option_entries)
         base_options_serialized = [{
             "url": b.url,
             "name": b.name,
             "options": b.options,
-            "default": b.default,
-        } for b in self._base_options]
+            "default": b.default or (not has_default and i == 0),
+        } for i, b in enumerate(base_option_entries)]
 
         title_boxes_serialized = []
         for ft in self._title_boxes:
@@ -2284,9 +2325,9 @@ class Map:
                         if self._data_colormap is not None:
                             colors.append(self._data_colormap.get_color(de["value"]))
                         else:
-                            # Use default yellow-orange-red colormap if none set
+                            # Use default colormap if none set
                             from matplotlib.colors import LinearSegmentedColormap
-                            default_colormap = DataColormap(LinearSegmentedColormap.from_list("custom_cmap", ["yellow", "orange", "red"]))
+                            default_colormap = DataColormap(_default_data_colormap())
                             default_colormap.add_value(de["value"])
                             colors.append(default_colormap.get_color(de["value"]))
                     
@@ -2357,21 +2398,30 @@ class Map:
                 except Exception as e:
                     print(f"Warning: Could not generate color bar: {e}")
 
-        # Calculate automatic focus if not set by user
+        # Frame the content automatically unless the user chose a view.
+        content_bounds = self._calculate_auto_bounds_from_serialized_elements(
+            pax=pax,
+            rivers_serialized=rivers_serialized,
+            paths_serialized=paths_serialized,
+            points_serialized=points_serialized,
+            texts_serialized=texts_serialized,
+            admins_serialized=admins_serialized,
+            admin_rivers_serialized=admin_rivers_serialized,
+            data_serialized=data_serialized,
+            dataframes_serialized=dataframes_serialized,
+            geometry_registry=geometry_registry
+        )
         initial_focus = self._initial_focus
         if initial_focus is None:
-            initial_focus = self._calculate_auto_focus_from_serialized_elements(
-                pax=pax,
-                rivers_serialized=rivers_serialized,
-                paths_serialized=paths_serialized,
-                points_serialized=points_serialized,
-                texts_serialized=texts_serialized,
-                admins_serialized=admins_serialized,
-                admin_rivers_serialized=admin_rivers_serialized,
-                data_serialized=data_serialized,
-                dataframes_serialized=dataframes_serialized,
-                geometry_registry=geometry_registry
-            )
+            if content_bounds is not None:
+                min_lat, min_lng, max_lat, max_lng = content_bounds
+                initial_focus = ((min_lat + max_lat) / 2, (min_lng + max_lng) / 2)
+            else:
+                initial_focus = (22.0, 79.0)
+        fit_bounds = None
+        if self._initial_zoom is None and self._initial_focus is None and content_bounds is not None:
+            min_lat, min_lng, max_lat, max_lng = content_bounds
+            fit_bounds = [[min_lat, min_lng], [max_lat, max_lng]]
 
         # Use default zoom if not set by user
         initial_zoom = self._initial_zoom if self._initial_zoom is not None else 5
@@ -2424,6 +2474,7 @@ class Map:
             "colormap_svg": colormap_svg,
             "colormap_info": self._serialize_colormap_info(all_dataframe_values) if self._data_colormap is not None else None,
             "initial_focus": initial_focus,
+            "fit_bounds": fit_bounds,
             "initial_zoom": initial_zoom,
             "geocoder_provider": self._geocoder_provider,
             "geocoder_api_key": self._geocoder_api_key,
@@ -2440,9 +2491,16 @@ class Map:
             >>> html = map.to_html_string()
             >>> # Use in iframe or embed directly
         """
-        self.TitleBox("<i>made with <a href='https://github.com/srajma/xatra'>xatra</a></i>")
+        self._add_watermark()
         payload = self._export_json()
         return export_html_string(payload)
+
+    _WATERMARK_HTML = "<span class='xatra-credit'>made with <a href='https://github.com/srajma/xatra' target='_blank' rel='noopener'>xatra</a></span>"
+
+    def _add_watermark(self) -> None:
+        """Add the "made with xatra" credit once, however many times the map is exported."""
+        if not any(tb.html == self._WATERMARK_HTML for tb in self._title_boxes):
+            self.TitleBox(self._WATERMARK_HTML)
 
     @time_debug("Show (export map)")
     def show(self, out_json: str = "map.json", out_html: str = "map.html") -> None:
@@ -2455,8 +2513,7 @@ class Map:
         Example:
             >>> map.show("my_map.json", "my_map.html")
         """
-        # watermark with a TitleBox
-        self.TitleBox("<i>made with <a href='https://github.com/srajma/xatra'>xatra</a></i>")
+        self._add_watermark()
         payload = self._export_json()
         
         from .debug_utils import DebugSection
@@ -2478,19 +2535,47 @@ class Map:
         # Pass the already serialized string to export_html, along with CSS
         export_html(payload_serialized or payload, out_html, css=payload.get("css", ""))
 
-    # Handle provider names from leaflet-providers
+    # Handle provider names from leaflet-providers.
+    # Note: CARTO basemaps now require an API key (tiles show a watermark without one).
     PROVIDERS = {
+        # xatra's default: Esri's natural-earth style physical map (relief, no
+        # modern labels or borders), softened so that flag colours read clearly.
+        "Xatra.Atlas": {
+            "name": "Atlas",
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
+            "options": {
+                "attribution": "Tiles &copy; Esri &mdash; Source: US National Park Service",
+                "maxNativeZoom": 8,
+                "maxZoom": 18,
+                "className": "xatra-atlas-tiles",
+            },
+        },
         "OpenStreetMap": {
             "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            "options": {
+                "attribution": "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
+                "maxZoom": 19,
+            },
         },
         "Esri.WorldImagery": {
             "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            "options": {
+                "attribution": "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+            },
         },
         "OpenTopoMap": {
             "url": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+            "options": {
+                "attribution": "Map data &copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors, SRTM | Style &copy; <a href=\"https://opentopomap.org\">OpenTopoMap</a> (CC-BY-SA)",
+                "maxNativeZoom": 17,
+            },
         },
         "Esri.WorldPhysical": {
             "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}",
+            "options": {
+                "attribution": "Tiles &copy; Esri &mdash; Source: US National Park Service",
+                "maxNativeZoom": 8,
+            },
         },
         "CartoDB.Positron": {
             "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
@@ -2510,6 +2595,9 @@ class Map:
         },
         "Esri.WorldTopoMap": {
             "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+            "options": {
+                "attribution": "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community",
+            },
         },
         "Stadia.StamenWatercolor": {
             "url": "https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.{ext}",

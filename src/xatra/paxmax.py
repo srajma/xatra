@@ -12,6 +12,7 @@ creates stable periods where the territory remains constant.
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
@@ -46,6 +47,45 @@ def _unary_union_wrapper(geometries):
 
 @time_debug("Compute centroid")
 def _compute_centroid_for_geometry(geometry: Dict[str, Any]) -> Optional[List[float]]:
+    """Compute a label anchor for a GeoJSON (Multi)Polygon.
+
+    Uses the largest part of the territory (so an empire with island
+    possessions is labelled on its mainland), and its area centroid when that
+    sits comfortably inside the shape; otherwise the pole of inaccessibility
+    (the interior point farthest from the border), so labels of crescent- or
+    L-shaped territories never land outside them.
+
+    Returns:
+        [latitude, longitude] or None if invalid
+    """
+    if geometry is None or geometry.get("type") not in ["Polygon", "MultiPolygon"]:
+        return None
+    try:
+        from shapely.ops import polylabel
+
+        geom = shape(geometry)
+        if geom.is_empty:
+            return None
+        parts = list(geom.geoms) if isinstance(geom, MultiPolygon) else [geom]
+        main = max(parts, key=lambda g: g.area)
+        if main.area <= 0:
+            return _area_weighted_centroid(geometry)
+        minx, miny, maxx, maxy = main.bounds
+        size = max(maxx - minx, maxy - miny)
+        simple = main.simplify(size / 400, preserve_topology=True)
+        if simple.is_empty or not simple.is_valid:
+            simple = main
+        pole = polylabel(simple, tolerance=max(size / 300, 1e-6))
+        pole_depth = simple.exterior.distance(pole)
+        centroid = simple.centroid
+        if simple.contains(centroid) and simple.exterior.distance(centroid) >= 0.6 * pole_depth:
+            return [centroid.y, centroid.x]
+        return [pole.y, pole.x]
+    except Exception:
+        return _area_weighted_centroid(geometry)
+
+
+def _area_weighted_centroid(geometry: Dict[str, Any]) -> Optional[List[float]]:
     """Compute centroid for a GeoJSON geometry.
     
     Args:
@@ -162,20 +202,41 @@ def _extract_polygon_parts(geom):
     return []
 
 
+# Interior rings smaller than this (in square degrees, ~20 km² at Indian
+# latitudes), or thin slivers, are seams between imperfectly matching source
+# polygons rather than real enclaves; they show up as specks once flags have borders.
+_MIN_HOLE_AREA = 0.002
+_MIN_HOLE_COMPACTNESS = 0.05
+
+
+def _is_artifact_hole(ring) -> bool:
+    hole = Polygon(ring)
+    area = hole.area
+    if area < _MIN_HOLE_AREA:
+        return True
+    perimeter = hole.length
+    compactness = 4 * math.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
+    return compactness < _MIN_HOLE_COMPACTNESS
+
+
+def _drop_artifact_holes(poly: Polygon) -> Polygon:
+    if not poly.interiors:
+        return poly
+    kept = [ring for ring in poly.interiors if not _is_artifact_hole(ring)]
+    if len(kept) == len(poly.interiors):
+        return poly
+    return Polygon(poly.exterior, kept)
+
+
 def _polygonal_only(geom):
     """Keep only polygonal components of a geometry for area-based flag rendering."""
     if geom is None or geom.is_empty:
         return None
 
-    if isinstance(geom, Polygon):
-        return geom
-
-    if isinstance(geom, MultiPolygon):
-        return geom
-
     parts = _extract_polygon_parts(geom)
     if not parts:
         return None
+    parts = [_drop_artifact_holes(p) for p in parts]
     if len(parts) == 1:
         return parts[0]
     return MultiPolygon(parts)

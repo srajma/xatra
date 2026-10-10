@@ -50,7 +50,7 @@ if not is_data_installed():
         f"Xatra requires data files to be installed at: {xatra_dir}\n\n"
         f"To install the data, run:\n"
         f"    xatra-install-data\n\n"
-        f"This will download ~500MB-1GB of geographical data from Hugging Face.\n"
+        f"This will download ~3 GB of geographical data from Hugging Face.\n"
         f"The download may take several minutes depending on your connection.\n"
         f"{'='*70}\n",
         UserWarning,

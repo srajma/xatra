@@ -40,5 +40,7 @@ def test_paxmax_static_flag_uses_polygonal_geometry_only():
 
     assert result["mode"] == "static"
     flag = result["flags"][0]
-    assert flag["geometry"]["type"] in {"Polygon", "MultiPolygon"}
+    # Static payloads externalize geometry into the shared geometry library.
+    geometry = result["geometry_library"][flag["geom_id"]]
+    assert geometry["type"] in {"Polygon", "MultiPolygon"}
     assert flag["centroid"] is not None

@@ -65,9 +65,10 @@ class Territory:
 
     _geometry_provider: Optional[callable] = None
     strrepr: str = None
-    _memoized_geometry: Any = field(default=None, init=False, repr=False)
-    _memoized_ready: bool = field(default=False, init=False, repr=False)
-    _geojson_cache: Optional[Dict[str, Any]] = field(default=None, init=False, repr=False)
+    # Per-instance memo, keyed by the active simplification tolerance: library
+    # territories are module-level singletons shared by maps with different settings.
+    _memoized: Dict[Any, Any] = field(default_factory=dict, init=False, repr=False)
+    _geojson_cache: Dict[Any, Any] = field(default_factory=dict, init=False, repr=False)
 
     @staticmethod
     def from_geojson(geojson_obj: Dict[str, Any]) -> "Territory":
@@ -204,19 +205,20 @@ class Territory:
         Returns:
             Shapely geometry object or None if invalid
         """
-        # Always memoize per-instance results to avoid repeated recomputation
-        # during complex map exports when global caching is disabled.
-        if self._memoized_ready:
-            return self._memoized_geometry
-
-        # Use global cache for all territories
-        cache = get_global_cache()
-        cache_strrepr = self.strrepr
         try:
             from .loaders import get_active_simplification_tolerance
             active_tol = get_active_simplification_tolerance()
         except Exception:
             active_tol = None
+
+        # Always memoize per-instance results to avoid repeated recomputation
+        # during complex map exports when global caching is disabled.
+        if active_tol in self._memoized:
+            return self._memoized[active_tol]
+
+        # Use global cache for all territories
+        cache = get_global_cache()
+        cache_strrepr = self.strrepr
         if active_tol is not None and "simplify_tolerance=" not in self.strrepr:
             # Keep cache entries disjoint across simplification settings.
             cache_strrepr = f"{self.strrepr}@@simplify={active_tol:.12g}"
@@ -224,23 +226,18 @@ class Territory:
         # Try to get from cache first
         cached_geometry = cache.get(cache_strrepr)
         if cached_geometry is not None:
-            # print(f"RETRIEVING CACHED GEOMETRY FOR '{self.strrepr}'")
-            self._memoized_ready = True
-            self._memoized_geometry = cached_geometry
+            self._memoized[active_tol] = cached_geometry
             return cached_geometry
         
         # Not in cache, compute and store
         if self._geometry_provider is None:
-            self._memoized_ready = True
-            self._memoized_geometry = None
+            self._memoized[active_tol] = None
             return None
         
-        # print(f"CALCULATING GEOMETRY FOR '{self.strrepr}'")
         geometry = self._geometry_provider()
         if geometry is not None:
             cache.put(cache_strrepr, geometry)
-        self._memoized_ready = True
-        self._memoized_geometry = geometry
+        self._memoized[active_tol] = geometry
         return geometry
 
     @time_debug("Convert territory to GeoJSON dict")
@@ -252,16 +249,17 @@ class Territory:
         Returns:
             Dictionary representing the GeoJSON geometry
         """
-        if self._geojson_cache is not None:
-            return self._geojson_cache
-            
         geom = self.to_geometry()
         if geom is None:
             return None
-            
+        key = id(geom)
+        cached = self._geojson_cache.get(key)
+        if cached is not None:
+            return cached
+
         from shapely.geometry import mapping
-        self._geojson_cache = mapping(geom)
-        return self._geojson_cache
+        self._geojson_cache[key] = mapping(geom)
+        return self._geojson_cache[key]
 
     # Set algebra
     def __or__(self, other: "Territory") -> "Territory":
