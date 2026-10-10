@@ -107,3 +107,39 @@ def test_script_markers_relied_on_by_xatra_gui():
     assert "    <script>\n      const payload = " in html
     assert "      const geometryRegistry = payload.geometry_registry || {};" in html
     assert html.count("      setupSearch();\n    </script>") == 1
+
+
+def test_embedders_can_inset_the_title_panel():
+    m = xatra.Map()
+    m.Flag("A", _square())
+    html = m.to_html_string()
+    assert "setPanelInsets" in html
+    assert "--xatra-inset-controls-top" in html
+    assert "top: calc(16px + var(--xatra-inset-top, 0px))" in html
+    assert "type: 'mapReady'" in html
+
+
+def test_dynamic_flags_drop_artifact_holes_too():
+    from xatra.paxmax import paxmax_aggregate
+
+    outer = [[0, 0], [0, 10], [10, 10], [10, 0]]
+    speck = [[1, 1], [1, 1.01], [1.01, 1.01], [1.01, 1]]
+    territory = Territory.from_polygon(outer, holes=[speck])
+    result = paxmax_aggregate([{"label": "X", "territory": territory, "period": (0, 10)}])
+    assert result["mode"] == "dynamic"
+    flag = result["snapshots"][0]["flags"][0]
+    geometry = result["geometry_library"][flag["geom_id"]]
+    rings = geometry["coordinates"] if geometry["type"] == "Polygon" else geometry["coordinates"][0]
+    assert len(rings) == 1  # the speck hole is gone
+
+
+def test_label_anchor_prefers_the_middle_of_a_long_territory():
+    # A long north-south strip with a bulge at the top (like Uraśa): the pole
+    # of inaccessibility is in the bulge, but the label belongs mid-strip.
+    strip = Polygon([(0, 0), (1.3, 0), (1.3, 6), (2.35, 6), (2.35, 8.4), (-1.05, 8.4), (-1.05, 6), (0, 6), (0, 0)])
+    lat, lng = _compute_centroid_for_geometry(mapping(strip))
+    from shapely.geometry import Point
+
+    assert strip.contains(Point(lng, lat))
+    assert lat < 6.5  # not up in the bulge
+    assert abs(lat - strip.centroid.y) < 1.0

@@ -60,8 +60,22 @@ HTML_TEMPLATE = Template(
       .leaflet-container { font-family: var(--xatra-ui-font); font-size: 12px; }
 
       /* ── Panels ── */
-      #title { position: fixed; top: 16px; left: 16px; max-width: 340px; z-index: 1000; padding: 14px 16px 12px; background: var(--xatra-panel-bg); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); border: 1px solid var(--xatra-panel-border); border-radius: 12px; box-shadow: var(--xatra-panel-shadow); font-size: 13.5px; line-height: 1.45; cursor: move; user-select: none; scrollbar-width: thin; }
+      #title { position: fixed; top: calc(16px + var(--xatra-inset-top, 0px)); left: 16px; max-width: min(340px, calc(100% - 32px - var(--xatra-inset-right, 0px))); box-sizing: border-box; z-index: 1000; padding: 14px 16px 12px; background: var(--xatra-panel-bg); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); border: 1px solid var(--xatra-panel-border); border-radius: 12px; box-shadow: var(--xatra-panel-shadow); font-size: 13.5px; line-height: 1.45; cursor: move; user-select: none; scrollbar-width: thin; }
       #title-content > .title-box { margin-bottom: 8px; }
+      #title.dragging { opacity: 0.85; }
+      #title-toggle { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; padding: 0; border: none; border-radius: 6px; background: transparent; color: var(--xatra-muted); cursor: pointer; font-size: 0; line-height: 0; }
+      #title-toggle::before { content: ""; display: inline-block; width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: translateY(-2px) rotate(-135deg); }
+      #title-toggle:hover { background: rgba(0,0,0,0.06); color: var(--xatra-ink); }
+      #title.collapsed #title-toggle::before { transform: translateY(1px) rotate(45deg); }
+      #title-content { padding-right: 18px; }
+      #title.collapsed { padding-top: 10px; padding-bottom: 10px; }
+      #title.collapsed #title-search-wrapper,
+      #title.collapsed #title-content > :not(.title-box),
+      #title.collapsed #title-content > .title-box ~ .title-box { display: none; }
+      /* Collapsed: just the first lines of the title. */
+      #title.collapsed #title-content > .title-box:not(.title-box ~ .title-box) { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      #title.collapsed #title-content > .title-box:not(.title-box ~ .title-box) :is(h1, h2, h3) { font-size: 17px; margin: 0; }
+      #title.collapsed #title-content > .title-box:not(.title-box ~ .title-box) :is(p, ul, ol, br ~ *) { display: inline; }
       #title-content > .title-box:empty { display: none; }
       #title .title-box h1, #title .title-box h2, #title .title-box h3 { font-family: var(--xatra-map-font); font-weight: 600; line-height: 1.15; margin: 0 0 6px; letter-spacing: 0.01em; }
       #title .title-box h1 { font-size: 24px; }
@@ -85,7 +99,7 @@ HTML_TEMPLATE = Template(
       #coordinate-label { font-weight: 500; }
       #coordinates { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--xatra-muted); }
       /* Scroll long titles inside the panel; the search row stays outside so its dropdown isn't clipped. */
-      #title-content { display: flex; flex-direction: column; max-height: calc(100vh - 190px); overflow-y: auto; scrollbar-width: thin; }
+      #title-content { display: flex; flex-direction: column; max-height: calc(100vh - 190px - var(--xatra-inset-top, 0px)); overflow-y: auto; scrollbar-width: thin; }
       #layer-selector { margin-top: 6px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--xatra-muted); }
       #layer-selector select { margin-left: 0; flex: 1; min-width: 0; font: inherit; color: var(--xatra-ink); padding: 4px 8px; border: 1px solid rgba(0,0,0,0.12); border-radius: 7px; background: rgba(255,255,255,0.8); }
       #colormap { margin-top: 10px; cursor: crosshair; }
@@ -126,6 +140,7 @@ HTML_TEMPLATE = Template(
       .xatra-atlas-tiles { filter: saturate(0.72) brightness(1.04); }
 
       /* ── Leaflet chrome ── */
+      .leaflet-top.leaflet-right { top: var(--xatra-inset-controls-top, 0px); }
       .leaflet-bar { border: none !important; border-radius: 10px !important; overflow: hidden; box-shadow: var(--xatra-panel-shadow) !important; }
       .leaflet-bar a, .leaflet-bar a:hover { width: 32px; height: 32px; line-height: 32px; color: var(--xatra-ink); background: var(--xatra-panel-bg); border-bottom-color: rgba(0,0,0,0.08); }
       .leaflet-bar a:hover { background: #fff; }
@@ -144,7 +159,7 @@ HTML_TEMPLATE = Template(
       #search-features-container .leaflet-control-search { display: flex !important; flex-direction: row !important; align-items: stretch; width: 100% !important; max-width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; box-shadow: none; }
       #search-features-container .leaflet-control-search label.search-input { display: none !important; }
       #search-features-container .leaflet-control-search input.search-input { display: block !important; order: 2; flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; height: 28px !important; margin: 0 !important; padding: 0 8px !important; border: none !important; background: transparent !important; font: 12.5px var(--xatra-ui-font) !important; box-sizing: border-box !important; outline: none; }
-      #search-features-container .leaflet-control-search .search-button { order: 1; flex: 0 0 28px !important; background-position: center !important; width: 28px !important; height: 28px !important; margin: 0 !important; background-color: transparent !important; opacity: 0.6; }
+      #search-features-container .leaflet-control-search .search-button { order: 1; flex: 0 0 28px !important; background-position: 4px 4px !important; width: 28px !important; height: 28px !important; margin: 0 !important; background-color: transparent !important; opacity: 0.6; }
       #search-features-container .leaflet-control-search .search-cancel { right: 4px !important; top: 0 !important; margin: 0 !important; height: 28px !important; }
       #search-features-container .leaflet-control-search .search-tooltip { z-index: 1100; max-height: 240px; left: 0; top: 32px; width: max-content !important; min-width: 100%; max-width: 300px; box-sizing: border-box; background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; box-shadow: var(--xatra-panel-shadow); }
       #search-features-container .leaflet-control-search .search-tooltip ul { list-style: none; margin: 0; padding: 2px 0; }
@@ -159,7 +174,7 @@ HTML_TEMPLATE = Template(
       #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; border: none; background: transparent; font: 12.5px var(--xatra-ui-font); padding: 0 6px; height: 28px; outline: none; }
       #title-search-wrapper .leaflet-control-geocoder-icon { width: 28px; height: 28px; flex: 0 0 28px; background-color: transparent; opacity: 0.6; border-radius: 8px; }
       @media (max-width: 600px) {
-        #title { top: 10px; left: 10px; max-width: calc(100% - 64px); padding: 10px 12px; font-size: 12.5px; }
+        #title { top: calc(10px + var(--xatra-inset-top, 0px)); left: 10px; max-width: calc(100% - 64px - var(--xatra-inset-right, 0px)); padding: 10px 12px; font-size: 12.5px; }
         #controls { bottom: 14px; }
         #controls #startYear, #controls #endYear { display: none; }
       }
@@ -169,6 +184,7 @@ HTML_TEMPLATE = Template(
   <body>
     <div id="map"></div>
     <div id="title">
+      <button id="title-toggle" type="button" aria-expanded="true" title="Hide details" aria-label="Hide details"></button>
       <div id="title-content"></div>
       <div id="title-search-wrapper"><div class="search-block"><label class="search-block-label">Feature search</label><div id="search-features-container"></div></div><div class="search-block"><label class="search-block-label">Map search</label><div id="search-geocoder-container"></div></div></div>
     </div>
@@ -775,7 +791,26 @@ HTML_TEMPLATE = Template(
         }
         return null;
       }
+      // Tell an embedding page the map is listening (it may reply with setPanelInsets).
+      setTimeout(function() {
+        if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'mapReady' }, '*');
+      }, 0);
       window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'setPanelInsets') {
+          // An embedding page (e.g. xatra-gui) can push the title panel down to
+          // clear its own overlays: { type: 'setPanelInsets', top, right, controlsTop }
+          // (pixels, or null to reset). `top`/`right` keep the title panel clear;
+          // `controlsTop` moves the zoom buttons down.
+          const setInset = (name, value) => {
+            const px = Number(value);
+            if (Number.isFinite(px) && px > 0) document.documentElement.style.setProperty(name, px + 'px');
+            else document.documentElement.style.removeProperty(name);
+          };
+          setInset('--xatra-inset-top', event.data.top);
+          setInset('--xatra-inset-controls-top', event.data.controlsTop);
+          setInset('--xatra-inset-right', event.data.right);
+          return;
+        }
         if (event.data === 'getCurrentView') {
           const center = map.getCenter();
           const zoom = map.getZoom();
@@ -1335,6 +1370,19 @@ HTML_TEMPLATE = Template(
       function rectsOverlap(a, b) {
         return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
       }
+      function flagContainsPoint(marker, latlng) {
+        const polygon = marker._xatraPolygon;
+        if (!polygon) return true;
+        let inside = false;
+        polygon.eachLayer((sub) => {
+          if (!inside && sub instanceof L.Polygon) {
+            const b = sub.getBounds();
+            if (b.contains(latlng) && pointInPolygon(latlng, sub.getLatLngs())) inside = true;
+          }
+        });
+        return inside;
+      }
+
       function declutterFlagLabels() {
         const mapEl = map.getContainer();
         const taken = [];
@@ -1342,31 +1390,50 @@ HTML_TEMPLATE = Template(
           const r = el.getBoundingClientRect();
           if (r.width && r.height) taken.push(r);
         }
+        // Point markers are dodged when possible but never hide a label.
+        const markers = [];
+        for (const el of mapEl.querySelectorAll('.point-dot, .leaflet-marker-icon:not(.leaflet-div-icon):not(.flag-label-container)')) {
+          const r = el.getBoundingClientRect();
+          if (r.width && r.height) markers.push(r);
+        }
         const items = [];
         for (const marker of flagLabelMarkers) {
           if (!map.hasLayer(marker)) continue;
           const el = marker.getElement && marker.getElement();
           const inner = el && el.querySelector('.flag-label');
           if (!inner) continue;
+          const rotor = el.querySelector('.flag-label-rotor') || inner;
           inner.classList.remove('xatra-label-hidden');
           inner.style.translate = '';
-          items.push({ inner, priority: (marker._xatraSizePx || 0) * (marker._xatraLabel ? marker._xatraLabel.depthScale : 1) });
+          rotor.style.translate = '';
+          items.push({ inner, rotor, marker, priority: (marker._xatraSizePx || 0) * (marker._xatraLabel ? marker._xatraLabel.depthScale : 1) });
         }
         items.sort((a, b) => b.priority - a.priority);
         const pad = 3;
         for (const item of items) {
           const r = item.inner.getBoundingClientRect();
           if (!r.width || !r.height) continue;
-          // Try the anchor first, then a little above or below it.
+          // Try the anchor first, then a little above or below it (in screen
+          // space, stepping by one line of text), but only to spots that are
+          // still inside the territory; otherwise the label waits for a zoom-in.
+          const lineHeight = item.inner.offsetHeight || r.height;
+          const mapRect = mapEl.getBoundingClientRect();
           let placed = false;
-          for (const dy of [0, -1, 1, -2, 2].map((k) => k * 1.15 * r.height)) {
-            const box = { left: r.left - pad, right: r.right + pad, top: r.top + dy - pad, bottom: r.bottom + dy + pad };
-            if (!taken.some((t) => rectsOverlap(box, t))) {
-              if (dy) item.inner.style.translate = `0 ${dy.toFixed(1)}px`;
+          for (const avoidMarkers of [true, false]) {
+            for (const dy of [0, -1, 1, -2, 2].map((k) => k * 1.1 * lineHeight)) {
+              const box = { left: r.left - pad, right: r.right + pad, top: r.top + dy - pad, bottom: r.bottom + dy + pad };
+              if (taken.some((t) => rectsOverlap(box, t))) continue;
+              if (avoidMarkers && markers.some((t) => rectsOverlap(box, t))) continue;
+              if (dy) {
+                const center = L.point(r.left + r.width / 2 - mapRect.left, r.top + r.height / 2 + dy - mapRect.top);
+                if (!flagContainsPoint(item.marker, map.containerPointToLatLng(center))) continue;
+                item.rotor.style.translate = `0 ${dy.toFixed(1)}px`;
+              }
               taken.push(box);
               placed = true;
               break;
             }
+            if (placed) break;
           }
           if (!placed) item.inner.classList.add('xatra-label-hidden');
         }
@@ -1483,6 +1550,7 @@ HTML_TEMPLATE = Template(
           });
           const labelLayer = L.marker(anchor, { icon: labelDiv, interactive: false, keyboard: false });
           labelLayer._flagData = flagData;
+          labelLayer._xatraPolygon = layer;
           labelLayer._xatraLabel = {
             bounds: geometryLatLngBounds(geometry),
             depthScale: Math.pow(0.85, f.vassal_depth || 0)
@@ -3220,83 +3288,66 @@ HTML_TEMPLATE = Template(
 
       function setupDragFunctionality() {
         const titleDiv = document.getElementById('title');
-        let isDragging = false;
-        let currentX;
-        let currentY;
-        let initialX;
-        let initialY;
-        let xOffset = 0;
-        let yOffset = 0;
+        // Translation applied on top of the panel's CSS position.
+        let dx = 0, dy = 0;
+        let start = null;
+        let dragging = false;
 
-        // Get initial position from CSS
-        const computedStyle = window.getComputedStyle(titleDiv);
-        const initialTop = parseInt(computedStyle.top) || 20;
-        const initialLeft = parseInt(computedStyle.left) || 20;
-        xOffset = initialLeft;
-        yOffset = initialTop;
-
-        function dragStart(e) {
-          if (e.type === "touchstart") {
-            initialX = e.touches[0].clientX - xOffset;
-            initialY = e.touches[0].clientY - yOffset;
-          } else {
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
-          }
-
-          if (e.target === titleDiv || titleDiv.contains(e.target)) {
-            isDragging = true;
-            titleDiv.style.opacity = '0.8';
-          }
+        function point(e) {
+          const t = e.touches ? e.touches[0] : e;
+          return { x: t.clientX, y: t.clientY };
         }
 
-        function dragEnd(e) {
-          initialX = currentX;
-          initialY = currentY;
-          isDragging = false;
-          titleDiv.style.opacity = '1';
+        function dragStart(e) {
+          // Controls inside the panel (search, basemap, links, buttons) keep working.
+          if (e.target.closest('input, select, textarea, button, a, label, .search-tooltip, .leaflet-control-geocoder-alternatives')) return;
+          const p = point(e);
+          const rect = titleDiv.getBoundingClientRect();
+          start = { x: p.x, y: p.y, dx, dy, left: rect.left - dx, top: rect.top - dy, width: rect.width, height: rect.height };
+          dragging = false;
         }
 
         function drag(e) {
-          if (isDragging) {
-            e.preventDefault();
-
-            if (e.type === "touchmove") {
-              currentX = e.touches[0].clientX - initialX;
-              currentY = e.touches[0].clientY - initialY;
-            } else {
-              currentX = e.clientX - initialX;
-              currentY = e.clientY - initialY;
-            }
-
-            xOffset = currentX;
-            yOffset = currentY;
-
-            // Constrain to viewport
-            const maxX = window.innerWidth - titleDiv.offsetWidth;
-            const maxY = window.innerHeight - titleDiv.offsetHeight;
-            
-            xOffset = Math.max(0, Math.min(xOffset, maxX));
-            yOffset = Math.max(0, Math.min(yOffset, maxY));
-
-            titleDiv.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
-          }
+          if (!start) return;
+          const p = point(e);
+          const mx = p.x - start.x, my = p.y - start.y;
+          // Small movements are taps or text selection, not drags.
+          if (!dragging && Math.hypot(mx, my) < 4) return;
+          dragging = true;
+          e.preventDefault();
+          titleDiv.classList.add('dragging');
+          dx = Math.max(-start.left, Math.min(start.dx + mx, window.innerWidth - start.width - start.left));
+          dy = Math.max(-start.top, Math.min(start.dy + my, window.innerHeight - start.height - start.top));
+          titleDiv.style.transform = `translate(${dx}px, ${dy}px)`;
         }
 
-        // Mouse events
+        function dragEnd() {
+          start = null;
+          dragging = false;
+          titleDiv.classList.remove('dragging');
+        }
+
         titleDiv.addEventListener('mousedown', dragStart);
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', dragEnd);
-
-        // Touch events for mobile
-        titleDiv.addEventListener('touchstart', dragStart, { passive: false });
+        titleDiv.addEventListener('touchstart', dragStart, { passive: true });
         document.addEventListener('touchmove', drag, { passive: false });
         document.addEventListener('touchend', dragEnd);
-
-        // Prevent default drag behavior on images and other elements
         titleDiv.addEventListener('dragstart', function(e) {
           e.preventDefault();
         });
+
+        // Collapse toggle: on small screens the panel starts collapsed so the
+        // map stays visible; the reader can expand it.
+        const toggle = document.getElementById('title-toggle');
+        const setCollapsed = (collapsed) => {
+          titleDiv.classList.toggle('collapsed', collapsed);
+          toggle.setAttribute('aria-expanded', String(!collapsed));
+          toggle.title = collapsed ? 'Show details' : 'Hide details';
+          toggle.setAttribute('aria-label', toggle.title);
+        };
+        toggle.addEventListener('click', () => setCollapsed(!titleDiv.classList.contains('collapsed')));
+        setCollapsed(window.innerWidth < 600 || window.innerHeight < 500);
       }
 
       // ── Music player ────────────────────────────────────────────────────────
@@ -3649,7 +3700,11 @@ HTML_TEMPLATE = Template(
         if (!payload.fit_bounds) return;
         const bounds = L.latLngBounds(payload.fit_bounds);
         if (!bounds.isValid()) return;
-        const width = map.getSize().x;
+        // A hidden or not-yet-laid-out frame has no size; framing then would
+        // jump to max zoom. The resize handler below frames it once visible.
+        const size = map.getSize();
+        if (size.x < 50 || size.y < 50) return;
+        const width = size.x;
         let left = 24, bottom = 24;
         if (!opts.ignorePanels) {
           const title = document.getElementById('title');
@@ -3671,6 +3726,16 @@ HTML_TEMPLATE = Template(
       }
       window.xatraFitContent = fitContent;
       fitContent();
+      // Keep the content framed as the frame resizes (or first becomes
+      // visible) until the reader moves the map themselves.
+      let readerMovedMap = false;
+      for (const type of ['pointerdown', 'wheel', 'touchstart', 'keydown']) {
+        map.getContainer().addEventListener(type, () => { readerMovedMap = true; }, { passive: true });
+      }
+      map.on('resize', () => {
+        if (!readerMovedMap) fitContent();
+        scheduleDeclutter();
+      });
       initializeCoordinateDisplay();
       updateFlagLabelScales();
       // NOTE: keep setupSearch() as the script's last line; xatra-gui matches on it.
