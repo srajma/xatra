@@ -107,3 +107,12 @@ def test_script_markers_relied_on_by_xatra_gui():
     assert "    <script>\n      const payload = " in html
     assert "      const geometryRegistry = payload.geometry_registry || {};" in html
     assert html.count("      setupSearch();\n    </script>") == 1
+
+
+def test_embedders_can_inset_the_title_panel():
+    m = xatra.Map()
+    m.Flag("A", _square())
+    html = m.to_html_string()
+    assert "setPanelInsets" in html
+    assert "top: calc(16px + var(--xatra-inset-top, 0px))" in html
+    assert "type: 'mapReady'" in html

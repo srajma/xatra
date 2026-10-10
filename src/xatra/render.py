@@ -60,7 +60,7 @@ HTML_TEMPLATE = Template(
       .leaflet-container { font-family: var(--xatra-ui-font); font-size: 12px; }
 
       /* ── Panels ── */
-      #title { position: fixed; top: 16px; left: 16px; max-width: 340px; z-index: 1000; padding: 14px 16px 12px; background: var(--xatra-panel-bg); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); border: 1px solid var(--xatra-panel-border); border-radius: 12px; box-shadow: var(--xatra-panel-shadow); font-size: 13.5px; line-height: 1.45; cursor: move; user-select: none; scrollbar-width: thin; }
+      #title { position: fixed; top: calc(16px + var(--xatra-inset-top, 0px)); left: 16px; max-width: 340px; z-index: 1000; padding: 14px 16px 12px; background: var(--xatra-panel-bg); -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3); border: 1px solid var(--xatra-panel-border); border-radius: 12px; box-shadow: var(--xatra-panel-shadow); font-size: 13.5px; line-height: 1.45; cursor: move; user-select: none; scrollbar-width: thin; }
       #title-content > .title-box { margin-bottom: 8px; }
       #title-content > .title-box:empty { display: none; }
       #title .title-box h1, #title .title-box h2, #title .title-box h3 { font-family: var(--xatra-map-font); font-weight: 600; line-height: 1.15; margin: 0 0 6px; letter-spacing: 0.01em; }
@@ -85,7 +85,7 @@ HTML_TEMPLATE = Template(
       #coordinate-label { font-weight: 500; }
       #coordinates { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--xatra-muted); }
       /* Scroll long titles inside the panel; the search row stays outside so its dropdown isn't clipped. */
-      #title-content { display: flex; flex-direction: column; max-height: calc(100vh - 190px); overflow-y: auto; scrollbar-width: thin; }
+      #title-content { display: flex; flex-direction: column; max-height: calc(100vh - 190px - var(--xatra-inset-top, 0px)); overflow-y: auto; scrollbar-width: thin; }
       #layer-selector { margin-top: 6px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--xatra-muted); }
       #layer-selector select { margin-left: 0; flex: 1; min-width: 0; font: inherit; color: var(--xatra-ink); padding: 4px 8px; border: 1px solid rgba(0,0,0,0.12); border-radius: 7px; background: rgba(255,255,255,0.8); }
       #colormap { margin-top: 10px; cursor: crosshair; }
@@ -144,7 +144,7 @@ HTML_TEMPLATE = Template(
       #search-features-container .leaflet-control-search { display: flex !important; flex-direction: row !important; align-items: stretch; width: 100% !important; max-width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; box-shadow: none; }
       #search-features-container .leaflet-control-search label.search-input { display: none !important; }
       #search-features-container .leaflet-control-search input.search-input { display: block !important; order: 2; flex: 1 1 0 !important; min-width: 0 !important; width: 0 !important; height: 28px !important; margin: 0 !important; padding: 0 8px !important; border: none !important; background: transparent !important; font: 12.5px var(--xatra-ui-font) !important; box-sizing: border-box !important; outline: none; }
-      #search-features-container .leaflet-control-search .search-button { order: 1; flex: 0 0 28px !important; background-position: center !important; width: 28px !important; height: 28px !important; margin: 0 !important; background-color: transparent !important; opacity: 0.6; }
+      #search-features-container .leaflet-control-search .search-button { order: 1; flex: 0 0 28px !important; background-position: 4px 4px !important; width: 28px !important; height: 28px !important; margin: 0 !important; background-color: transparent !important; opacity: 0.6; }
       #search-features-container .leaflet-control-search .search-cancel { right: 4px !important; top: 0 !important; margin: 0 !important; height: 28px !important; }
       #search-features-container .leaflet-control-search .search-tooltip { z-index: 1100; max-height: 240px; left: 0; top: 32px; width: max-content !important; min-width: 100%; max-width: 300px; box-sizing: border-box; background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; box-shadow: var(--xatra-panel-shadow); }
       #search-features-container .leaflet-control-search .search-tooltip ul { list-style: none; margin: 0; padding: 2px 0; }
@@ -159,7 +159,7 @@ HTML_TEMPLATE = Template(
       #title-search-wrapper .leaflet-control-geocoder input { width: 100%; box-sizing: border-box; border: none; background: transparent; font: 12.5px var(--xatra-ui-font); padding: 0 6px; height: 28px; outline: none; }
       #title-search-wrapper .leaflet-control-geocoder-icon { width: 28px; height: 28px; flex: 0 0 28px; background-color: transparent; opacity: 0.6; border-radius: 8px; }
       @media (max-width: 600px) {
-        #title { top: 10px; left: 10px; max-width: calc(100% - 64px); padding: 10px 12px; font-size: 12.5px; }
+        #title { top: calc(10px + var(--xatra-inset-top, 0px)); left: 10px; max-width: calc(100% - 64px); padding: 10px 12px; font-size: 12.5px; }
         #controls { bottom: 14px; }
         #controls #startYear, #controls #endYear { display: none; }
       }
@@ -775,7 +775,19 @@ HTML_TEMPLATE = Template(
         }
         return null;
       }
+      // Tell an embedding page the map is listening (it may reply with setPanelInsets).
+      setTimeout(function() {
+        if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'mapReady' }, '*');
+      }, 0);
       window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'setPanelInsets') {
+          // An embedding page (e.g. xatra-gui) can push the title panel down to
+          // clear its own overlays: { type: 'setPanelInsets', top: <px> | null }.
+          const top = Number(event.data.top);
+          if (Number.isFinite(top) && top > 0) document.documentElement.style.setProperty('--xatra-inset-top', top + 'px');
+          else document.documentElement.style.removeProperty('--xatra-inset-top');
+          return;
+        }
         if (event.data === 'getCurrentView') {
           const center = map.getCenter();
           const zoom = map.getZoom();
