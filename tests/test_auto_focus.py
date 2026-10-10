@@ -1,3 +1,5 @@
+import pytest
+
 import xatra
 from xatra.territory_library import PARTHIA
 
@@ -30,6 +32,7 @@ def test_auto_focus_handles_tuple_coordinates_in_serialized_geometry():
     assert focus == (22.0, 12.0)
 
 
+@pytest.mark.needs_data
 def test_auto_focus_for_parthia_flag_is_not_default():
     m = xatra.Map()
     m.Flag(value=PARTHIA, label="PARTHIA")

@@ -30,6 +30,10 @@ This installs `xatra`, then downloads GADM administrative boundaries, Natural Ea
 
 [Old alpha version of xatra](https://github.com/srajma/xatra1). Always make sure you're using version 2.11 or later.
 
+## Releasing
+
+Bump `version` in `pyproject.toml` and merge to `master`: the *Publish to PyPI* workflow tests, builds, publishes and tags the release, and xatra-gui (indike.org/xatra) picks it up and redeploys on its own.
+
 ## Example: Historical map
 
 ```python

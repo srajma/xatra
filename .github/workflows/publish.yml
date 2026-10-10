@@ -1,0 +1,66 @@
+name: Publish to PyPI
+
+# Publishes whenever master carries a version (pyproject.toml) that isn't on
+# PyPI yet. Uses PyPI Trusted Publishing, so no API token is stored here; the
+# trusted publisher is registered on pypi.org for srajma/xatra, this workflow
+# file and the "pypi" environment. xatra-gui picks the release up by itself
+# (its bump-xatra workflow), then deploys.
+
+on:
+  push:
+    branches: [master]
+    paths: [pyproject.toml]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: publish-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: pypi
+      url: https://pypi.org/project/xatra/
+    permissions:
+      contents: write   # push the vX.Y.Z tag
+      id-token: write   # PyPI trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check whether this version is already on PyPI
+        id: version
+        run: |
+          version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if curl -sf "https://pypi.org/pypi/xatra/$version/json" > /dev/null; then
+            echo "xatra $version is already on PyPI; nothing to do."
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: astral-sh/setup-uv@v6
+        if: steps.version.outputs.new == 'true'
+
+      - name: Test
+        if: steps.version.outputs.new == 'true'
+        run: uv run --python 3.12 pytest -q tests/
+
+      - name: Build
+        if: steps.version.outputs.new == 'true'
+        run: uv build
+
+      - name: Publish
+        if: steps.version.outputs.new == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Tag the release
+        if: steps.version.outputs.new == 'true'
+        run: |
+          tag="v${{ steps.version.outputs.version }}"
+          git tag "$tag"
+          git push origin "$tag"
