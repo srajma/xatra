@@ -406,7 +406,8 @@ def paxmax_aggregate(flags_serialized: List[Dict[str, Any]], earliest_start: Opt
                 if territories:
                     # Use territory union (more efficient with caching)
                     union_territory = Territory.union_territories(territories)
-                    geom_dict = union_territory.to_geojson_dict()
+                    geom = _polygonal_only(union_territory.to_geometry())
+                    geom_dict = mapping(geom) if geom is not None else None
                     centroid = _compute_centroid_for_geometry(geom_dict) if geom_dict else None
                 elif geometries:
                     # Fallback to geometry union (legacy support)

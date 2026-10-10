@@ -117,3 +117,17 @@ def test_embedders_can_inset_the_title_panel():
     assert "--xatra-inset-controls-top" in html
     assert "top: calc(16px + var(--xatra-inset-top, 0px))" in html
     assert "type: 'mapReady'" in html
+
+
+def test_dynamic_flags_drop_artifact_holes_too():
+    from xatra.paxmax import paxmax_aggregate
+
+    outer = [[0, 0], [0, 10], [10, 10], [10, 0]]
+    speck = [[1, 1], [1, 1.01], [1.01, 1.01], [1.01, 1]]
+    territory = Territory.from_polygon(outer, holes=[speck])
+    result = paxmax_aggregate([{"label": "X", "territory": territory, "period": (0, 10)}])
+    assert result["mode"] == "dynamic"
+    flag = result["snapshots"][0]["flags"][0]
+    geometry = result["geometry_library"][flag["geom_id"]]
+    rings = geometry["coordinates"] if geometry["type"] == "Polygon" else geometry["coordinates"][0]
+    assert len(rings) == 1  # the speck hole is gone
