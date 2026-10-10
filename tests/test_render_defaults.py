@@ -114,5 +114,6 @@ def test_embedders_can_inset_the_title_panel():
     m.Flag("A", _square())
     html = m.to_html_string()
     assert "setPanelInsets" in html
+    assert "--xatra-inset-controls-top" in html
     assert "top: calc(16px + var(--xatra-inset-top, 0px))" in html
     assert "type: 'mapReady'" in html

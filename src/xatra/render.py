@@ -126,6 +126,7 @@ HTML_TEMPLATE = Template(
       .xatra-atlas-tiles { filter: saturate(0.72) brightness(1.04); }
 
       /* ── Leaflet chrome ── */
+      .leaflet-top.leaflet-right { top: var(--xatra-inset-controls-top, 0px); }
       .leaflet-bar { border: none !important; border-radius: 10px !important; overflow: hidden; box-shadow: var(--xatra-panel-shadow) !important; }
       .leaflet-bar a, .leaflet-bar a:hover { width: 32px; height: 32px; line-height: 32px; color: var(--xatra-ink); background: var(--xatra-panel-bg); border-bottom-color: rgba(0,0,0,0.08); }
       .leaflet-bar a:hover { background: #fff; }
@@ -782,10 +783,15 @@ HTML_TEMPLATE = Template(
       window.addEventListener('message', function(event) {
         if (event.data && event.data.type === 'setPanelInsets') {
           // An embedding page (e.g. xatra-gui) can push the title panel down to
-          // clear its own overlays: { type: 'setPanelInsets', top: <px> | null }.
-          const top = Number(event.data.top);
-          if (Number.isFinite(top) && top > 0) document.documentElement.style.setProperty('--xatra-inset-top', top + 'px');
-          else document.documentElement.style.removeProperty('--xatra-inset-top');
+          // clear its own overlays: { type: 'setPanelInsets', top, controlsTop }
+          // (pixels, or null to reset); `controlsTop` moves the zoom buttons.
+          const setInset = (name, value) => {
+            const px = Number(value);
+            if (Number.isFinite(px) && px > 0) document.documentElement.style.setProperty(name, px + 'px');
+            else document.documentElement.style.removeProperty(name);
+          };
+          setInset('--xatra-inset-top', event.data.top);
+          setInset('--xatra-inset-controls-top', event.data.controlsTop);
           return;
         }
         if (event.data === 'getCurrentView') {
@@ -3661,7 +3667,11 @@ HTML_TEMPLATE = Template(
         if (!payload.fit_bounds) return;
         const bounds = L.latLngBounds(payload.fit_bounds);
         if (!bounds.isValid()) return;
-        const width = map.getSize().x;
+        // A hidden or not-yet-laid-out frame has no size; framing then would
+        // jump to max zoom. The resize handler below frames it once visible.
+        const size = map.getSize();
+        if (size.x < 50 || size.y < 50) return;
+        const width = size.x;
         let left = 24, bottom = 24;
         if (!opts.ignorePanels) {
           const title = document.getElementById('title');
@@ -3683,6 +3693,16 @@ HTML_TEMPLATE = Template(
       }
       window.xatraFitContent = fitContent;
       fitContent();
+      // Keep the content framed as the frame resizes (or first becomes
+      // visible) until the reader moves the map themselves.
+      let readerMovedMap = false;
+      for (const type of ['pointerdown', 'wheel', 'touchstart', 'keydown']) {
+        map.getContainer().addEventListener(type, () => { readerMovedMap = true; }, { passive: true });
+      }
+      map.on('resize', () => {
+        if (!readerMovedMap) fitContent();
+        scheduleDeclutter();
+      });
       initializeCoordinateDisplay();
       updateFlagLabelScales();
       // NOTE: keep setupSearch() as the script's last line; xatra-gui matches on it.
