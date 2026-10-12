@@ -143,3 +143,37 @@ def test_label_anchor_prefers_the_middle_of_a_long_territory():
     assert strip.contains(Point(lng, lat))
     assert lat < 6.5  # not up in the bulge
     assert abs(lat - strip.centroid.y) < 1.0
+
+
+def _js_function(html, name):
+    start = html.index(f"      function {name}(")
+    end = html.index("\n      }\n", start) + len("\n      }\n")
+    return html[start:end]
+
+
+def test_tilted_labels_only_claim_the_space_they_cover():
+    # Two parallel 35-degree labels side by side: their upright bounding boxes
+    # overlap, but the labels themselves don't, so neither should hide the other.
+    import json
+    import shutil
+    import subprocess
+
+    import pytest
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+    m = xatra.Map()
+    m.Flag("A", _square())
+    html = m.to_html_string()
+    script = _js_function(html, "labelBox") + _js_function(html, "boxesOverlap") + """
+      const a = Math.PI * 35 / 180;
+      const nx = -Math.sin(a) * 24, ny = Math.cos(a) * 24;  // 24px apart, across the text
+      const one = labelBox(100, 100, 50, 8, a);
+      const two = labelBox(100 + nx, 100 + ny, 50, 8, a);
+      const crossing = labelBox(100, 100, 50, 8, -a);
+      const far = labelBox(300, 100, 50, 8, 0);
+      console.log(JSON.stringify([boxesOverlap(one, two), boxesOverlap(one, crossing), boxesOverlap(one, far)]));
+    """
+    out = subprocess.run([node, "-e", script], capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == [False, True, False]
