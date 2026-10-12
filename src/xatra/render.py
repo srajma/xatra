@@ -130,7 +130,7 @@ HTML_TEMPLATE = Template(
       .point-label-container { background: none; border: none; display: flex; justify-content: flex-start; align-items: center; }
       .text-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; }
       .flag-label-container { background: none; border: none; display: flex; justify-content: center; align-items: center; pointer-events: none; }
-      .flag-label { font-family: var(--xatra-map-font); font-size: calc(15px * var(--xatra-label-scale, 1)); font-weight: 600; font-variant: small-caps; letter-spacing: 0.12em; line-height: 1.1; text-align: center; color: var(--xatra-ink); background: none; border: none; box-shadow: none; white-space: nowrap; text-shadow: var(--xatra-halo); }
+      .flag-label { font-family: var(--xatra-map-font); font-size: calc(14px * var(--xatra-label-scale, 1)); font-weight: 600; font-variant: small-caps; letter-spacing: 0.12em; line-height: 1.1; text-align: center; color: var(--xatra-ink); background: none; border: none; box-shadow: none; white-space: nowrap; text-shadow: var(--xatra-halo); }
       .flag-label.vassal, .flag-label.province { font-weight: 500; letter-spacing: 0.08em; }
       .flag-label.xatra-label-hidden { visibility: hidden; }
       .admin { stroke: rgba(40, 35, 30, 0.55); stroke-width: 0.6; }
@@ -1347,7 +1347,7 @@ HTML_TEMPLATE = Template(
         const nw = map.project(info.bounds.getNorthWest(), zoom);
         const se = map.project(info.bounds.getSouthEast(), zoom);
         const sizePx = Math.sqrt(Math.max(1, Math.abs(se.x - nw.x)) * Math.max(1, Math.abs(se.y - nw.y)));
-        const scale = Math.max(0.8, Math.min(2.2, Math.pow(sizePx / 160, 0.5)));
+        const scale = Math.max(0.9, Math.min(1.7, Math.pow(sizePx / 180, 0.5)));
         marker._xatraSizePx = sizePx;
         return scale * info.depthScale;
       }
@@ -1364,11 +1364,45 @@ HTML_TEMPLATE = Template(
         declutterFlagLabels();
       }
       map.on('zoomend', updateFlagLabelScales);
+      map.on('moveend', () => scheduleDeclutter());
 
       // Hide flag labels that would collide with a bigger territory's label (or
-      // with point/text labels); zooming in reveals them.
-      function rectsOverlap(a, b) {
-        return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      // with point/text labels); zooming in reveals them. Labels are compared as
+      // rotated rectangles, so tilted ones only claim the space they cover.
+      function labelBox(cx, cy, hw, hh, angle) {
+        const c = Math.cos(angle), s = Math.sin(angle);
+        const ac = Math.abs(c), as = Math.abs(s);
+        return { cx, cy, hw, hh, c, s, rx: hw * ac + hh * as, ry: hw * as + hh * ac };
+      }
+      function elementAngle(el) {
+        let angle = 0;
+        for (let node = el; node; node = node.parentElement) {
+          const t = getComputedStyle(node).transform;
+          if (t && t !== 'none') {
+            const m = new DOMMatrixReadOnly(t);
+            angle += Math.atan2(m.b, m.a);
+          }
+          if (node.classList.contains('leaflet-marker-icon')) break;
+        }
+        return angle;
+      }
+      function elementBox(el, pad) {
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return null;
+        const w = el.offsetWidth, h = el.offsetHeight;
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        if (!w || !h) return labelBox(cx, cy, r.width / 2 + pad, r.height / 2 + pad, 0);
+        return labelBox(cx, cy, w / 2 + pad, h / 2 + pad, elementAngle(el));
+      }
+      function boxesOverlap(a, b) {
+        const dx = b.cx - a.cx, dy = b.cy - a.cy;
+        if (Math.abs(dx) >= a.rx + b.rx || Math.abs(dy) >= a.ry + b.ry) return false;
+        for (const [x, y] of [[a.c, a.s], [-a.s, a.c], [b.c, b.s], [-b.s, b.c]]) {
+          const ra = a.hw * Math.abs(a.c * x + a.s * y) + a.hh * Math.abs(-a.s * x + a.c * y);
+          const rb = b.hw * Math.abs(b.c * x + b.s * y) + b.hh * Math.abs(-b.s * x + b.c * y);
+          if (Math.abs(dx * x + dy * y) >= ra + rb) return false;
+        }
+        return true;
       }
       function flagContainsPoint(marker, latlng) {
         const polygon = marker._xatraPolygon;
@@ -1383,20 +1417,115 @@ HTML_TEMPLATE = Template(
         return inside;
       }
 
+      // A territory whose label spot is off-screen still gets a label when
+      // enough of it is in view: the roomiest visible point (farthest from its
+      // edges and from the screen's), found on a coarse grid and then refined.
+      function visibleLabelSpot(marker, view, overlays, halfW, halfH) {
+        const polygon = marker._xatraPolygon;
+        if (!polygon) return null;
+        const rings = [];
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        polygon.eachLayer((sub) => {
+          if (!(sub instanceof L.Polygon) || !sub._parts) return;
+          for (const part of sub._parts) {
+            if (part.length < 3) continue;
+            const ring = part.map((pt) => map.layerPointToContainerPoint(pt));
+            for (const pt of ring) {
+              if (pt.x < minX) minX = pt.x;
+              if (pt.y < minY) minY = pt.y;
+              if (pt.x > maxX) maxX = pt.x;
+              if (pt.y > maxY) maxY = pt.y;
+            }
+            rings.push(ring);
+          }
+        });
+        minX = Math.max(minX, view.left); minY = Math.max(minY, view.top);
+        maxX = Math.min(maxX, view.right); maxY = Math.min(maxY, view.bottom);
+        if (!rings.length || maxX - minX < 4 || maxY - minY < 4) return null;
+        const room = (x, y) => {
+          let inside = false;
+          let d2 = Infinity;
+          for (const ring of rings) {
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+              const a = ring[j], b = ring[i];
+              if ((a.y > y) !== (b.y > y) && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+              const ex = b.x - a.x, ey = b.y - a.y;
+              const len2 = ex * ex + ey * ey;
+              const t = len2 ? Math.max(0, Math.min(1, ((x - a.x) * ex + (y - a.y) * ey) / len2)) : 0;
+              const qx = a.x + t * ex - x, qy = a.y + t * ey - y;
+              const q2 = qx * qx + qy * qy;
+              if (q2 < d2) d2 = q2;
+            }
+          }
+          if (!inside) return -1;
+          let d = Math.min(Math.sqrt(d2), x - view.left, view.right - x, y - view.top, view.bottom - y);
+          for (const o of overlays) {
+            const ox = Math.max(o.left - x, 0, x - o.right), oy = Math.max(o.top - y, 0, y - o.bottom);
+            if (!ox && !oy) return -1;
+            d = Math.min(d, Math.hypot(ox, oy));
+          }
+          return d;
+        };
+        let step = Math.max(6, Math.sqrt(((maxX - minX) * (maxY - minY)) / 300));
+        let best = null;
+        for (let y = minY + step / 2; y < maxY; y += step) {
+          for (let x = minX + step / 2; x < maxX; x += step) {
+            const d = room(x, y);
+            if (d > 0 && (!best || d > best.room)) best = { x, y, room: d };
+          }
+        }
+        if (!best) return null;
+        for (let pass = 0; pass < 3; pass++) {
+          step /= 2;
+          const cx = best.x, cy = best.y;
+          for (let ky = -2; ky <= 2; ky++) {
+            for (let kx = -2; kx <= 2; kx++) {
+              const d = room(cx + kx * step, cy + ky * step);
+              if (d > best.room) best = { x: cx + kx * step, y: cy + ky * step, room: d };
+            }
+          }
+        }
+        // Keep the whole label on screen when the territory allows it.
+        const x = Math.max(view.left + halfW, Math.min(view.right - halfW, best.x));
+        const y = Math.max(view.top + halfH, Math.min(view.bottom - halfH, best.y));
+        if ((x !== best.x || y !== best.y) && room(x, y) > 0) {
+          best.x = x;
+          best.y = y;
+        }
+        best.size = Math.sqrt((maxX - minX) * (maxY - minY));
+        return best;
+      }
+
+      // Nudges tried when a label's own spot is taken, in label-sized steps
+      // (dx in label widths, dy in text lines), nearest first.
+      const FLAG_LABEL_NUDGES = [[0, 0], [0, -1], [0, 1], [-0.3, 0], [0.3, 0], [-0.3, -1], [0.3, -1], [-0.3, 1], [0.3, 1], [0, -2], [0, 2], [-0.6, 0], [0.6, 0]];
       function declutterFlagLabels() {
         const mapEl = map.getContainer();
+        const mapRect = mapEl.getBoundingClientRect();
+        const pad = 2;
         const taken = [];
         for (const el of mapEl.querySelectorAll('.text-label, .point-label')) {
-          const r = el.getBoundingClientRect();
-          if (r.width && r.height) taken.push(r);
+          const box = elementBox(el, 0);
+          if (box) taken.push(box);
         }
         // Point markers are dodged when possible but never hide a label.
         const markers = [];
         for (const el of mapEl.querySelectorAll('.point-dot, .leaflet-marker-icon:not(.leaflet-div-icon):not(.flag-label-container)')) {
           const r = el.getBoundingClientRect();
-          if (r.width && r.height) markers.push(r);
+          if (r.width && r.height) markers.push(labelBox(r.left + r.width / 2, r.top + r.height / 2, r.width / 2, r.height / 2, 0));
         }
-        const items = [];
+        // The title panel and map controls cover the map: labels under them
+        // look for a visible spot instead.
+        const overlays = [];
+        for (const el of document.querySelectorAll('#title, #controls, .leaflet-control-container .leaflet-control')) {
+          const r = el.getBoundingClientRect();
+          if (!r.width || !r.height || r.right <= mapRect.left || r.left >= mapRect.right || r.bottom <= mapRect.top || r.top >= mapRect.bottom) continue;
+          overlays.push({ left: r.left - mapRect.left - pad, right: r.right - mapRect.left + pad, top: r.top - mapRect.top - pad, bottom: r.bottom - mapRect.top + pad });
+          taken.push(labelBox(r.left + r.width / 2, r.top + r.height / 2, r.width / 2, r.height / 2, 0));
+        }
+        const view = { left: 0, top: 0, right: mapRect.width, bottom: mapRect.height };
+        // Reset every label before measuring any (one layout, not one per label).
+        const labels = [];
         for (const marker of flagLabelMarkers) {
           if (!map.hasLayer(marker)) continue;
           const el = marker.getElement && marker.getElement();
@@ -1406,29 +1535,58 @@ HTML_TEMPLATE = Template(
           inner.classList.remove('xatra-label-hidden');
           inner.style.translate = '';
           rotor.style.translate = '';
-          items.push({ inner, rotor, marker, priority: (marker._xatraSizePx || 0) * (marker._xatraLabel ? marker._xatraLabel.depthScale : 1) });
+          rotor.style.scale = '';
+          labels.push({ marker, inner, rotor });
+        }
+        const items = [];
+        for (const { marker, inner, rotor } of labels) {
+          const r = inner.getBoundingClientRect();
+          if (!r.width || !r.height) continue;
+          const w = inner.offsetWidth || r.width, h = inner.offsetHeight || r.height;
+          const item = { inner, rotor, marker, w, h, width: r.width, cx: r.left + r.width / 2, cy: r.top + r.height / 2, fit: 1 };
+          let priority = (marker._xatraSizePx || 0) * (marker._xatraLabel ? marker._xatraLabel.depthScale : 1);
+          const fullyInView = r.left >= mapRect.left && r.right <= mapRect.right && r.top >= mapRect.top && r.bottom <= mapRect.bottom
+            && !overlays.some((o) => r.left - mapRect.left < o.right && o.left < r.right - mapRect.left && r.top - mapRect.top < o.bottom && o.top < r.bottom - mapRect.top);
+          if (!fullyInView) {
+            const spot = visibleLabelSpot(marker, view, overlays, r.width / 2 + pad, r.height / 2 + pad);
+            if (spot && spot.room >= Math.max(h, w / 5)) {
+              // Shrink a big territory's label to what is actually in view.
+              item.fit = Math.max(0.7, Math.min(1, Math.sqrt(spot.size / Math.max(1, marker._xatraSizePx || spot.size))));
+              item.cx = spot.x + mapRect.left;
+              item.cy = spot.y + mapRect.top;
+              item.moved = true;
+              priority = Math.min(priority, spot.size);
+            } else if (r.right < mapRect.left || r.left > mapRect.right || r.bottom < mapRect.top || r.top > mapRect.bottom) {
+              continue;
+            }
+          }
+          item.x0 = r.left + r.width / 2;
+          item.y0 = r.top + r.height / 2;
+          item.priority = priority;
+          items.push(item);
         }
         items.sort((a, b) => b.priority - a.priority);
-        const pad = 3;
         for (const item of items) {
-          const r = item.inner.getBoundingClientRect();
-          if (!r.width || !r.height) continue;
-          // Try the anchor first, then a little above or below it (in screen
-          // space, stepping by one line of text), but only to spots that are
-          // still inside the territory; otherwise the label waits for a zoom-in.
-          const lineHeight = item.inner.offsetHeight || r.height;
-          const mapRect = mapEl.getBoundingClientRect();
+          const { w, h, cx, cy } = item;
+          const angle = ((item.marker._xatraLabel && item.marker._xatraLabel.angle) || 0) * Math.PI / 180;
+          // Try the anchor first, then nearby spots that are still inside the
+          // territory; if nothing fits, a slightly smaller label gets the same
+          // chance before it waits for a zoom-in.
           let placed = false;
-          for (const avoidMarkers of [true, false]) {
-            for (const dy of [0, -1, 1, -2, 2].map((k) => k * 1.1 * lineHeight)) {
-              const box = { left: r.left - pad, right: r.right + pad, top: r.top + dy - pad, bottom: r.bottom + dy + pad };
-              if (taken.some((t) => rectsOverlap(box, t))) continue;
-              if (avoidMarkers && markers.some((t) => rectsOverlap(box, t))) continue;
-              if (dy) {
-                const center = L.point(r.left + r.width / 2 - mapRect.left, r.top + r.height / 2 + dy - mapRect.top);
+          for (const [shrink, avoidMarkers] of [[1, true], [1, false], [0.85, true], [0.85, false]]) {
+            const scale = shrink * item.fit;
+            for (const [kx, ky] of FLAG_LABEL_NUDGES) {
+              const dx = kx * item.width * scale, dy = ky * 1.1 * h * scale;
+              const box = labelBox(cx + dx, cy + dy, (w * scale) / 2 + pad, (h * scale) / 2 + pad, angle);
+              if (taken.some((t) => boxesOverlap(box, t))) continue;
+              if (avoidMarkers && markers.some((t) => boxesOverlap(box, t))) continue;
+              if (dx || dy) {
+                const center = L.point(cx + dx - mapRect.left, cy + dy - mapRect.top);
                 if (!flagContainsPoint(item.marker, map.containerPointToLatLng(center))) continue;
-                item.rotor.style.translate = `0 ${dy.toFixed(1)}px`;
               }
+              const tx = cx + dx - item.x0, ty = cy + dy - item.y0;
+              if (tx || ty) item.rotor.style.translate = `${tx.toFixed(1)}px ${ty.toFixed(1)}px`;
+              if (scale !== 1) item.rotor.style.scale = scale.toFixed(3);
               taken.push(box);
               placed = true;
               break;
@@ -1553,6 +1711,7 @@ HTML_TEMPLATE = Template(
           labelLayer._xatraPolygon = layer;
           labelLayer._xatraLabel = {
             bounds: geometryLatLngBounds(geometry),
+            angle: rotationAngle,
             depthScale: Math.pow(0.85, f.vassal_depth || 0)
           };
           labelLayer.on('add', () => {
@@ -3322,10 +3481,12 @@ HTML_TEMPLATE = Template(
         }
 
         function dragEnd() {
+          if (dragging) scheduleDeclutter();  // labels it uncovered or now covers
           start = null;
           dragging = false;
           titleDiv.classList.remove('dragging');
         }
+        if (window.ResizeObserver) new ResizeObserver(() => scheduleDeclutter()).observe(titleDiv);
 
         titleDiv.addEventListener('mousedown', dragStart);
         document.addEventListener('mousemove', drag);

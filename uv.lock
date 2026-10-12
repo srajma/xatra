@@ -902,7 +902,7 @@ wheels = [
 
 [[package]]
 name = "xatra"
-version = "2.16.1"
+version = "2.16.2"
 source = { editable = "." }
 dependencies = [
     { name = "geojson" },
